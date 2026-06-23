@@ -1,0 +1,6 @@
+{
+  "name": "Mapa Estelar",
+  "description": "Uma plataforma premium de autoconhecimento que combina astrologia, numerologia, interpretação de sonhos, tarô, compatibilidade pessoal e inteligência artificial personalizada.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

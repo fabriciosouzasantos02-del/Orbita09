@@ -1,0 +1,108 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // A user owns a record if the record ID matches their auth UID or their registered email address.
+    function isOwner(userId) {
+      return isSignedIn() && (
+        request.auth.uid == userId || 
+        (request.auth.token.email != null && (
+          request.auth.token.email == userId || 
+          request.auth.token.email.lower() == userId.lower()
+        ))
+      );
+    }
+
+    // Rules for User Profile documents and their subcollections
+    match /users/{userId} {
+      // Allow read for logged-in users (needed for social search, profile views, and friendship discovery)
+      allow read: if isSignedIn();
+      // Allow write if the user owns this profile
+      allow write: if isOwner(userId);
+
+      // Subcollections under a user
+      match /natalCharts/{chartId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /cache/{cacheId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /extraMaps/{mapId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /dreams/{dreamId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /transits/{transitId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /dailyInsights/{insightId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /weeklyInsights/{insightId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /missions/{missionId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /tarotReadings/{readingId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /numerology/{numerologyId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /prosperityMaps/{prosperityId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /biorhythm/{biorhythmId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /lunarNodes/{nodeId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /subscriptions/{subId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Social collections: following, followers, friends, likesGiven, likesSnapshot, notifications
+      match /following/{followedUserId} {
+        // You can read your own following, and write (follow/unfollow) if you are the owner of this list
+        allow read: if isSignedIn();
+        allow write: if isOwner(userId);
+      }
+      match /followers/{followerUserId} {
+        // Anyone signed in can read a user's followers. Any signed-in user can add themselves as a follower.
+        allow read: if isSignedIn();
+        allow write: if isSignedIn();
+      }
+      match /friends/{friendUserId} {
+        // Anyone signed in can read a friendship. A user can write to their own friendship records.
+        allow read: if isSignedIn();
+        allow write: if isOwner(userId) || isSignedIn(); // Allow writing during accept friend
+      }
+      match /likesGiven/{likedUserId} {
+        allow read: if isSignedIn();
+        allow write: if isOwner(userId);
+      }
+      match /likesSnapshot/{likerUserId} {
+        allow read: if isSignedIn();
+        allow write: if isSignedIn();
+      }
+      match /notifications/{notificationId} {
+        // You can only read your own notifications, but anyone can write a notification (to notify you about likes, follows, etc.)
+        allow read: if isOwner(userId);
+        allow write: if isSignedIn();
+      }
+    }
+
+    // Device trials collection rules
+    match /device_trials/{deviceId} {
+      allow read, write: if isSignedIn();
+    }
+  }
+}

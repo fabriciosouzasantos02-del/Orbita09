@@ -1,0 +1,323 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Stores consolidated astro-numerology profile, anti-fraud parameters, current chart pointer, and premium subscription metrics.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth User UID" },
+        "email": { "type": "string", "format": "email", "description": "Owner email address" },
+        "name": { "type": "string", "description": "Full name" },
+        "photoURL": { "type": "string", "description": "Google user photo URL" },
+        "provider": { "type": "string", "description": "Auth provider identifier (e.g. google, password)" },
+        "emailVerified": { "type": "boolean", "description": "Natively verified email state" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" },
+        "isSubscribed": { "type": "boolean", "description": "True if profile has active paid subscription" },
+        "trialUsed": { "type": "boolean", "description": "True if this profile has active or past trial period" },
+        "trialStartDate": { "type": "string", "format": "date-time", "description": "Trial starting date" },
+        "trialEndDate": { "type": "string", "format": "date-time", "description": "Trial ending limit date" },
+        "deviceId": { "type": "string", "description": "Associated unique browser tracking ID" },
+        "deviceFingerprint": { "type": "string", "description": "Browser fingerprint" },
+        "lastLoginAt": { "type": "string", "format": "date-time", "description": "Timestamp of last authentication session" },
+        "birthDate": { "type": "string", "description": "Birth date in YYYY-MM-DD" },
+        "birthTime": { "type": "string", "description": "Birth time in HH:MM" },
+        "birthCity": { "type": "string", "description": "City of birth" },
+        "profilePhoto": { "type": "string", "description": "Base64 or URL profile photo" },
+        "isPremium": { "type": "boolean", "description": "True if profile has unlocked premium celestial maps" },
+        "hasCreatedMap": { "type": "boolean", "description": "True if initial birth details sintonized correctly" },
+        "scorePoints": { "type": "integer", "description": "Collected stellar points from practices and daily activities" },
+        "currentChartId": { "type": "string", "description": "Document ID of the active natal chart in use" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last update timestamp" }
+      },
+      "required": ["email", "name", "birthDate", "birthCity", "hasCreatedMap"]
+    },
+    "NatalChart": {
+      "title": "Astrological Natal Chart",
+      "description": "Stores user birth parameters, calculated planets, houses, aspects, and customized AI readings.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique chart identifier" },
+        "userId": { "type": "string", "description": "Associated user UID or email" },
+        "name": { "type": "string", "description": "Subject name" },
+        "birthDate": { "type": "string", "description": "Birth date in YYYY-MM-DD" },
+        "birthTime": { "type": "string", "description": "Birth time" },
+        "birthCity": { "type": "string", "description": "Birth city" },
+        "isUnknownTime": { "type": "boolean", "description": "True if birth time was computed as unknown/estimated" },
+        "latitude": { "type": "number", "description": "Latitude of birth city" },
+        "longitude": { "type": "number", "description": "Longitude of birth city" },
+        "mapData": { "type": "object", "description": "Full calculated AstrologyMap data" },
+        "numerology": { "type": "object", "description": "Derived Numerology cycle data at creation" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["id", "userId", "birthDate", "birthCity", "mapData", "createdAt"]
+    },
+    "Transit": {
+      "title": "Astrological Transits",
+      "description": "Caches calculated transit alignments and forecasts for the user.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique transit block identifier" },
+        "userId": { "type": "string", "description": "Associated user reference" },
+        "birthDate": { "type": "string", "description": "Associated user birth date" },
+        "monthsData": { "type": "object", "description": "Transit planets positions and interpretations map" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Calculation timestamp" }
+      },
+      "required": ["id", "userId", "updatedAt"]
+    },
+    "DailyInsight": {
+      "title": "Daily Osiris Insights",
+      "description": "Osiris AI daily dashboard parameters, weather context, and energetic index.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Target date string (YYYY-MM-DD)" },
+        "userId": { "type": "string", "description": "Associated user" },
+        "insightData": { "type": "object", "description": "Osiris system dashboard, radar, and recommendations dump" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Generation timestamp" }
+      },
+      "required": ["id", "userId", "insightData", "createdAt"]
+    },
+    "WeeklyInsight": {
+      "title": "Weekly Energetic Forecast",
+      "description": "Stores user calculated weekly astrological transits and guidance.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Weekly period key" },
+        "userId": { "type": "string", "description": "Associated user" },
+        "weeklyData": { "type": "object", "description": "Poetic transit aspects and weekly guides" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation time" }
+      },
+      "required": ["id", "userId", "weeklyData", "createdAt"]
+    },
+    "DeviceTrial": {
+      "title": "Device Trial Track",
+      "description": "Fingerprint and unique ID registry to enforce the single-trial restriction.",
+      "type": "object",
+      "properties": {
+        "deviceId": { "type": "string", "description": "Durable hardware or browser random ID identifier" },
+        "deviceFingerprint": { "type": "string", "description": "Client calculated web browser fingerprint hash" },
+        "trialUsed": { "type": "boolean", "description": "True if device is mapped to active account trial" },
+        "firstEmail": { "type": "string", "format": "email", "description": "User email who initially activated" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp of first access" },
+        "deviceInfo": { "type": "string", "description": "Operating system and basic client capabilities dump" }
+      },
+      "required": ["deviceId", "deviceFingerprint", "trialUsed", "firstEmail", "createdAt"]
+    },
+    "DreamLog": {
+      "title": "Celestial Dream Interpretation",
+      "description": "Holds the history of dreams interpreted for an active user profile.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique record identifier" },
+        "userId": { "type": "string", "description": "Subscribed user UID or email reference" },
+        "title": { "type": "string", "description": "Dream short synopsis" },
+        "text": { "type": "string", "description": "Full details typed by user" },
+        "interpretation": { "type": "string", "description": "Elias angelical and cosmic reading details" },
+        "sentiment": { "type": "string", "description": "Dynamic emotional vibration matching" },
+        "date": { "type": "string", "format": "date-time", "description": "Submission date time" }
+      },
+      "required": ["id", "userId", "title", "text", "interpretation", "date"]
+    },
+    "AstralExtraMap": {
+      "title": "Extra Astrological Sincronic Map",
+      "description": "Allows storing and reloading extra relational maps.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique extra map identifier" },
+        "userId": { "type": "string", "description": "User UID who generated this extra mapping" },
+        "label": { "type": "string", "description": "Person name or relationship label" },
+        "birthDate": { "type": "string", "description": "Associated birthdate" },
+        "birthTime": { "type": "string", "description": "Associated birth time" },
+        "birthCity": { "type": "string", "description": "Associated birth city" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Generation timestamp" }
+      },
+      "required": ["id", "userId", "label", "birthDate", "birthCity", "createdAt"]
+    },
+    "Mission": {
+      "title": "Daily Astros Missions",
+      "description": "Tracks daily synchronized interactive challenges completed or ongoing.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Mission state record key" },
+        "userId": { "type": "string", "description": "Associated user" },
+        "missionsList": { "type": "array", "description": "Array of daily loaded missions" },
+        "date": { "type": "string", "description": "Astro missions current day" },
+        "lastUpdated": { "type": "string", "format": "date-time", "description": "Sync timestamp" }
+      },
+      "required": ["id", "userId", "missionsList", "date"]
+    },
+    "TarotReading": {
+      "title": "Tarot Oracle Draws",
+      "description": "History of tarot cards drawn, questions formulated, and divine recommendations.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique reading reference" },
+        "userId": { "type": "string", "description": "Sintonized user UID" },
+        "question": { "type": "string", "description": "The exact question asked to the cards" },
+        "drawType": { "type": "string", "description": "Type of tarot layout (e.g. daily, full-3-cards)" },
+        "drawnCards": { "type": "array", "description": "List of drawn tarot card results" },
+        "interpretationText": { "type": "string", "description": "Conselheira AI extensive wisdom guide response" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Reading creation date-time" }
+      },
+      "required": ["id", "userId", "drawnCards", "interpretationText", "createdAt"]
+    },
+    "NumerologyCycle": {
+      "title": "Comprehensive Numerological Matrix",
+      "description": "Durable record of personal numerology cycles and daily resonance factors.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Calculation key" },
+        "userId": { "type": "string", "description": "Subscribed user UID" },
+        "lifePathNumber": { "type": "integer", "description": "Main life path master number" },
+        "expressionNumber": { "type": "integer", "description": "Full name vocalic resonance" },
+        "soulUrgeNumber": { "type": "integer", "description": "Internal motivation frequency number" },
+        "personalityNumber": { "type": "integer", "description": "Outer expression persona metric" },
+        "derivedCycles": { "type": "array", "description": "String array of current and future energetic cycles" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Matrix calculation date" }
+      },
+      "required": ["id", "userId", "lifePathNumber", "updatedAt"]
+    },
+    "ProsperityMap": {
+      "title": "Empowered Financial Prosperity Map",
+      "description": "Calculated financial directions, color resonance, lunar properties, and actions lists.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Target cycle month reference" },
+        "userId": { "type": "string", "description": "Associated user UID" },
+        "keyword": { "type": "string", "description": "Prosperous theme focal point keyword" },
+        "favoredColor": { "type": "string", "description": "Name of sintonized color" },
+        "favoredColorHex": { "type": "string", "description": "Color hex code" },
+        "favoredDay": { "type": "string", "description": "Day for financial actions" },
+        "symbol": { "type": "string", "description": "Astro prosperity talisman symbol" },
+        "recommendations": { "type": "array", "description": "Financial alignments guidance list" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Sync date" }
+      },
+      "required": ["id", "userId", "keyword", "createdAt"]
+    },
+    "Biorhythm": {
+      "title": "Physical and Intuitive Biorhythm State",
+      "description": "Saves computed periodic physical, emotional, and intellectual state peaks.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Biorhythm day key YYYY-MM-DD" },
+        "userId": { "type": "string", "description": "Associated user UID" },
+        "physical": { "type": "number", "description": "Physical index percentage" },
+        "emotional": { "type": "number", "description": "Emotional index percentage" },
+        "intellectual": { "type": "number", "description": "Intellectual index percentage" },
+        "intuitive": { "type": "number", "description": "Intuitive index percentage" },
+        "compositeScore": { "type": "number", "description": "Sincronic average peak" },
+        "computedAt": { "type": "string", "format": "date-time", "description": "Date of computation" }
+      },
+      "required": ["id", "userId", "physical", "emotional", "intellectual", "computedAt"]
+    },
+    "LunarNode": {
+      "title": "Dharma and Karma Lunar Nodes Guidance",
+      "description": "Maintains Node directions, specific tasks, and karmic warnings.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Node position identifier" },
+        "userId": { "type": "string", "description": "Associated user UID" },
+        "northNodeSign": { "type": "string", "description": "Dharmic North Node sign" },
+        "southNodeSign": { "type": "string", "description": "Karmic South Node sign" },
+        "interpretation": { "type": "string", "description": "Detailed guides for spiritual soul direction" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Refresh date" }
+      },
+      "required": ["id", "userId", "northNodeSign", "southNodeSign", "updatedAt"]
+    },
+    "AstroNotification": {
+      "title": "Stellar Alerts and Conjunction Alarms",
+      "description": "Log of received astrological weather, transition warnings, and messages.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique notification reference" },
+        "userId": { "type": "string", "description": "Target user" },
+        "title": { "type": "string", "description": "Alert header" },
+        "message": { "type": "string", "description": "Rich text message from cosmos" },
+        "type": { "type": "string", "description": "Astro event type (normal, rare, critical)" },
+        "isRead": { "type": "boolean", "description": "True if user opened the notification" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["id", "userId", "title", "message", "createdAt"]
+    },
+    "Subscription": {
+      "title": "Subscription Ledger History",
+      "description": "Auditable log of plan subscriptions, payments verification, and plans metadata.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Stripe Session ID or transact ID" },
+        "userId": { "type": "string", "description": "Actively subscribed user email or UID" },
+        "planId": { "type": "string", "description": "Celestial VIP or Astro Premium key" },
+        "status": { "type": "string", "description": "Payment checkout status (e.g. active, trial, unpaid)" },
+        "startDate": { "type": "string", "format": "date-time", "description": "Subscription start" },
+        "endDate": { "type": "string", "format": "date-time", "description": "End limit datetime" },
+        "amountPaid": { "type": "integer", "description": "Simulated or actual price paid" }
+      },
+      "required": ["id", "userId", "planId", "status", "startDate"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User accounts and profile states indexed by uid or unique identifier key."
+    },
+    "/device_trials/{deviceId}": {
+      "schema": "DeviceTrial",
+      "description": "Global device trial tracking records to enforce single 5-day trial per device."
+    },
+    "/users/{userId}/natalCharts/{chartId}": {
+      "schema": "NatalChart",
+      "description": "Historical subcollection of calculated natal charts. The active chart is pointed to by currentChartId."
+    },
+    "/users/{userId}/transits/{transitId}": {
+      "schema": "Transit",
+      "description": "Sub-collection of customized astrological transit cached reports."
+    },
+    "/users/{userId}/dailyInsights/{insightId}": {
+      "schema": "DailyInsight",
+      "description": "Historical daily insights and dashboard metrics computed for the user."
+    },
+    "/users/{userId}/weeklyInsights/{insightId}": {
+      "schema": "WeeklyInsight",
+      "description": "Historical weekly transitional forecasts generated for the home portal."
+    },
+    "/users/{userId}/dreams/{dreamId}": {
+      "schema": "DreamLog",
+      "description": "Sub-collection isolated for user personalized dream log interpretations."
+    },
+    "/users/{userId}/extraMaps/{mapId}": {
+      "schema": "AstralExtraMap",
+      "description": "Sub-collection of customized partner or affinity extra maps sintonized by this user."
+    },
+    "/users/{userId}/missions/{missionId}": {
+      "schema": "Mission",
+      "description": "Tracks daily synchronized interactive challenges completed or ongoing."
+    },
+    "/users/{userId}/tarotReadings/{readingId}": {
+      "schema": "TarotReading",
+      "description": "History of tarot cards drawn and divine explanations."
+    },
+    "/users/{userId}/numerology/{numerologyId}": {
+      "schema": "NumerologyCycle",
+      "description": "Sub-collection of generated numerological matrix and cycles."
+    },
+    "/users/{userId}/prosperityMaps/{prosperityId}": {
+      "schema": "ProsperityMap",
+      "description": "Sub-collection of calculated monthly financial directions."
+    },
+    "/users/{userId}/biorhythm/{biorhythmId}": {
+      "schema": "Biorhythm",
+      "description": "Periodic biorhythm cycles recorded for permanent user tracking"
+    },
+    "/users/{userId}/lunarNodes/{nodeId}": {
+      "schema": "LunarNode",
+      "description": "Lunar nodes of karma and dharma derived charts database"
+    },
+    "/users/{userId}/notifications/{notificationId}": {
+      "schema": "AstroNotification",
+      "description": "Interactive notification log database."
+    },
+    "/users/{userId}/subscriptions/{subscriptionId}": {
+      "schema": "Subscription",
+      "description": "Ledger of plan subscriptions, payments verification, and plans metadata log."
+    }
+  }
+}

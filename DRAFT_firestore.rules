@@ -1,0 +1,82 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default catch-all deny rule for complete security
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions for Attribute-Based Access Control (ABAC)
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Validation blueprints for entity types
+    function isValidUser(user) {
+      return user.keys().hasAll(['email', 'name', 'birthDate', 'birthCity', 'hasCreatedMap'])
+        && user.email is string && user.email.size() <= 256
+        && user.name is string && user.name.size() <= 200
+        && user.birthDate is string && user.birthDate.size() == 10
+        && user.birthCity is string && user.birthCity.size() <= 150
+        && user.hasCreatedMap is bool;
+    }
+
+    function isValidDream(dream) {
+      return dream.keys().hasAll(['id', 'userId', 'title', 'text', 'interpretation', 'date'])
+        && dream.id is string && dream.id.size() <= 128
+        && dream.userId is string && dream.userId.size() <= 128
+        && dream.title is string && dream.title.size() <= 200
+        && dream.text is string && dream.text.size() <= 10000
+        && dream.interpretation is string && dream.interpretation.size() <= 50000;
+    }
+
+    function isValidExtraMap(extraMap) {
+      return extraMap.keys().hasAll(['id', 'userId', 'label', 'birthDate', 'birthCity', 'createdAt'])
+        && extraMap.id is string && extraMap.id.size() <= 128
+        && extraMap.userId is string && extraMap.userId.size() <= 128
+        && extraMap.label is string && extraMap.label.size() <= 150
+        && extraMap.birthDate is string && extraMap.birthDate.size() == 10
+        && extraMap.birthCity is string && extraMap.birthCity.size() <= 150;
+    }
+
+    // Collection matching blocks
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data)
+        && request.resource.data.email == resource.data.email; // email is immutable
+      allow delete: if isOwner(userId);
+
+      // Subcollection for user's parsed dreams
+      match /dreams/{dreamId} {
+        allow list, get: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(dreamId) && isValidDream(request.resource.data)
+          && request.resource.data.userId == request.auth.uid;
+        allow update: if isOwner(userId) && isValidId(dreamId) && isValidDream(request.resource.data)
+          && request.resource.data.userId == resource.data.userId // userId immutable
+          && request.resource.data.id == resource.data.id; // ID immutable
+        allow delete: if isOwner(userId) && isValidId(dreamId);
+      }
+
+      // Subcollection for user's extra partner or business maps
+      match /extraMaps/{mapId} {
+        allow list, get: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(mapId) && isValidExtraMap(request.resource.data)
+          && request.resource.data.userId == request.auth.uid;
+        allow update: if isOwner(userId) && isValidId(mapId) && isValidExtraMap(request.resource.data)
+          && request.resource.data.userId == resource.data.userId // userId immutable
+          && request.resource.data.id == resource.data.id; // ID immutable
+        allow delete: if isOwner(userId) && isValidId(mapId);
+      }
+    }
+  }
+}

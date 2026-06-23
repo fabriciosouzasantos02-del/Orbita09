@@ -1,0 +1,149 @@
+@import "tailwindcss";
+
+@keyframes flow-beams {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+@keyframes pulse-glowing {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.65;
+  }
+}
+
+@keyframes astrolabe-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.flowing-aspect {
+  stroke-dasharray: 6 4;
+  animation: flow-beams 1.2s linear infinite;
+}
+
+.flowing-aspect-slow {
+  stroke-dasharray: 8 6;
+  animation: flow-beams 2.5s linear infinite;
+}
+
+.pulse-glowing-halo {
+  animation: pulse-glowing 3s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: astrolabe-spin 120s linear infinite;
+}
+
+.animate-spin-ultra-slow {
+  animation: astrolabe-spin 240s linear infinite;
+}
+
+/* Highly fluid SVG Transitions for interactive celestial feedback */
+.aspect-ray {
+  transition: stroke-opacity 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), 
+              stroke-width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), 
+              stroke 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.natal-core, 
+.transit-core {
+  transition: r 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), 
+              stroke 0.3s ease, 
+              fill 0.3s ease, 
+              filter 0.4s ease;
+}
+
+.natal-node text, 
+.transit-node text {
+  transition: fill 0.3s ease, 
+              fill-opacity 0.3s ease, 
+              font-weight 0.3s ease;
+}
+
+.pulse-halo {
+  transition: stroke-opacity 0.4s ease, 
+              fill-opacity 0.4s ease, 
+              stroke 0.4s ease, 
+              fill 0.4s ease,
+              r 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.pulse-badge-group {
+  transition: opacity 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* High Contrast Class Overrides for Accessibility */
+html.alto-contraste,
+html.alto-contraste body,
+html.alto-contraste #root {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+html.alto-contraste .bg-slate-950,
+html.alto-contraste .bg-slate-900,
+html.alto-contraste .bg-slate-900\/40,
+html.alto-contraste .bg-slate-955,
+html.alto-contraste .bg-slate-950\/80,
+html.alto-contraste .bg-slate-950\/90,
+html.alto-contraste .bg-slate-900\/95,
+html.alto-contraste .bg-linear-to-r,
+html.alto-contraste .bg-gradient-to-r,
+html.alto-contraste .bg-gradient-to-b {
+  background: #000000 !important;
+  background-color: #000000 !important;
+}
+
+html.alto-contraste *,
+html.alto-contraste .text-slate-400,
+html.alto-contraste .text-slate-500,
+html.alto-contraste .text-slate-600,
+html.alto-contraste .text-slate-300,
+html.alto-contraste .text-slate-550,
+html.alto-contraste .text-slate-505,
+html.alto-contraste .text-slate-405 {
+  color: #ffffff !important;
+}
+
+html.alto-contraste .text-amber-400,
+html.alto-contraste .text-amber-300,
+html.alto-contraste .text-amber-500,
+html.alto-contraste .text-\[\#F59E0B\],
+html.alto-contraste .text-\[\#E5C158\] {
+  color: #ffff00 !important; /* Use accessible high-contrast yellow */
+  font-weight: 800 !important;
+}
+
+html.alto-contraste .border-slate-800,
+html.alto-contraste .border-slate-850,
+html.alto-contraste .border-slate-900,
+html.alto-contraste .border-slate-950,
+html.alto-contraste .border-slate-855,
+html.alto-contraste .border {
+  border-color: #ffffff !important;
+  border-width: 2px !important;
+}
+
+html.alto-contraste button,
+html.alto-contraste select,
+html.alto-contraste input,
+html.alto-contraste textarea {
+  border: 2px solid #ffffff !important;
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+  background-color: #000000 !important;
+}
+
+html.alto-contraste button:hover,
+html.alto-contraste button:focus {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
