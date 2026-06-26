@@ -1,4 +1,37 @@
 import { PlanetPosition, HouseCusp, Aspect } from "./types";
+import i18next from "i18next";
+
+function getActiveLanguage(): 'pt' | 'en' | 'es' | 'de' | 'fr' {
+  const lang = (i18next.language || 'pt').toLowerCase().split('-')[0];
+  if (['pt', 'en', 'es', 'de', 'fr'].includes(lang)) {
+    return lang as 'pt' | 'en' | 'es' | 'de' | 'fr';
+  }
+  return 'pt';
+}
+
+const TRANSLATED_SIGNS: Record<string, Record<string, string>> = {
+  pt: { "Áries": "Áries", "Touro": "Touro", "Gêmeos": "Gêmeos", "Câncer": "Câncer", "Leão": "Leão", "Virgem": "Virgem", "Libra": "Libra", "Escorpião": "Escorpião", "Sagitário": "Sagitário", "Capricórnio": "Capricórnio", "Aquário": "Aquário", "Peixes": "Peixes" },
+  en: { "Áries": "Aries", "Touro": "Taurus", "Gêmeos": "Gemini", "Câncer": "Cancer", "Leão": "Leo", "Virgem": "Virgo", "Libra": "Libra", "Escorpião": "Scorpio", "Sagitário": "Sagittarius", "Capricórnio": "Capricorn", "Aquário": "Aquarius", "Peixes": "Pisces" },
+  es: { "Áries": "Aries", "Touro": "Tauro", "Gêmeos": "Géminis", "Câncer": "Cáncer", "Leão": "Leo", "Virgem": "Virgo", "Libra": "Libra", "Escorpião": "Escorpio", "Sagitário": "Sagitario", "Capricórnio": "Capricornio", "Aquário": "Acuario", "Peixes": "Piscis" },
+  de: { "Áries": "Widder", "Touro": "Stier", "Gêmeos": "Zwillinge", "Câncer": "Krebs", "Leão": "Löwe", "Virgem": "Jungfrau", "Libra": "Waage", "Escorpião": "Skorpion", "Sagitário": "Schütze", "Capricórnio": "Steinbock", "Aquário": "Wassermann", "Peixes": "Fische" },
+  fr: { "Áries": "Bélier", "Touro": "Taureau", "Gêmeos": "Gémeaux", "Câncer": "Cancer", "Leão": "Lion", "Virgem": "Vierge", "Libra": "Balance", "Escorpião": "Scorpion", "Sagitário": "Sagitaire", "Capricórnio": "Capricorne", "Aquário": "Verseau", "Peixes": "Poissons" }
+};
+
+const TRANSLATED_PLANETS: Record<string, Record<string, string>> = {
+  pt: { "Sol": "Sol", "Lua": "Lua", "Mercúrio": "Mercúrio", "Vênus": "Vênus", "Marte": "Marte", "Júpiter": "Júpiter", "Saturno": "Saturno", "Urano": "Urano", "Netuno": "Netuno", "Plutão": "Plutão", "Quíron": "Quíron" },
+  en: { "Sol": "Sun", "Lua": "Moon", "Mercúrio": "Mercury", "Vênus": "Venus", "Marte": "Mars", "Júpiter": "Jupiter", "Saturno": "Saturn", "Urano": "Uranus", "Netuno": "Neptune", "Plutão": "Pluto", "Quíron": "Chiron" },
+  es: { "Sol": "Sol", "Lua": "Luna", "Mercúrio": "Mercurio", "Vênus": "Venus", "Marte": "Marte", "Júpiter": "Júpiter", "Saturno": "Saturno", "Urano": "Urano", "Netuno": "Neptuno", "Plutão": "Plutón", "Quíron": "Quirón" },
+  de: { "Sol": "Sonne", "Lua": "Mond", "Mercúrio": "Merkur", "Vênus": "Venus", "Marte": "Mars", "Júpiter": "Jupiter", "Saturno": "Saturn", "Urano": "Uranus", "Netuno": "Neptun", "Plutão": "Pluto", "Quíron": "Chiron" },
+  fr: { "Sol": "Soleil", "Lua": "Lune", "Mercúrio": "Mercure", "Vênus": "Vénus", "Marte": "Mars", "Júpiter": "Jupiter", "Saturno": "Saturn", "Urano": "Uranus", "Netuno": "Neptune", "Plutão": "Pluto", "Quíron": "Chiron" }
+};
+
+const TRANSLATED_ASPECTS: Record<string, Record<string, string>> = {
+  pt: { "Conjunção": "Conjunção", "Sextil": "Sextil", "Quadratura": "Quadratura", "Trígono": "Trígono", "Oposição": "Oposição" },
+  en: { "Conjunção": "Conjunction", "Sextil": "Sextile", "Quadratura": "Square", "Trígono": "Trine", "Oposição": "Opposition" },
+  es: { "Conjunção": "Conjunción", "Sextil": "Sextil", "Quadratura": "Cuadratura", "Trígono": "Trígono", "Oposição": "Oposición" },
+  de: { "Conjunção": "Konjunktion", "Sextil": "Sextil", "Quadratura": "Quadrat", "Trígono": "Trigon", "Oposição": "Opposition" },
+  fr: { "Conjunção": "Conjonction", "Sextil": "Sextile", "Quadratura": "Carré", "Trígono": "Trigone", "Oposição": "Opposition" }
+};
 
 // Base signs list
 const SIGNS = [
@@ -163,7 +196,27 @@ export function calculateNatalChart(
     }
   }
 
-  return { planets, houses, aspects };
+  const lang = getActiveLanguage();
+  
+  const translatedPlanets = planets.map(p => ({
+    ...p,
+    name: TRANSLATED_PLANETS[lang][p.name] || p.name,
+    sign: TRANSLATED_SIGNS[lang][p.sign] || p.sign
+  }));
+
+  const translatedHouses = houses.map(h => ({
+    ...h,
+    sign: TRANSLATED_SIGNS[lang][h.sign] || h.sign
+  }));
+
+  const translatedAspects = aspects.map(a => ({
+    ...a,
+    planet1: TRANSLATED_PLANETS[lang][a.planet1] || a.planet1,
+    planet2: TRANSLATED_PLANETS[lang][a.planet2] || a.planet2,
+    type: (TRANSLATED_ASPECTS[lang][a.type] || a.type) as any
+  }));
+
+  return { planets: translatedPlanets, houses: translatedHouses, aspects: translatedAspects };
 }
 
 function createPlanetPosition(name: string, longitude: number, index: number): PlanetPosition {

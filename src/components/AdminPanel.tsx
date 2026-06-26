@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { translateUiText, Language } from '../lib/translations';
 import { 
   Users, 
   DollarSign, 
@@ -34,6 +36,7 @@ interface AdminPanelProps {
   triggerGlobalNotification: (title: string, message: string, type: string) => void;
   firebaseErrors?: any[];
   onClearErrors?: () => void;
+  lang?: string;
 }
 
 export default function AdminPanel({ 
@@ -42,8 +45,19 @@ export default function AdminPanel({
   userBirthSign, 
   triggerGlobalNotification,
   firebaseErrors = [],
-  onClearErrors
+  onClearErrors,
+  lang
 }: AdminPanelProps) {
+  const { t: i18nT } = useTranslation();
+  const t = (text: string) => {
+    if (!text) return "";
+    const res = i18nT(text);
+    if (res === text || !res) {
+      return translateUiText(text, (lang as Language) || 'pt');
+    }
+    return res;
+  };
+
   // Navigation for Sub-panels inside the configurations page
   const [activeAdminSubTab, setActiveAdminSubTab] = useState<'stats' | 'users' | 'plans' | 'content' | 'notifications' | 'performance' | 'diagnostics'>('stats');
 

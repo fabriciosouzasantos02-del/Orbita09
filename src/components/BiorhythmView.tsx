@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Heart, 
@@ -38,7 +39,15 @@ const CYCLES = {
 };
 
 export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang }: BiorhythmViewProps) {
-  const t = (text: string) => translateUiText(text, (lang as Language) || 'pt');
+  const { t: i18nT } = useTranslation();
+  const t = (text: string) => {
+    if (!text) return "";
+    const res = i18nT(text);
+    if (res === text || !res) {
+      return translateUiText(text, (lang as Language) || 'pt');
+    }
+    return res;
+  };
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const d = new Date();
     const year = d.getFullYear();
@@ -118,29 +127,41 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
     return res;
   }, [todayDaysElapsed]);
 
-  // Get weekday name in Portuguese
+  // Get weekday name in target language
   const getWeekdayName = (date: Date) => {
-    const daysPt = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
-    return daysPt[date.getDay()];
+    try {
+      return new Intl.DateTimeFormat(lang || 'pt', { weekday: 'long' }).format(date);
+    } catch {
+      const daysPt = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+      return daysPt[date.getDay()];
+    }
   };
 
-  // Get month name in Portuguese
+  // Get month name in target language
   const getMonthName = (date: Date) => {
-    const monthsPt = [
-      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
-      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-    ];
-    return monthsPt[date.getMonth()];
+    try {
+      return new Intl.DateTimeFormat(lang || 'pt', { month: 'long' }).format(date);
+    } catch {
+      const monthsPt = [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+      ];
+      return monthsPt[date.getMonth()];
+    }
   };
 
-  // Format full Portuguese date line
+  // Format full date line
   const formattedTodayLabel = useMemo(() => {
-    const wDay = getWeekdayName(targetDateObj);
-    const day = targetDateObj.getDate();
-    const month = getMonthName(targetDateObj);
-    const year = targetDateObj.getFullYear();
-    return `${wDay}, ${day} de ${month} de ${year}`;
-  }, [targetDateObj]);
+    try {
+      return new Intl.DateTimeFormat(lang || 'pt', { dateStyle: 'full' }).format(targetDateObj);
+    } catch {
+      const wDay = getWeekdayName(targetDateObj);
+      const day = targetDateObj.getDate();
+      const month = getMonthName(targetDateObj);
+      const year = targetDateObj.getFullYear();
+      return `${wDay}, ${day} de ${month} de ${year}`;
+    }
+  }, [targetDateObj, lang]);
 
   // Chart coordinate calculation for the 15 days window (SVG width 600, height 200)
   // X: 0 to 600 map from index 0 to 14
@@ -181,8 +202,15 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
   const rawRangeStartDateStr = useMemo(() => {
     const start = rawDaysRange[0];
     const end = rawDaysRange[14];
-    return `de ${String(start.getDate()).padStart(2, '0')}/${String(start.getMonth() + 1).padStart(2, '0')} a ${String(end.getDate()).padStart(2, '0')}/${String(end.getMonth() + 1).padStart(2, '0')}`;
-  }, [rawDaysRange]);
+    const startStr = `${String(start.getDate()).padStart(2, '0')}/${String(start.getMonth() + 1).padStart(2, '0')}`;
+    const endStr = `${String(end.getDate()).padStart(2, '0')}/${String(end.getMonth() + 1).padStart(2, '0')}`;
+    
+    if (lang === 'de') return `vom ${startStr} bis ${endStr}`;
+    if (lang === 'en') return `from ${startStr} to ${endStr}`;
+    if (lang === 'es') return `del ${startStr} al ${endStr}`;
+    if (lang === 'fr') return `du ${startStr} au ${endStr}`;
+    return `de ${startStr} a ${endStr}`;
+  }, [rawDaysRange, lang]);
 
   return (
     <div id="biorhythm-root-panel" className="space-y-6 text-left">
@@ -196,10 +224,10 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
           <div className="space-y-2">
             <span className="px-2.5 py-1 bg-rose-500/10 border border-rose-500/25 text-rose-300 rounded-full text-[9px] font-mono tracking-widest uppercase font-bold flex items-center gap-1.5 w-fit">
               <Activity className="w-3.5 h-3.5 animate-pulse" />
-              TEORIA DA PERIODICIDADE VITAL
+              {t("TEORIA DA PERIODICIDADE VITAL")}
             </span>
             <h2 className="text-xl md:text-2xl font-black font-sans tracking-tight text-white uppercase">
-              Meu Biorritmo
+              {t("Meu Biorritmo")}
             </h2>
           </div>
 
@@ -208,20 +236,20 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
             className="px-3.5 py-1.5 bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded-xl text-xs text-indigo-400 font-mono transition flex items-center gap-1.5 cursor-pointer shadow-md"
           >
             <Info className="w-4 h-4 text-indigo-400" />
-            {showTheory ? 'Ocultar Teoria' : 'Saiba Mais'}
+            {showTheory ? t('Ocultar Teoria') : t('Saiba Mais')}
           </button>
         </div>
 
         <p className="text-xs text-slate-350 leading-relaxed font-sans mt-4 max-w-4xl">
           {displayFirstName ? (
             <>
-              Olá <strong className="text-indigo-305">{displayFirstName}</strong>, aqui você encontra o seu atual panorama de Biorritmo, composto de ciclos que se alternam e criam diversas dinâmicas de influência diariamente.
+              {t("Olá")} <strong className="text-indigo-305">{displayFirstName}</strong>, {t("aqui você encontra o seu atual panorama de Biorritmo, composto de ciclos que se alternam e criam diversas dinâmicas de influência diariamente.")}
             </>
           ) : (
             <>
-              Aqui você encontra o atual panorama de Biorritmo personalizado, composto de ciclos biológicos, emocionais e intelectuais que se alternam e criam dinâmicas influentes de produtividade e foco diariamente.
+              {t("Aqui você encontra o atual panorama de Biorritmo personalizado, composto de ciclos biológicos, emocionais e intelectuais que se alternam e criam dinâmicas influentes de produtividade e foco diariamente.")}
             </>
-          )} O estudo também é chamado de Teoria da Periodicidade Vital e indica como se comportam alguns ciclos da experiência humana em diversas esferas. Em paralelo à astrologia e o hermetismo, use-o para se conhecer melhor, entender as causas de determinados acontecimentos, lidar com instabilidades ou até mesmo para escolher os melhores momentos para fazer algo importante.
+          )} {t("O estudo também é chamado de Teoria da Periodicidade Vital e indica como se comportam alguns ciclos da experiência humana em diversas esferas. Em paralelo à astrologia e o hermetismo, use-o para se conhecer melhor, entender as causas de determinados acontecimentos, lidar com instabilidades ou até mesmo para escolher os melhores momentos para fazer algo importante.")}
         </p>
 
         {/* Collapsible Educational Box */}
@@ -234,26 +262,26 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
               className="overflow-hidden mt-4 pt-4 border-t border-slate-850"
             >
               <div className="p-4 bg-slate-950/80 rounded-2xl border border-slate-850/60 text-xs text-slate-400 space-y-3 font-sans">
-                <h4 className="font-bold text-slate-200 uppercase tracking-widest font-mono text-[10.5px]">Como Funciona o Biorritmo?</h4>
+                <h4 className="font-bold text-slate-200 uppercase tracking-widest font-mono text-[10.5px]">{t("Como Funciona o Biorritmo?")}</h4>
                 <p>
-                  Postulado cientificamente no início do século XX pelos médicos Wilhelm Fliess e Hermann Swoboda, o biorritmo mapeia ciclos biológicos matemáticos que se iniciam exatamente no momento do nascimento:
+                  {t("Postulado cientificamente no início do século XX pelos médicos Wilhelm Fliess e Hermann Swoboda, o biorritmo mapeia ciclos biológicos matemáticos que se iniciam exatamente no momento do nascimento:")}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1 text-[11px]">
                   <div className="space-y-1">
-                    <strong className="text-rose-450 font-mono">FÍSICO (23 dias):</strong>
-                    <p className="text-slate-450">Influencia força física, resistência mecânica, coordenação motora e tolerância à fadiga muscular.</p>
+                    <strong className="text-rose-450 font-mono">{t("FÍSICO (23 dias):")}</strong>
+                    <p className="text-slate-450">{t("Influencia força física, resistência mecânica, coordenação motora e tolerância à fadiga muscular.")}</p>
                   </div>
                   <div className="space-y-1">
-                    <strong className="text-indigo-400 font-mono">EMOCIONAL (28 dias):</strong>
-                    <p className="text-slate-450">Rege a estabilidade nervosa, o otimismo sincero, a sensibilidade artística, a intuição afetiva e humores.</p>
+                    <strong className="text-indigo-400 font-mono">{t("EMOCIONAL (28 dias):")}</strong>
+                    <p className="text-slate-450">{t("Rege a estabilidade nervosa, o otimismo sincero, a sensibilidade artística, a intuição afetiva e humores.")}</p>
                   </div>
                   <div className="space-y-1">
-                    <strong className="text-sky-400 font-mono">INTELECTUAL (33 dias):</strong>
-                    <p className="text-slate-450">Comanda a facilidade mnemônica, velocidade de raciocínio, lógica complexa e destreza de aprendizados.</p>
+                    <strong className="text-sky-400 font-mono">{t("INTELECTUAL (33 dias):")}</strong>
+                    <p className="text-slate-450">{t("Comanda a facilidade mnemônica, velocidade de raciocínio, lógica complexa e destreza de aprendizados.")}</p>
                   </div>
                 </div>
                 <div className="p-3 bg-indigo-500/5 rounded-xl border border-indigo-500/10 text-slate-350 italic text-[10.5px] leading-relaxed">
-                  <strong>Nota sobre os Dias Críticos:</strong> Sempre que as linhas cruzam a linha central do zero (0%), ocorre um momento de reorientação extrema. Cuidado redobrado e paciência são recomendados nesses pontos críticos.
+                  <strong>{t("Nota sobre os Dias Críticos:")}</strong> {t("Sempre que as linhas cruzam a linha central do zero (0%), ocorre um momento de reorientação extrema. Cuidado redobrado e paciência são recomendados nesses pontos críticos.")}
                 </div>
               </div>
             </motion.div>
@@ -268,9 +296,9 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
         <div className="lg:col-span-8 bg-slate-900/40 p-5 md:p-6 rounded-3xl border border-slate-805 space-y-4">
           <div className="flex justify-between items-center flex-wrap gap-2 pb-2 border-b border-slate-850">
             <div>
-              <span className="text-[9px] font-mono text-indigo-400 uppercase tracking-widest block font-bold">HISTÓRICO DE FLUXOS TRIDIMENSIONAIS</span>
+              <span className="text-[9px] font-mono text-indigo-400 uppercase tracking-widest block font-bold">{t("HISTÓRICO DE FLUXOS TRIDIMENSIONAIS")}</span>
               <h3 className="text-sm font-bold text-slate-100 uppercase tracking-tight">
-                Análise Biorrítmica ({rawRangeStartDateStr})
+                {t("Análise Biorrítmica")} ({rawRangeStartDateStr})
               </h3>
             </div>
 
@@ -301,7 +329,7 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
             <div className="absolute left-2.5 top-2.5 bottom-2.5 flex flex-col justify-between text-[9px] font-mono text-slate-650 select-none z-10 pointer-events-none">
               <span>+100%</span>
               <span>+60%</span>
-              <span>0% (Crítico)</span>
+              <span>0% ({t("Crítico!")})</span>
               <span>-60%</span>
               <span>-100%</span>
             </div>
@@ -347,7 +375,7 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
                 className="absolute text-[9px] font-mono bg-indigo-500 text-white px-2 py-0.5 rounded-full font-bold z-20 shadow-md flex items-center gap-1"
                 style={{ left: `calc(${mapX(7) / 6}% - 24px)`, top: '6px' }}
               >
-                <span>Hoje</span>
+                <span>{t("Hoje")}</span>
                 <span className="opacity-90">{selectedTime}</span>
               </div>
             </div>
@@ -370,10 +398,10 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
           <div className="p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10 text-xs text-slate-300 leading-relaxed space-y-1.5">
             <div className="flex gap-2 items-center text-[11px] font-mono font-bold text-indigo-305">
               <span>★</span>
-              <span>SINTONIA SINDICAL ATIVA AMARA</span>
+              <span>{t("SINTONIA SINDICAL ATIVA AMARA")}</span>
             </div>
             <p>
-              <strong>Sabedoria e confiança!</strong> No momento, há uma sintonia benéfica entre seu ciclo intelectual e emocional, algo que pode te influenciar a tomar as decisões cruciais de longo prazo com muito mais clareza, harmonia e estabilidade de alma.
+              <strong>{t("Sabedoria e confiança!")}</strong> {t("No momento, hay uma sintonia benéfica entre seu ciclo intelectual e emocional, algo que pode te influenciar a tomar as decisões cruciais de longo prazo com muito mais clareza, harmonia e estabilidade de alma.")}
             </p>
           </div>
 
@@ -384,20 +412,20 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
           
           <div className="bg-slate-900/50 p-5 rounded-3xl border border-slate-805 space-y-4">
             <div className="pb-1 border-b border-slate-850">
-              <span className="text-[8px] font-mono text-slate-500 block uppercase">ANÁLISE INDIVIDUALIZADA</span>
+              <span className="text-[8px] font-mono text-slate-500 block uppercase">{t("ANÁLISE INDIVIDUALIZADA")}</span>
               <h3 className="text-xs font-bold font-mono text-white uppercase tracking-wider mt-1">
-                Hoje: {formattedTodayLabel}
+                {t("Hoje:")} {formattedTodayLabel}
               </h3>
             </div>
 
             {/* 3 Primary Cycles Section */}
             <div className="space-y-2.5">
               <div className="flex justify-between items-center">
-                <span className="text-[10px] font-mono uppercase text-slate-350 tracking-wide font-bold">Ciclos primários</span>
-                <span className="text-[8px] font-mono text-slate-500 uppercase">Aspectos Vitais</span>
+                <span className="text-[10px] font-mono uppercase text-slate-350 tracking-wide font-bold">{t("Ciclos primários")}</span>
+                <span className="text-[8px] font-mono text-slate-500 uppercase">{t("Aspectos Vitais")}</span>
               </div>
               <p className="text-[10px] text-slate-505 leading-relaxed">
-                Os principais ciclos, que lidam com os aspectos Físicos, Emocionais e Intelectuais.
+                {t("Os principais ciclos, que lidam com os aspectos Físicos, Emocionais e Intelectuais.")}
               </p>
 
               <div className="space-y-2">
@@ -446,19 +474,19 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
-                            className="px-3 pb-3 pt-0.5 text-[10.5px] text-slate-350 space-y-1.5 border-t border-slate-900"
+                            className="px-3 pb-3 pt-0.5 text-[10.5px] text-slate-355 space-y-1.5 border-t border-slate-900"
                           >
                             <span className="text-[10px] font-mono text-indigo-400 block uppercase font-semibold">
-                              {data.value > 80 ? '✦ Alto Potencial' : data.value < -80 ? '⚡ Período de Depuração' : '★ Frequência Intermediária'}
+                              {data.value > 80 ? t('✦ Alto Potencial') : data.value < -80 ? t('⚡ Período de Depuração') : t('★ Frequência Intermediária')}
                             </span>
                             
                             <p className="leading-relaxed font-sans">
                               {key === 'emocional' ? (
-                                "Com o ciclo emocional em alta (+100%), há um aumento do potencial para se sentir mais de bem com a vida, consigo mesmo e com os outros, algo que afeta positivamente sua sensibilidade, seu lado sentimental, carismático e empático. Por isso, é importante aproveitar para fortalecer seus relacionamentos e demais vínculos sadios de alma."
+                                t("Com o ciclo emocional em alta (+100%), há um aumento do potential para se sentir mais de bem com a vida, consigo mesmo e com os outros, algo que afeta positivamente sua sensibilidade, seu lado sentimental, carismático e empático. Por isso, é importante aproveitar para fortalecer seus relacionamentos e demais vínculos sadios de alma.")
                               ) : key === 'fisico' ? (
-                                "Seu ciclo físico está em recuperação energética. Evite sobrecargas exaustivas musculares, mas aproveite para caminhadas leves contemplativas e alongamentos regulares ao alvorecer."
+                                t("Seu ciclo físico está em recuperação energética. Evite sobrecargas exaustivas musculares, mas aproveite para caminhadas leves contemplativas e alongamentos regulares ao alvorecer.")
                               ) : (
-                                "O discernimento racional e a agilidade de aprendizados gozam de excelente fertilidade. Dobre o foco nos estudos técnicos, leituras complexas e na organização estratégica financeira."
+                                t("O discernimento racional e a agilidade de aprendizados gozam de excelente fertilidade. Dobre o foco nos estudos técnicos, leituras complexas e na organização estratégica financeira.")
                               )}
                             </p>
                           </motion.div>
@@ -473,11 +501,11 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
             {/* 4 Secondary Cycles Section */}
             <div className="space-y-2.5 pt-2">
               <div className="flex justify-between items-center">
-                <span className="text-[10px] font-mono uppercase text-slate-350 tracking-wide font-bold">Ciclos secundários</span>
-                <span className="text-[8px] font-mono text-slate-500 uppercase">Esferas Sutis</span>
+                <span className="text-[10px] font-mono uppercase text-slate-350 tracking-wide font-bold">{t("Ciclos secundários")}</span>
+                <span className="text-[8px] font-mono text-slate-500 uppercase">{t("Esferas Sutis")}</span>
               </div>
               <p className="text-[10px] text-slate-505 leading-relaxed">
-                Ciclos de relevância menor, mas igualmente interessantes.
+                {t("Ciclos de relevância menor, mas igualmente interessantes.")}
               </p>
 
               <div className="space-y-2">
@@ -509,7 +537,7 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
                         <div className="flex items-center gap-1.5 font-mono text-[10px]">
                           {data.isCritical ? (
                             <span className="text-[9px] font-mono px-1.5 py-0.2 bg-red-950/45 border border-red-500/20 text-red-400 rounded">
-                              Crítico!
+                              {t("Crítico!")}
                             </span>
                           ) : (
                             <span className={`font-semibold ${data.value >= 0 ? 'text-emerald-400/90' : 'text-slate-450'}`}>
@@ -530,18 +558,18 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
                             className="px-3 pb-3 pt-0.5 text-[10.5px] text-slate-350 space-y-1.5 border-t border-slate-900"
                           >
                             <span className="text-[9.5px] font-mono text-indigo-400 block uppercase font-semibold">
-                              {data.isUp ? 'Tendência de alta!' : 'Tendência de baixa'} {data.isCritical && '• Ponto Crítico'}
+                              {data.isUp ? t('Tendência de alta!') : t('Tendência de baixa')} {data.isCritical && t('• Ponto Crítico')}
                             </span>
                             
                             <p className="leading-relaxed font-sans">
                               {key === 'espiritual' ? (
-                                "Seu lado espiritual está passando por um momento de transição de frequências, sendo este um período curto, mas propício a choques de realidade, questionamentos existenciais ou testes em sua confiança interna. Mantenha-se alinhada à sua fé e confie na ordem universal, escutando sempre seu coração ao tomar decisões sadias."
+                                t("Seu lado espiritual está passando por um momento de transição de frequências, sendo este um período curto, mas propício a choques de realidade, questionamentos existenciais ou testes em sua confiança interna. Mantenha-se alinhada à sua fé e confie na ordem universal, escutando sempre seu coração ao tomar decisões sadios.")
                               ) : key === 'perceptivo' ? (
-                                "Sintonias sensoriais estão calibradas. Excelente momento para contemplar a natureza selvagem, perceber detalhes estéticos ocultos no trabalho ou exercitar o corpo físico de carne."
+                                t("Sintonias sensoriais estão calibradas. Excelente momento para contemplar a natureza selvagem, perceber detalhes estéticos ocultos no trabalho ou exercitar o corpo físico de carne.")
                               ) : key === 'intuitivo' ? (
-                                "Intuição em altíssima fluência de luz. Confie em seus palpites viscerais repentinos e evite se sobrecarregar de lógicas burocráticas pesadas."
+                                t("Intuição em altíssima fluência de luz. Confie em seus palpites viscerais repentinos e evite se sobrecarregar de lógicas burocráticas pesadas.")
                               ) : (
-                                "Estética refinada e criatividade pujante. Ideal para decorar cômodos do lar, desenhar novas frentes, comprar peças de vestuário e apreciar boa música."
+                                t("Estética refinada e criatividade pujante. Ideal para decorar cômodos do lar, desenhar novas frentes, comprar peças de vestuário e apreciar boa música.")
                               )}
                             </p>
                           </motion.div>

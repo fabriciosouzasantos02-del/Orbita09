@@ -503,7 +503,8 @@ function performPreciseServerCalculation(
   birthTime: string,
   latitude: number,
   longitude: number,
-  timezoneOffset?: number
+  timezoneOffset?: number,
+  lang?: string
 ) {
   // Let's first make a baseline calculation using performAstroCalculation to get the houses, structural points, and baseline aspects
   const chart = performAstroCalculation(birthDate, birthTime, latitude, longitude, timezoneOffset);
@@ -539,6 +540,98 @@ function performPreciseServerCalculation(
       
       const signs = ["Áries", "Touro", "Gêmeos", "Câncer", "Leão", "Virgem", "Libra", "Escorpião", "Sagitário", "Capricórnio", "Aquário", "Peixes"];
       
+      const activeLang = (lang || "pt").toLowerCase();
+      
+      const aspectNames: Record<string, Record<string, string>> = {
+        pt: { "Conjunção": "Conjunção", "Oposição": "Oposição", "Trígono": "Trígono", "Quadratura": "Quadratura", "Sextil": "Sextil", "Quincúncio": "Quincúncio", "Semisextil": "Semisextil", "Semicuadratura": "Semicuadratura", "Sesquiquadratura": "Sesquiquadratura", "Biquintil": "Biquintil" },
+        en: { "Conjunção": "Conjunction", "Oposição": "Opposition", "Trígono": "Trine", "Quadratura": "Square", "Sextil": "Sextile", "Quincúncio": "Quincunx", "Semisextil": "Semisextile", "Semicuadratura": "Semi-square", "Sesquiquadratura": "Sesquiquadrate", "Biquintil": "Biquintile" },
+        es: { "Conjunção": "Conjunción", "Oposição": "Oposición", "Trígono": "Trígono", "Quadratura": "Cuadratura", "Sextil": "Sextil", "Quincúncio": "Quincuncio", "Semisextil": "Semisextil", "Semicuadratura": "Semicuadratura", "Sesquiquadratura": "Sesquicuadratura", "Biquintil": "Biquintil" },
+        de: { "Conjunção": "Konjunktion", "Oposição": "Opposition", "Trígono": "Trigon", "Quadratura": "Quadrat", "Sextil": "Sextil", "Quincúncio": "Quincunx", "Semisextil": "Semisextil", "Semicuadratura": "Halbquadrat", "Sesquiquadratura": "Anderthalbquadrat", "Biquintil": "Biquintil" },
+        fr: { "Conjunção": "Conjonction", "Oposição": "Opposition", "Trígono": "Trine", "Quadratura": "Carré", "Sextil": "Sextile", "Quincúncio": "Quinconce", "Semisextil": "Semi-sextile", "Semicuadratura": "Semi-carré", "Sesquiquadratura": "Sesqui-carré", "Biquintil": "Biquintile" }
+      };
+
+      const aspectInterps: Record<string, Record<string, string>> = {
+        pt: {
+          "Conjunção": "Funde energias planetárias de forma impetuosa e focada.",
+          "Oposição": "Gera polarização dinâmica, conflito ou projeções no espelho dos relacionamentos.",
+          "Trígono": "Facilidades fluidas, talentos inatos e sincronia pacífica de dons.",
+          "Quadratura": "Tensão motivadora, lições kármicas ricas e impulsos extraordinários de amadurecimento.",
+          "Sextil": "Oportunidades de colaboração prática que florescem quando há engajamento criativo.",
+          "Quincúncio": "Necessidade latente de ajustes minuciosos de rumo para conciliar impulsos discordantes.",
+          "Semisextil": "Sutil magnetismo de transição rápida que conecta aprendizados adjacentes.",
+          "Semicuadratura": "Pequenos ruídos de rotina que forçam tomadas de decisões organizadoras.",
+          "Sesquiquadratura": "Frustrações recorrentes que conduzem à autoanálise corretiva detalhada.",
+          "Biquintil": "Talento mental criativo refinado e autêntica habilidade estética singular."
+        },
+        en: {
+          "Conjunção": "Blends planetary energies in an impetuous and focused way.",
+          "Oposição": "Generates dynamic polarization, conflict, or projections in the mirror of relationships.",
+          "Trígono": "Fluid ease, innate talents, and peaceful synchrony of gifts.",
+          "Quadratura": "Motivating tension, rich karmic lessons, and extraordinary impulses for maturation.",
+          "Sextil": "Opportunities for practical collaboration that flourish when there is creative engagement.",
+          "Quincúncio": "Latent need for minor course adjustments to reconcile discordant impulses.",
+          "Semisextil": "Subtle magnetism of rapid transition connecting adjacent learnings.",
+          "Semicuadratura": "Small routine noises that force organizing decision-making.",
+          "Sesquiquadratura": "Recurrent frustrations leading to detailed corrective self-analysis.",
+          "Biquintil": "Refined creative mental talent and authentic singular aesthetic ability."
+        },
+        es: {
+          "Conjunção": "Combina energías planetarias de manera impetuosa y enfocada.",
+          "Oposição": "Genera polarización dinámica, conflicto o proyecciones en el espejo de las relaciones.",
+          "Trígono": "Facilidad fluida, talentos innatos y sincronía pacífica de dones.",
+          "Quadratura": "Tensión motivadora, ricas lecciones kármicas e impulsos extraordinarios para la maduración.",
+          "Sextil": "Oportunidades de colaboración práctica que florecen cuando hay compromiso creativo.",
+          "Quincúncio": "Necesidad latente de pequeños ajustes de rumbo para conciliar impulsos discordantes.",
+          "Semisextil": "Sutil magnetismo de rápida transición que conecta aprendizajes adyacentes.",
+          "Semicuadratura": "Pequeños ruidos de rutina que fuerzan la toma de decisiones organizativas.",
+          "Sesquiquadratura": "Frustraciones recurrentes que conducen a un autoanálisis correctivo detallado.",
+          "Biquintil": "Talento mental creativo refinado y auténtica habilidad estética singular."
+        },
+        de: {
+          "Conjunção": "Verschmilzt planetarische Energien auf ungestüme und fokussierte Weise.",
+          "Oposição": "Erzeugt dynamische Polarisation, Konflikte oder Projektionen im Spiegel der Beziehungen.",
+          "Trígono": "Fließende Leichtigkeit, angeborene Talente und friedliche Synchronie von Gaben.",
+          "Quadratura": "Motivierende Spannung, reiche karmische Lektionen und außergewöhnliche Impulse zur Reifung.",
+          "Sextil": "Möglichkeiten zur praktischen Zusammenarbeit, die bei kreativem Engagement aufblühen.",
+          "Quincúncio": "Latentes Bedürfnis nach geringfügigen Kurskorrekturen zur Aussöhnung diskordanter Impulse.",
+          "Semisextil": "Subtiler Magnetismus des schnellen Übergangs, der benachbarte Lerneffekte verbindet.",
+          "Semicuadratura": "Kleine Routinegeräusche, die zu organisierenden Entscheidungen zwingen.",
+          "Sesquiquadratura": "Wiederkehrende Frustrationen, die zu einer detaillierten korrigierenden Selbstanalyse führen.",
+          "Biquintil": "Raffiniertes kreatives mentales Talent und authentische einzigartige ästhetische Fähigkeiten."
+        },
+        fr: {
+          "Conjunção": "Fusionne les énergies planétaires de manière impétueuse et ciblée.",
+          "Oposição": "Génère une polarisation dynamique, un conflit ou des projections dans le miroir des relations.",
+          "Trígono": "Facilité fluide, talents innés et synchronisation paisible des dons.",
+          "Quadratura": "Tension motivante, riches leçons karmiques et impulsions extraordinaires pour la maturation.",
+          "Sextil": "Opportunités de collaboration pratique qui s'épanouissent lorsqu'il y a un engagement créatif.",
+          "Quincúncio": "Besoin latent de légers ajustements de trajectoire para concilier des impulsions discordantes.",
+          "Semisextil": "Magnétisme subtil de transition rapide reliant les apprentissages adjacents.",
+          "Semicuadratura": "Petits bruits de routine qui forcent des prises de décisions organisatrices.",
+          "Sesquiquadratura": "Frustrations récurrentes menant à une auto-analyse corrective détaillée.",
+          "Biquintil": "Talent mental créatif raffiné et habileté esthétique singulière authentique."
+        }
+      };
+
+      const planetNames: Record<string, Record<string, string>> = {
+        pt: { Sol: "Sol", Lua: "Lua", Mercúrio: "Mercúrio", Vênus: "Vênus", Marte: "Marte", Júpiter: "Júpiter", Saturno: "Saturno", Urano: "Urano", Netuno: "Netuno", Plutão: "Plutão", Quíron: "Quíron", "Nodo Norte": "Nodo Norte", "Nodo Sul": "Nodo Sul", "Nódulo Norte": "Nodo Norte", "Nódulo Sul": "Nodo Sul", Ascendente: "Ascendente", Descendente: "Descendente", "Meio do Céu": "Meio do Céu", "Fundo do Céu": "Fundo do Céu" },
+        en: { Sol: "Sun", Lua: "Moon", Mercúrio: "Mercury", Vênus: "Venus", Marte: "Mars", Júpiter: "Jupiter", Saturno: "Saturn", Urano: "Uranus", Netuno: "Neptune", Plutão: "Pluto", Quíron: "Chiron", "Nodo Norte": "North Node", "Nodo Sul": "South Node", "Nódulo Norte": "North Node", "Nódulo Sul": "South Node", Ascendente: "Ascendant", Descendente: "Descendant", "Meio do Céu": "Midheaven", "Fundo do Céu": "Imum Coeli" },
+        es: { Sol: "Sol", Lua: "Luna", Mercúrio: "Mercurio", Vênus: "Venus", Marte: "Marte", Júpiter: "Júpiter", Saturno: "Saturno", Urano: "Urano", Netuno: "Neptuno", Plutão: "Plutón", Quíron: "Quirón", "Nodo Norte": "Nodo Norte", "Nodo Sul": "Nodo Sul", "Nódulo Norte": "Nodo Norte", "Nódulo Sul": "Nodo Sul", Ascendente: "Ascendente", Descendente: "Descendente", "Meio do Céu": "Medio Cielo", "Fundo do Céu": "Bajo Cielo" },
+        de: { Sol: "Sonne", Lua: "Mond", Mercúrio: "Merkur", Vênus: "Venus", Marte: "Mars", Júpiter: "Jupiter", Saturno: "Saturn", Urano: "Uranus", Netuno: "Neptun", Plutão: "Pluto", Quíron: "Chiron", "Nodo Norte": "Nordknoten", "Nodo Sul": "Südknoten", "Nódulo Norte": "Nordknoten", "Nódulo Sul": "Südknoten", Ascendente: "Aszendent", Descendente: "Deszendent", "Meio do Céu": "Medium Coeli", "Fundo do Céu": "Imum Coeli" },
+        fr: { Sol: "Soleil", Lua: "Lune", Mercúrio: "Mercure", Vênus: "Vénus", Marte: "Mars", Júpiter: "Jupiter", Saturno: "Saturne", Urano: "Uranus", Netuno: "Neptune", Plutão: "Pluton", Quíron: "Chiron", "Nodo Norte": "Nœud Nord", "Nodo Sul": "Nœud Sud", "Nódulo Norte": "Nœud Nord", "Nódulo Sul": "Nœud Sud", Ascendente: "Ascendant", Descendente: "Descendant", "Meio do Céu": "Milieu du Ciel", "Fundo do Céu": "Fond du Ciel" }
+      };
+
+      const signNames: Record<string, Record<string, string>> = {
+        pt: { Áries: "Áries", Touro: "Touro", Gêmeos: "Gêmeos", Câncer: "Câncer", Leão: "Leão", Virgem: "Virgem", Libra: "Libra", Escorpião: "Escorpião", Sagitário: "Sagitário", Capricórnio: "Capricórnio", Aquário: "Aquário", Peixes: "Peixes" },
+        en: { Áries: "Aries", Touro: "Taurus", Gêmeos: "Gemini", Câncer: "Cancer", Leão: "Leo", Virgem: "Virgo", Libra: "Libra", Escorpião: "Scorpio", Sagitário: "Sagittarius", Capricórnio: "Capricorn", Aquário: "Aquarius", Peixes: "Pisces" },
+        es: { Áries: "Aries", Touro: "Tauro", Gêmeos: "Géminis", Câncer: "Cáncer", Leão: "Leo", Virgem: "Virgo", Libra: "Libra", Escorpião: "Escorpio", Sagitário: "Sagitario", Capricórnio: "Capricornio", Aquário: "Acuario", Peixes: "Piscis" },
+        de: { Áries: "Widder", Touro: "Stier", Gêmeos: "Zwillinge", Câncer: "Krebs", Leão: "Löwe", Virgem: "Jungfrau", Libra: "Waage", Escorpião: "Skorpion", Sagitário: "Schütze", Capricórnio: "Steinbock", Aquário: "Wassermann", Peixes: "Fische" },
+        fr: { Áries: "Bélier", Touro: "Taureau", Gêmeos: "Gémeaux", Câncer: "Cancer", Leão: "Lion", Virgem: "Vierge", Libra: "Balance", Escorpião: "Scorpion", Sagitário: "Sagittaire", Capricórnio: "Capricorne", Aquário: "Verseau", Peixes: "Poissons" }
+      };
+
+      const translatePlanet = (p: string) => (planetNames[activeLang]?.[p] || planetNames["pt"]?.[p] || p);
+      const translateSign = (s: string) => (signNames[activeLang]?.[s] || signNames["pt"]?.[s] || s);
+
       // Override chart.astros positions for matching planets
       chart.astros = chart.astros.map(ast => {
         const ephemKey = Object.keys(mapping).find(k => mapping[k] === ast.name);
@@ -553,14 +646,32 @@ function performPreciseServerCalculation(
           const min = Math.floor(totalMin % 60);
           
           const dStr = `${deg}°${min.toString().padStart(2, "0")}'`;
+          const decanTexts: Record<string, string> = {
+            pt: `${dStr}, ${Math.floor(deg / 10) + 1}º decanato`,
+            en: `${dStr}, ${Math.floor(deg / 10) + 1}${Math.floor(deg / 10) + 1 === 1 ? 'st' : Math.floor(deg / 10) + 1 === 2 ? 'nd' : 'rd'} decan`,
+            es: `${dStr}, ${Math.floor(deg / 10) + 1}º decanato`,
+            de: `${dStr}, ${Math.floor(deg / 10) + 1}. Dekan`,
+            fr: `${dStr}, ${Math.floor(deg / 10) + 1}e décan`
+          };
+          const extraInfoStr = decanTexts[activeLang] || decanTexts["pt"];
+
+          const descTexts: Record<string, string> = {
+            pt: ` Posicionado perfeitamente em ${translateSign(signName)} a uns exatos ${dStr} de arco celestial por efemérides científicas offline da NASA.`,
+            en: ` Perfectly positioned in ${translateSign(signName)} at exactly ${dStr} of celestial arc by offline scientific NASA ephemerides.`,
+            es: ` Posicionado perfectamente en ${translateSign(signName)} a unos exactos ${dStr} de arco celestial por efemérides científicas offline de la NASA.`,
+            de: ` Perfekt positioniert in ${translateSign(signName)} auf genau ${dStr} Himmelsbogen durch wissenschaftliche Offline-NASA-Ephemeriden.`,
+            fr: ` Parfaitement positionné en ${translateSign(signName)} à exactement ${dStr} d'arc céleste par les éphémérides scientifiques hors ligne de la NASA.`
+          };
+          const descSuffix = descTexts[activeLang] || descTexts["pt"];
+
           return {
             name: ast.name,
             sign: signName,
             degree: deg,
             minute: min,
             longitude: lon,
-            extraInfo: `${dStr}, decanato ${Math.floor(deg / 10) + 1}º`,
-            description: ast.description.split(" Posicionado")[0] + ` Posicionado perfeitamente em ${signName} a uns exatos ${dStr} de arco celestial por efemérides científicas offline da NASA.`
+            extraInfo: extraInfoStr,
+            description: ast.description.split(" Posicionado")[0] + descSuffix
           };
         }
         return ast;
@@ -606,6 +717,20 @@ function performPreciseServerCalculation(
             const currentOrb = Math.abs(shortestDist - asp.angle);
             if (currentOrb <= asp.orb) {
               const intensity = Math.floor((1 - currentOrb / asp.orb) * 100);
+              const p1Translated = translatePlanet(p1.name);
+              const p2Translated = translatePlanet(p2.name);
+              const aspectNameTranslated = aspectNames[activeLang]?.[asp.name] || aspectNames["pt"]?.[asp.name] || asp.name;
+              const aspectInterpTranslated = aspectInterps[activeLang]?.[asp.name] || aspectInterps["pt"]?.[asp.name] || asp.interpretation;
+              
+              const interpFormats: Record<string, string> = {
+                pt: `${p1Translated} em ${aspectNameTranslated} com ${p2Translated}: ${aspectInterpTranslated} Operando com intensidade magnética de ${intensity}% e orbe de ${currentOrb.toFixed(2)} graus.`,
+                en: `${p1Translated} in ${aspectNameTranslated} with ${p2Translated}: ${aspectInterpTranslated} Operating with magnetic intensity of ${intensity}% and orb of ${currentOrb.toFixed(2)} degrees.`,
+                es: `${p1Translated} en ${aspectNameTranslated} con ${p2Translated}: ${aspectInterpTranslated} Operando con intensidad magnética de ${intensity}% e orbe de ${currentOrb.toFixed(2)} grados.`,
+                de: `${p1Translated} in ${aspectNameTranslated} mit ${p2Translated}: ${aspectInterpTranslated} Arbeitet mit magnetischer Intensität von ${intensity}% und einem Orbis de ${currentOrb.toFixed(2)} Grad.`,
+                fr: `${p1Translated} en ${aspectNameTranslated} avec ${p2Translated}: ${aspectInterpTranslated} Opérant avec une intensité magnétique de ${intensity}% et un orbe de ${currentOrb.toFixed(2)} degrés.`
+              };
+              const interpStr = interpFormats[activeLang] || interpFormats["pt"];
+
               newAspects.push({
                 planet1: p1.name,
                 planet2: p2.name,
@@ -613,7 +738,7 @@ function performPreciseServerCalculation(
                 angle: asp.angle,
                 orb: `${currentOrb.toFixed(2)}°`,
                 intensity,
-                interpretation: `${p1.name} em ${asp.name} com ${p2.name}: ${asp.interpretation} Operando com intensidade magnética de ${intensity}% e orbe de ${currentOrb.toFixed(2)} graus.`
+                interpretation: interpStr
               });
             }
           }
@@ -737,7 +862,8 @@ function generateMapData(
   isDst?: boolean,
   astroDate?: string,
   astroTime?: string,
-  timezoneOffset?: number
+  timezoneOffset?: number,
+  lang?: string
 ) {
   // Resolve latitude & longitude based on birth city
   const coords = resolvedCoords || { latitude: -23.5505, longitude: -46.6333, timezone: "America/Sao_Paulo" };
@@ -745,7 +871,7 @@ function generateMapData(
   const dTime = astroTime || time || "12:00";
   
   // Calculate high-precision astronomical chart using local Swiss Ephemeris offline library
-  const chart = performPreciseServerCalculation(dDate, dTime, coords.latitude, coords.longitude, timezoneOffset);
+  const chart = performPreciseServerCalculation(dDate, dTime, coords.latitude, coords.longitude, timezoneOffset, lang);
   
   const finalMap = {
     welcomeMessage: `Olás ${name}, seja bem-vindo ao seu Mapa Astral. Aqui começa a sua jornada astrológica profissional baseada em efemérides reais de altíssima precisão!`,
@@ -954,7 +1080,7 @@ app.get("/api/cities/search", (req, res) => {
 // API: Astrological Map and Numerology Generation using Gemini
 app.post("/api/astrology/generate", async (req, res) => {
   try {
-    const { name, email, birthDate, birthTime, birthCity, isUnknownTime, latitude, longitude } = req.body || {};
+    const { name, email, birthDate, birthTime, birthCity, isUnknownTime, latitude, longitude, lang } = req.body || {};
     if (!name) {
       return res.status(400).json({ error: "Nome é obrigatório na sintonização astral." });
     }
@@ -988,7 +1114,7 @@ app.post("/api/astrology/generate", async (req, res) => {
       safeBirthCity = "São Paulo";
     }
 
-    const cacheKey = `astrology:${name}:${safeBirthDate}:${safeBirthTime}:${safeBirthCity}:${isUnknownTime}`;
+    const cacheKey = `astrology:${name}:${safeBirthDate}:${safeBirthTime}:${safeBirthCity}:${isUnknownTime}:${lang || 'pt'}`;
     const cached = getCachedResponse(cacheKey);
     if (cached) {
       return res.json(cached);
@@ -1032,7 +1158,8 @@ app.post("/api/astrology/generate", async (req, res) => {
       is_dst, 
       astroDate, 
       astroTime,
-      timezoneOffsetHours
+      timezoneOffsetHours,
+      lang
     );
 
     if (!aiClient) {
@@ -1047,7 +1174,17 @@ app.post("/api/astrology/generate", async (req, res) => {
     const housesSummary = localMap.houses.map(h => `- Casa ${h.number}: em ${h.sign} ${h.planet ? `(contém o(s) planeta(s): ${h.planet})` : ''}`).join('\n');
     const aspectsSummary = localMap.aspects.map(asp => `- ${asp.planet1} ${asp.aspectType} com ${asp.planet2} (Orbe: ${asp.orb})`).join('\n');
 
-    const prompt = `Gere uma análise astrológica e numerológica detalhada, altamente personalizada e premium em Português para o usuário com estes dados de nascimento:
+    const activeLang = lang || 'pt';
+    const languageNames: Record<string, string> = {
+      pt: "Português",
+      en: "English (Inglês)",
+      es: "Spanish (Espanhol)",
+      de: "German (Alemão)",
+      fr: "French (Francês)"
+    };
+    const targetLanguage = languageNames[activeLang] || "Português";
+
+    const prompt = `Gere uma análise astrológica e numerológica detalhada, altamente personalizada e premium em ${targetLanguage} para o usuário com estes dados de nascimento:
 Nome: ${name}
 Data de nascimento: ${safeBirthDate}
 Hora de nascimento: ${isUnknownTime ? "Desconhecida" : safeBirthTime}
@@ -1069,46 +1206,46 @@ Você DEVE basear todas as análises e interpretações exclusivamente nos signo
 - Por exemplo, se o Ascendente está listado em um signo específico, a descrição em "astrosInterpretations"."Ascendente" deve falar única e exclusivamente das qualidades de nascer com esse signo específico no Ascendente, sem de forma alguma mencionar outros signos.
 - O mesmo se aplica à Lua, ao Sol e a todos os demais astros e casas! Toda a análise deve ser 100% personalizada e cirurgicamente correta para o mapa fornecido.
 
-A resposta DEVE ser um objeto JSON exato contendo a seguinte estrutura e preenchendo todos os textos com explicações ricas, detalhadas, cirúrgicas e poéticas em Português, no mesmo estilo premium profissional de Astrolink:
+A resposta DEVE ser um objeto JSON exato contendo a seguinte estrutura e preenchendo todos os textos com explicações ricas, detalhadas, cirúrgicas e poéticas em ${targetLanguage}, no mesmo estilo premium profissional de Astrolink:
 {
-  "welcomeMessage": "Um texto longo e inspirador de boas-vindas espiritual de 2 a 3 parágrafos sintonizado com os dados pessoais...",
+  "welcomeMessage": "Um texto longo e inspirador de boas-vindas espiritual de 2 a 3 parágrafos sintonizado com os dados pessoais, escrito em ${targetLanguage}...",
   "personalityTraits": {
-    "harmonious": ["Socialmente consciente", "Inventivo", "Esperançoso", "... etc (gerar de 6 a 10 termos altamente personalizados correspondentes à essência do mapa real listado)"],
-    "disharmonious": ["Temperamental", "Disperso", "Teimoso", "... etc (gerar de 6 a 10 termos correspondentes à essência real do mapa listado)"]
+    "harmonious": ["Socialmente consciente", "Inventivo", "Esperançoso", "... etc (gerar de 6 a 10 termos altamente personalizados correspondentes à essência do mapa real listado, escritos em ${targetLanguage})"],
+    "disharmonious": ["Temperamental", "Disperso", "Teimoso", "... etc (gerar de 6 a 10 termos correspondentes à essência real do mapa listado, escritos em ${targetLanguage})"]
   },
   "astrosInterpretations": {
-    "Sol": "Interpretação poética detalhada de 2 parágrafos sobre a essência do Sol no signo do usuário...",
-    "Lua": "Interpretação detalhada de 2 parágrafos sobre as emoções da Lua no signo do usuário...",
-    "Mercúrio": "Interpretação de 1 parágrafo expressivo sobre a mente de Mercúrio no signo correspondente...",
-    "Vênus": "Interpretação de 1 parágrafo sobre a capacidade de amar e valores de Vênus no signo correspondente...",
-    "Marte": "Interpretação de 1 parágrafo sobre atitude e energia de Marte no signo correspondente...",
-    "Júpiter": "Interpretação de 1 parágrafo sobre prosperidade de Júpiter no signo correspondente...",
-    "Saturno": "Interpretação de 1 parágrafo sobre lições e testes de Saturno no signo correspondente...",
-    "Urano": "Interpretação de 1 parágrafo sobre liberdade subjetiva de Urano no signo correspondente...",
-    "Netuno": "Interpretação de 1 parágrafo sobre sutilização de Netuno no signo correspondente...",
-    "Plutão": "Interpretação de 1 parágrafo sobre transmutação interna de Plutão no signo correspondente...",
-    "Quíron": "Interpretação de 1 parágrafo sobre a maestria terapêutica de Quíron no signo correspondente...",
-    "Nodo Norte": "Interpretação de 1 parágrafo sobre direcionamento de alma do Nodo Norte no signo correspondente...",
-    "Nodo Sul": "Interpretação de 1 parágrafo sobre bagagens e heranças antigas do Nodo Sul no signo correspondente...",
-    "Lilith": "Interpretação de 1 parágrafo sobre desejos em sombra de Lilith no signo correspondente...",
-    "Ascendente": "Interpretação detalhada de 2 parágrafos focado na identidade externa, aparência e vitalidade do Ascendente real do usuário...",
-    "Descendente": "Interpretação de 1 parágrafo sintonizado com relacionamentos e parcerias com o Descendente real...",
-    "Meio do Céu": "Interpretação de 1 parágrafo vocacional com base no Meio do Céu real do usuário...",
-    "Fundo do Céu": "Interpretação de 1 parágrafo reconfortante sobre o lar, raízes e intimidade com base no Fundo do Céu real..."
+    "Sol": "Interpretação poética detalhada de 2 parágrafos sobre a essência do Sol no signo do usuário, escrita em ${targetLanguage}...",
+    "Lua": "Interpretação detalhada de 2 parágrafos sobre as emoções da Lua no signo do usuário, escrita em ${targetLanguage}...",
+    "Mercúrio": "Interpretação de 1 parágrafo expressivo sobre a mente de Mercúrio no signo correspondente, escrita em ${targetLanguage}...",
+    "Vênus": "Interpretação de 1 parágrafo sobre a capacidade de amar e valores de Vênus no signo correspondente, escrita em ${targetLanguage}...",
+    "Marte": "Interpretação de 1 parágrafo sobre atitude e energia de Marte no signo correspondente, escrita em ${targetLanguage}...",
+    "Júpiter": "Interpretação de 1 parágrafo sobre prosperidade de Júpiter no signo correspondente, escrita em ${targetLanguage}...",
+    "Saturno": "Interpretação de 1 parágrafo sobre lições e testes de Saturno no signo correspondente, escrita em ${targetLanguage}...",
+    "Urano": "Interpretação de 1 parágrafo sobre liberdade subjetiva de Urano no signo correspondente, escrita em ${targetLanguage}...",
+    "Netuno": "Interpretação de 1 parágrafo sobre sutilização de Netuno no signo correspondente, escrita em ${targetLanguage}...",
+    "Plutão": "Interpretação de 1 parágrafo sobre transmutação interna de Plutão no signo correspondente, escrita em ${targetLanguage}...",
+    "Quíron": "Interpretação de 1 parágrafo sobre a maestria terapêutica de Quíron no signo correspondente, escrita em ${targetLanguage}...",
+    "Nodo Norte": "Interpretação de 1 parágrafo sobre direcionamento de alma do Nodo Norte no signo correspondente, escrita em ${targetLanguage}...",
+    "Nodo Sul": "Interpretação de 1 parágrafo sobre bagagens e heranças antigas do Nodo Sul no signo correspondente, escrita em ${targetLanguage}...",
+    "Lilith": "Interpretação de 1 parágrafo sobre desires em sombra de Lilith no signo correspondente, escrita em ${targetLanguage}...",
+    "Ascendente": "Interpretação detalhada de 2 parágrafos focado na identidade externa, aparência e vitalidade do Ascendente real do usuário, escrita em ${targetLanguage}...",
+    "Descendente": "Interpretação de 1 parágrafo sintonizado com relacionamentos e parcerias com o Descendente real, escrita em ${targetLanguage}...",
+    "Meio do Céu": "Interpretação de 1 parágrafo vocacional com base no Meio do Céu real do usuário, escrita em ${targetLanguage}...",
+    "Fundo do Céu": "Interpretação de 1 parágrafo reconfortante sobre o lar, raízes e intimidade com base no Fundo do Céu real, escrita em ${targetLanguage}..."
   },
   "housesInterpretations": {
-    "1": "Interpretação de 1 parágrafo expressivo e refinado explicando as lições do signo real em que a Casa 1 se inicia...",
-    "2": "Interpretação de 1 parágrafo expressivo e refinado explicando as lições do signo real em que a Casa 2 se inicia...",
-    "3": "Interpretação de 1 parágrafo da Casa 3...",
-    "4": "Interpretação de 1 parágrafo da Casa 4...",
-    "5": "Interpretação de 1 parágrafo da Casa 5...",
-    "6": "Interpretação de 1 parágrafo da Casa 6...",
-    "7": "Interpretação de 1 parágrafo da Casa 7...",
-    "8": "Interpretação de 1 parágrafo da Casa 8...",
-    "9": "Interpretação de 1 parágrafo da Casa 9...",
-    "10": "Interpretação de 1 parágrafo da Casa 10...",
-    "11": "Interpretação de 1 parágrafo da Casa 11...",
-    "12": "Interpretação de 1 parágrafo focado no signo real e planetas na Casa 12..."
+    "1": "Interpretação de 1 parágrafo expressivo e refinado explicando as lições do signo real em que a Casa 1 se inicia, escrita em ${targetLanguage}...",
+    "2": "Interpretação de 1 parágrafo expressivo e refinado explicando as lições do signo real em que a Casa 2 se inicia, escrita em ${targetLanguage}...",
+    "3": "Interpretação de 1 parágrafo da Casa 3 escrito em ${targetLanguage}...",
+    "4": "Interpretação de 1 parágrafo da Casa 4 escrito em ${targetLanguage}...",
+    "5": "Interpretação de 1 parágrafo da Casa 5 escrito em ${targetLanguage}...",
+    "6": "Interpretação de 1 parágrafo da Casa 6 escrito em ${targetLanguage}...",
+    "7": "Interpretação de 1 parágrafo da Casa 7 escrito em ${targetLanguage}...",
+    "8": "Interpretação de 1 parágrafo da Casa 8 escrito em ${targetLanguage}...",
+    "9": "Interpretação de 1 parágrafo da Casa 9 escrito em ${targetLanguage}...",
+    "10": "Interpretação de 1 parágrafo da Casa 10 escrito em ${targetLanguage}...",
+    "11": "Interpretação de 1 parágrafo da Casa 11 escrito em ${targetLanguage}...",
+    "12": "Interpretação de 1 parágrafo focado no signo real e planetas na Casa 12 escrito em ${targetLanguage}..."
   }
 }
 Responda APENAS com o JSON literal. Não inclua blocos de código adicionais fora do JSON.`;
@@ -1475,63 +1612,280 @@ Responda com um conselho meditativo e reflexivo em Português no seguinte format
 
 // API: Celestial transits history & events of the current month (June 2026)
 app.post("/api/astrology/transits-month", async (req, res) => {
-  const { birthDate, name } = req.body || {};
-  
-  const fallbackTransits = {
-    events: [
-      {
-        date: "2026-06-03",
-        eventName: "Conjunção Sol e Vênus em Gêmeos",
-        planet: "Vênus",
-        description: "Momento sublime para diálogos afetivos, valorização estética e acordos financeiros leves e dinâmicos.",
-        influence: "Positive"
-      },
-      {
-        date: "2026-06-09",
-        eventName: "Lua Minguante em Peixes",
-        planet: "Lua",
-        description: "Fase de depuração emocional profunda. Momento propício para meditação, desapego e cura onírica.",
-        influence: "Transformative"
-      },
-      {
-        date: "2026-06-15",
-        eventName: "Mercúrio em Conjunção com Sol em Câncer",
-        planet: "Mercúrio",
-        description: "Alinhamento das faculdades cognitivas racionais à sensibilidade emocional pura. Ideias de negócios vinculadas à moradia, segurança ou raízes íntimas.",
-        influence: "Positive"
-      },
-      {
-        date: "2026-06-21",
-        eventName: "Solstício de Inverno / Sol entra em Câncer",
-        planet: "Sol",
-        description: "O Sol entra no signo cardinal da Água, Câncer. Período de introspecção reflexiva, estreitamento de laços familiares e cultivo de sua segurança fundamental.",
-        influence: "Neutral"
-      },
-      {
-        date: "2026-06-25",
-        eventName: "Sol em Câncer em Trígono com Saturno em Peixes",
-        planet: "Saturno",
-        description: "Uma corrente de maturidade e estabilização emocional flui. Perfeito para formalizar acordos sinceros de longo prazo.",
-        influence: "Positive"
-      },
-      {
-        date: "2026-06-28",
-        eventName: "Quadratura Marte e Plutão",
-        planet: "Marte",
-        description: "Confronto de vontades e disputa por controle. Canalize o impulso revolucionário para transformações internas estruturadas.",
-        influence: "Challenging"
-      },
-      {
-        date: "2026-06-30",
-        eventName: "Mercúrio entra em Leão",
-        planet: "Mercúrio",
-        description: "A comunicação ganha tons teatrais, expressivos e carismáticos. Ideal para falar com autoridade e brilho pessoal.",
-        influence: "Neutral"
-      }
-    ]
+  const { birthDate, name, lang } = req.body || {};
+  const activeLang = (lang || 'pt').toLowerCase();
+
+  const fallbackTransitsDict: Record<string, any> = {
+    pt: {
+      events: [
+        {
+          date: "2026-06-03",
+          eventName: "Conjunção Sol e Vênus em Gêmeos",
+          planet: "Vênus",
+          description: "Momento sublime para diálogos afetivos, valorização estética e acordos financeiros leves e dinâmicos.",
+          influence: "Positive"
+        },
+        {
+          date: "2026-06-09",
+          eventName: "Lua Minguante em Peixes",
+          planet: "Lua",
+          description: "Fase de depuração emocional profunda. Momento propício para meditação, desapego e cura onírica.",
+          influence: "Transformative"
+        },
+        {
+          date: "2026-06-15",
+          eventName: "Mercúrio em Conjunção com Sol em Câncer",
+          planet: "Mercúrio",
+          description: "Alinhamento das faculdades cognitivas racionais à sensibilidade emocional pura. Ideias de negócios vinculadas à moradia, segurança ou raízes íntimas.",
+          influence: "Positive"
+        },
+        {
+          date: "2026-06-21",
+          eventName: "Solstício de Inverno / Sol entra em Câncer",
+          planet: "Sol",
+          description: "O Sol entra no signo cardinal da Água, Câncer. Período de introspecção reflexiva, estreitamento de laços familiares e cultivo de sua segurança fundamental.",
+          influence: "Neutral"
+        },
+        {
+          date: "2026-06-25",
+          eventName: "Sol em Câncer em Trígono com Saturno em Peixes",
+          planet: "Saturno",
+          description: "Uma corrente de maturidade e estabilização emocional flui. Perfeito para formalizar acordos sinceros de longo prazo.",
+          influence: "Positive"
+        },
+        {
+          date: "2026-06-28",
+          eventName: "Quadratura Marte e Plutão",
+          planet: "Marte",
+          description: "Confronto de vontades e disputa por controle. Canalize o impulso revolucionário para transformações internas estruturadas.",
+          influence: "Challenging"
+        },
+        {
+          date: "2026-06-30",
+          eventName: "Mercúrio entra em Leão",
+          planet: "Mercúrio",
+          description: "A comunicação ganha tons teatrais, expressivos e carismáticos. Ideal para falar com autoridade e brilho pessoal.",
+          influence: "Neutral"
+        }
+      ]
+    },
+    en: {
+      events: [
+        {
+          date: "2026-06-03",
+          eventName: "Sun and Venus Conjunction in Gemini",
+          planet: "Venus",
+          description: "Sublime moment for affectionate dialogues, aesthetic appreciation, and light, dynamic financial agreements.",
+          influence: "Positive"
+        },
+        {
+          date: "2026-06-09",
+          eventName: "Waning Moon in Pisces",
+          planet: "Moon",
+          description: "Phase of deep emotional purification. Auspicious time for meditation, detachment, and dream healing.",
+          influence: "Transformative"
+        },
+        {
+          date: "2026-06-15",
+          eventName: "Mercury in Conjunction with Sun in Cancer",
+          planet: "Mercury",
+          description: "Alignment of rational cognitive faculties with pure emotional sensitivity. Business ideas linked to housing, security, or intimate roots.",
+          influence: "Positive"
+        },
+        {
+          date: "2026-06-21",
+          eventName: "Winter Solstice / Sun enters Cancer",
+          planet: "Sun",
+          description: "The Sun enters the cardinal Water sign, Cancer. Period of reflective introspection, strengthening of family ties, and cultivation of your fundamental security.",
+          influence: "Neutral"
+        },
+        {
+          date: "2026-06-25",
+          eventName: "Sun in Cancer Trine Saturn in Pisces",
+          planet: "Saturn",
+          description: "A stream of emotional maturity and stabilization flows. Perfect for formalizing sincere long-term agreements.",
+          influence: "Positive"
+        },
+        {
+          date: "2026-06-28",
+          eventName: "Mars and Pluto Square",
+          planet: "Mars",
+          description: "Clash of wills and struggle for control. Channel the revolutionary impulse into structured internal transformations.",
+          influence: "Challenging"
+        },
+        {
+          date: "2026-06-30",
+          eventName: "Mercury enters Leo",
+          planet: "Mercury",
+          description: "Communication gains theatrical, expressive, and charismatic tones. Ideal for speaking with authority and personal shine.",
+          influence: "Neutral"
+        }
+      ]
+    },
+    es: {
+      events: [
+        {
+          date: "2026-06-03",
+          eventName: "Conjunción Sol y Venus en Géminis",
+          planet: "Venus",
+          description: "Momento sublime para diálogos afectivos, valoración estética y acuerdos financieros ligeros y dinámicos.",
+          influence: "Positive"
+        },
+        {
+          date: "2026-06-09",
+          eventName: "Luna Menguante en Piscis",
+          planet: "Luna",
+          description: "Fase de depuración emocional profunda. Momento propicio para la meditación, el desapego y la curación onírica.",
+          influence: "Transformative"
+        },
+        {
+          date: "2026-06-15",
+          eventName: "Mercurio en Conjunción con el Sol en Cáncer",
+          planet: "Mercurio",
+          description: "Alineación de las facultades cognitivas racionales con la sensibilidad emocional pura. Ideas de negocio vinculadas a la vivienda, seguridad o raíces íntimas.",
+          influence: "Positive"
+        },
+        {
+          date: "2026-06-21",
+          eventName: "Solsticio de Invierno / El Sol entra en Cáncer",
+          planet: "Sol",
+          description: "El Sol entra en el signo cardinal de Agua, Cáncer. Período de introspección reflexiva, fortalecimiento de los lazos familiares y cultivo de su seguridad fundamental.",
+          influence: "Neutral"
+        },
+        {
+          date: "2026-06-25",
+          eventName: "Sol en Cáncer en Trígono con Saturno en Piscis",
+          planet: "Saturn",
+          description: "Fluye una corriente de madurez y estabilización emocional. Perfecto para formalizar acuerdos sinceros a largo plazo.",
+          influence: "Positive"
+        },
+        {
+          date: "2026-06-28",
+          eventName: "Cuadratura Marte y Plutón",
+          planet: "Marte",
+          description: "Choque de voluntades y lucha por el control. Canaliza el impulso revolucionario hacia transformaciones internas estructuradas.",
+          influence: "Challenging"
+        },
+        {
+          date: "2026-06-30",
+          eventName: "Mercurio entra en Leo",
+          planet: "Mercurio",
+          description: "La comunicación adquiere tonos teatrales, expresivos y carismáticos. Ideal para hablar con autoridad y brillo personal.",
+          influence: "Neutral"
+        }
+      ]
+    },
+    de: {
+      events: [
+        {
+          date: "2026-06-03",
+          eventName: "Sonne-Venus-Konjunktion in Zwillinge",
+          planet: "Venus",
+          description: "Erhabener Moment für liebevolle Dialoge, ästhetische Wertschätzung und leichte, dynamische Finanzvereinbarungen.",
+          influence: "Positive"
+        },
+        {
+          date: "2026-06-09",
+          eventName: "Abnehmender Mond in Fische",
+          planet: "Luna",
+          description: "Phase der tiefen emotionalen Reinigung. Günstige Zeit für Meditation, Loslassen und Traumheilung.",
+          influence: "Transformative"
+        },
+        {
+          date: "2026-06-15",
+          eventName: "Merkur in Konjunktion mit der Sonne im Krebs",
+          planet: "Merkur",
+          description: "Ausrichtung der rationalen kognitiven Fähigkeiten auf reine emotionale Sensibilität. Geschäftsideen im Zusammenhang mit Wohnen, Sicherheit oder intimen Wurzeln.",
+          influence: "Positive"
+        },
+        {
+          date: "2026-06-21",
+          eventName: "Wintersonnenwende / Sonne tritt in den Krebs ein",
+          planet: "Sol",
+          description: "Die Sonne tritt in das kardinale Wasserzeichen Krebs ein. Zeit der nachdenklichen Introspektion, Stärkung familiärer Bindungen und Pflege Ihrer grundlegenden Sicherheit.",
+          influence: "Neutral"
+        },
+        {
+          date: "2026-06-25",
+          eventName: "Sonne im Krebs im Trigon zu Saturn in Fische",
+          planet: "Saturn",
+          description: "Ein Strom emotionaler Reife und Stabilisierung fließt. Perfekt zur Formalisierung aufrichtiger langfristiger Vereinbarungen.",
+          influence: "Positive"
+        },
+        {
+          date: "2026-06-28",
+          eventName: "Mars-Pluto-Quadrat",
+          planet: "Mars",
+          description: "Kampf der Willen und Machtkampf. Kanalisieren Sie den revolutionären Impuls in strukturierte innere Transformationen.",
+          influence: "Challenging"
+        },
+        {
+          date: "2026-06-30",
+          eventName: "Merkur tritt in den Löwen ein",
+          planet: "Merkur",
+          description: "Die Kommunikation gewinnt theatralische, ausdrucksstarke und charismatische Töne. Ideal, um mit Autorität und persönlichem Glanz zu sprechen.",
+          influence: "Neutral"
+        }
+      ]
+    },
+    fr: {
+      events: [
+        {
+          date: "2026-06-03",
+          eventName: "Conjonction Soleil et Vénus en Gémeaux",
+          planet: "Venus",
+          description: "Moment sublime pour les dialogues affectifs, l'appréciation esthétique et les accords financiers légers et dynamiques.",
+          influence: "Positive"
+        },
+        {
+          date: "2026-06-09",
+          eventName: "Lune Décroissante en Poissons",
+          planet: "Luna",
+          description: "Phase de purification émotionnelle profonde. Moment propice à la méditation, au détachement et à la guérison par le rêve.",
+          influence: "Transformative"
+        },
+        {
+          date: "2026-06-15",
+          eventName: "Mercure en Conjonction avec le Soleil en Cancer",
+          planet: "Merkur",
+          description: "Alignement des facultés cognitives rationnelles avec la pure sensibilité émotionnelle. Idées d'affaires liées au logement, à la sécurité ou aux racines intimes.",
+          influence: "Positive"
+        },
+        {
+          date: "2026-06-21",
+          eventName: "Solstice d'Hiver / Le Soleil entre en Cancer",
+          planet: "Sol",
+          description: "Le Soleil entre dans le signe cardinal d'Eau, Cancer. Période d'introspection réflexive, de renforcement des liens familiaux et de culture de votre sécurité fondamentale.",
+          influence: "Neutral"
+        },
+        {
+          date: "2026-06-25",
+          eventName: "Soleil en Cancer en Trigone avec Saturne en Poissons",
+          planet: "Saturn",
+          description: "Un flux de maturité émotionnelle et de stabilisation coule. Parfait pour formaliser des accords sincères à long terme.",
+          influence: "Positive"
+        },
+        {
+          date: "2026-06-28",
+          eventName: "Carré Mars et Pluton",
+          planet: "Mars",
+          description: "Choc des volontés et lutte pour le contrôle. Canalisez l'impulsion révolutionnaire vers des transformations internes structurées.",
+          influence: "Challenging"
+        },
+        {
+          date: "2026-06-30",
+          eventName: "Mercure entre en Lion",
+          planet: "Merkur",
+          description: "La communication acquiert des tons théâtraux, expressifs et charismatiques. Idéal pour parler avec autorité et éclat personnel.",
+          influence: "Neutral"
+        }
+      ]
+    }
   };
 
-  const cacheKey = `transits:${name || ''}:${birthDate || ''}`;
+  const fallbackTransits = fallbackTransitsDict[activeLang] || fallbackTransitsDict.pt;
+
+  const cacheKey = `transits:${name || ''}:${birthDate || ''}:${activeLang}`;
   const cached = getCachedResponse(cacheKey);
   if (cached) {
     return res.json(cached);
@@ -1545,6 +1899,15 @@ app.post("/api/astrology/transits-month", async (req, res) => {
 
   try {
     const userContext = birthDate ? `O usuário nasceu em ${birthDate}${name ? ', nome ' + name : ''}.` : '';
+    const languageNames: Record<string, string> = {
+      pt: "Português",
+      en: "English (Inglês)",
+      es: "Spanish (Espanhol)",
+      de: "German (Alemão)",
+      fr: "French (Francês)"
+    };
+    const targetLanguage = languageNames[activeLang] || "Português";
+
     const prompt = `Gere uma lista de 6 a 8 eventos astrológicos/trânsitos celestes importantes reais ou plausíveis para o mês atual de Junho de 2026.
 ${userContext}
 Importante: O retorno DEVE ser um objeto JSON estrito com a seguinte estrutura de dados:
@@ -1552,14 +1915,14 @@ Importante: O retorno DEVE ser um objeto JSON estrito com a seguinte estrutura d
   "events": [
     {
       "date": "YYYY-MM-DD", // Deve usar data formatada em Junho de 2026 (por exemplo "2026-06-12")
-      "eventName": "Nome do Evento Astrológico",
-      "planet": "Nome do Planeta Principal (ex: 'Sol', 'Lua', 'Mercúrio', 'Vênus', 'Marte', 'Júpiter', 'Saturno', 'Urano', 'Netuno', 'Plutão')",
-      "description": "Explicação poética e astrológica detalhada em Português sobre o impacto coletivo ou pessoal deste trânsito...",
+      "eventName": "Nome do Evento Astrológico (escrito em ${targetLanguage})",
+      "planet": "Nome do Planeta Principal em ${targetLanguage} (ex: 'Sol', 'Lua', 'Mercúrio', 'Vênus', 'Marte', 'Júpiter', 'Saturno', 'Urano', 'Netuno', 'Plutão')",
+      "description": "Explicação poética e astrológica detalhada escrita em ${targetLanguage} sobre o impacto coletivo ou pessoal deste trânsito...",
       "influence": "Positive" | "Challenging" | "Neutral" | "Transformative"
     }
   ]
 }
-Retorne somente o JSON limpo, sem markdown ou textos explicativos ao redor.`;
+Retorne somente o JSON limpo, sem markdown ou textos explicativos ao redor. Todos os textos internos no JSON DEVEM estar traduzidos na língua correspondente à ${targetLanguage}.`;
 
     const response = await generateContentWithFallback({
       contents: prompt,
@@ -1587,15 +1950,32 @@ Retorne somente o JSON limpo, sem markdown ou textos explicativos ao redor.`;
 
 // API: Moon current position tip (Sussurro Lunar Diário)
 app.post("/api/astrology/moon-tip", async (req, res) => {
-  const { birthDate, name } = req.body || {};
+  const { birthDate, name, lang } = req.body || {};
+  const currentLang = (lang || "pt").toLowerCase();
   
   const todayStr = new Date().toISOString().split('T')[0];
   const userName = name || "Buscador";
   const userSunSign = birthDate ? getAscendedAstrologicalSign(birthDate, 0) : "Aquário";
 
-  // Highly personalized, coherent daily dynamic fallback
-  const phaseList = ["Lua Crescente 🌓", "Lua Cheia 🌕", "Lua Minguante 🌙", "Lua Nova 🌑"];
-  const signsList = ["Áries", "Touro", "Gêmeos", "Câncer", "Leão", "Virgem", "Libra", "Escorpião", "Sagitário", "Capricórnio", "Aquário", "Peixes"];
+  const phaseListMap: Record<string, string[]> = {
+    pt: ["Lua Crescente 🌓", "Lua Cheia 🌕", "Lua Minguante 🌙", "Lua Nova 🌑"],
+    en: ["Waxing Crescent Moon 🌓", "Full Moon 🌕", "Waning Crescent Moon 🌙", "New Moon 🌑"],
+    es: ["Luna Creciente 🌓", "Luna Llena 🌕", "Luna Menguante 🌙", "Luna Nueva 🌑"],
+    de: ["Zunehmender Mond 🌓", "Vollmond 🌕", "Abnehmender Mond 🌙", "Neumond 🌑"],
+    fr: ["Lune Croissante 🌓", "Pleine Lune 🌕", "Lune Décroissante 🌙", "Nouvelle Lune 🌑"]
+  };
+
+  const signsListMap: Record<string, string[]> = {
+    pt: ["Áries", "Touro", "Gêmeos", "Câncer", "Leão", "Virgem", "Libra", "Escorpião", "Sagitário", "Capricórnio", "Aquário", "Peixes"],
+    en: ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"],
+    es: ["Aries", "Tauro", "Géminis", "Cáncer", "Leo", "Virgo", "Libra", "Escorpio", "Sagitario", "Capricornio", "Acuario", "Piscis"],
+    de: ["Widder", "Stier", "Zwillinge", "Krebs", "Löwe", "Jungfrau", "Waage", "Skorpion", "Schütze", "Steinbock", "Wassermann", "Fische"],
+    fr: ["Bélier", "Taureau", "Gémeaux", "Cancer", "Lion", "Vierge", "Balance", "Scorpion", "Sagittaire", "Capricorne", "Verseau", "Poissons"]
+  };
+
+  const targetLang = ["pt", "en", "es", "de", "fr"].includes(currentLang) ? currentLang : "pt";
+  const phaseList = phaseListMap[targetLang];
+  const signsList = signsListMap[targetLang];
   
   // Deterministic seed based on date + user data for stable but daily shifting personalized wisdom
   let seed = 0;
@@ -1606,13 +1986,21 @@ app.post("/api/astrology/moon-tip", async (req, res) => {
   const pickedPhase = phaseList[seed % phaseList.length];
   const pickedSign = signsList[(seed + 3) % signsList.length];
   
+  const fallbackTips: Record<string, string> = {
+    pt: `${userName}, sob a influência da astrológica ${pickedPhase} transitando pelo signo de ${pickedSign}, a vibração cósmica atual se conecta intimamente ao seu Sol em ${userSunSign}. Este é o momento ideal para silenciar os ruídos mentais, canalizar suas intenções mais nobres e permitir que o poder lunar guie as decisões que sua alma tem amadurecido nas últimas semanas.`,
+    en: `${userName}, under the astrological influence of the ${pickedPhase} transiting through the sign of ${pickedSign}, the current cosmic vibration connects intimately with your Sun in ${userSunSign}. This is the ideal moment to silence mental noise, channel your noblest intentions, and allow the lunar power to guide the decisions your soul has been maturing in recent weeks.`,
+    es: `${userName}, bajo la influencia astrológica de la ${pickedPhase} transitando por el signo de ${pickedSign}, la vibración cósmica actual se conecta íntimamente con tu Sol en ${userSunSign}. Este es el momento ideal para silenciar el ruido mental, canalizar tus intenciones más nobles y permitir que el poder lunar guie las decisiones que tu alma ha estado madurando en las últimas semanas.`,
+    de: `${userName}, unter dem astrologischen Einfluss des ${pickedPhase}, der durch das Zeichen ${pickedSign} wandert, verbindet sich die aktuelle kosmische Schwingung eng mit Ihrer Sonne in ${userSunSign}. Dies ist der ideale Moment, um den mentalen Lärm zum Schweigen zu bringen, Ihre edelsten Absichten zu kanalisieren und der Mondkraft zu erlauben, die Entscheidungen zu leiten, die Ihre Seele in den letzten Wochen gereift hat.`,
+    fr: `${userName}, sous l'influence astrologique de la ${pickedPhase} transitant par le signe du ${pickedSign}, la vibration cosmique actuelle se connecte intimement à votre Soleil en ${userSunSign}. C'est le moment idéal pour faire taire le bruit mental, canaliser vos intentions les plus nobles et permettre à la puissance lunaire de guider les décisions que votre âme mûrit depuis quelques semaines.`
+  };
+
   const dynamicPersonalizedFallback = {
     moonSign: pickedSign,
     moonPhase: pickedPhase,
-    tip: `${userName}, sob a influência da astrológica ${pickedPhase} transitando pelo signo de ${pickedSign}, a vibração cósmica atual se conecta intimamente ao seu Sol em ${userSunSign}. Este é o momento ideal para silenciar os ruídos mentais, canalizar suas intenções mais nobres e permitir que o poder lunar guie as decisões que sua alma tem amadurecido nas últimas semanas.`
+    tip: fallbackTips[targetLang] || fallbackTips["pt"]
   };
 
-  const cacheKey = `moontip:${name || ''}:${birthDate || ''}:${todayStr}`;
+  const cacheKey = `moontip:${name || ''}:${birthDate || ''}:${todayStr}:${targetLang}`;
   const cached = getCachedResponse(cacheKey);
   if (cached) {
     return res.json(cached);
@@ -1625,16 +2013,25 @@ app.post("/api/astrology/moon-tip", async (req, res) => {
   }
 
   try {
+    const targetLangNameMap: Record<string, string> = {
+      pt: "Português",
+      en: "English",
+      es: "Español",
+      de: "Deutsch",
+      fr: "Français"
+    };
+    const targetLangName = targetLangNameMap[targetLang] || "Português";
+
     const userContext = birthDate ? `O usuário se chama ${userName} e nasceu em ${birthDate} com Sol em ${userSunSign}.` : `O usuário se chama ${userName}.`;
-    const prompt = `Gere uma "Dica Astrológica Rápida/Sussurro Lunar Diário" curta, poética, misteriosa e extremamente inspiradora em Português adaptada à posição atual da Lua hoje (Data atual: ${todayStr}, Fase Lunar estimada: ${pickedPhase}, Signo Lunar transitando: ${pickedSign}).
+    const prompt = `Gere uma "Dica Astrológica Rápida/Sussurro Lunar Diário" curta, poética, misteriosa e extremamente inspiradora 100% em ${targetLangName} adaptada à posição atual da Lua hoje (Data atual: ${todayStr}, Fase Lunar estimada: ${pickedPhase}, Signo Lunar transitando: ${pickedSign}).
 ${userContext}
 Importante: O retorno DEVE ser um objeto JSON estrito com a seguinte estrutura de dados:
 {
   "moonSign": "${pickedSign}",
   "moonPhase": "${pickedPhase}",
-  "tip": "Uma dica direta, inspiradora e poética de 2-3 frases chamando o usuário pelo nome, orientando o que fazer psicologicamente ou espiritualmente hoje em face deste trânsito lunar e de seu signo solar."
+  "tip": "Uma dica direta, inspiradora e poética de 2-3 frases chamando o usuário pelo nome, orientando o que fazer psicologicamente ou espiritualmente hoje em face deste trânsito lunar e de seu signo solar escrito 100% em ${targetLangName}."
 }
-Não coloque blocos markdown ou preâmbulos, retorne APENAS o JSON literal limpo.`;
+Não coloque blocos markdown ou preâmbulos, retorne APENAS o JSON literal limpo em ${targetLangName}.`;
 
     const response = await generateContentWithFallback({
       contents: prompt,
@@ -1838,13 +2235,13 @@ function getZodiacFromBirthDate(dateStr: string): string {
 
 // NEW API: Dynamic, Astrological, Karmic & Dharmic Daily Missions (Osíris Engine)
 app.post("/api/astrology/daily-missions", async (req, res) => {
-  const { userProfile } = req.body || {};
+  const { userProfile, lang } = req.body || {};
   const name = userProfile?.name ? userProfile.name.split(" ")[0] : "Buscador";
   const birthDate = userProfile?.birthDate || "1998-03-12";
   const zodiac = getZodiacFromBirthDate(birthDate);
 
   const todayStr = new Date().toISOString().split('T')[0];
-  const cacheKey = `osiris_missions_v3:${name}:${birthDate}:${todayStr}`;
+  const cacheKey = `osiris_missions_v3:${name}:${birthDate}:${todayStr}:${lang || 'pt'}`;
   const cached = getCachedResponse(cacheKey);
   if (cached) {
     return res.json(cached);
@@ -1997,7 +2394,17 @@ app.post("/api/astrology/daily-missions", async (req, res) => {
   }
 
   try {
-    const prompt = `Gere exatamente 3 missões diárias astrológicas interativas em Português para o usuário de nome "${name}", signo ${zodiac} e nascido em ${birthDate}.
+    const activeLang = lang || 'pt';
+    const languageNames: Record<string, string> = {
+      pt: "Português",
+      en: "English (Inglês)",
+      es: "Spanish (Espanhol)",
+      de: "German (Alemão)",
+      fr: "French (Francês)"
+    };
+    const targetLanguage = languageNames[activeLang] || "Português";
+
+    const prompt = `Gere exatamente 3 missões diárias astrológicas interativas em ${targetLanguage} para o usuário de nome "${name}", signo ${zodiac} e nascido em ${birthDate}.
 O objetivo de cada missão deve ser o alto desenvolvimento espiritual, crescimento pessoal, bem-estar, libertação de karma (da vida presente ou vidas passadas) ou ativação de dharma ativo com os seus benefícios cósmicos claros.
 Cada missão deve ter um roteiro interativo e inspirador de se cumprir.
 
@@ -2007,11 +2414,11 @@ Você deve retornar EXCLUSIVAMENTE um objeto JSON no seguinte formato estruturad
   "missions": [
     {
       "id": "md1",
-      "title": "Título místico personalizado curto em português",
-      "description": "Instrução poética e detalhada com metas claras (ex: respirar de forma profunda, alongar, silenciar queixas, desfazer e-mails acumulados, doar algo)",
+      "title": "Título místico personalizado curto em ${targetLanguage}",
+      "description": "Instrução poética e detalhada com metas claras no idioma ${targetLanguage} (ex: respirar de forma profunda, alongar, silenciar queixas, desfazer e-mails acumulados, doar algo)",
       "points": 45, // número entre 30 e 60
-      "benefit": "Categoria curta do benefício místico (ex: 'Queima de Karma de Rejeição' ou 'Ativação de Dharma Prático')",
-      "benefitExplanation": "Explicação detalhada e profunda de qual benefício espiritual, emocional e consciencial o usuário receberá ao cumprir essa missão hoje"
+      "benefit": "Categoria curta do benefício místico no idioma ${targetLanguage} (ex: 'Queima de Karma de Rejeição' ou 'Ativação de Dharma Prático')",
+      "benefitExplanation": "Explicação detalhada e profunda de qual benefício espiritual, emocional e consciencial o usuário receberá ao cumprir essa missão hoje, escrita inteiramente em ${targetLanguage}"
     },
     ...
   ]
@@ -2113,7 +2520,7 @@ DIRETRIZES DE COMUNICAÇÃO DE ELITE (TRATAMENTO COM AMOR E INFECTUOSO CARINHO):
 
 // NEW API: Osiris Dashboard - "Prioridade do Dia", contextual notification & Simulated offline push
 app.post("/api/osiris/dashboard", async (req, res) => {
-  const { userProfile, weather, biorhythm, location, lastDream } = req.body || {};
+  const { userProfile, weather, biorhythm, location, lastDream, lang } = req.body || {};
   const birthDate = userProfile?.birthDate || "1998-03-12";
   const zodiac = getZodiacFromBirthDate(birthDate);
   const name = userProfile?.name ? userProfile.name.split(" ")[0] : "Buscador";
@@ -2124,7 +2531,7 @@ app.post("/api/osiris/dashboard", async (req, res) => {
   const year = today.getFullYear();
   const todayStr = `${year}-${month}-${day}`;
 
-  const cacheKey = `osiris_dashboard:${name}:${birthDate}:${userProfile?.birthTime || ''}:${userProfile?.birthCity || ''}:${todayStr}:${weather?.temperature || '22'}`;
+  const cacheKey = `osiris_dashboard:${name}:${birthDate}:${userProfile?.birthTime || ''}:${userProfile?.birthCity || ''}:${todayStr}:${weather?.temperature || '22'}:${lang || 'pt'}`;
   const cached = getCachedResponse(cacheKey);
   if (cached) {
     return res.json(cached);
@@ -2238,6 +2645,16 @@ app.post("/api/osiris/dashboard", async (req, res) => {
   }
 
   try {
+    const activeLang = lang || 'pt';
+    const languageNames: Record<string, string> = {
+      pt: "Português",
+      en: "English (Inglês)",
+      es: "Spanish (Espanhol)",
+      de: "German (Alemão)",
+      fr: "French (Francês)"
+    };
+    const targetLanguage = languageNames[activeLang] || "Português";
+
     const contextPrompt = `O usuário chama-se "${name}", seu signo é ${zodiac}, nascido em ${birthDate}.
 Dados Atuais:
 - Biorritmo: Físico ${biorhythm?.physical}%, Emocional ${biorhythm?.emotional}%, Intelectual ${biorhythm?.intellectual}%
@@ -2245,30 +2662,30 @@ Dados Atuais:
 - Categoria Sintonizada do Dia para Orientação Principal Única ("Prioridade do Dia"): "${selectedCategory}"
 - Último Sonho Relevante: ${lastDream ? `"${lastDream.description}"` : "Nenhum sonho recente registrado."}
 
-Como o conselheiro genial "OSÍRIS", gere um objeto JSON EXCLUSIVAMENTE, sem qualquer explicação fora dele ou tags adicionais. Ele deve conter os pontos exatos pedidos no Felert.txt:
+Como o conselheiro genial "OSÍRIS", gere um objeto JSON EXCLUSIVAMENTE em ${targetLanguage}, sem qualquer explicação fora dele ou tags adicionais. Ele deve conter os pontos exatos pedidos no Felert.txt:
 
-1. 'prioridadeDia': insights extraordinários, precisos e poéticos focados na categoria "${selectedCategory}". O conselho e significado devem refletir o clima físico de ${weather?.temperature}°C, o biorritmo atual e as marcas do Sol em ${zodiac}.
-2. 'contextMessage': uma mensagem para quando o usuário está online de teor contextual, amigável e refinado, terminando exatamente com a String "[PrimeiroNome], posso mostrar tudo que está favorável para você hoje. Basta me perguntar." (substitua [PrimeiroNome] pelo nome real dele: ${name}).
-3. 'offlineNotifications': 3 notificações de teor realístico de canais push úteis e personalizadas sobre trânsitos kármicos, lunações e missões.
+1. 'prioridadeDia': insights extraordinários, precisos e poéticos focados na categoria "${selectedCategory}". O conselho e significado devem refletir o clima físico de ${weather?.temperature}°C, o biorritmo atual e as marcas do Sol em ${zodiac}, tudo escrito inteiramente em ${targetLanguage}.
+2. 'contextMessage': uma mensagem para quando o usuário está online de teor contextual, amigável e refinado, terminando exatamente com a String "[PrimeiroNome], posso mostrar tudo que está favorável para você hoje. Basta me perguntar." (substitua [PrimeiroNome] pelo nome real dele: ${name}, mas adaptado para o idioma ${targetLanguage} se necessário).
+3. 'offlineNotifications': 3 notificações de teor realístico de canais push úteis e personalizadas sobre trânsitos kármicos, lunações e missões, escritas em ${targetLanguage}.
 
-Retorne no formato JSON exato:
+Retorne no formato JSON exato em ${targetLanguage}:
 {
   "prioridadeDia": {
     "category": "${selectedCategory}",
-    "title": "Título poético curto da prioridade",
-    "description": "Texto rico e profundo em português que resume o insight único diário do usuário integrando os dados.",
-    "advice": "Instrução objetiva, compassiva e sincera de como agir em relação a isso",
+    "title": "Título poético curto da prioridade em ${targetLanguage}",
+    "description": "Texto rico e profundo em ${targetLanguage} que resume o insight único diário do usuário integrando os dados.",
+    "advice": "Instrução objetiva, compassiva e sincera de como agir em relação a isso em ${targetLanguage}",
     "rating": 4.9
   },
   "contextMessage": {
-    "sentence": "Breve frase mística convidativa contextualizada de Osiris baseada no clima ou dia",
+    "sentence": "Breve frase mística convidativa contextualizada de Osiris baseada no clima ou dia em ${targetLanguage}",
     "prompt": "${name}, posso mostrar tudo que está favorável para você hoje. Basta me perguntar."
   },
   "offlineNotifications": [
     {
       "id": "not1",
-      "title": "Título impactante personalizado",
-      "message": "Mensagem útil personalizada única sem enrolação",
+      "title": "Título impactante personalizado em ${targetLanguage}",
+      "message": "Mensagem útil personalizada única sem enrolação em ${targetLanguage}",
       "time": "Há 1 hora",
       "type": "transit|lune|mission"
     },

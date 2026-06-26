@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Bell, Sparkles, Check, Info, Calendar, AlertTriangle, Eye, ChevronRight, X, Compass, Globe } from 'lucide-react';
+import { translateUiText, Language } from '../lib/translations';
 
 export interface AstroNotification {
   id: string;
@@ -18,9 +20,19 @@ interface AstroNotificationsProps {
   birthDate?: string;
   userEmail?: string;
   onRewardPoints?: (amount: number) => void;
+  lang?: Language;
 }
 
-export default function AstroNotifications({ userName, birthDate, userEmail, onRewardPoints }: AstroNotificationsProps) {
+export default function AstroNotifications({ userName, birthDate, userEmail, onRewardPoints, lang }: AstroNotificationsProps) {
+  const { t: tI18n } = useTranslation();
+  const t = (text: string) => {
+    if (!text) return "";
+    const res = tI18n(text);
+    if (res === text || !res) {
+      return translateUiText(text, lang || 'pt');
+    }
+    return res;
+  };
   const [notifications, setNotifications] = useState<AstroNotification[]>([]);
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [selectedNotification, setSelectedNotification] = useState<AstroNotification | null>(null);
@@ -116,19 +128,19 @@ export default function AstroNotifications({ userName, birthDate, userEmail, onR
         return {
           bg: 'bg-rose-500/15 border-rose-500/30 text-rose-400',
           dot: 'bg-rose-500',
-          badge: 'Critico'
+          badge: t('Critico')
         };
       case 'medium':
         return {
           bg: 'bg-amber-500/15 border-amber-500/30 text-amber-400',
           dot: 'bg-amber-400',
-          badge: 'Raro'
+          badge: t('Raro')
         };
       default:
         return {
           bg: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400',
           dot: 'bg-emerald-400',
-          badge: 'Sutil'
+          badge: t('Sutil')
         };
     }
   };
@@ -166,7 +178,7 @@ export default function AstroNotifications({ userName, birthDate, userEmail, onR
         id="astro-notification-bell-btn"
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 rounded-xl bg-slate-950 hover:bg-slate-900 border border-slate-850 text-slate-450 hover:text-slate-200 transition active:scale-95 cursor-pointer flex items-center justify-center"
-        title="Alertas Planetários Raros"
+        title={t("Alertas Planetários Raros")}
       >
         <Bell className={`w-4 h-4 ${unreadCount > 0 ? 'animate-swing duration-1000 iteration-infinite' : ''}`} />
         {unreadCount > 0 && (
@@ -180,14 +192,14 @@ export default function AstroNotifications({ userName, birthDate, userEmail, onR
       {isOpen && (
         <div 
           id="astro-notifications-dropdown"
-          className="absolute right-0 mt-3 w-80 md:w-96 bg-slate-950/95 border border-slate-800 rounded-2xl shadow-3xl backdrop-blur-xl z-50 animate-in fade-in slide-in-from-top-4 duration-200 flex flex-col space-y-2 overflow-hidden max-h-[480px]"
+          className="absolute right-0 mt-3 w-80 md:w-96 bg-slate-950/95 border border-slate-800 rounded-2xl shadow-3xl backdrop-blur-xl z-50 animate-in fade-in slide-in-from-top-4 duration-200 flex flex-col space-y-2 overflow-hidden"
         >
           {/* Header */}
           <div className="p-4 border-b border-slate-900 flex justify-between items-center bg-slate-900/40">
             <div className="flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-amber-400" />
               <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono">
-                Sinais Celestes Ativos
+                {t("Sinais Celestes Ativos")}
               </h4>
             </div>
 
@@ -196,7 +208,7 @@ export default function AstroNotifications({ userName, birthDate, userEmail, onR
                 onClick={handleMarkAllRead}
                 className="text-[9px] font-mono font-bold text-emerald-400 hover:text-emerald-300 transition cursor-pointer"
               >
-                Lidos todos ({unreadCount})
+                {t("Lidos todos")} ({unreadCount})
               </button>
             )}
           </div>
@@ -206,7 +218,7 @@ export default function AstroNotifications({ userName, birthDate, userEmail, onR
             {loading ? (
               <div className="py-12 text-center text-xs font-mono text-slate-500 flex flex-col items-center gap-2">
                 <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
-                <span>Calculando trânsitos no seu mapa...</span>
+                <span>{t("Calculando trânsitos no seu mapa...")}</span>
               </div>
             ) : notifications.length > 0 ? (
               notifications.map((n) => {
@@ -252,14 +264,14 @@ export default function AstroNotifications({ userName, birthDate, userEmail, onR
               })
             ) : (
               <div className="py-12 text-center text-xs font-mono text-slate-500">
-                Nenhum sinal kármico raro detectado no céu hoje.
+                {t("Nenhum sinal kármico raro detectado no céu hoje.")}
               </div>
             )}
           </div>
 
           {/* Footer view alignment explanation */}
           <div className="p-3 bg-slate-900/30 text-[9px] font-mono text-slate-500 text-center border-t border-slate-900">
-            Alertas sintonizados com o Sol, Lua e Ascendente de nascimento.
+            {t("Alertas sintonizados com o Sol, Lua e Ascendente de nascimento.")}
           </div>
         </div>
       )}
@@ -283,7 +295,7 @@ export default function AstroNotifications({ userName, birthDate, userEmail, onR
                     {selectedNotification.title}
                   </h4>
                   <p className="text-[9px] font-mono text-slate-500">
-                    Trânsito do Planeta: {selectedNotification.planet} ({selectedNotification.aspect})
+                    {t("Trânsito do Planeta")}: {selectedNotification.planet} ({selectedNotification.aspect})
                   </p>
                 </div>
               </div>
@@ -301,11 +313,11 @@ export default function AstroNotifications({ userName, birthDate, userEmail, onR
               {/* Alert Badge info */}
               <div className="flex flex-wrap gap-2 items-center">
                 <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-[9px] font-mono text-amber-400 font-bold uppercase rounded">
-                  Alinhamento Raro Natal
+                  {t("Alinhamento Raro Natal")}
                 </span>
                 <span className="text-[9px] font-mono text-slate-500 flex items-center gap-1">
                   <Calendar className="w-3 h-3" />
-                  Alcança pico em: {formatDate(selectedNotification.date)}
+                  {t("Alcança pico em")}: {formatDate(selectedNotification.date)}
                 </span>
               </div>
 
@@ -318,12 +330,12 @@ export default function AstroNotifications({ userName, birthDate, userEmail, onR
               <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-905 space-y-1.5">
                 <h5 className="text-[10px] font-mono uppercase text-amber-450 flex items-center gap-1.5">
                   <Compass className="w-3.5 h-3.5 text-amber-400" />
-                  Instruções de Sintonização Sagrada:
+                  {t("Instruções de Sintonização Sagrada:")}
                 </h5>
                 <ul className="text-[10px] text-slate-400 font-sans space-y-1 pl-4 list-disc">
-                  <li>Medite de costas para o Sol durante o pico do alinhamento celeste.</li>
-                  <li>Invoque as forças arquetípicas de {selectedNotification.planet} para harmonização.</li>
-                  <li>Consuma chás correspondentes e registre sonhos em seu jornal sagrado.</li>
+                  <li>{t("Medite de costas para o Sol durante o pico do alinhamento celeste.")}</li>
+                  <li>{t("Invoque as forças arquetípicas de")} {selectedNotification.planet} {t("para harmonização.")}</li>
+                  <li>{t("Consuma chás correspondentes e registre sonhos em seu jornal sagrado.")}</li>
                 </ul>
               </div>
             </div>
@@ -331,13 +343,13 @@ export default function AstroNotifications({ userName, birthDate, userEmail, onR
             {/* Actions for Gamified Experience */}
             <div className="pt-3 border-t border-slate-900 flex justify-between items-center gap-4">
               <span className="text-[8px] font-mono text-slate-500 uppercase">
-                Conexão Astral Ativa
+                {t("Conexão Astral Ativa")}
               </span>
 
               {claimedBlessings.includes(selectedNotification.id) ? (
                 <span className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500/5 text-emerald-400 text-xs font-mono font-bold rounded-xl border border-emerald-500/20">
                   <Check className="w-3 h-3" />
-                  Alinhamento Sintonizado! (+200 pts)
+                  {t("Alinhamento Sintonizado!")} (+200 pts)
                 </span>
               ) : (
                 <button
@@ -345,7 +357,7 @@ export default function AstroNotifications({ userName, birthDate, userEmail, onR
                   className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-amber-500 to-rose-600 font-mono font-bold text-slate-950 rounded-xl hover:from-amber-450 hover:to-rose-550 transition text-xs cursor-pointer shadow-lg hover:shadow-rose-500/10 active:scale-95"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  Venerar & Sintonizar (+200 pts)
+                  {t("Venerar & Sintonizar")} (+200 pts)
                 </button>
               )}
             </div>

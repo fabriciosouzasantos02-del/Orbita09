@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { Sparkles, Star, Globe, Clock, User, Mail, Lock, ShieldCheck } from "lucide-react";
 import { motion } from "motion/react";
-import { Language, translations } from "../translations";
-import { BirthDetails, UserProfile } from "../types";
+import { Language, translations } from "./translations";
+import { BirthDetails, UserProfile } from "./types";
+import { useTranslation } from "react-i18next";
 
 interface WelcomeScreenProps {
   onAuthenticate: (profile: UserProfile) => void;
@@ -22,6 +23,7 @@ export default function WelcomeScreen({ onAuthenticate, lang, setLang }: Welcome
   const [isLoading, setIsLoading] = useState(false);
 
   const t = translations[lang];
+  const { t: tI18n } = useTranslation();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -288,7 +290,7 @@ export default function WelcomeScreen({ onAuthenticate, lang, setLang }: Welcome
         {/* Divider */}
         <div className="my-6 flex items-center justify-between text-xs text-slate-500">
           <div className="w-full h-px bg-white/5" />
-          <span className="px-3 whitespace-nowrap">ou</span>
+          <span className="px-3 whitespace-nowrap">{tI18n("ou")}</span>
           <div className="w-full h-px bg-white/5" />
         </div>
 
@@ -319,7 +321,7 @@ export default function WelcomeScreen({ onAuthenticate, lang, setLang }: Welcome
         {/* Security / Terms reassurance badge */}
         <div className="mt-8 flex items-center justify-center gap-2 text-[10px] text-slate-500">
           <ShieldCheck className="w-3.5 h-3.5 text-indigo-400/60" />
-          <span>Calculado 100% no próprio dispositivo de maneira privada e anônima.</span>
+          <span>{tI18n("Calculado 100% no próprio dispositivo de maneira privada e anônima.")}</span>
         </div>
 
       </div>

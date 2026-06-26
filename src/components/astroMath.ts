@@ -1,6 +1,284 @@
 // Math-based astronomical/astrological calculation engine for high-precision placements
 // Using J2000 epoch Keplerian elements, obliquity of ecliptic, sidereal calculations, and lunar perturbations.
 
+import i18next from "i18next";
+
+function getActiveLanguage(): 'pt' | 'en' | 'es' | 'de' | 'fr' {
+  const lang = (i18next.language || 'pt').toLowerCase().split('-')[0];
+  if (['pt', 'en', 'es', 'de', 'fr'].includes(lang)) {
+    return lang as 'pt' | 'en' | 'es' | 'de' | 'fr';
+  }
+  return 'pt';
+}
+
+const TRANSLATED_SIGNS: Record<string, Record<string, string>> = {
+  pt: { "Áries": "Áries", "Touro": "Touro", "Gêmeos": "Gêmeos", "Câncer": "Câncer", "Leão": "Leão", "Virgem": "Virgem", "Libra": "Libra", "Escorpião": "Escorpião", "Sagitário": "Sagitário", "Capricórnio": "Capricórnio", "Aquário": "Aquário", "Peixes": "Peixes" },
+  en: { "Áries": "Aries", "Touro": "Taurus", "Gêmeos": "Gemini", "Câncer": "Cancer", "Leão": "Leo", "Virgem": "Virgo", "Libra": "Libra", "Escorpião": "Scorpio", "Sagitário": "Sagittarius", "Capricórnio": "Capricorn", "Aquário": "Aquarius", "Peixes": "Pisces" },
+  es: { "Áries": "Aries", "Touro": "Tauro", "Gêmeos": "Géminis", "Câncer": "Cáncer", "Leão": "Leo", "Virgem": "Virgo", "Libra": "Libra", "Escorpião": "Escorpio", "Sagitário": "Sagitario", "Capricórnio": "Capricornio", "Aquário": "Acuario", "Peixes": "Piscis" },
+  de: { "Áries": "Widder", "Touro": "Stier", "Gêmeos": "Zwillinge", "Câncer": "Krebs", "Leão": "Löwe", "Virgem": "Jungfrau", "Libra": "Waage", "Escorpião": "Skorpion", "Sagitário": "Schütze", "Capricórnio": "Steinbock", "Aquário": "Wassermann", "Peixes": "Fische" },
+  fr: { "Áries": "Bélier", "Touro": "Taureau", "Gêmeos": "Gémeaux", "Câncer": "Cancer", "Leão": "Lion", "Virgem": "Vierge", "Libra": "Balance", "Escorpião": "Scorpion", "Sagitário": "Sagitaire", "Capricórnio": "Capricorne", "Aquário": "Verseau", "Peixes": "Poissons" }
+};
+
+const TRANSLATED_PLANETS: Record<string, Record<string, string>> = {
+  pt: { "Sol": "Sol", "Lua": "Lua", "Mercúrio": "Mercúrio", "Vênus": "Vênus", "Marte": "Marte", "Júpiter": "Júpiter", "Saturno": "Saturno", "Urano": "Urano", "Netuno": "Netuno", "Plutão": "Plutão", "Quíron": "Quíron", "Nodo Norte": "Nodo Norte", "Nodo Sul": "Nodo Sul", "Lilith": "Lilith", "Ascendente": "Ascendente", "Descendente": "Descendente", "Meio do Céu": "Meio do Céu", "Fundo do Céu": "Fundo do Céu" },
+  en: { "Sol": "Sun", "Lua": "Moon", "Mercúrio": "Mercury", "Vênus": "Venus", "Marte": "Mars", "Júpiter": "Jupiter", "Saturno": "Saturn", "Urano": "Uranus", "Netuno": "Neptune", "Plutão": "Pluto", "Quíron": "Chiron", "Nodo Norte": "North Node", "Nodo Sul": "South Node", "Lilith": "Lilith", "Ascendente": "Ascendant", "Descendente": "Descendant", "Meio do Céu": "Midheaven", "Fundo do Céu": "Imum Coeli" },
+  es: { "Sol": "Sol", "Lua": "Luna", "Mercúrio": "Mercurio", "Vênus": "Venus", "Marte": "Marte", "Júpiter": "Júpiter", "Saturno": "Saturno", "Urano": "Urano", "Netuno": "Neptuno", "Plutão": "Plutón", "Quíron": "Quirón", "Nodo Norte": "Nodo Norte", "Nodo Sul": "Nodo Sul", "Lilith": "Lilith", "Ascendente": "Ascendente", "Descendente": "Descendente", "Meio do Céu": "Medio Cielo", "Fundo do Céu": "Bajo Cielo" },
+  de: { "Sol": "Sonne", "Lua": "Mond", "Mercúrio": "Merkur", "Vênus": "Venus", "Marte": "Mars", "Júpiter": "Jupiter", "Saturno": "Saturn", "Urano": "Uranus", "Netuno": "Neptun", "Plutão": "Pluto", "Quíron": "Chiron", "Nodo Norte": "Nordknoten", "Nodo Sul": "Südknoten", "Lilith": "Lilith", "Ascendente": "Aszendent", "Descendente": "Deszendent", "Meio do Céu": "Himmelsmitte", "Fundo do Céu": "Himmelstiefe" },
+  fr: { "Sol": "Soleil", "Lua": "Lune", "Mercúrio": "Mercure", "Vênus": "Vénus", "Marte": "Mars", "Júpiter": "Jupiter", "Saturno": "Saturn", "Urano": "Uranus", "Netuno": "Neptune", "Plutão": "Pluto", "Quíron": "Chiron", "Nodo Norte": "Nœud Nord", "Nodo Sul": "Nœud Sud", "Lilith": "Lilith", "Ascendente": "Ascendant", "Descendente": "Descendant", "Meio do Céu": "Milieu du Ciel", "Fundo do Céu": "Fond du Ciel" }
+};
+
+const TRANSLATED_ASPECTS: Record<string, Record<string, string>> = {
+  pt: { "Conjunção": "Conjunção", "Oposição": "Oposição", "Trígono": "Trígono", "Quadratura": "Quadratura", "Sextil": "Sextil", "Quincúncio": "Quincúncio", "Semisextil": "Semisextil", "Semicuadratura": "Semicuadratura", "Sesquiquadratura": "Sesquiquadratura", "Biquintil": "Biquintil" },
+  en: { "Conjunção": "Conjunction", "Oposição": "Opposition", "Trígono": "Trine", "Quadratura": "Square", "Sextil": "Sextile", "Quincúncio": "Quincunx", "Semisextil": "Semisextile", "Semicuadratura": "Semi-square", "Sesquiquadratura": "Sesquiquadrate", "Biquintil": "Biquintile" },
+  es: { "Conjunção": "Conjunción", "Oposição": "Oposición", "Trígono": "Trígono", "Quadratura": "Cuadratura", "Sextil": "Sextil", "Quincúncio": "Quincuncio", "Semisextil": "Semisextil", "Semicuadratura": "Semicuadratura", "Sesquiquadratura": "Sesquicuadratura", "Biquintil": "Biquintil" },
+  de: { "Conjunção": "Konjunktion", "Oposição": "Opposition", "Trígono": "Trigon", "Quadratura": "Quadrat", "Sextil": "Sextil", "Quincúncio": "Quincunx", "Semisextil": "Semisextil", "Semicuadratura": "Halbquadrat", "Sesquiquadratura": "Anderthalbquadrat", "Biquintil": "Biquintil" },
+  fr: { "Conjunção": "Conjonction", "Oposição": "Opposition", "Trígono": "Trigone", "Quadratura": "Carré", "Sextil": "Sextile", "Quincúncio": "Quinconce", "Semisextil": "Semi-sextile", "Semicuadratura": "Semi-carré", "Sesquiquadratura": "Sesqui-carré", "Biquintil": "Biquintile" }
+};
+
+const TRANSLATED_PLANET_DESCS: Record<string, Record<string, string>> = {
+  pt: {
+    "Sol": "O SOL rege sua essência divina, seu brilho exterior e seu ego vital.",
+    "Lua": "A LUA coordena suas marés afetivas, reações subconscientes e memórias profundas.",
+    "Mercúrio": "MERCÚRIO rege sua inteligência tática, seu raciocínio matemático e comunicação cotidiana.",
+    "Vênus": "VÊNUS espelha sua capacidade de partilha amorosa, estética refinada e abundância financeira.",
+    "Marte": "MARTE direciona toda a sua energia impulsionadora, sua coragem e combatividade instintiva.",
+    "Júpiter": "JÚPITER governa sua expansão pessoal, estudos avançados de sabedoria e golpes de sorte.",
+    "Saturno": "SATURNO estabelece seus limites construtores, testes cármicos de maturidade e autoridade de tempo.",
+    "Urano": "URANO evoca os seus relâmpagos de intuição idealizadora, rebeldia de vanguarda e inovações.",
+    "Netuno": "NETUNO expande sua sensibilidade espiritual mística, criatividade sublime e empatia psíquica.",
+    "Plutão": "PLUTÃO regenera seus poderes ocultos por meio de transmutação psicológica silenciosa.",
+    "Quíron": "QUÍRON pontua suas feridas de alma em cura contínua e sua maestria de terapeuta interno.",
+    "Nodo Norte": "O NODO NORTE magnetiza sua bússola de evolução cármica futura nesta existência.",
+    "Nodo Sul": "O NODO SUL abriga as suas facilidades inatas e bagagens de vidas passadas confortáveis.",
+    "Lilith": "LILITH (Lua Negra) revela seus desejos tabus indomados, repressões e forças brutas sagradas.",
+    "Ascendente": "O ASCENDENTE molda sua máscara de personalidade visível, sua vitalidade corporal e começos.",
+    "Descendente": "O DESCENDENTE espelha o perfil de parcerias e conexões amorosas que curam sua alma.",
+    "Meio do Céu": "O MEIO DO CÉU direciona o ápice de sua vocação madura, reputação profissional e legado público.",
+    "Fundo do Céu": "O FUNDO DO CÉU sintoniza com as raízes de seu clã familiar, privacidade emocional e infância."
+  },
+  en: {
+    "Sol": "The SUN rules your divine essence, your outer radiance, and your vital ego.",
+    "Lua": "The MOON coordinates your emotional tides, subconscious reactions, and deep memories.",
+    "Mercúrio": "MERCURY rules your tactical intelligence, your mathematical reasoning, and daily communication.",
+    "Vênus": "VENUS mirrors your capacity for loving sharing, refined aesthetics, and financial abundance.",
+    "Marte": "MARS directs all your driving energy, your courage, and instinctive combativeness.",
+    "Júpiter": "JUPITER governs your personal expansion, advanced wisdom studies, and lucky breaks.",
+    "Saturno": "SATURN establishes your building boundaries, karmic tests of maturity, and time authority.",
+    "Urano": "URANUS evokes your lightning bolts of idealizing intuition, avant-garde rebellion, and innovations.",
+    "Netuno": "NEPTUNE expands your mystical spiritual sensitivity, sublime creativity, and psychic empathy.",
+    "Plutão": "PLUTO regenerates your hidden powers through silent psychological transmutation.",
+    "Quíron": "CHIRON marks your soul wounds in continuous healing and your inner therapist mastery.",
+    "Nodo Norte": "The NORTH NODE magnetizes your compass of future karmic evolution in this existence.",
+    "Nodo Sul": "The SOUTH NODE houses your innate facilities and comfortable past life baggage.",
+    "Lilith": "LILITH (Black Moon) reveals your untamed taboo desires, repressions, and sacred brute forces.",
+    "Ascendente": "The ASCENDANT shapes your mask of visible personality, your bodily vitality, and beginnings.",
+    "Descendente": "The DESCENDANT mirrors the profile of partnerships and loving connections that heal your soul.",
+    "Meio do Céu": "The MIDHEAVEN directs the pinnacle of your mature vocation, professional reputation, and public legacy.",
+    "Fundo do Céu": "The IMUM COELI (Lower Heaven) tunes in to the roots of your family clan, emotional privacy, and childhood."
+  },
+  es: {
+    "Sol": "El SOL rige tu esencia divina, tu brillo exterior y tu ego vital.",
+    "Lua": "La LUNA coordina tus mareas afectivas, reacciones subconscientes y memorias profundas.",
+    "Mercúrio": "MERCURIO rige tu inteligencia táctica, tu razonamiento matemático y tu comunicación cotidiana.",
+    "Vênus": "VENUS refleja tu capacidad de compartir amorosamente, tu estética refinada y tu abundancia financiera.",
+    "Marte": "MARTE dirige toda tu energía impulsora, tu coraje y tu combatividad instintiva.",
+    "Júpiter": "JÚPITER gobierna tu expansión personal, estudios avanzados de sabiduría y golpes de suerte.",
+    "Saturno": "SATURNO establece tus límites constructores, pruebas kármicas de madurez y autoridad del tiempo.",
+    "Urano": "URANO evoca tus relámpagos de intuición idealizadora, rebeldía de vanguardia e innovaciones.",
+    "Netuno": "NEPTUNO expande tu sensibilidad espiritual mística, creatividad sublime y empatía psíquica.",
+    "Plutão": "PLUTÓN regenera tus poderes ocultos a través de una transmutación psicológica silenciosa.",
+    "Quíron": "QUIRÓN marca las heridas de tu alma en curación continua y tu maestría de terapeuta interno.",
+    "Nodo Norte": "El NODO NORTE imanta tu brújula de evolución kármica futura en esta existencia.",
+    "Nodo Sul": "El NODO SUR alberga tus facilidades innatas y cómodo equipaje de vidas pasadas.",
+    "Lilith": "LILITH (Luna Negra) revela tus deseos tabú indómitos, represiones y fuerzas brutas sagradas.",
+    "Ascendente": "El ASCENDENTE da forma a tu máscara de personalidad visible, tu vitalidade corporal y tus comienzos.",
+    "Descendente": "El DESCENDENTE refleja el perfil de asociaciones y conexiones amorosas que curan tu alma.",
+    "Meio do Céu": "El MEDIO CIELO dirige la cúspide de tu vocación madura, reputación profesional y legado público.",
+    "Fundo do Céu": "El BAJO CIELO sintoniza con las raíces de tu clan familiar, privacidad emocional e infancia."
+  },
+  de: {
+    "Sol": "Die SONNE regiert Ihre göttliche Essenz, Ihre äußere Ausstrahlung und Ihr vitales Ego.",
+    "Lua": "Der MOND koordiniert Ihre emotionalen Gezeiten, unterbewussten Reaktionen und tiefen Erinnerungen.",
+    "Mercúrio": "MERKUR regiert Ihre taktische Intelligenz, Ihr mathematisches Denken und Ihre tägliche Kommunikation.",
+    "Vênus": "VENUS spiegelt Ihre Fähigkeit zum liebevollen Teilen, Ihre verfeinerte Ästhetik und Ihren finanziellen Überfluss wider.",
+    "Marte": "MARS lenkt all Ihre treibende Energie, Ihren Mut und Ihre instinktive Kampfbereitschaft.",
+    "Júpiter": "JUPITER regiert Ihre persönliche Expansion, fortgeschrittene Weisheitsstudien und Glücksfälle.",
+    "Saturno": "SATURN setzt Ihre baulichen Grenzen, karmischen Reifeprüfungen und Zeitautorität.",
+    "Urano": "URANUS ruft Ihre Blitze der idealisierenden Intuition, der Avantgarde-Rebellion und der Innovationen hervor.",
+    "Netuno": "NEPTUN erweitert Ihre mystische spirituelle Sensibilität, erhabene Kreativität und psychische Empathie.",
+    "Plutão": "PLUTO regeneriert Ihre verborgenen Kräfte durch stille psychologische Transmutation.",
+    "Quíron": "CHIRON markiert Ihre Seelenwunden in kontinuierlicher Heilung und Ihre innere Therapeutenmeisterschaft.",
+    "Nodo Norte": "Der NORDKNOTEN magnetisiert Ihren Kompass der zukünftigen karmischen Evolution in dieser Existenz.",
+    "Nodo Sul": "Der SÜDKNOTEN beherbergt Ihre angeborenen Fähigkeiten und bequemes Gepäck aus früheren Leben.",
+    "Lilith": "LILITH (Schwarzer Mond) enthüllt Ihre ungezähmten Tabuwünsche, Verdrängungen und heiligen rohen Kräfte.",
+    "Ascendente": "Der ASZENDENT formt Ihre Maske der sichtbaren Persönlichkeit, Ihre körperliche Vitalität und Ihre Anfänge.",
+    "Descendente": "Der DESZENDENT spiegelt das Profil von Partnerschaften und liebevollen Verbindungen wider, die Ihre Seele heilen.",
+    "Meio do Céu": "Das MEDIUM COELI (Himmelsmitte) lenkt den Höhepunkt Ihrer reifen Berufung, Ihres beruflichen Rufs und Ihres öffentlichen Erbes.",
+    "Fundo do Céu": "Das IMUM COELI (Himmelstiefe) stimmt sich auf die Wurzeln Ihres Familienclans, Ihre emotionale Privatsphäre und Ihre Kindheit ein."
+  },
+  fr: {
+    "Sol": "Le SOLEIL régit votre essence divine, votre éclat extérieur et votre ego vital.",
+    "Lua": "La LUNE coordonne vos marées affectives, réactions subconscientes et souvenirs profonds.",
+    "Mercúrio": "MERCURE régit votre intelligence tactique, votre raisonnement mathématique et votre communication quotidienne.",
+    "Vênus": "VÉNUS reflète votre capacité de partage amoureux, votre esthétique raffinée et votre abondance financière.",
+    "Marte": "MARS dirige toute votre énergie motrice, votre courage et votre combativité instinctive.",
+    "Júpiter": "JUPITER régit votre expansion personnelle, vos études de sagesse avancées et vos coups de chance.",
+    "Saturno": "SATURNE établit vos limites constructrices, vos tests karmiques de maturité et l'autorité du temps.",
+    "Urano": "URANUS évoque vos éclairs d'intuition idéalisatrice, votre rébellion d'avant-garde et vos innovations.",
+    "Netuno": "NEPTUNE développe votre sensibilité spirituelle mystique, votre créativité sublime et votre empathie psychique.",
+    "Plutão": "PLUTON régénère vos pouvoirs cachés grâce à une transmutation psychologique silencieuse.",
+    "Quíron": "CHIRON marque les blessures de votre âme en guérison continue et votre maîtrise de thérapeute intérieur.",
+    "Nodo Norte": "Le NŒUD NORD magnétise votre boussole d'évolution karmique future dans cette existence.",
+    "Nodo Sul": "Le NŒUD SUD abrite vos facilités innées et vos bagages confortables de vies antérieures.",
+    "Lilith": "LILITH (Lune Noire) révèle vos désirs tabous indomptés, vos répressions et vos forces brutes sacrées.",
+    "Ascendente": "L'ASCENDANT façonne votre masque de personnalité visible, votre vitalité corporelle et vos débuts.",
+    "Descendente": "Le DESCENDANT reflète le profil des partenariats et des relations amoureuses qui guérissent votre âme.",
+    "Meio do Céu": "Le MILIEU DU CIEL dirige le summum de votre vocation mature, de votre réputation professionnelle et de votre héritage public.",
+    "Fundo do Céu": "Le FOND DU CIEL s'accorde aux racines de votre clan familial, à votre intimité émotionnelle et à votre enfance."
+  }
+};
+
+const TRANSLATED_HOUSE_LABELS: Record<string, string[]> = {
+  pt: [
+    "",
+    "Casa do Eu Sou: Personalidade, corpo e impacto inicial no mundo.",
+    "Casa das Finanças: Recursos materiais, talentos utilitários e valores de vida.",
+    "Casa da Mente: Pequenas viagens, comunicação, irmãos e ambiente local.",
+    "Casa do Clã: Lar primordial, memórias profundas, base familiar e privacidade.",
+    "Casa da Paixão: Criatividade brilhante, conquistas românticas, lazer e filhos.",
+    "Casa da Rotina: Trabalho diário, vitalidade da saúde física e presteza organizada.",
+    "Casa do Outro: Relações oficiais, amor espelhado, sociedades e contratos.",
+    "Cass das Sombras: Grandes mistérios psíquicos, transmutação, heranças e intimidade.",
+    "Casa do Saber: Filosofia de vida, viagens de longa distância e sabedorias excelsas.",
+    "Casa da Carreira: Posição social máxima, prestígio laboral e o seu grande legado.",
+    "Casa dos Ideais: Amigos sinceros, planejamentos coletivos e ativismo social amplo.",
+    "Casa do Inconsciente: Limitações carmáticas, doação altruísta e santuário psíquico."
+  ],
+  en: [
+    "",
+    "House of Self: Personality, body and initial impact on the world.",
+    "House of Finances: Material resources, utilitarian talents and life values.",
+    "House of Mind: Short trips, communication, siblings and local environment.",
+    "House of Clan: Primordial home, deep memories, family base and privacy.",
+    "House of Passion: Brilliant creativity, romantic achievements, leisure and children.",
+    "House of Routine: Daily work, physical health vitality and organized helpfulness.",
+    "House of the Other: Official relations, mirrored love, partnerships and contracts.",
+    "House of Shadows: Great psychic mysteries, transmutation, inheritances and intimacy.",
+    "House of Knowledge: Philosophy of life, long-distance travel and sublime wisdom.",
+    "House of Career: Maximum social standing, labor prestige and your great legacy.",
+    "House of Ideals: Sincere friends, collective planning and broad social activism.",
+    "House of the Unconscious: Karmic limitations, altruistic giving and psychic sanctuary."
+  ],
+  es: [
+    "",
+    "Casa del Yo Soy: Personalidad, cuerpo e impacto inicial en el mundo.",
+    "Casa de las Finanzas: Recursos materiales, talentos utilitarios y valores de vida.",
+    "Casa de la Mente: Viajes cortos, comunicación, hermanos y entorno local.",
+    "Casa del Clan: Hogar primordial, memorias profundas, base familiar y privacidad.",
+    "Casa de la Pasión: Creatividad brillante, logros románticos, ocio e hijos.",
+    "Casa de la Rutina: Trabajo diario, vitalidad de la salud física y presteza organizada.",
+    "Casa del Outro: Relaciones oficiales, amor reflejado, sociedades y contratos.",
+    "Casa de las Sombras: Grandes misterios psíquicos, transmutación, herencias e intimidad.",
+    "Casa del Saber: Filosofía de vida, viajes de larga distancia y sabidurías excelsas.",
+    "Casa de la Carrera: Máxima posición social, prestigio laboral y tu gran legado.",
+    "Casa de los Ideales: Amigos sinceros, planes colectivos y amplio activismo social.",
+    "Casa del Inconsciente: Limitaciones kármicas, donación altruista y santuario psíquico."
+  ],
+  de: [
+    "",
+    "Haus des Selbst: Persönlichkeit, Körper und erster Einfluss auf die Welt.",
+    "Haus der Finanzen: Materielle Ressourcen, nützliche Talente und Lebenswerte.",
+    "Haus des Geistes: Kurze Reisen, Kommunikation, Geschwister und lokales Umfeld.",
+    "Haus des Clans: Ur-Heimat, tiefe Erinnerungen, familiäre Basis und Privatsphäre.",
+    "Haus der Leidenschaft: Brillante Kreativität, romantische Erfolge, Freizeit und Kinder.",
+    "Haus der Routine: Tägliche Arbeit, Vitalität der körperlichen Gesundheit und organisierte Hilfsbereitschaft.",
+    "Haus des Anderen: Offizielle Beziehungen, gespiegelte Liebe, Partnerschaften und Verträge.",
+    "Haus der Schatten: Große psychische Geheimnisse, Transmutation, Erbschaften und Intimität.",
+    "Haus des Wissens: Lebensphilosophie, Fernreisen und erhabene Weisheit.",
+    "Haus der Karriere: Höchste soziale Stellung, Arbeitsruhm und Ihr großes Vermächtnis.",
+    "Haus der Ideale: Aufrichtige Freunde, kollektive Planungen und breiter sozialer Aktivismus.",
+    "Haus des Unbewussten: Karmische Einschränkungen, uneigennütziges Geben und psychisches Heiligtum."
+  ],
+  fr: [
+    "",
+    "Maison de Soi : Personnalité, corps et impact initial dans le monde.",
+    "Maison des Finances : Ressources matérielles, talents utilitaires et valeurs de vie.",
+    "Maison de l'Esprit : Courts trajets, communication, frères et sœurs et environnement local.",
+    "Maison du Clan : Foyer primordial, mémoires profondes, base familiale et intimité.",
+    "Maison de la Passion : Créativité brillante, réussites romantiques, loisirs et enfants.",
+    "Maison de la Routine : Travail quotidien, vitalité de la santé physique et entraide organisée.",
+    "Maison de l'Autre : Relations officielles, amour miroir, partenariats et contrats.",
+    "Maison des Ombres : Grands mystères psychiques, transmutation, héritages et intimité.",
+    "Maison du Savoir : Philosophie de vie, voyages lointains et sagesses sublimes.",
+    "Maison de la Carrière : Statut social maximal, prestige professionnel et votre grand héritage.",
+    "Maison des Idéaux : Amis sincères, planifications collectives et militantisme social large.",
+    "Maison de l'Inconscient : Limitations karmiques, don altruiste et sanctuaire psychique."
+  ]
+};
+
+const TRANSLATED_ASPECT_INTERPS: Record<string, Record<string, string>> = {
+  pt: {
+    "Conjunção": "Funde energias planetárias de forma impetuosa e focada.",
+    "Oposição": "Gera polarização dinâmica, conflito ou projeções no espelho dos relacionamentos.",
+    "Trígono": "Facilidades fluidas, talentos inatos e sincronia pacífica de dons.",
+    "Quadratura": "Tensão motivadora, lições kármicas ricas e impulsos extraordinários de amadurecimento.",
+    "Sextil": "Oportunidades de colaboração prática que florescem quando há engajamento criativo.",
+    "Quincúncio": "Necessidade latente de ajustes minuciosos de rumo para conciliar impulsos discordantes.",
+    "Semisextil": "Sutil magnetismo de transição rápida que conecta aprendizados adjacentes.",
+    "Semicuadratura": "Pequenos ruídos de rotina que forçam tomadas de decisões organizadoras.",
+    "Sesquiquadratura": "Frustrações recorrentes que conduzem à autoanálise corretiva detalhada.",
+    "Biquintil": "Talento mental criativo refinado e autêntica habilidade estética singular."
+  },
+  en: {
+    "Conjunção": "Fuses planetary energies in an impetuous and focused manner.",
+    "Oposição": "Generates dynamic polarization, conflict or projections in the mirror of relationships.",
+    "Trígono": "Fluid facilities, innate talents, and peaceful synchrony of gifts.",
+    "Quadratura": "Motivating tension, rich karmic lessons, and extraordinary maturation impulses.",
+    "Sextil": "Opportunities for practical collaboration that flourish when there is creative engagement.",
+    "Quincúncio": "Latent need for detailed steering adjustments to reconcile discordant impulses.",
+    "Semisextil": "Subtle magnetism of rapid transition that connects adjacent learnings.",
+    "Semicuadratura": "Small routine noises that force organizing decisions.",
+    "Sesquiquadratura": "Recurring frustrations that lead to detailed corrective self-analysis.",
+    "Biquintil": "Refined creative mental talent and authentic singular aesthetic ability."
+  },
+  es: {
+    "Conjunção": "Fusiona las energías planetarias de manera impetuosa y enfocada.",
+    "Oposição": "Gera polarização dinâmica, conflito ou projeções no espelho dos relacionamentos.",
+    "Trígono": "Facilidades fluidas, talentos innatos y sincronía pacífica de dones.",
+    "Quadratura": "Tensión motivadora, ricas lecciones kármicas e impulsos extraordinarios de maduración.",
+    "Sextil": "Oportunidades de colaboración práctica que florecen cuando hay compromiso creativo.",
+    "Quincúncio": "Necesidad latente de ajustes minuciosos de rumbo para conciliar impulsos discordantes.",
+    "Semisextil": "Sutil magnetismo de transición rápida que conecta aprendizajes adyacentes.",
+    "Semicuadratura": "Pequeños ruidos de rutina que obligan a tomar decisiones organizadoras.",
+    "Sesquiquadratura": "Frustraciones recurrentes que conducen a un autoanálisis correctivo detallado.",
+    "Biquintil": "Refinado talento mental creativo y auténtica habilidad estética singular."
+  },
+  de: {
+    "Conjunção": "Verschmilzt planetarische Energien auf ungestüme und fokussierte Weise.",
+    "Oposição": "Erzeugt dynamische Polarisation, Konflikte oder Projektionen im Spiegel von Beziehungen.",
+    "Trígono": "Fließende Erleichterungen, angeborene Talente und friedliche Synchronität der Gaben.",
+    "Quadratura": "Motivierende Spannung, reiche karmische Lektionen und außergewöhnliche Reifungsimpulse.",
+    "Sextil": "Möglichkeiten der praktischen Zusammenarbeit, die bei kreativem Engagement aufblühen.",
+    "Quincúncio": "Latentes Bedürfnis nach detaillierten Steuerungsanpassungen zur Abstimmung diskordanter Impulse.",
+    "Semisextil": "Subtiler Magnetismus des schnellen Übergangs, der benachbarte Lerneffekte verbindet.",
+    "Semicuadratura": "Kleine Routinegeräusche, die zu organisatorischen Entscheidungen zwingen.",
+    "Sesquiquadratura": "Wiederkehrende Frustrationen, die zu einer detaillierten korrigierenden Selbstanalyse führen.",
+    "Biquintil": "Verfeinertes kreatives mentales Talent und authentische, einzigartige ästhetische Fähigkeiten."
+  },
+  fr: {
+    "Conjunção": "Fusionne les énergies planétaires de manière impétueuse et ciblée.",
+    "Oposição": "Génère une polarisation dynamique, des conflits ou des projections dans le miroir des relations.",
+    "Trígono": "Facilités fluides, talents innés et synchronisation pacifique des dons.",
+    "Quadratura": "Tension motivante, riches leçons karmiques et extraordinaires impulsions de maturation.",
+    "Sextil": "Opportunités de collaboration pratique qui s'épanouissent lorsqu'il y a un engagement créatif.",
+    "Quincúncio": "Besoin latent d'ajustements de trajectoire minutieux pour concilier des impulsions discordantes.",
+    "Semisextil": "Magnétisme subtil de transition rapide qui relie les apprentissages adjacents.",
+    "Semicuadratura": "Petits bruits de routine qui imposent des prises de décisions organisatrices.",
+    "Sesquiquadratura": "Frustrations récurrentes qui conduisent à une auto-analyse corrective détaillée.",
+    "Biquintil": "Talent mental créatif raffiné et compétence esthétique singulière authentique."
+  }
+};
+
 export interface AstroPlacement {
   name: string;
   sign: string;
@@ -369,19 +647,35 @@ export function performAstroCalculation(
     { name: "Fundo do Céu", long: IC, desc: "O FUNDO DO CÉU sintoniza com as raízes de seu clã familiar, privacidade emocional e infância." }
   );
   
+  const lang = getActiveLanguage();
+
   // Mapping to final placements
   const astros: AstroPlacement[] = rawPlacementsList.map(item => {
     const info = getZodiacSignInfo(item.long);
     const minStr = info.minute.toString().padStart(2, "0");
     const dStr = `${info.degree}°${minStr}'`;
+    
+    const translatedName = TRANSLATED_PLANETS[lang][item.name] || item.name;
+    const translatedSign = TRANSLATED_SIGNS[lang][info.sign] || info.sign;
+    const decWord = { pt: "decanato", en: "decanate", es: "decanato", de: "Dekanat", fr: "décanat" }[lang];
+    const itemDesc = TRANSLATED_PLANET_DESCS[lang][item.name] || item.desc;
+    
+    const posText = {
+      pt: `Posicionado perfeitamente em ${translatedSign} a uns exatos ${dStr} de arco celestial.`,
+      en: `Perfectly positioned in ${translatedSign} at an exact ${dStr} of celestial arc.`,
+      es: `Posicionado perfectamente en ${translatedSign} a unos exactos ${dStr} de arco celestial.`,
+      de: `Perfekt positioniert in ${translatedSign} bei exakt ${dStr} des Himmelsbogens.`,
+      fr: `Parfaitement positionné en ${translatedSign} à un degré exact de ${dStr} d'arc céleste.`
+    }[lang];
+
     return {
-      name: item.name,
-      sign: info.sign,
+      name: translatedName,
+      sign: translatedSign,
       degree: info.degree,
       minute: info.minute,
       longitude: item.long,
-      extraInfo: `${dStr}, decanato ${Math.floor(info.degree / 10) + 1}º`,
-      description: item.desc + ` Posicionado perfeitamente em ${info.sign} a uns exatos ${dStr} de arco celestial.`
+      extraInfo: `${dStr}, ${decWord} ${Math.floor(info.degree / 10) + 1}º`,
+      description: `${itemDesc} ${posText}`
     };
   });
   
@@ -409,21 +703,7 @@ export function performAstroCalculation(
   houseCusps[12] = (MC + 2 * stepQ1) % 360;
   
   const houses: AstroHouseCusp[] = [];
-  const houseLabels = [
-    "", // index placeholder
-    "Casa do Eu Sou: Personalidade, corpo e impacto inicial no mundo.",
-    "Casa das Finanças: Recursos materiais, talentos utilitários e valores de vida.",
-    "Casa da Mente: Pequenas viagens, comunicação, irmãos e ambiente local.",
-    "Casa do Clã: Lar primordial, memórias profundas, base familiar e privacidade.",
-    "Casa da Paixão: Criatividade brilhante, conquistas românticas, lazer e filhos.",
-    "Casa da Rotina: Trabalho diário, vitalidade da saúde física e presteza organizada.",
-    "Casa do Outro: Relações oficiais, amor espelhado, sociedades e contratos.",
-    "Cass das Sombras: Grandes mistérios psíquicos, transmutação, heranças e intimidade.",
-    "Casa do Saber: Filosofia de vida, viagens de longa distância e sabedorias excelsas.",
-    "Casa da Carreira: Posição social máxima, prestígio laboral e o seu grande legado.",
-    "Casa dos Ideais: Amigos sinceros, planejamentos coletivos e ativismo social amplo.",
-    "Casa do Inconsciente: Limitações carmáticas, doação altruísta e santuário psíquico."
-  ];
+  const houseLabelsLang = TRANSLATED_HOUSE_LABELS[lang];
   
   for (let num = 1; num <= 12; num++) {
     const cusp = houseCusps[num];
@@ -440,16 +720,39 @@ export function performAstroCalculation(
       }
     });
     
+    const translatedSign = TRANSLATED_SIGNS[lang][cuspInfo.sign] || cuspInfo.sign;
+    const translatedPlanetsInHouse = planetsInHouse.map(p => TRANSLATED_PLANETS[lang][p] || p);
+    
+    const cuspText = {
+      pt: `Cúspide posicionada em ${translatedSign} (${cuspInfo.degree}°${cuspInfo.minute.toString().padStart(2, "0")}')`,
+      en: `Cusp positioned in ${translatedSign} (${cuspInfo.degree}°${cuspInfo.minute.toString().padStart(2, "0")}')`,
+      es: `Cúspide posicionada en ${translatedSign} (${cuspInfo.degree}°${cuspInfo.minute.toString().padStart(2, "0")}')`,
+      de: `Spitze positioniert in ${translatedSign} (${cuspInfo.degree}°${cuspInfo.minute.toString().padStart(2, "0")}')`,
+      fr: `Cuspide positionnée en ${translatedSign} (${cuspInfo.degree}°${cuspInfo.minute.toString().padStart(2, "0")}')`
+    }[lang];
+    
+    const planetsText = planetsInHouse.length > 0
+      ? {
+          pt: ` Planetas presentes ativando esta área: ${translatedPlanetsInHouse.join(", ")}.`,
+          en: ` Planets present activating this area: ${translatedPlanetsInHouse.join(", ")}.`,
+          es: ` Planetas presentes activando esta área: ${translatedPlanetsInHouse.join(", ")}.`,
+          de: ` Präsente Planeten, die diesen Bereich aktivieren: ${translatedPlanetsInHouse.join(", ")}.`,
+          fr: ` Planètes présentes activant cette zone : ${translatedPlanetsInHouse.join(", ")}.`
+        }[lang]
+      : {
+          pt: " Nossos astros celestes não ocupam esta casa diretamente, sendo regida de longe por seu respectivo regente planetário.",
+          en: " Our celestial bodies do not occupy this house directly, being governed from afar by their respective planetary ruler.",
+          es: " Nuestros astros celestes no ocupan esta casa directamente, sendo regida de lejos por su respectivo regente planetario.",
+          de: " Unsere Himmelskörper besetzen dieses Haus nicht direkt, sondern werden von weitem von ihrem jeweiligen planetarischen Herrscher regiert.",
+          fr: " Nos astres célestes n'occupent pas cette maison directement, étant régie de loin par son régent planétaire respectif."
+        }[lang];
+
     houses.push({
       number: num,
-      sign: cuspInfo.sign,
+      sign: translatedSign,
       longitude: cusp,
-      planets: planetsInHouse,
-      interpretation: `${houseLabels[num]} Cúspide posicionada em ${cuspInfo.sign} (${cuspInfo.degree}°${cuspInfo.minute.toString().padStart(2, "0")}')` + (
-        planetsInHouse.length > 0 
-          ? ` Planetas presentes ativando esta área: ${planetsInHouse.join(", ")}.` 
-          : " Nossos astros celestes não ocupam esta casa diretamente, sendo regida de longe por seu respectivo regente planetário."
-      )
+      planets: translatedPlanetsInHouse,
+      interpretation: `${houseLabelsLang[num]} ${cuspText}${planetsText}`
     });
   }
   
@@ -493,14 +796,28 @@ export function performAstroCalculation(
         const currentOrb = Math.abs(shortestDist - asp.angle);
         if (currentOrb <= asp.orb) {
           const intensity = Math.floor((1 - currentOrb / asp.orb) * 100);
+          
+          const aspName = TRANSLATED_ASPECTS[lang][asp.name] || asp.name;
+          const aspInterp = TRANSLATED_ASPECT_INTERPS[lang][asp.name] || asp.interpretation;
+          const p1Name = TRANSLATED_PLANETS[lang][p1.name] || p1.name;
+          const p2Name = TRANSLATED_PLANETS[lang][p2.name] || p2.name;
+          
+          const interpText = {
+            pt: `${p1Name} em ${aspName} com ${p2Name}: ${aspInterp} Operando com intensidade magnética de ${intensity}% e orbe exata de ${currentOrb.toFixed(2)} graus.`,
+            en: `${p1Name} in ${aspName} with ${p2Name}: ${aspInterp} Operating with magnetic intensity of ${intensity}% and exact orb of ${currentOrb.toFixed(2)} degrees.`,
+            es: `${p1Name} en ${aspName} con ${p2Name}: ${aspInterp} Operando con intensidad magnética del ${intensity}% y orbe exacto de ${currentOrb.toFixed(2)} grados.`,
+            de: `${p1Name} in ${aspName} mit ${p2Name}: ${aspInterp} Wirkt mit einer magnetischen Intensität von ${intensity}% und einer exakten Orbe von ${currentOrb.toFixed(2)} Grad.`,
+            fr: `${p1Name} en ${aspName} avec ${p2Name} : ${aspInterp} Opérant avec une intensité magnétique de ${intensity}% et une orbe exacte de ${currentOrb.toFixed(2)} degrés.`
+          }[lang];
+
           aspects.push({
-            planet1: p1.name,
-            planet2: p2.name,
-            aspectType: asp.name,
+            planet1: p1Name,
+            planet2: p2Name,
+            aspectType: aspName as any,
             angle: asp.angle,
             orb: `${currentOrb.toFixed(2)}°`,
             intensity,
-            interpretation: `${p1.name} em ${asp.name} com ${p2.name}: ${asp.interpretation} Operando com intensidade magnética de ${intensity}% e orbe exata de ${currentOrb.toFixed(2)} graus.`
+            interpretation: interpText
           });
         }
       }
@@ -514,11 +831,12 @@ export function performAstroCalculation(
   
   // Calculate distribution based on Sun, Moon, Mercury, Venus, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto and Ascendant (the main 11 chart anchors)
   const chartAnchors = ["Sol", "Lua", "Mercúrio", "Vênus", "Marte", "Júpiter", "Saturno", "Urano", "Netuno", "Plutão", "Ascendente"];
-  astros.forEach(ast => {
+  rawPlacementsList.forEach(ast => {
     if (!chartAnchors.includes(ast.name)) return;
-    const element = SIGN_ELEMENTS[ast.sign];
-    const quality = SIGN_QUALITIES[ast.sign];
-    const polarity = SIGN_POLARITIES[ast.sign];
+    const info = getZodiacSignInfo(ast.long);
+    const element = SIGN_ELEMENTS[info.sign];
+    const quality = SIGN_QUALITIES[info.sign];
+    const polarity = SIGN_POLARITIES[info.sign];
     
     // Weigh Sun, Moon, Ascendant double (weight 2), other planets (weight 1)
     const weight = ["Sol", "Lua", "Ascendente"].includes(ast.name) ? 2 : 1;

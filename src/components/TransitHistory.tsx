@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Calendar, Sparkles, AlertTriangle, Heart, HelpCircle, RefreshCw, Layers, Compass, Loader2, ChevronDown, ChevronUp, Clock, Activity, Hash, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useTranslation } from 'react-i18next';
+import { translateUiText, Language } from '../lib/translations';
 import { loadCalculationCache, saveCalculationCache } from '../lib/firebase';
 
 interface AstroEvent {
@@ -14,6 +16,7 @@ interface AstroEvent {
 interface TransitHistoryProps {
   userName?: string;
   birthDate?: string;
+  lang?: string;
 }
 
 function getWeeklyCacheKey(): string {
@@ -24,7 +27,17 @@ function getWeeklyCacheKey(): string {
   return `${now.getFullYear()}-W${weekNumber}`;
 }
 
-export default function TransitHistory({ userName, birthDate }: TransitHistoryProps) {
+export default function TransitHistory({ userName, birthDate, lang }: TransitHistoryProps) {
+  const { t: i18nT } = useTranslation();
+  const t = (text: string) => {
+    if (!text) return "";
+    const res = i18nT(text);
+    if (res === text || !res) {
+      return translateUiText(text, (lang as Language) || 'pt');
+    }
+    return res;
+  };
+
   const [events, setEvents] = useState<AstroEvent[]>([]);
   
   const getCurrentMonthAndYear = () => {
@@ -34,7 +47,7 @@ export default function TransitHistory({ userName, birthDate }: TransitHistoryPr
     ];
     const date = new Date();
     return {
-      monthName: monthNames[date.getMonth()],
+      monthName: t(monthNames[date.getMonth()]),
       year: date.getFullYear()
     };
   };
@@ -55,7 +68,7 @@ export default function TransitHistory({ userName, birthDate }: TransitHistoryPr
       const weekKey = getWeeklyCacheKey();
 
       if (email) {
-        const cachedTransits = await loadCalculationCache(email, `weekly_transits_${weekKey}`);
+        const cachedTransits = await loadCalculationCache(email, `weekly_transits_${weekKey}_${lang || 'pt'}`);
         if (cachedTransits && Array.isArray(cachedTransits)) {
           console.log("[Intelligent Cache] Loaded weekly transits from Firestore cache.");
           setEvents(cachedTransits);
@@ -67,7 +80,7 @@ export default function TransitHistory({ userName, birthDate }: TransitHistoryPr
       const res = await fetch('/api/astrology/transits-month', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: userName, birthDate: birthDate }),
+        body: JSON.stringify({ name: userName, birthDate: birthDate, lang: lang || 'pt' }),
       });
       if (!res.ok) {
         throw new Error('Falha ao obter histórico de trânsitos celestes.');
@@ -76,7 +89,7 @@ export default function TransitHistory({ userName, birthDate }: TransitHistoryPr
       if (data && Array.isArray(data.events)) {
         setEvents(data.events);
         if (email) {
-          await saveCalculationCache(email, `weekly_transits_${weekKey}`, data.events);
+          await saveCalculationCache(email, `weekly_transits_${weekKey}_${lang || 'pt'}`, data.events);
         }
       } else {
         throw new Error('Formato de dados inesperado recebido do servidor.');
@@ -91,7 +104,7 @@ export default function TransitHistory({ userName, birthDate }: TransitHistoryPr
 
   useEffect(() => {
     fetchTransits();
-  }, [userName, birthDate]);
+  }, [userName, birthDate, lang]);
 
   // Extract unique planets from events for filters
   const uniquePlanets = Array.from(new Set(events.map((e) => e.planet))).filter(Boolean);

@@ -3,6 +3,8 @@ import * as d3 from 'd3';
 import { AstrologyMap, AstroAstroPosition } from '../types';
 import { Orbit, Play, Pause, RotateCcw, Info, Zap, Calendar, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useTranslation } from 'react-i18next';
+import { translateUiText, Language } from '../lib/translations';
 
 interface TransitMapProps {
   mapData: AstrologyMap;
@@ -49,6 +51,16 @@ const TRANSIT_METADATA: PlanetConfig[] = [
 ];
 
 export default function TransitMap({ mapData }: TransitMapProps) {
+  const { t: i18nT, i18n } = useTranslation();
+  const t = (text: string) => {
+    if (!text) return "";
+    const res = i18nT(text);
+    if (res === text || !res) {
+      return translateUiText(text, (i18n.language as Language) || 'pt');
+    }
+    return res;
+  };
+
   const svgRef = useRef<SVGSVGElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -811,14 +823,14 @@ export default function TransitMap({ mapData }: TransitMapProps) {
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
               <Orbit className="w-4 h-4 text-rose-450 animate-spin-slow" />
-              Alinhamento de Trânsitos em Tempo Real
+              {t("Alinhamento de Trânsitos em Tempo Real")}
             </h3>
             <span className="px-1.5 py-0.5 bg-rose-500/10 border border-rose-500/20 text-[8px] font-mono text-rose-400 rounded-sm">
               D3 Interactive Map
             </span>
           </div>
           <p className="text-[10px] text-slate-500">
-            Analise trânsitos rotacionando dinamicamente e cruzando aspectos com suas casas de nascimento.
+            {t("Analise trânsitos rotacionando dinamicamente e cruzando aspectos com suas casas de nascimento.")}
           </p>
         </div>
 
@@ -826,7 +838,7 @@ export default function TransitMap({ mapData }: TransitMapProps) {
         <div className="flex items-center gap-2 bg-slate-950/70 p-1.5 rounded-xl border border-slate-850">
           <button
             onClick={() => setIsPlaying(!isPlaying)}
-            title={isPlaying ? "Pausar Fluxo" : "Iniciar Fluxo"}
+            title={isPlaying ? t("Pausar Fluxo") : t("Iniciar Fluxo")}
             className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-850 text-slate-300 transition active:scale-95 cursor-pointer"
           >
             {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 text-rose-400" />}
@@ -837,7 +849,7 @@ export default function TransitMap({ mapData }: TransitMapProps) {
               setSimDays(0);
               setIsPlaying(false);
             }}
-            title="Resetar data oficial (Tempo Real)"
+            title={t("Resetar data oficial (Tempo Real)")}
             className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-850 text-slate-400 hover:text-slate-200 transition active:scale-95 cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -847,7 +859,7 @@ export default function TransitMap({ mapData }: TransitMapProps) {
 
           {/* Speed slider */}
           <div className="flex items-center gap-2 px-1">
-            <span className="text-[8px] font-mono text-slate-550 uppercase">Velocidade:</span>
+            <span className="text-[8px] font-mono text-slate-555 uppercase">{t("Velocidade:")}</span>
             <input 
               type="range"
               min="0.1"
@@ -878,15 +890,15 @@ export default function TransitMap({ mapData }: TransitMapProps) {
 
           {/* Compass labels */}
           <div className="flex justify-between w-full max-w-[340px] mt-1 pr-2 text-[8px] font-mono text-slate-600 select-none">
-            <span>[E] LESTE / ASCENDENTE</span>
-            <span>OESTE / DESCENDENTE [W]</span>
+            <span>[E] {t("LESTE / ASCENDENTE")}</span>
+            <span>{t("OESTE / DESCENDENTE")} [W]</span>
           </div>
 
           {/* Days simulated metrics */}
           {simDays !== 0 && (
             <div className="absolute top-2 left-2 bg-slate-950/80 px-2 py-1 rounded border border-rose-500/20 text-[9px] font-mono text-rose-450 flex items-center gap-1.5">
               <Calendar className="w-3 h-3 animate-pulse" />
-              <span>Simulado: +{Math.round(simDays)} dias de trânsito</span>
+              <span>{t("Simulado:")} +{Math.round(simDays)} {t("dias de trânsito")}</span>
             </div>
           )}
         </div>
@@ -898,33 +910,33 @@ export default function TransitMap({ mapData }: TransitMapProps) {
           <div className="grid grid-cols-3 gap-2 pb-3 border-b border-slate-850">
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-              <span className="text-[9px] text-slate-450 font-mono">Conjunção (0°)</span>
+              <span className="text-[9px] text-slate-450 font-mono">{t("Conjunção (0°)")}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-              <span className="text-[9px] text-slate-450 font-mono">Oposição (180°)</span>
+              <span className="text-[9px] text-slate-450 font-mono">{t("Oposição (180°)")}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span className="text-[9px] text-slate-450 font-mono">Trígono (120°)</span>
+              <span className="text-[9px] text-slate-450 font-mono">{t("Trígono (120°)")}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-pink-500" />
-              <span className="text-[9px] text-slate-450 font-mono">Quadratura (90°)</span>
+              <span className="text-[9px] text-slate-450 font-mono">{t("Quadratura (90°)")}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-              <span className="text-[9px] text-slate-450 font-mono">Sextil (60°)</span>
+              <span className="text-[9px] text-slate-450 font-mono">{t("Sextil (60°)")}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
-              <span className="text-[9px] text-slate-450 font-mono">ⓝ Natal / ⓣ Trânsito</span>
+              <span className="text-[9px] text-slate-450 font-mono">ⓝ {t("Natal")} / ⓣ {t("Trânsito")}</span>
             </div>
           </div>
 
           {/* Quick Planet Select buttons list with fluid layout pill sliding */}
           <div className="bg-slate-950/45 p-1 rounded-2xl border border-slate-850/60">
-            <span className="px-2 pb-1 text-[8px] font-mono text-slate-500 uppercase tracking-widest block font-bold">Navegar Órbitas</span>
+            <span className="px-2 pb-1 text-[8px] font-mono text-slate-500 uppercase tracking-widest block font-bold">{t("Navegar Órbitas")}</span>
             <div className="flex flex-wrap gap-1">
               {TRANSIT_METADATA.map((p) => {
                 const active = selectedPlanet === p.name;
@@ -972,32 +984,32 @@ export default function TransitMap({ mapData }: TransitMapProps) {
                 <div>
                   <h4 className="text-xs font-bold font-mono uppercase tracking-wider text-slate-100 flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: activePlanetConf.color }} />
-                    {activePlanetConf.label}
+                    {t(activePlanetConf.label)}
                   </h4>
-                  <p className="text-[10px] text-slate-450 italic mt-0.5">{activePlanetConf.description}</p>
+                  <p className="text-[10px] text-slate-450 italic mt-0.5">{t(activePlanetConf.description)}</p>
                 </div>
               </div>
 
               {/* Position Match block */}
               <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-900 relative z-10">
                 <div className="space-y-1">
-                  <span className="text-[8px] font-mono text-slate-555 uppercase block">Trânsito Atual ⓣ</span>
+                  <span className="text-[8px] font-mono text-slate-555 uppercase block">{t("Trânsito Atual ⓣ")}</span>
                   <div className="text-xs font-semibold flex items-center gap-1 text-slate-300">
                     <span style={{ color: transitLabelInfo.color }} className="font-bold">{transitLabelInfo.signSymbol}</span>
-                    <span>{transitLabelInfo.degrees}° de {transitLabelInfo.signName}</span>
+                    <span>{transitLabelInfo.degrees}° {t("de")} {t(transitLabelInfo.signName)}</span>
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-[8px] font-mono text-slate-555 uppercase block">Posição Natal ⓝ</span>
+                  <span className="text-[8px] font-mono text-slate-555 uppercase block">{t("Posição Natal ⓝ")}</span>
                   <div className="text-xs font-semibold flex items-center gap-1 text-slate-300">
                     {natalLabelInfo ? (
                       <>
                         <span style={{ color: natalLabelInfo.color }} className="font-bold">{natalLabelInfo.signSymbol}</span>
-                        <span>{natalLabelInfo.degrees}° de {natalLabelInfo.signName}</span>
+                        <span>{natalLabelInfo.degrees}° {t("de")} {t(natalLabelInfo.signName)}</span>
                       </>
                     ) : (
-                      <span className="text-slate-600 font-mono text-[10px]">Não mapeado</span>
+                      <span className="text-slate-600 font-mono text-[10px]">{t("Não mapeado")}</span>
                     )}
                   </div>
                 </div>
@@ -1006,9 +1018,9 @@ export default function TransitMap({ mapData }: TransitMapProps) {
               {/* Aspects block */}
               <div className="space-y-2.5 pt-3 border-t border-slate-900 relative z-10">
                 <div className="flex justify-between items-center">
-                  <span className="text-[8px] font-mono text-slate-555 uppercase">Aspectos Ativos deste planeta</span>
+                  <span className="text-[8px] font-mono text-slate-555 uppercase">{t("Aspectos Ativos deste planeta")}</span>
                   <span className="text-[9px] font-mono text-rose-450 font-bold bg-rose-500/10 px-1.5 py-0.5 rounded-sm">
-                    {currentTransitAspectRelations.length} conexões
+                    {currentTransitAspectRelations.length} {t("conexões")}
                   </span>
                 </div>
                 
@@ -1016,7 +1028,7 @@ export default function TransitMap({ mapData }: TransitMapProps) {
                   <div className="space-y-2 max-h-[120px] overflow-y-auto pr-1">
                     {currentTransitAspectRelations.map((asp, idx) => (
                       <motion.div 
-                        key={idx} 
+                         key={idx} 
                         initial={{ opacity: 0, x: -8 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: idx * 0.04, duration: 0.18 }}
@@ -1024,15 +1036,15 @@ export default function TransitMap({ mapData }: TransitMapProps) {
                       >
                         <span className="text-xs font-bold pt-0.5 shrink-0" style={{ color: asp.color }}>{asp.symbol}</span>
                         <div className="text-[9.5px] leading-relaxed">
-                          <strong style={{ color: asp.color }}>{asp.type}</strong> de <strong className="text-slate-300"> {asp.transit} ⓣ </strong> com seu <strong className="text-slate-300"> {asp.natal} ⓝ </strong>
-                          <p className="text-[8.5px] text-slate-450 mt-0.5 leading-normal">{asp.desc}</p>
+                          <strong style={{ color: asp.color }}>{t(asp.type)}</strong> {t("de")} <strong className="text-slate-300"> {t(asp.transit)} ⓣ </strong> {t("com seu")} <strong className="text-slate-300"> {t(asp.natal)} ⓝ </strong>
+                          <p className="text-[8.5px] text-slate-450 mt-0.5 leading-normal">{t(asp.desc)}</p>
                         </div>
                       </motion.div>
                     ))}
                   </div>
                 ) : (
                   <div className="text-[9px] text-slate-500 italic bg-slate-900/10 p-2.5 rounded border border-slate-900 leading-normal">
-                    Nenhum aspecto maior exato formado no momento com o seu mapa natal. Rotacione o tempo usando a velocidade de simulação para ver novos alinhamentos celestes dinamicamente!
+                    {t("Nenhum aspecto maior exato formado no momento com o seu mapa natal. Rotacione o tempo usando a velocidade de simulação para ver novos alinhamentos celestes dinamicamente!")}
                   </div>
                 )}
               </div>
@@ -1052,14 +1064,14 @@ export default function TransitMap({ mapData }: TransitMapProps) {
             >
               <Zap className="w-4.5 h-4.5 text-rose-400 shrink-0 mt-0.5" />
               <div>
-                <span className="text-[8px] font-mono text-rose-450 uppercase font-bold tracking-wider block">Insight do Alinhamento Ativo</span>
+                <span className="text-[8px] font-mono text-rose-450 uppercase font-bold tracking-wider block">{t("Insight do Alinhamento Ativo")}</span>
                 <p className="text-[10px] text-slate-400 leading-normal">
-                  {selectedPlanet === "Sol" && "O trânsito solar ilumina seu mapa atual estimulando renovações de identidade."}
-                  {selectedPlanet === "Lua" && "Sensibilidade acelerada em oscilações oníricas diárias. Excelente para journaling."}
-                  {selectedPlanet === "Mercúrio" && "Aceleração de contatos, excelente para reavaliar correspondências importantes."}
-                  {selectedPlanet === "Vênus" && "Magnetismo em alta facilitando entendimentos com parcerias e acordos estéticos."}
-                  {selectedPlanet === "Marte" && "Mantenha o foco ativo para evitar conflitos desnecessários, redirecione o impulso."}
-                  {!["Sol", "Lua", "Mercúrio", "Vênus", "Marte"].includes(selectedPlanet) && "Trânsitos de planetas geracionais influenciam as estruturas institucionais de sua jornada de longo prazo."}
+                  {selectedPlanet === "Sol" && t("O trânsito solar ilumina seu mapa atual estimulando renovações de identidade.")}
+                  {selectedPlanet === "Lua" && t("Sensibilidade acelerada em oscilações oníricas diárias. Excelente para journaling.")}
+                  {selectedPlanet === "Mercúrio" && t("Aceleração de contatos, excelente para reavaliar correspondências importantes.")}
+                  {selectedPlanet === "Vênus" && t("Magnetismo em alta facilitando entendimentos com parcerias e acordos estéticos.")}
+                  {selectedPlanet === "Marte" && t("Mantenha o foco ativo para evitar conflitos desnecessários, redirecione o impulso.")}
+                  {!["Sol", "Lua", "Mercúrio", "Vênus", "Marte"].includes(selectedPlanet) && t("Trânsitos de planetas geracionais influenciam as estruturas institucionais de sua jornada de longo prazo.")}
                 </p>
               </div>
             </motion.div>

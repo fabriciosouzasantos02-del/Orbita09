@@ -1,5 +1,7 @@
 import React from 'react';
 import { AstroAstroPosition } from '../types';
+import { useTranslation } from 'react-i18next';
+import { translateUiText, Language } from '../lib/translations';
 
 interface CircularChartProps {
   astros: AstroAstroPosition[];
@@ -22,6 +24,16 @@ const ZODIAC_SIGNS = [
 ];
 
 export default function CircularChart({ astros }: CircularChartProps) {
+  const { t: i18nT, i18n } = useTranslation();
+  const t = (text: string) => {
+    if (!text) return "";
+    const res = i18nT(text);
+    if (res === text || !res) {
+      return translateUiText(text, (i18n.language as Language) || 'pt');
+    }
+    return res;
+  };
+
   const size = 320;
   const center = size / 2;
   const radius = size / 2 - 20;
@@ -140,7 +152,7 @@ export default function CircularChart({ astros }: CircularChartProps) {
             else if (ast.name === "Lua") cColor = "fill-slate-100";
             else if (ast.name === "Ascendente") cColor = "fill-cyan-400 font-bold";
 
-            return (
+             return (
               <g key={ast.name} className="cursor-pointer group">
                 <circle cx={px} cy={py} r="3" className={`stroke-slate-950 ${cColor}`} strokeWidth="1" />
                 <text
@@ -151,7 +163,7 @@ export default function CircularChart({ astros }: CircularChartProps) {
                   dominantBaseline="middle"
                   className={`text-[8px] font-mono leading-none ${cColor}`}
                 >
-                  {ast.name.slice(0, 3).toUpperCase()}
+                  {t(ast.name).slice(0, 3).toUpperCase()}
                 </text>
               </g>
             );
@@ -165,19 +177,19 @@ export default function CircularChart({ astros }: CircularChartProps) {
       <div className="flex gap-4 mt-2 justify-center flex-wrap">
         <div className="flex items-center gap-1.5 text-xs text-rose-400">
           <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
-          <span>Fogo</span>
+          <span>{t("Fogo")}</span>
         </div>
         <div className="flex items-center gap-1.5 text-xs text-emerald-400">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span>Terra</span>
+          <span>{t("Terra")}</span>
         </div>
         <div className="flex items-center gap-1.5 text-xs text-sky-400">
           <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
-          <span>Ar</span>
+          <span>{t("Ar")}</span>
         </div>
         <div className="flex items-center gap-1.5 text-xs text-indigo-400">
           <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
-          <span>Água</span>
+          <span>{t("Água")}</span>
         </div>
       </div>
     </div>

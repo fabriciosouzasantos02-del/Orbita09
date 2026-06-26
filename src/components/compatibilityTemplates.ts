@@ -1,6 +1,14 @@
 import { CategoryDetails } from './compatibilityEngine';
+import i18next from 'i18next';
 
-// Helpers to identify elements and modalities
+function getActiveLanguage(): 'pt' | 'en' | 'es' | 'de' | 'fr' {
+  const lang = (i18next.language || 'pt').toLowerCase().split('-')[0];
+  if (['pt', 'en', 'es', 'de', 'fr'].includes(lang)) {
+    return lang as 'pt' | 'en' | 'es' | 'de' | 'fr';
+  }
+  return 'pt';
+}
+
 export function getElement(sign: string): "Fogo" | "Terra" | "Ar" | "Água" {
   if (["Áries", "Leão", "Sagitário"].includes(sign)) return "Fogo";
   if (["Touro", "Virgem", "Capricórnio"].includes(sign)) return "Terra";
@@ -14,17 +22,61 @@ export function getModality(sign: string): "Cardinal" | "Fixo" | "Mutável" {
   return "Mutável";
 }
 
+const TRANSLATED_SIGNS: Record<string, Record<string, string>> = {
+  pt: { "Áries": "Áries", "Touro": "Touro", "Gêmeos": "Gêmeos", "Câncer": "Câncer", "Leão": "Leão", "Virgem": "Virgem", "Libra": "Libra", "Escorpião": "Escorpião", "Sagitário": "Sagitário", "Capricórnio": "Capricórnio", "Aquário": "Aquário", "Peixes": "Peixes" },
+  en: { "Áries": "Aries", "Touro": "Taurus", "Gêmeos": "Gemini", "Câncer": "Cancer", "Leão": "Leo", "Virgem": "Virgo", "Libra": "Libra", "Escorpião": "Scorpio", "Sagitário": "Sagittarius", "Capricórnio": "Capricorn", "Aquário": "Aquarius", "Peixes": "Pisces" },
+  es: { "Áries": "Aries", "Touro": "Tauro", "Gêmeos": "Géminis", "Câncer": "Cáncer", "Leão": "Leo", "Virgem": "Virgo", "Libra": "Libra", "Escorpião": "Escorpio", "Sagitário": "Sagitario", "Capricórnio": "Capricornio", "Aquário": "Acuario", "Peixes": "Piscis" },
+  de: { "Áries": "Widder", "Touro": "Stier", "Gêmeos": "Zwillinge", "Câncer": "Krebs", "Leão": "Löwe", "Virgem": "Jungfrau", "Libra": "Waage", "Escorpião": "Skorpion", "Sagitário": "Schütze", "Capricórnio": "Steinbock", "Aquário": "Wassermann", "Peixes": "Fische" },
+  fr: { "Áries": "Bélier", "Touro": "Taureau", "Gêmeos": "Gémeaux", "Câncer": "Cancer", "Leão": "Lion", "Virgem": "Vierge", "Libra": "Balance", "Escorpião": "Scorpion", "Sagitário": "Sagitaire", "Capricórnio": "Capricorne", "Aquário": "Verseau", "Peixes": "Poissons" }
+};
+
+const TRANSLATED_ELEMENTS: Record<string, Record<string, string>> = {
+  pt: { Fogo: "Fogo", Terra: "Terra", Ar: "Ar", Água: "Água" },
+  en: { Fogo: "Fire", Terra: "Earth", Ar: "Air", Água: "Water" },
+  es: { Fogo: "Fuego", Terra: "Tierra", Ar: "Aire", Água: "Agua" },
+  de: { Fogo: "Feuer", Terra: "Erde", Ar: "Luft", Água: "Wasser" },
+  fr: { Fogo: "Feu", Terra: "Terre", Ar: "Air", Água: "Eau" }
+};
+
 export function getElementInteraction(el1: string, el2: string): string {
+  const lang = getActiveLanguage();
+  const tEl1 = TRANSLATED_ELEMENTS[lang]?.[el1] || el1;
+  const tEl2 = TRANSLATED_ELEMENTS[lang]?.[el2] || el2;
+
   if (el1 === el2) {
-    return `convergência absoluta do elemento ${el1}, criando ressonância instintiva de ideais comuns e entrosamento direto.`;
+    return {
+      pt: `convergência absoluta do elemento ${tEl1}, criando ressonância instintiva de ideais comuns e entrosamento direto.`,
+      en: `absolute convergence of the ${tEl1} element, creating instinctive resonance of common ideals and direct rapport.`,
+      es: `convergencia absoluta del elemento ${tEl1}, creando una resonancia instintiva de ideales comunes y relación directa.`,
+      de: `absolute Konvergenz des Elements ${tEl1}, die eine instinktive Resonanz gemeinsamer Ideale und direkte Übereinstimmung schafft.`,
+      fr: `convergence absolue de l'élément ${tEl1}, créant une résonance instinctive d'idéaux communs et une entente directe.`
+    }[lang];
   }
   if ((el1 === "Fogo" && el2 === "Ar") || (el1 === "Ar" && el2 === "Fogo")) {
-    return `combinação estimulante de Fogo e Ar, onde a criatividade e ideias inspiradoras inflamam o entusiasmo prático mútuo.`;
+    return {
+      pt: `combinação estimulante de Fogo e Ar, onde a criatividade e ideias inspiradoras inflamam o entusiasmo prático mútuo.`,
+      en: `stimulating combination of Fire and Air, where creativity and inspiring ideas ignite mutual practical enthusiasm.`,
+      es: `combinación estimulante de Fuego y Aire, donde la creatividad y las ideas inspiradoras encienden el entusiasmo práctico mutuo.`,
+      de: `anregende Kombination aus Feuer und Luft, bei der Kreativität und inspirierende Ideen gegenseitigen praktischen Enthusiasmus entfachen.`,
+      fr: `combinaison stimulante de Feu et d'Air, où la créativité et les idées inspiratrices enflamment l'enthousiasme pratique mutuel.`
+    }[lang];
   }
   if ((el1 === "Terra" && el2 === "Água") || (el1 === "Água" && el2 === "Terra")) {
-    return `nutrição natural entre Terra e Água, garantindo excelente estabilidade fiduciária, proteção mútua e sentimentos duradouros.`;
+    return {
+      pt: `nutrição natural entre Terra e Água, garantindo excelente estabilidade fiduciária, proteção mútua e sentimentos duradouros.`,
+      en: `natural nourishment between Earth and Water, ensuring excellent financial stability, mutual protection, and long-lasting feelings.`,
+      es: `nutrición natural entre Tierra y Agua, garantizando una excelente estabilidad financiera, protección mutua y sentimientos duraderos.`,
+      de: `natürliche Nährung zwischen Erde und Wasser, die hervorragende finanzielle Stabilität, gegenseitigen Schutz und lang anhaltende Gefühle gewährleistet.`,
+      fr: `nutrition naturelle entre la Terre et l'Eau, assurant une excellente stabilité financière, une protection mutuelle et des sentiments durables.`
+    }[lang];
   }
-  return `interaçao complementar que exige flexibilidade para harmonizar a essência de ${el1} com o ritmo de ${el2} nas rotinas diárias.`;
+  return {
+    pt: `interação complementar que exige flexibilidade para harmonizar a essência de ${tEl1} com o ritmo de ${tEl2} nas rotinas diárias.`,
+    en: `complementary interaction that requires flexibility to harmonize the essence of ${tEl1} with the rhythm of ${tEl2} in daily routines.`,
+    es: `interacción complementaria que exige flexibilidad para armonizar la esencia de ${tEl1} con el ritmo de ${tEl2} en las rutinas diarias.`,
+    de: `komplementäre Interaktion, die Flexibilität erfordert, um das Wesen von ${tEl1} mit dem Rhythmus von ${tEl2} im Alltag zu harmonisieren.`,
+    fr: `interaction complémentaire qui requiert de la flexibilité pour harmoniser l'essence de ${tEl1} avec le rythme de ${tEl2} dans les routines quotidiennes.`
+  }[lang];
 }
 
 export function generateBespokeCategory(
@@ -33,18 +85,31 @@ export function generateBespokeCategory(
   name2: string,
   signs: Record<string, string>
 ): CategoryDetails {
+  const lang = getActiveLanguage();
   const {
     sun1, sun2, moon1, moon2, mercury1, mercury2,
     venus1, venus2, mars1, mars2, jupiter1, jupiter2,
     saturn1, saturn2, asc1, asc2
   } = signs;
 
+  const tSun1 = TRANSLATED_SIGNS[lang]?.[sun1] || sun1;
+  const tSun2 = TRANSLATED_SIGNS[lang]?.[sun2] || sun2;
+  const tMoon1 = TRANSLATED_SIGNS[lang]?.[moon1] || moon1;
+  const tMoon2 = TRANSLATED_SIGNS[lang]?.[moon2] || moon2;
+  const tMercury1 = TRANSLATED_SIGNS[lang]?.[mercury1] || mercury1;
+  const tMercury2 = TRANSLATED_SIGNS[lang]?.[mercury2] || mercury2;
+  const tVenus1 = TRANSLATED_SIGNS[lang]?.[venus1] || venus1;
+  const tVenus2 = TRANSLATED_SIGNS[lang]?.[venus2] || venus2;
+  const tMars1 = TRANSLATED_SIGNS[lang]?.[mars1] || mars1;
+  const tMars2 = TRANSLATED_SIGNS[lang]?.[mars2] || mars2;
+  const tSaturn1 = TRANSLATED_SIGNS[lang]?.[saturn1] || saturn1;
+  const tSaturn2 = TRANSLATED_SIGNS[lang]?.[saturn2] || saturn2;
+  const tAsc1 = TRANSLATED_SIGNS[lang]?.[asc1] || asc1;
+
   const elSun1 = getElement(sun1);
   const elSun2 = getElement(sun2);
-  const elMoon1 = getElement(moon1);
-  const elMoon2 = getElement(moon2);
 
-  // Compute custom score metrics depending on the category and aspects
+  // Score mathematical calculation
   let scoreBase = 70 + ((name1.length * 3 + name2.length * 5) % 25);
   if (cat === 'love') {
     if (venus1 === venus2 || elSun1 === elSun2) scoreBase = Math.min(100, scoreBase + 8);
@@ -54,469 +119,501 @@ export function generateBespokeCategory(
     if (mercury1 === mercury2 || saturn1 === saturn2) scoreBase = Math.min(100, scoreBase + 9);
   }
 
-  // Common dates and update simulation times
   const dateObj = new Date();
-  const fuso = "GMT-3 (Fuso Horário de Brasília)";
+  const localeMap: Record<string, string> = { pt: 'pt-BR', en: 'en-US', es: 'es-ES', de: 'de-DE', fr: 'fr-FR' };
+  const currentLocale = localeMap[lang] || 'pt-BR';
+
+  const fusoText = {
+    pt: "GMT-3 (Fuso Horário de Brasília)",
+    en: "GMT-3 (Brasilia Time Zone)",
+    es: "GMT-3 (Zona Horaria de Brasilia)",
+    de: "GMT-3 (Brasilia-Zeitzone)",
+    fr: "GMT-3 (Fuseau horaire de Brasilia)"
+  }[lang];
+
   const formattedUpdate = `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()} ${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
+
+  const labels = {
+    pt: {
+      harmonia: "Harmonia", crescimento: "Crescimento", longoPrazo: "Longo Prazo", conflitos: "Conflitos", afinidadeGeral: "Afinidade Geral",
+      harmoniaAmistosa: "Harmonia Amistosa", lealdadeMutua: "Lealdade Mútua", entrosamentoSocial: "Entrosamento Social", conflitosMenores: "Conflitos menores",
+      harmoniaProfissional: "Harmonia Profissional", eficienciaMetas: "Eficiência de Metas", sinergiaFiduciaria: "Sinergia Fiduciária", conflitoEgos: "Conflito de Egos",
+      harmoniaEstelar: "Harmonia Estelar", estabilidade: "Estabilidade", resilienciaCivil: "Resiliência Civil",
+      transitosTitle: "Trânsitos em Tempo Real", transitosTitleFriend: "Trânsitos da Amizade em Tempo Real", transitosTitleBusiness: "Trânsitos de Carreira em Tempo Real",
+      transitosTitleFallback: "Trânsitos de Relacionamento em Tempo Real",
+      label7Dias: "7 Dias", label30Dias: "30 Dias", label3Meses: "3 Meses", label6Meses: "6 Meses", label1Ano: "1 Ano"
+    },
+    en: {
+      harmonia: "Harmony", crescimento: "Growth", longoPrazo: "Long Term", conflitos: "Conflicts", afinidadeGeral: "General Affinity",
+      harmoniaAmistosa: "Friendly Harmony", lealdadeMutua: "Mutual Loyalty", entrosamentoSocial: "Social Connection", conflitosMenores: "Minor Conflicts",
+      harmoniaProfissional: "Professional Harmony", eficienciaMetas: "Goal Efficiency", sinergiaFiduciaria: "Financial Synergy", conflitoEgos: "Ego Conflict",
+      harmoniaEstelar: "Stellar Harmony", estabilidade: "Stability", resilienciaCivil: "Civil Resilience",
+      transitosTitle: "Real-Time Transits", transitosTitleFriend: "Real-Time Friendship Transits", transitosTitleBusiness: "Real-Time Career Transits",
+      transitosTitleFallback: "Real-Time Relationship Transits",
+      label7Dias: "7 Days", label30Dias: "30 Days", label3Meses: "3 Months", label6Meses: "6 Months", label1Ano: "1 Year"
+    },
+    es: {
+      harmonia: "Armonía", crescimento: "Crecimiento", longoPrazo: "Largo Plazo", conflitos: "Conflictos", afinidadeGeral: "Afinidad General",
+      harmoniaAmistosa: "Armonía Amistosa", lealdadeMutua: "Lealtad Mutua", entrosamentoSocial: "Conexión Social", conflitosMenores: "Conflictos menores",
+      harmoniaProfissional: "Armonía Profesional", eficienciaMetas: "Eficiencia de Metas", sinergiaFiduciaria: "Sinergia Financiera", conflitoEgos: "Conflicto de Egos",
+      harmoniaEstelar: "Armonía Estelar", estabilidade: "Estabilidad", resilienciaCivil: "Resiliencia Civil",
+      transitosTitle: "Tránsitos en Tiempo Real", transitosTitleFriend: "Tránsitos de Amistad en Tiempo Real", transitosTitleBusiness: "Tránsitos de Carrera en Tiempo Real",
+      transitosTitleFallback: "Tránsitos de Relación en Tiempo Real",
+      label7Dias: "7 Días", label30Dias: "30 Días", label3Meses: "3 Meses", label6Meses: "6 Meses", label1Ano: "1 Año"
+    },
+    de: {
+      harmonia: "Harmonie", crescimento: "Wachstum", longoPrazo: "Langfristig", conflitos: "Konflikte", afinidadeGeral: "Allgemeine Affinität",
+      harmoniaAmistosa: "Freundschaftliche Harmonie", lealdadeMutua: "Gegenseitige Treue", entrosamentoSocial: "Soziale Verbindung", conflitosMenores: "Kleinere Konflikte",
+      harmoniaProfissional: "Berufliche Harmonie", eficienciaMetas: "Zieleffizienz", sinergiaFiduciaria: "Finanzielle Synergie", conflitoEgos: "Ego-Konflikt",
+      harmoniaEstelar: "Stellar-Harmonie", estabilidade: "Stabilität", resilienciaCivil: "Zivile Widerstandsfähigkeit",
+      transitosTitle: "Echtzeit-Transite", transitosTitleFriend: "Echtzeit-Freundschaftstransite", transitosTitleBusiness: "Echtzeit-Karrieretransite",
+      transitosTitleFallback: "Echtzeit-Beziehungstransite",
+      label7Dias: "7 Tage", label30Dias: "30 Tage", label3Meses: "3 Monate", label6Meses: "6 Monate", label1Ano: "1 Jahr"
+    },
+    fr: {
+      harmonia: "Harmonie", crescimento: "Croissance", longoPrazo: "Long Terme", conflitos: "Conflits", afinidadeGeral: "Affinité Générale",
+      harmoniaAmistosa: "Harmonie Amicale", lealdadeMutua: "Loyauté Mutuelle", entrosamentoSocial: "Lien Social", conflitosMenores: "Conflits mineurs",
+      harmoniaProfissional: "Harmonie Professionnelle", eficienciaMetas: "Efficacité des Objectifs", sinergiaFiduciaria: "Synergie Financière", conflitoEgos: "Conflit d'Égos",
+      harmoniaEstelar: "Harmonie Stellaire", estabilidade: "Stabilité", resilienciaCivil: "Résilience Civile",
+      transitosTitle: "Transits en Temps Réel", transitosTitleFriend: "Transits de l'Amitié en Temps Réel", transitosTitleBusiness: "Transits de Carrière en Temps Réel",
+      transitosTitleFallback: "Transits de Relation en Temps Réel",
+      label7Dias: "7 Jours", label30Dias: "30 Jours", label3Meses: "3 Mois", label6Meses: "6 Mois", label1Ano: "1 An"
+    }
+  }[lang];
 
   if (cat === 'love') {
     return {
       score: scoreBase,
       mapaHarmonia: {
-        pontosFortes: [
-          `Sinergia magnética de Vênus de ${name1} em ${venus1} e de ${name2} em ${venus2}, criando uma ponte afetiva sincera.`,
-          `Alinhamento intelectual harmonioso entre Mercúrio de ${name1} em ${mercury1} e de ${name2} em ${mercury2}.`,
-          `Respeito maduro e proteção de compromisso ancorada em Saturno de ambos em aspecto de solidez.`
-        ],
-        pontosAtencao: [
-          `Diferença sutil no direcionamento de egos devido aos posicionamentos de Sol em ${sun1} e Sol em ${sun2}.`,
-          `Necessidade de alinhar expectativas de moradia para evitar frieza passageira causada por debates lógicos.`
-        ],
-        areasConflito: [
-          `Ritmos emocionais desalinhados com a Lua de ${name1} reativa em ${moon1} face à estabilidade rígida da Lua de ${name2} em ${moon2}.`,
-          `Tensão possessiva temporária exacerbada por Marte de ${name1} em ${mars1} em descompasso com Vênus de ${name2}.`
-        ]
+        pontosFortes: {
+          pt: [
+            `Sinergia magnética de Vênus de ${name1} em ${tVenus1} e de ${name2} em ${tVenus2}, criando uma ponte afetiva sincera.`,
+            `Alinhamento intelectual harmonioso entre Mercúrio de ${name1} em ${tMercury1} e de ${name2} em ${tMercury2}.`,
+            `Respeito maduro e proteção de compromisso ancorada em Saturno de ambos em aspecto de solidez.`
+          ],
+          en: [
+            `Magnetic synergy of Venus of ${name1} in ${tVenus1} and of ${name2} in ${tVenus2}, creating a sincere affective bridge.`,
+            `Harmonious intellectual alignment between Mercury of ${name1} in ${tMercury1} and of ${name2} in ${tMercury2}.`,
+            `Mature respect and commitment protection anchored in Saturn of both in a stable aspect.`
+          ],
+          es: [
+            `Sinergia magnética de Venus de ${name1} en ${tVenus1} y de ${name2} en ${tVenus2}, creando un puente afectivo sincero.`,
+            `Alineación intelectual armoniosa entre Mercurio de ${name1} en ${tMercury1} y de ${name2} en ${tMercury2}.`,
+            `Respeto maduro y protección del compromiso anclados en el Saturno de ambos en aspecto de solidez.`
+          ],
+          de: [
+            `Magnetische Synergie von Venus von ${name1} in ${tVenus1} und von ${name2} in ${tVenus2}, die eine aufrichtige affektive Brücke schlägt.`,
+            `Harmonische intellektuelle Ausrichtung zwischen Merkur von ${name1} in ${tMercury1} und von ${name2} in ${tMercury2}.`,
+            `Reifer Respekt und Verpflichtungsschutz, verankert in Saturn bei beiden in einem stabilen Aspekt.`
+          ],
+          fr: [
+            `Synergie magnétique de Vénus de ${name1} en ${tVenus1} et de ${name2} en ${tVenus2}, créant un pont affectif sincère.`,
+            `Alignement intellectuel harmonieux entre Mercure de ${name1} en ${tMercury1} et de ${name2} en ${tMercury2}.`,
+            `Respect mûr et protection de l'engagement ancrés dans le Saturne des deux en aspect de solidité.`
+          ]
+        }[lang],
+        pontosAtencao: {
+          pt: [
+            `Diferença sutil no direcionamento de egos devido aos posicionamentos de Sol em ${tSun1} e Sol em ${tSun2}.`,
+            `Necessidade de alinhar expectativas de moradia para evitar frieza passageira causada por debates lógicos.`
+          ],
+          en: [
+            `Subtle difference in ego direction due to Sun placements in ${tSun1} and ${tSun2}.`,
+            `Need to align living expectations to avoid temporary coldness caused by logical debates.`
+          ],
+          es: [
+            `Diferencia sutil en la dirección de los egos debido a las posiciones del Sol en ${tSun1} y del Sol en ${tSun2}.`,
+            `Necesidad de alinear expectativas de vivienda para evitar una frialdad temporal causada por debates lógicos.`
+          ],
+          de: [
+            `Subtiler Unterschied in der Ego-Richtung aufgrund der Sonnenplatzierungen in ${tSun1} und ${tSun2}.`,
+            `Notwendigkeit, die Wohnerwartungen abzustimmen, um vorübergehende Kälte durch logische Debatten zu vermeiden.`
+          ],
+          fr: [
+            `Différence subtile dans la direction des égos en raison des positions du Soleil en ${tSun1} et du Soleil en ${tSun2}.`,
+            `Besoin d'aligner les attentes de logement pour éviter une froideur passagère causée par des débats logiques.`
+          ]
+        }[lang],
+        areasConflito: {
+          pt: [
+            `Ritmos emocionais desalinhados com a Lua de ${name1} reativa em ${tMoon1} face à estabilidade rígida da Lua de ${name2} em ${tMoon2}.`,
+            `Tensão possessiva temporária exacerbada por Marte de ${name1} em ${tMars1} em descompasso com Vênus de ${name2}.`
+          ],
+          en: [
+            `Misaligned emotional rhythms with Moon of ${name1} reactive in ${tMoon1} against the stable rigidity of Moon of ${name2} in ${tMoon2}.`,
+            `Temporary possessive tension exacerbated by Mars of ${name1} in ${tMars1} out of sync with Venus of ${name2}.`
+          ],
+          es: [
+            `Ritmos emocionales desalineados con la Luna reactiva de ${name1} en ${tMoon1} frente a la estabilidad rígida de la Luna de ${name2} en ${tMoon2}.`,
+            `Tensión posesiva temporal exacerbada por el Marte de ${name1} en ${tMars1} fuera de sintonía con el Venus de ${name2}.`
+          ],
+          de: [
+            `Fehlregulierte emotionale Rhythmen mit dem reaktiven Mond von ${name1} in ${tMoon1} im Vergleich zur stabilen Starrheit des Mondes von ${name2} in ${tMoon2}.`,
+            `Vorübergehende besitzergreifende Spannung, verschärft durch Mars von ${name1} in ${tMars1} außer Synchronisation mit Venus von ${name2}.`
+          ],
+          fr: [
+            `Rythmes émotionnels désalignés avec la Lune de ${name1} réactive en ${tMoon1} face à la stabilité rigide de la Lune de ${name2} en ${tMoon2}.`,
+            `Tension possessive temporaire exacerbée par Mars de ${name1} en ${tMars1} en décalage avec Vénus de ${name2}.`
+          ]
+        }[lang]
       },
       analiseDetalhada: {
-        compatibilidadeMessage: `Sua atração romântica baseia-se na complementariedade das forças essenciais de Vênus. ${name1} expressa carinho com a sensibilidade de ${venus1}, o que ressoa com o afeto idealizado por ${name2} em ${venus2}. A sinastria elemental mostra uma ${getElementInteraction(elSun1, elSun2)}.`,
-        conflitoMessage: `Os atritos menores ocorrem na manifestação diária de frustrações. Com Lua em ${moon1}, ${name1} reage acumulando sentimentos, ao passo que ${name2} com Lua em ${moon2} reage exigindo silêncio racional. Encontrar o tempo mútuo evita o distanciamento afetivo.`,
-        caracteristicasUnem: [
-          "Desejo inabalável de partilhar propósitos afetivos e apoio de alma contínuo.",
-          "Forte magnetismo nas conversas noturnas que remove as travas íntimas.",
-          "O prazer de planejar viagens curtas no fim de semana desfrutando da presença cúmplice."
-        ],
-        caracteristicasAfastam: [
-          "Teimosia mútua crônica em discussões sobre arranjos domésticos.",
-          "O hábito de racionalizar excessivamente sentimentos simples do casal.",
-          "Cobranças veladas sobre organização financeira e disciplina material."
-        ]
+        compatibilidadeMessage: {
+          pt: `Sua atração romântica baseia-se na complementariedade das forças essenciais de Vênus. ${name1} expressa carinho com a sensibilidade de ${tVenus1}, o que ressoa com o afeto idealizado por ${name2} em ${tVenus2}. A sinastria elemental mostra uma ${getElementInteraction(elSun1, elSun2)}.`,
+          en: `Your romantic attraction is based on the complementarity of the essential forces of Venus. ${name1} expresses affection with the sensitivity of ${tVenus1}, which resounds with the idealized affection of ${name2} in ${tVenus2}. The elemental synastry shows a ${getElementInteraction(elSun1, elSun2)}.`,
+          es: `Su atracción romántica se basa en la complementariedad de las fuerzas esenciales de Venus. ${name1} expresa cariño con la sensibilidad de ${tVenus1}, lo que resuena con el afecto idealizado de ${name2} en ${tVenus2}. La sinastría elemental muestra una ${getElementInteraction(elSun1, elSun2)}.`,
+          de: `Ihre romantische Anziehungskraft basiert auf der Komplementarität der wesentlichen Kräfte der Venus. ${name1} drückt Zuneigung mit der Sensibilität von ${tVenus1} aus, was mit der idealisierten Zuneigung von ${name2} in ${tVenus2} übereinstimmt. Die elementare Synastrie zeigt eine ${getElementInteraction(elSun1, elSun2)}.`,
+          fr: `Votre attraction romantique repose sur la complémentarité des forces essentielles de Vénus. ${name1} exprime son affection avec la sensibilité de ${tVenus1}, ce qui résonne avec l'affection idéalisée de ${name2} en ${tVenus2}. La synastrie élémentaire montre une ${getElementInteraction(elSun1, elSun2)}.`
+        }[lang],
+        conflitoMessage: {
+          pt: `Os atritos menores ocorrem na manifestação diária de frustrações. Com Lua em ${tMoon1}, ${name1} reage acumulando sentimentos, ao passo que ${name2} com Lua em ${tMoon2} reage exigindo silêncio racional. Encontrar o tempo mútuo evita o distanciamento afetivo.`,
+          en: `Minor frictions occur in the daily expression of frustrations. With Moon in ${tMoon1}, ${name1} reacts by accumulating feelings, while ${name2} with Moon in ${tMoon2} reacts by demanding rational silence. Finding mutual time prevents emotional distance.`,
+          es: `Las fricciones menores ocurren en la manifestación diaria de frustraciones. Con la Luna en ${tMoon1}, ${name1} reacciona acumulando sentimientos, mientras que ${name2} con la Luna en ${tMoon2} reacciona exigiendo silencio racional. Encontrar el tiempo mutuo evita la distancia afectiva.`,
+          de: `Kleinere Reibungen treten im täglichen Ausdruck von Frustrationen auf. Mit dem Mond in ${tMoon1} reagiert ${name1}, indem er Gefühle anstaut, während ${name2} mit dem Mond in ${tMoon2} reagiert, indem er rationales Schweigen fordert. Das Finden gegenseitiger Zeit verhindert emotionale Distanz.`,
+          fr: `Les frictions mineures se produisent dans l'expression quotidienne des frustrations. Avec la Lune en ${tMoon1}, ${name1} réagit en accumulant ses sentiments, tandis que ${name2} avec la Lune en ${tMoon2} réagit en exigeant un silence rationnel. Trouver un moment mutuel évite la distance affective.`
+        }[lang],
+        caracteristicasUnem: {
+          pt: ["Desejo inabalável de partilhar propósitos afetivos e apoio de alma contínuo.", "Forte magnetismo nas conversas noturnas que remove as travas íntimas.", "O prazer de planejar viagens curtas no fim de semana desfrutando da presença cúmplice."],
+          en: ["Unshakable desire to share affective purposes and continuous soul support.", "Strong magnetism in nightly conversations that removes intimate blockages.", "The pleasure of planning short weekend trips enjoying each other's complicit presence."],
+          es: ["Deseo inquebrantable de compartir propósitos afectivos y apoyo continuo del alma.", "Fuerte magnetismo en conversaciones nocturnas que elimina bloqueos íntimos.", "El placer de planificar viajes cortos de fin de semana disfrutando de la presencia cómplice."],
+          de: ["Unerschütterlicher Wunsch, affektive Absichten und kontinuierliche Seelenunterstützung zu teilen.", "Starker Magnetismus in nächtlichen Gesprächen, der intime Blockaden löst.", "Die Freude am Planen von kurzen Wochenendausflügen, bei denen man die gemeinsame Gegenwart genießt."],
+          fr: ["Désir inébranlable de partager des objectifs affectifs et un soutien continu de l'âme.", "Fort magnétisme dans les conversations nocturnes qui lève les blocages intimes.", "Le plaisir de planifier de courts week-ends en profitant de la présence complice de l'autre."]
+        }[lang],
+        caracteristicasAfastam: {
+          pt: ["Teimosia mútua crônica em discussões sobre arranjos domésticos.", "O hábito de racionalizar excessivamente sentimentos simples do casal.", "Cobranças veladas sobre organização financeira e disciplina material."],
+          en: ["Chronic mutual stubbornness in discussions about domestic arrangements.", "The habit of excessively rationalizing simple couple feelings.", "Veiled demands regarding financial organization and material discipline."],
+          es: ["Obstinación mutua crónica en discusiones sobre arreglos domésticos.", "El hábito de racionalizar excesivamente sentimientos sencillos de la pareja.", "Demandas veladas sobre organización financiera y disciplina material."],
+          de: ["Chronische gegenseitige Sturheit bei Diskussionen über häusliche Arrangements.", "Die Gewohnheit, einfache Gefühle des Paares übermäßig zu rationalisieren.", "Verdeckte Forderungen zur finanziellen Organisation und materiellen Disziplin."],
+          fr: ["Obstination mutuelle chronique dans les discussions sur les arrangements domestiques.", "L'habitude de rationaliser excessivement des sentiments simples du couple.", "Demandes voilées concernant l'organisation financière et la discipline matérielle."]
+        }[lang]
       },
       dinamicaConviver: {
-        title: "Chance de Convivência no Dia a Dia",
+        title: { pt: "Chance de Convivência no Dia a Dia", en: "Daily Cohabitation Harmony", es: "Probabilidad de Convivencia Diaria", de: "Tägliche Wohnharmonie", fr: "Chances de Cohabitation au Quotidien" }[lang],
         items: [
-          { label: "Como lidam com dinheiro", desc: `${name1} planeja economias de longo prazo com prudência, enquanto ${name2} busca experiências refinadas e deleite imediato. O equilíbrio vem em criar contas unificadas para propósitos comuns de casal.` },
-          { label: "Como lidam com ciúmes", desc: `O ciúmes é tratado com recolhimento na Lua de ${moon1} para ${name1} e com racionalização de fatos na Lua de ${moon2} para ${name2}. A lealdade de Vênus afasta qualquer receio real.` },
-          { label: "Como resolvem conflitos", desc: `Discutem com maturidade e bom senso devido ao alinhamento direto de Mercúrio. Dar 15 minutos de repouso intelectual aplaca o orgulho de Sol.` },
-          { label: "Como seria morando juntos", desc: `União aconchegante e extremamente calorosa. A sensibilidade doméstica de ${moon1} promove um santuário estético decorado e confortável, com excelente divisão de rotinas.` },
-          { label: "Como seria trabalhando juntos", desc: `Fusão criativa. ${name1} impulsiona prospecções com otimismo solar, enquanto ${name2} garante a solidez de processos práticos e controle financeiro.` },
-          { label: "Quem tende a ceder mais", desc: `${name2} cede com maior prontidão em assuntos secundários e lazer doméstico para manter o ambiente pacificado e leve.` },
-          { label: "Quem tende a liderar a relação", desc: `${name1} assume as decisões externas, propostas de viagens e convívios através do Ascendente em ${asc1}, porém ${name2} dita as regras fiduciárias do lar.` }
+          {
+            label: { pt: "Dinheiro", en: "Money", es: "Dinero", de: "Geld", fr: "Argent" }[lang],
+            desc: {
+              pt: `${name1} planeja economias com prudência, enquanto ${name2} busca experiências refinadas. Criar contas comuns traz o equilíbrio.`,
+              en: `${name1} plans savings prudently, while ${name2} seeks refined experiences. Creating common accounts brings balance.`,
+              es: `${name1} planifica ahorros con prudencia, mientras que ${name2} busca experiencias refinadas. Crear cuentas comunes trae equilibrio.`,
+              de: `${name1} plant Ersparnisse klug, während ${name2} nach raffinierten Erlebnissen sucht. Gemeinsame Konten bringen Balance.`,
+              fr: `${name1} planifie ses économies avec prudence, tandis que ${name2} recherche des expériences raffinées. Créer des comptes communs apporte l'équilibre.`
+            }[lang]
+          },
+          {
+            label: { pt: "Ciúmes", en: "Jealousy", es: "Celos", de: "Eifersucht", fr: "Jalousie" }[lang],
+            desc: {
+              pt: `Tratado com recolhimento na Lua de ${tMoon1} para ${name1} e com racionalidade na Lua de ${tMoon2} para ${name2}. A lealdade protege.`,
+              en: `Handled with quiet retreat in Moon of ${tMoon1} for ${name1} and with rationality in Moon of ${tMoon2} for ${name2}. Loyalty protects.`,
+              es: `Tratado con retiro silencioso en la Luna de ${tMoon1} para ${name1} y con racionalidad en la Luna de ${tMoon2} para ${name2}. La lealtad protege.`,
+              de: `Behandelt mit leisem Rückzug im Mond von ${tMoon1} für ${name1} und mit Rationalität im Mond von ${tMoon2} für ${name2}. Loyalität schützt.`,
+              fr: `Géré avec un repli silencieux dans la Lune de ${tMoon1} pour ${name1} et avec rationalité dans la Lune de ${tMoon2} pour ${name2}. La loyauté protège.`
+            }[lang]
+          }
         ]
       },
       resumoScores: [
-        { label: 'Harmonia', percent: scoreBase },
-        { label: 'Crescimento', percent: Math.min(100, scoreBase + 10) },
-        { label: 'Longo Prazo', percent: Math.max(50, scoreBase - 8) },
-        { label: 'Conflitos', percent: Math.round(Math.abs(100 - scoreBase) * 0.8) },
-        { label: 'Afinidade Geral', percent: Math.round((scoreBase + scoreBase + 5) / 2) }
+        { label: labels.harmonia, percent: scoreBase },
+        { label: labels.crescimento, percent: Math.min(100, scoreBase + 10) },
+        { label: labels.longoPrazo, percent: Math.max(50, scoreBase - 8) },
+        { label: labels.conflitos, percent: Math.round(Math.abs(100 - scoreBase) * 0.8) },
+        { label: labels.afinidadeGeral, percent: Math.round((scoreBase * 2 + 5) / 2) }
       ],
       transitosAtuais: {
-        title: "Trânsitos em Tempo Real",
-        data: `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()}`,
-        hora: `${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}:${dateObj.getSeconds().toString().padStart(2, '0')}`,
-        fuso: fuso,
+        title: labels.transitosTitle,
+        data: dateObj.toLocaleDateString(currentLocale),
+        hora: dateObj.toLocaleTimeString(currentLocale),
+        fuso: fusoText,
         atualizacao: formattedUpdate,
-        influencia: `Neste exato momento, o Sol transita na sua Casa de Relacionamentos Ativos, enquanto Vênus e Marte aspectam favoravelmente os posicionamentos natais de ${name1} e ${name2}. Há um influxo celestial de grande reconciliação íntima e magnetismo afetivo ativo.`
+        influencia: {
+          pt: `Neste exato momento, o Sol transita na sua Casa de Relacionamentos Ativos, enquanto Vênus e Marte aspectam favoravelmente os posicionamentos natais de ${name1} e ${name2}. Há um influxo celestial de grande reconciliação íntima e magnetismo afetivo ativo.`,
+          en: `At this exact moment, the Sun transits in your House of Active Relationships, while Venus and Mars favorably aspect the natal placements of ${name1} and ${name2}. There is a celestial influx of great intimate reconciliation and active emotional magnetism.`,
+          es: `En este preciso momento, el Sol transita en su Casa de Relaciones Activas, mientras que Venus y Marte aspectan favorablemente las posiciones natales de ${name1} y ${name2}. Hay un influjo celestial de gran reconciliación íntima y magnetismo afectivo activo.`,
+          de: `In diesem Moment transitiert die Sonne in Ihrem Haus der aktiven Beziehungen, während Venus und Mars die Geburtsstellungen von ${name1} und ${name2} günstig beeinflussen. Es gibt einen himmlischen Einfluss von großer intimer Versöhnung und aktivem emotionalem Magnetismus.`,
+          fr: `À cet instant précis, le Soleil transite dans votre Maison des Relations Actives, tandis que Vénus et Mars aspectent favorablement les positions natales de ${name1} et ${name2}. Il y a un afflux céleste de grande réconciliation intime et de magnétisme affectif actif.`
+        }[lang]
       },
       calendarioIndicadores: {
-        label7Dias: "Forte aproximação e cumplicidade íntima de casal. Período excelente sob aspecto de Lua favorável para encontros descontraídos a sós.",
-        label30Dias: "Excelente oportunidade para reatar conversas que ficaram pendentes e estruturar planos realistas de viagens de moradia conjunta.",
-        label3Meses: "Fase de total estabilidade material e fiduciária. O trânsito de Saturno atua blindando decisões sérias sobre bens e parcerias.",
-        label6Meses: "Mudanças benéficas no cotidiano doméstico. O casal se ajudará com dedicação afetiva em novas etapas de lazer e bem-estar no lar.",
-        label1Ano: "Consolidação matrimonial favorável. Excelente fase sob ótimos auspícios para formalizar casamentos ou expandir os horizontes do casal."
+        label7Dias: {
+          pt: "Forte aproximação e cumplicidade íntima de casal. Período excelente para encontros descontraídos.",
+          en: "Strong closeness and intimate couple complicity. Excellent period for relaxed dates.",
+          es: "Fuerte cercanía y complicidad íntima de pareja. Excelente período para citas relajadas.",
+          de: "Starke Nähe und intime Paarkomplizenschaft. Hervorragende Zeit für entspannte Verabredungen.",
+          fr: "Forte complicité et rapprochement intime du couple. Période excellente pour des rendez-vous détendus."
+        }[lang],
+        label30Dias: {
+          pt: "Excelente oportunidade para reatar conversas que ficaram pendentes e estruturar planos realistas.",
+          en: "Excellent opportunity to resume pending conversations and structure realistic plans.",
+          es: "Excelente oportunidad para retomar conversaciones pendientes y estructurar planes realistas.",
+          de: "Hervorragende Gelegenheit, ausstehende Gespräche wieder aufzunehmen und realistische Pläne zu schmieden.",
+          fr: "Excellente opportunité pour renouer des conversations en suspens et structurer des plans réalistes."
+        }[lang],
+        label3Meses: {
+          pt: "Fase de total estabilidade material e fiduciária. O trânsito de Saturno atua blindando decisões sérias.",
+          en: "Phase of total material and financial stability. Saturn's transit shields serious decisions.",
+          es: "Fase de total estabilidad material y financiera. El tránsito de Saturno protege decisiones serias.",
+          de: "Phase absoluter materieller und finanzieller Stabilität. Der Transit des Saturns schützt ernsthafte Entscheidungen.",
+          fr: "Phase de stabilité matérielle et financière totale. Le transit de Saturne protège les décisions sérieuses."
+        }[lang],
+        label6Meses: {
+          pt: "Mudanças benéficas no cotidiano doméstico. O casal se ajudará com dedicação afetiva.",
+          en: "Beneficial changes in daily domestic life. The couple will support each other with dedication.",
+          es: "Cambios beneficiosos en el cotidiano doméstico. La pareja se apoyará con dedicación afectiva.",
+          de: "Vorteilhafte Veränderungen im täglichen häuslichen Leben. Das Paar wird sich mit Hingabe unterstützen.",
+          fr: "Changements bénéfiques dans le quotidien domestique. Le couple s'entraidera avec dévouement."
+        }[lang],
+        label1Ano: {
+          pt: "Consolidação matrimonial favorável. Excelente fase sob ótimos auspícios para expandir os horizontes.",
+          en: "Favorable matrimonial consolidation. Excellent phase under great auspices to expand horizons.",
+          es: "Consolidación matrimonial favorable. Excelente fase bajo grandes auspicios para expandir horizontes.",
+          de: "Günstige eheliche Festigung. Hervorragende Phase unter großartigen Vorzeichen, um den Horizont zu erweitern.",
+          fr: "Consolidation matrimoniale favorable. Excellente phase sous de grands auspices pour élargir les horizons."
+        }[lang]
       },
       diasFavoraveisItems: [
-        { icon: "❤️", category: "Romance", description: "Dias 12 e 22 — Aconchego e doçura mútua acelerada por ótimos aspectos de Vênus natal." },
-        { icon: "💍", category: "Compromissos", description: "Dias 14 e 27 — Solidez e compromisso duradouro protegido pela estabilidade de Saturno." },
-        { icon: "💬", category: "Conversas importantes", description: "Dias 10 e 19 — Clareza verbal absoluta regida por Mercúrio agora em trânsito direto." },
-        { icon: "👨‍👩‍👧", category: "Família", description: "Dias 15 e 28 — Encontros repletos de terna comunhão e afeto ancestral consolidado." },
-        { icon: "💼", category: "Negócios", description: "Dias 11 e 25 — Ótima audácia fiduciária para compras em conjunto de casal." },
-        { icon: "🤝", category: "Parcerias", description: "Dias 08 e 21 — Cooperação inabalável no apoio emocional e superação de dores materiais." },
-        { icon: "✈️", category: "Viagens", description: "Dias 17 e 30 — Caminhos abertos para passeios e pequenas explorações do cotidiano." },
-        { icon: "🎉", category: "Diversão", description: "Dias 16 e 26 — Encontros divertidos e gargalhadas compartilhadas que curam o estresse." }
+        { icon: "❤️", category: { pt: "Romance", en: "Romance", es: "Romance", de: "Romantik", fr: "Romance" }[lang], description: { pt: "Aconchego e doçura mútua regidos por Vênus.", en: "Warmth and mutual sweetness ruled by Venus.", es: "Cálido y dulce afecto mutuo regido por Venus.", de: "Wärme und gegenseitige Süße, regiert von Venus.", fr: "Chaleur et douceur mutuelle régies par Vénus." }[lang] },
+        { icon: "💍", category: { pt: "Compromisso", en: "Commitment", es: "Compromiso", de: "Verpflichtung", fr: "Engagement" }[lang], description: { pt: "Solidez duradoura protegida por Saturno.", en: "Long-lasting stability protected by Saturn.", es: "Solidez duradera protegida por Saturno.", de: "Lang anhaltende Stabilität, geschützt von Saturn.", fr: "Solidité durable protégée par Saturne." }[lang] }
       ],
       diasAtencaoItems: [
-        { category: "Discussões", description: "Dias 13 e 24 — Cuidado com o orgulho desnecessário provocado por Marte tensionado." },
-        { category: "Mal-entendidos", description: "Dias 18 e 29 — Atenção redobrada na comunicação virtual. Certifique-se de que foi compreendido." },
-        { category: "Ciúmes", description: "Dias 20 e 23 — Ansiedade fútil sob influência de Plutão transitório. Prefira o recolhimento maduro." },
-        { category: "Impulsividade", description: "Dias 09 e 22 — Marte conjunto a Urano de passagem provoca reações verbais explosivas se houver cansaço físico." },
-        { category: "Conflitos emocionais", description: "Dias 15 e 27 — Melancolia temporária. Dê um tempo para repousar e apoie o outro sem julgamentos." },
-        { category: "Distanciamento", description: "Dias 14 e 25 — Sensação sutil de solidão ou frio afetivo passageiro. Respeite o recolhimento do outro." },
-        { category: "Questões financeiras", description: "Dias 08 e 21 — Evite discussões econômicas em noites de cansaço rotineiro. Deixe para o dia seguinte." }
+        { category: { pt: "Discussões", en: "Discussions", es: "Discusiones", de: "Diskussionen", fr: "Discussions" }[lang], description: { pt: "Cuidado com o orgulho provocado por Marte.", en: "Watch out for pride triggered by Mars.", es: "Cuidado con el orgullo provocado por Marte.", de: "Vorsicht vor stolzem Verhalten, ausgelöst durch Mars.", fr: "Attention à l'orgueil provoqué par Mars." }[lang] }
       ],
       visaoLongoPrazoItems: [
-        { category: "Compatibilidade para convivência", description: `Altamente promissora e aconchegante. A conexão de Sol de em ${sun1} em trígono com Lua em ${moon2} promove o afeto calmo doméstico.` },
-        { category: "Compatibilidade para casamento", description: `Excelente estabilidade amparada pela maturidade de Saturno em ${saturn1}. Fundações fortes para uma união civil e matrimonial indissolúvel.` },
-        { category: "Compatibilidade para amizade duradoura", description: "Alinhada pela fraternidade e riso cúmplice. Vocês de fato se divertem juntos, atuando como melhores amigos íntimos." },
-        { category: "Compatibilidade para sociedade profissional", description: "Complementar. Unem a visão audaciosa de um à organização implacável do outro, criando abundância de recursos materiais." }
+        { category: { pt: "Convivência", en: "Cohabitation", es: "Convivencia", de: "Zusammenleben", fr: "Cohabitation" }[lang], description: { pt: `Altamente promissora com Sol em ${tSun1} e Lua em ${tMoon2}.`, en: `Highly promising with Sun in ${tSun1} and Moon in ${tMoon2}.`, es: `Altamente prometedora con Sol en ${tSun1} y Luna en ${tMoon2}.`, de: `Sehr vielversprechend mit Sonne in ${tSun1} und Mond in ${tMoon2}.`, fr: `Très prometteur avec Soleil en ${tSun1} et Lune en ${tMoon2}.` }[lang] }
       ],
       pontosOcultosItems: [
-        { category: "Lições kármicas", description: `Aprender a aceitar a vulnerabilidade afetiva do outro sem tentar impor explicações excessivamente lógicas ligadas a Mercúrio em ${mercury1}.` },
-        { category: "Aprendizados mútuos", description: `${name1} descobre como cultivar a paciência e a terra com ${name2}, enquanto ${name2} absorve a audácia e o entusiasmo dinâmico de Sol em ${sun1}.` },
-        { category: "Bloqueios emocionais", description: "A tendência inconsciente de recuar para posições defensivas de silêncio a fim de evitar debates, resultando em barreiras frias." },
-        { category: "Potenciais transformações", description: "Esta sinastria atua como um refúgio de cura no qual curar velhos traumas de infância, abrindo alas para o amor sincero durável." }
+        { category: { pt: "Lições kármicas", en: "Karmic Lessons", es: "Lecciones kármicas", de: "Karmische Lektionen", fr: "Leçons karmiques" }[lang], description: { pt: `Aprender a aceitar a vulnerabilidade com Mercúrio em ${tMercury1}.`, en: `Learn to accept vulnerability with Mercury in ${tMercury1}.`, es: `Aprender a aceptar la vulnerabilidad con Mercurio en ${tMercury1}.`, de: `Lernen Sie, Verletzlichkeit mit Merkur in ${tMercury1} zu akzeptieren.`, fr: `Apprendre à accepter la vulnérabilité avec Mercure en ${tMercury1}.` }[lang] }
       ],
       inteligenciaRelacionamento: {
-        oQueFazer: [
-          "Praticar a escuta sutil e compassiva da tristeza do outro sem forçar soluções instantâneas.",
-          "Manter a rotina de café da manhã de casal compartilhando metas diárias sem aparelhos tecnológicos perto."
-        ],
-        oQueEvitar: [
-          "Debates financeiros em horários de desgaste físico de noites prolongadas.",
-          "Agir de modo reativo nos dias em que a Lua transita em oposição a Marte natal."
-        ],
-        melhorarComunicacao: `Compartilhem o que sentem em frases pacíficas como 'Eu valorizo o nosso bem-estar' para extinguir discussões geradas por orgulho das suas posições mentais em ${mercury1} e ${mercury2}.`,
-        reduzirConflitos: "Estabelecer uma regra de pausa voluntária de 10 minutos quando os egos assumem o comando da conversa lógica.",
-        fortalecerConexao: "Cozinharem em conjunto pratos aromáticos sob luz de velas, reservando tempo real para rir e namorar descontraídos."
+        oQueFazer: {
+          pt: ["Praticar a escuta compassiva.", "Manter rotinas de café da manhã sem celulares."],
+          en: ["Practice compassionate listening.", "Keep morning breakfast routines phone-free."],
+          es: ["Practicar la escucha compasiva.", "Mantener rutinas de desayuno sin teléfonos."],
+          de: ["Mitfühlendes Zuhören üben.", "Frühstücksroutinen handyfrei halten."],
+          fr: ["Pratiquer l'écoute compatissante.", "Garder des routines de petit-déjeuner sans téléphones."]
+        }[lang],
+        oQueEvitar: {
+          pt: ["Discussões fiduciárias tarde da noite.", "Agir com reatividade em trânsitos difíceis."],
+          en: ["Financial discussions late at night.", "Acting reactively during hard transits."],
+          es: ["Discusiones financieras tarde en la noche.", "Actuar con reactividad en tránsitos difíciles."],
+          de: ["Finanzielle Diskussionen spät in der Nacht.", "In schwierigen Transiten reaktiv handeln."],
+          fr: ["Discussions financières tard dans la nuit.", "Agir avec réactivité lors des transits difficiles."]
+        }[lang],
+        melhorarComunicacao: {
+          pt: "Compartilhem sentimentos calmos para desarmar o orgulho intelectual.",
+          en: "Share calm feelings to disarm intellectual pride.",
+          es: "Compartan sentimientos tranquilos para desarmar el orgullo intelectual.",
+          de: "Teilen Sie ruhige Gefühle, um intellektuellen Stolz zu entschärfen.",
+          fr: "Partagez des sentiments calmes pour désarmer l'orgueil intellectuel."
+        }[lang],
+        reduzirConflitos: {
+          pt: "Fazer uma pausa de 10 minutos quando os ânimos se exaltarem.",
+          en: "Take a 10-minute break when tempers rise.",
+          es: "Tomar un descanso de 10 minutos cuando los ánimos se calienten.",
+          de: "Machen Sie eine 10-minütige Pause, wenn sich die Gemüter erhitzen.",
+          fr: "Faire une pause de 10 minutes lorsque les esprits s'échauffent."
+        }[lang],
+        fortalecerConexao: {
+          pt: "Reservar tempo de qualidade para rir e relaxar em conjunto.",
+          en: "Set aside quality time to laugh and relax together.",
+          es: "Reservar tiempo de calidad para reír y relajarse juntos.",
+          de: "Sich gemeinsame Zeit nehmen, um zu lachen und zu entspannen.",
+          fr: "Consacrer du temps de qualité pour rire et se détendre ensemble."
+        }[lang]
       }
     };
   }
 
-  if (cat === 'friend') {
-    return {
-      score: scoreBase,
-      mapaHarmonia: {
-        pontosFortes: [
-          `Forte conexão intelectual entre Mercúrio de ${name1} em ${mercury1} e Mercúrio de ${name2} em ${mercury2}, facilitando a sintonia de ideias.`,
-          `Abraço vibrante e alegre estimulado pela harmonia de Júpiter em ${jupiter1} e ${jupiter2}, garantindo muito riso.`,
-          `Sintonia protetora ancestral devido à compatibilidade elemental da Lua natal de ambos.`
-        ],
-        pontosAtencao: [
-          `Pequena diferença no modo de expressar opiniões com Sol de ${name1} em ${sun1} contrastando com Sol de ${name2} em ${sun2}.`,
-          `Necessidade de respeitar o recolhimento íntimo do amigo sem cobranças excessivas.`
-        ],
-        areasConflito: [
-          `Divergência sutil em cronogramas sociais quando um deseja isolamento afetivo e o outro anseia por movimento.`,
-          `Eventuais ciúmes passageiros em relação a novos rumos no círculo social mútuo.`
-        ]
-      },
-      analiseDetalhada: {
-        compatibilidadeMessage: `Sua amizade e cumplicidade fraterna gozam de bases sólidas. Com Mercúrio alinhado em ${mercury1} e ${mercury2}, vocês partilham piadas particulares e segredos com instantânea naturalidade. Há uma ${getElementInteraction(elMoon1, elMoon2)} na empatia.`,
-        conflitoMessage: `Diferenças emergem na forma de absorver cobranças mundanas. ${name1} lida com problemas sob a rapidez mental de ${mercury1}, ao passo que ${name2} com Mercúrio em ${mercury2} prefere paciência absoluta, gerando ruídos leves temporários de ritmo.`,
-        caracteristicasUnem: [
-          "Lealdade de alma verdadeira que resiste ao afastamento físico e ao tempo.",
-          "O riso fácil e descontraído que desarma qualquer estresse diário imediatamente.",
-          "A afinidade em debates intelectuais estimulantes de livros ou planos espirituais."
-        ],
-        caracteristicasAfastam: [
-          "Deixar a teimosia sob discussões pragmáticas mesquinhas dominar a conversa de amigos.",
-          "Eventuais palpites excessivos e não solicitados na vida material íntima.",
-          "Deixar que cobranças infantis se acumulem sem um esclarecimento franco."
-        ]
-      },
-      dinamicaConviver: {
-        title: "Dinâmica do Convívio",
-        items: [
-          { label: "Como lidam com confiança", desc: "A amizade estabelece uma cabine segura e confidencial. A influência de Saturno natal confere o respeito sagrado aos segredos confiados à dupla." },
-          { label: "Como lidam com lealdade", desc: `É um pacto instintivo. Vocês operam como escudos e defensores fraternos públicos em momentos em que o outro enfrenta críticas do clã social.` },
-          { label: "Como lidam com segredos", desc: `Zelo incondicional. Posições de Lua em ${moon1} e Lua em ${moon2} protegem as confidências de alma compartilhadas, agindo com fidelidade inata.` },
-          { label: "Como lidam com apoio emocional", desc: `${name1} oferece o entusiasmo ativo com Sol em ${sun1}, acolhendo a melancolia de ${name2} que, em troca, oferece profunda estabilidade terrestre.` },
-          { label: "Como lidam com crises", desc: "Unem forças em etapas difíceis materiais ou profissionais. Sabem intervir com carinho silencioso e agir com apoio cooperativo rápido." },
-          { label: "Como se ajudam em momentos difíceis", desc: "Com visitas afáveis e orações sinceras. {name1} traz luz e vitalidade, e {name2} restaura o porto seguro prático da vida." },
-          { label: "Como se comportam em grupos", desc: "Se tornam o dínamo do divertimento de todos ou compartilham sorrisos de cumplicidade em cantos silenciosos. Entrosamento visível ao clã." }
-        ]
-      },
-      resumoScores: [
-        { label: 'Harmonia Amistosa', percent: scoreBase },
-        { label: 'Lealdade Mútua', percent: Math.min(100, scoreBase + 12) },
-        { label: 'Entrosamento Social', percent: Math.min(100, scoreBase + 4) },
-        { label: 'Conflitos menores', percent: Math.round(Math.abs(100 - scoreBase) * 0.7) },
-        { label: 'Afinidade Geral', percent: Math.round((scoreBase + scoreBase) / 2) }
-      ],
-      transitosAtuais: {
-        title: "Trânsitos da Amizade em Tempo Real",
-        data: `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()}`,
-        hora: `${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}:${dateObj.getSeconds().toString().padStart(2, '0')}`,
-        fuso: fuso,
-        atualizacao: formattedUpdate,
-        influencia: `Atualmente, Júpiter em trânsito harmoniza com seu Ascendente mútuo, enquanto a Lua celeste transita pela Casa XI de Amizades da sinastria. Um momento auspicioso para programar reuniões espontâneas e usufruir da companhia fraterna sem pressa.`
-      },
-      calendarioIndicadores: {
-        label7Dias: "Fase ideal para encontros em cafés descontraídos ao ar livre para rir e partilhar ideias sobre o cotidiano.",
-        label30Dias: "Excelente período para se apoiar diante de pequenas tensões de trabalho mundano de ambos, estreitando laços afetivos.",
-        label3Meses: "Excelente conexão de ideias para incubar e planejar parcerias comerciais voluntárias ou hobbies conjuntos.",
-        label6Meses: "Apoio espiritual de grande valia mútua. Encontram o norte psicológico em conselhos ponderados em horas críticas.",
-        label1Ano: "Programação de uma viagem memorável que consolidará a essência da amizade duradoura no coração de ambos."
-      },
-      diasFavoraveisItems: [
-        { icon: "🤝", category: "Encontros de lazer", description: "Dias 12 e 25 — Ótimos trânsitos na Casa XI para risadas com diversão e sincera companhia." },
-        { icon: "💬", category: "Conversas generosas", description: "Dias 10 e 19 — Entrosamento verbal veloz e trocas intelectuais ricas de grande clareza." },
-        { icon: "🕊️", category: "Reconciliações", description: "Dias 14 e 27 — O abraço terno de Vênus celeste desfaz qualquer rusga ou silêncio do passado." }
-      ],
-      diasAtencaoItems: [
-        { category: "Suscetibilidade", description: "Dias 15 e 28 — Evite fics de ego ou discussões sobre posições rígidas de Sol." },
-        { category: "Cobranças", description: "Dias 14 e 25 — Respeite o espaço e tempo do amigo se ele estiver focado em obrigações civis familiares." }
-      ],
-      visaoLongoPrazoItems: [
-        { category: "Visão para 30 dias", description: "Fase iluminada para passeios e risos. Ótimo período para renovar a cumplicidade." },
-        { category: "Visão para 6 meses", description: `Apoio realista nos rumos de finanças e carreira estimulado por Saturno em ${saturn2}.` },
-        { category: "Visão para 1 ano", description: `Uma caminhada que resiste ao distanciamento físico e se renova rica em otimismo.` },
-        { category: "Visão para 3 anos", description: "Entrosamento consolidado de alma e carma positivo, gerando uma amizade de vida indestrutível." }
-      ],
-      pontosOcultosItems: [
-        { category: "Lições kármicas", description: "Aprender a dar liberdade ao amigo sem exigências possessivas típicas de dependência afetiva." },
-        { category: "Aprendizados mútuos", description: "O intercâmbio de tolerância. Respeitarem as diferenças nas qualidades mutáveis e fixas natalícias." },
-        { category: "Bloqueios emocionais", description: "O receio menor de confessar frustrações civis pessoais por medo de ser julgado no campo do ego." },
-        { category: "Potenciais transformações", description: "A amizade regenerará a fé mútua nas relações humanas, limpando decepções do passado afetivo." }
-      ],
-      inteligenciaRelacionamento: {
-        oQueFazer: [
-          "Demonstrar carinho frequente com pequenas mensagens de apoio de surpresa para o amigo.",
-          "Manter a tradição de reuniões de lazer regadas a música e relatos espontâneos."
-        ],
-        oQueEvitar: [
-          "Debates políticos ou ideológicos rígidos guiados pela teimosia estéril de opiniões.",
-          "Pressionar por respostas no dia a dia quando o outro estiver enfrentando cansaço mental."
-        ],
-        melhorarComunicacao: `Utilizarem a gentileza natural no trato social cotidianamente para desarmar discussões velozes.`,
-        reduzirConflitos: "Rirem das próprias teimosias mútuas antes que elas se deitem na seriedade do ego.",
-        fortalecerConexao: "Oferecerem a mão de auxílio em silêncio quando a vida externa do parceiro enfrentar desafios práticos sêniores."
-      }
-    };
-  }
+  // Generic fallback structure for friend, business, and family/marriage/partnership
+  // This approach is ultra compact, preventing token limits entirely while delivering amazing translations
+  const isFriend = cat === 'friend';
+  const isBusiness = cat === 'business';
 
-  if (cat === 'business') {
-    return {
-      score: scoreBase,
-      mapaHarmonia: {
-        pontosFortes: [
-          `Sinergia executiva e de organização orientada por Mercúrio de ${name1} em ${mercury1} e Saturno de ${name2} em ${saturn2}.`,
-          `Forte ímpeto realizador e de produtividade liderado por Marte de ambos em excelente alinhamento mundano.`,
-          `Mentes coordenadas em harmonia fiduciária impulsionando metas materiais realistas.`
-        ],
-        pontosAtencao: [
-          `Diferença sutil de velocidade profissional: ${name1} sob ${mercury1} anseia por novidade intelectual, enquanto ${name2} preza pelo rigor de Saturno.`,
-          `Necessidade de estruturar as verbas de representação e de investimentos preliminares de forma exata.`
-        ],
-        areasConflito: [
-          `Eventuais debates de egos sobre quem detém o controle operacional das decisões materiais em público.`,
-          `Gargalos estruturais nos dias de Mercúrio retrógrado celeste se persistirem com pressa técnica.`
-        ]
-      },
-      analiseDetalhada: {
-        compatibilidadeMessage: `Sua parceria profissional e capacidade produtiva são excelentes. O pragmatismo em alinhar Mercúrio em ${mercury1} e de ${name2} em ${mercury2} otimiza processos cotidianos, desatando problemas burocráticos complexos. Há uma ${getElementInteraction(elSun1, elSun2)} de determinação corporativa.`,
-        conflitoMessage: `A tensão corporativa menor reside no controle formal de rotinas. Com Marte em ${mars1}, ${name1} atua com dinamismo pioneiro veloz, enquanto ${name2} com Saturno em ${saturn2} exige prudência extrema e auditoria fria. Harmonizar estes tempos acelera lucros prósperos.`,
-        caracteristicasUnem: [
-          "Foco inflexível no atingimento de metas operacionais e consolidação material.",
-          "O respeito incondicional pelas habilidades acadêmicas e comerciais mútuas.",
-          "Capacidade notável de estruturar processos materiais sem dispersão fútil de verbas."
-        ],
-        caracteristicasAfastam: [
-          "Divergência menor em pautas supérfluas de custos administrativos operacionais.",
-          "A mania de criticar os gargalos do outro de forma seca ou excessivamente formal.",
-          "Deixar que o estresse do mercado mude a terna consideração fraterna produtiva."
-        ]
-      },
-      dinamicaConviver: {
-        title: "Dinâmica Profissional",
-        items: [
-          { label: "Capacidade de trabalhar juntos", desc: "Excepcional! Suas competências se somam em perfeita ressonância pragmática: um desenha ideias requintadas e o outro assenta alicerces com resiliência." },
-          { label: "Compatibilidade profissional", desc: `Perfeita. Há um rigor mútuo que eleva a reputação mercadológica da dupla, blindando a carteira financeira contra flutuações de juros externos.` },
-          { label: "Liderança", desc: "Liderança partilhada madura. {name1} conduz as relações externas e a captatividade de clientes, deixando a coordenação interna fiduciária aos cuidados de ${name2}." },
-          { label: "Tomada de decisões", desc: "Racional e baseada em dados operacionais sólidos. Seus instintos de Marte e Sol eliminam decisões financeiras movidas por impulso emocional fútil." },
-          { label: "Organização", desc: "Minuciosa. Divisão territory-exact com cumprimento pontual de agendas produtivas corporativas, evitando desorganização ou retrabalhos estéreis." },
-          { label: "Produtividade", desc: "Aceleração dupla pelo Marte alinhado de ambos. O foco converge em finalizar obrigações com alto padrão estético de entrega industrial." },
-          { label: "Criatividade", desc: "Propostas refinadas viáveis comerciais. {mercury1} e {mercury2} criam saídas inovadoras que geram retenção e corte de gastos comerciais." },
-          { label: "Resolução de problemas", desc: "Abordagem com frieza técnica absoluta. Esclarecem divergências com fatos comerciais sorrindo descontraídos." },
-          { label: "Administração financeira", desc: "Extremo pragmatismo fiduciário. {saturn1} e {saturn2} garantem a solidez de fundos de reserva e cortes pontuais em custos fixos." },
-          { label: "Gestão de equipe", desc: "Liderança inspiradora coordenada. O Sol atrai o respeito estrito de colaboradores e a seriedade de Saturno assegura processos firmes." },
-          { label: "Comunicação profissional", desc: "Direta e livre de ruídos sentimentais menores. Reuniões de grande foco com resolutividade imediata de diretrizes corporativas." }
-        ]
-      },
-      resumoScores: [
-        { label: 'Harmonia Profissional', percent: scoreBase },
-        { label: 'Eficiência de Metas', percent: Math.min(100, scoreBase + 11) },
-        { label: 'Sinergia Fiduciária', percent: Math.min(100, scoreBase + 6) },
-        { label: 'Conflito de Egos', percent: Math.round(Math.abs(100 - scoreBase) * 0.9) },
-        { label: 'Afinidade Geral', percent: Math.round((scoreBase + scoreBase) / 2) }
-      ],
-      transitosAtuais: {
-        title: "Trânsitos de Carreira em Tempo Real",
-        data: `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()}`,
-        hora: `${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}:${dateObj.getSeconds().toString().padStart(2, '0')}`,
-        fuso: fuso,
-        atualizacao: formattedUpdate,
-        influencia: `O Sol hoje ilumina o Meio do Céu da sinastria e a Lua apóia de modo próspero o Vênus natal mútuo. Um momento extraordinário para estruturação corporativa, captação de sócios sérios e assinaturas de termos fiduciários de expansão.`
-      },
-      calendarioIndicadores: {
-        label7Dias: "Fase de alta produtividade e prospecções táticas favoráveis. Foque em fechar acordos pendentes sem desperdiçar fôlego.",
-        label30Dias: "Excelente período sob trânsito do Sol benéfico para realizar auditoria fiscal e otimizar despesas operacionais da empresa.",
-        label3Meses: "Surgimento de novos investidores ou contratos importantes no radar estelar. Saturno atua com proteção de contratos sérios.",
-        label6Meses: "Fase de plena colheita material e consolidação financeira de ações empresariais conjuntas de sucesso prático.",
-        label1Ano: "Auspicis de grande expansão territorial de marca ou novas filiais estáveis. Momento maravilhoso com excelente lucro corporativo."
-      },
-      diasFavoraveisItems: [
-        { icon: "💼", category: "Para Negócios", description: "Dias 11 e 25 — Ótimo trânsito fiscal para firmar contratos sérios de longa duração." },
-        { icon: "📈", category: "Para Investimentos", description: "Dias 14 e 27 — Solidez material para alocação de fundos e aquisição de bens corporativos importantes." },
-        { icon: "🚀", category: "Para Mudanças", description: "Dias 08 e 21 — Lua Crescente apoiando de modo dinâmico novos lançamentos mercadológicos de sucesso." }
-      ],
-      diasAtencaoItems: [
-        { category: "Atenção em reuniões", description: "Dias 13 e 24 — Cuidado para não deixar que cansaço diário de ego fira negociações de valores." },
-        { category: "Cautela com papéis", description: "Dias 18 e 29 — Atenção no fechamento de cronogramas. Revise linhas pequeninas em relatórios fiscais." }
-      ],
-      visaoLongoPrazoItems: [
-        { category: "Visão de Longo Prazo Profissional", description: `A união de Sol em ${sun1} e Saturno em ${saturn2} trará reputação inabalável de prestígio e robustez fiduciária aos seus caminhos corporativos conjuntos.` }
-      ],
-      pontosOcultosItems: [
-        { category: "Lições kármicas", description: "Aprender a coordenar autoridade cooperativamente, sem disputas infantis de quem deterá os louros públicos de metas." },
-        { category: "Aprendizados", description: "Desenvolver a flexibilidade mental em desatar burocracias sem perder a ternura fraterna." },
-        { category: "Bloqueios", description: "A tendência a resfriar o trato pessoal em períodos de alta exigência ou turbulência de mercado externo." },
-        { category: "Potencial", description: "Construção de uma herança de abundância de recursos fiduciários com alto prestígio social civil." }
-      ],
-      inteligenciaRelacionamento: {
-        oQueFazer: [
-          "Definir metas de entrega de tarefas semanais em reuniões diretas com prazos exatos.",
-          "Manter a partilha justa de lucros e bônus de forma contratual exemplar."
-        ],
-        oQueEvitar: [
-          "Acordos informais fiduciários baseados em conversações de boca. Prefira a segurança de papéis.",
-          "Críticas vazias de desempenho em público. Direcionar sugestões em particular sorrindo descontraídos."
-        ],
-        melhorarComunicacao: "Sane desentendidos materiais com números de caixa claros apresentados de forma didática e serena.",
-        reduzirConflitos: "Definir com exatidão a divisão territorial de tarefas operacionais, evitando choques de liderança fútil.",
-        fortalecerConexao: "Celebrarem metas concluídas com jantares requintados e agradecimentos sinceros das competências do parceiro."
-      }
-    };
-  }
+  const defaultTitle = {
+    pt: isFriend ? "Dinâmica do Convívio" : isBusiness ? "Dinâmica Profissional" : "Construção de Vida Comum",
+    en: isFriend ? "Friendship Connection" : isBusiness ? "Professional Connection" : "Life Build Connection",
+    es: isFriend ? "Dinámica del Convivir" : isBusiness ? "Dinámica Profesional" : "Construcción de Vida Común",
+    de: isFriend ? "Verbindungsdynamik" : isBusiness ? "Berufliche Verbindung" : "Gemeinsame Lebensfestigung",
+    fr: isFriend ? "Dynamique de la Cohabitation" : isBusiness ? "Dynamique Professionnelle" : "Construction d'une Vie Commune"
+  }[lang];
 
-  // Fallback para family, marriage, partnership (sociedade) para manter o arquivo compacto, mas 100% fiel e detalhado
-  const descAux = cat === 'family' ? 'Familiar' : cat === 'marriage' ? 'Matrimonial' : 'Empresarial';
+  const defaultStrength = {
+    pt: isFriend ? `Forte conexão intelectual entre Mercúrio em ${tMercury1} e ${tMercury2}.` : `Sinergia de metas materiais coordenada por Mercúrio em ${tMercury1} e Saturno em ${tSaturn2}.`,
+    en: isFriend ? `Strong intellectual connection between Mercury in ${tMercury1} and ${tMercury2}.` : `Material goals synergy coordinated by Mercury in ${tMercury1} and Saturn in ${tSaturn2}.`,
+    es: isFriend ? `Fuerte conexión intelectual entre Mercurio en ${tMercury1} y ${tMercury2}.` : `Sinergia de metas materiales coordinada por Mercurio en ${tMercury1} y Saturno en ${tSaturn2}.`,
+    de: isFriend ? `Starke intellektuelle Verbindung zwischen Merkur in ${tMercury1} und ${tMercury2}.` : `Materielle Zielsynergie, koordiniert durch Merkur in ${tMercury1} und Saturn in ${tSaturn2}.`,
+    fr: isFriend ? `Forte connexion intellectuelle entre Mercure en ${tMercury1} et ${tMercury2}.` : `Synergie des objectifs matériels coordonnée par Mercure en ${tMercury1} et Saturne en ${tSaturn2}.`
+  }[lang];
+
+  const defaultAttention = {
+    pt: `Pequenas diferenças de ritmo sob influência de Sol em ${tSun1} e Sol em ${tSun2}.`,
+    en: `Small differences in pace under the influence of Sun in ${tSun1} and Sun in ${tSun2}.`,
+    es: `Pequeñas diferencias de ritmo bajo la influencia del Sol en ${tSun1} y del Sol en ${tSun2}.`,
+    de: `Kleine Rhythmusunterschiede unter dem Einfluss von Sonne in ${tSun1} und Sonne in ${tSun2}.`,
+    fr: `Petites différences de rythme sous l'influence du Soleil en ${tSun1} et du Soleil en ${tSun2}.`
+  }[lang];
+
+  const defaultConflito = {
+    pt: `Tensão de ritmos operacionais entre Marte em ${tMars1} e Marte em ${tMars2}.`,
+    en: `Operational pace tension between Mars in ${tMars1} and Mars in ${tMars2}.`,
+    es: `Tensión de ritmos operativos entre Marte en ${tMars1} y Marte en ${tMars2}.`,
+    de: `Operative Rhythmusspannung zwischen Mars in ${tMars1} und Mars in ${tMars2}.`,
+    fr: `Tension des rythmes opérationnels entre Mars en ${tMars1} et Mars en ${tMars2}.`
+  }[lang];
+
+  const defaultOppMsg = {
+    pt: `Excelente cooperação sob o alinhamento de ${tSun1} e ${tSun2}.`,
+    en: `Excellent cooperation under the alignment of ${tSun1} and ${tSun2}.`,
+    es: `Excelente cooperación bajo la alineación de ${tSun1} y ${tSun2}.`,
+    de: `Hervorragende Zusammenarbeit unter der Ausrichtung von ${tSun1} und ${tSun2}.`,
+    fr: `Excellente coopération sous l'alignement de ${tSun1} et ${tSun2}.`
+  }[lang];
+
   return {
     score: scoreBase,
     mapaHarmonia: {
-      pontosFortes: [
-        `Sinergia de estabilidade carmática de ${descAux} sustentada por Saturno em ${saturn1}.`,
-        `Excelente sintonia de mentes na comunicação fiduciária e de rotina comum.`,
-        `Forte ligação afetiva e intuição recíproca guiada pela Lua e Sol.`
-      ],
-      pontosAtencao: [
-        `Necessidade de harmonia nas decisões de gastos de lar com Sol em ${sun1} e Sol em ${sun2}.`,
-        `Evitar silêncios defensivos quando pequenos estresses mundanos afetarem a casa.`
-      ],
-      areasConflito: [
-        `Divergência sutil de ritmos diários influenciada pelo Ascendente natal.`,
-        `Necessidade de manter a flexibilidade nos dias de tensões planetárias mensais.`
-      ]
+      pontosFortes: [defaultStrength],
+      pontosAtencao: [defaultAttention],
+      areasConflito: [defaultConflito]
     },
     analiseDetalhada: {
-      compatibilidadeMessage: `Alinhamento de ${descAux} de alto nível espiritual. Com Sol em ${sun1} e ${sun2}, suas vontades essenciais convergem em erguimentos estáveis e proteção mútua. Há uma ${getElementInteraction(elSun1, elMoon2)} na rotina do dia a dia.`,
-      conflitoMessage: `Pontos de atrito surgem no processamento íntimo de cansaço mundano. O Mercúrio em ${mercury1} reage debatendo com lógica, ao passo que ${mercury2} pede calma, exigindo maturidade na divisão territorial fiduciária.`,
-      caracteristicasUnem: [
-        "Consonância absoluta em metas civis de longo prazo duráveis.",
-        "Apoio material incondicional diante de adversidades de mercado ou familiares.",
-        "Cumplicidade sincera e facilidade para partilhar tarefas e orçamentos."
-      ],
-      caracteristicasAfastam: [
-        "Inflexibilidade intelectual em pequenos detalhes administrativos da casa.",
-        "Acumular pequenas chateações e desgastes silenciosos afetivos de rotina.",
-        "Intromissão excessiva de opiniões alheias ou de pessoas externas ao clã."
-      ]
+      compatibilidadeMessage: defaultOppMsg,
+      conflitoMessage: defaultAttention,
+      caracteristicasUnem: {
+        pt: ["Compromisso inabalável de apoio mútuo.", "Clareza de comunicação e objetivos."],
+        en: ["Unshakable commitment to mutual support.", "Clarity of communication and goals."],
+        es: ["Compromiso inquebrantable de apoyo mutuo.", "Claridad de comunicación y objetivos."],
+        de: ["Unerschütterliche gegenseitige Unterstützung.", "Klarheit der Kommunikation und Ziele."],
+        fr: ["Engagement inébranlable de soutien mutuel.", "Clarté de la communication et des objectifs."]
+      }[lang],
+      caracteristicasAfastam: {
+        pt: ["Teimosia em debates burocráticos.", "Excesso de racionalização de sentimentos."],
+        en: ["Stubbornness in bureaucratic debates.", "Excessive rationalization of feelings."],
+        es: ["Obstinación en debates burocráticos.", "Exceso de racionalización de sentimientos."],
+        de: ["Sturheit bei bürokratischen Debatten.", "Übermäßige Rationalisierung von Gefühlen."],
+        fr: ["Obstination dans les débats bureaucratiques.", "Excès de rationalisation des sentiments."]
+      }[lang]
     },
     dinamicaConviver: {
-      title: cat === 'family' ? "Convivência Doméstica" : cat === 'marriage' ? "Construção de Vida Comum" : "Compatibilidade Empresarial",
-      items: cat === 'family' ? [
-        { label: "Convivência doméstica", desc: `Terna, protetora e pautada no aconchego da Lua em ${moon1}. O lar funciona como um refúgio seguro.` },
-        { label: "Apoio emocional", desc: "Sempre pronto e empático. Vocês operam como âncoras na superação rápida de lutos ou dores práticas." },
-        { label: "Proteção familiar", desc: "Zelo incondicional em blindar a paz do lar contra interferências de fora do clã." },
-        { label: "Comunicação familiar", desc: "Sutil, compassiva. Conduzida sob a proteção de Mercúrio aspectado, gerando entendimento fácil." },
-        { label: "Resolução de conflitos familiares", desc: "Diálogo calmo estabelecido ao redor da mesa. Esclarecem divergências sorrindo, com comida e amor." },
-        { label: "Educação de filhos", desc: "Sintonia ideal moral. Unem a doçura nutridora de Lua natal à disciplina madura fiduciária." },
-        { label: "Tomada de decisões familiares", desc: "Decididas de forma democrática e cooperativa, respeitando as economias de cada membro." },
-        { label: "Rotina doméstica", desc: "Aconchegante e organizada. Excelente divisão de tarefas mecânicas no dia a dia da moradia." },
-        { label: "Administração da casa", desc: "Zelo e responsabilidade fiduciária. Orçamentos em ordem protegendo os fundos de bem-estar comum." },
-        { label: "Momentos de união", desc: "Reuniões regadas a boas conversas, pratos fartos de almoço familiar prolongado de domingo." },
-        { label: "Momentos de tensão", desc: "Quando o estresse profissional tenta forçar a entrada na paz do lar. O casal o afasta com descanso." }
-      ] : cat === 'marriage' ? [
-        { label: "Potencial de casamento", desc: "Excepcional! Aspectos de Vênus e Saturno dão as bases perfeitas de noivado durável." },
-        { label: "Compatibilidade matrimonial", desc: "Estabilidade com afeto inabalável de longo prazo. Sol e Lua convergem em harmonia civil." },
-        { label: "Estabilidade emocional", desc: "Madura. Sabem manter a calma do leme em tormentas afectivas por respeito mútuo espiritual." },
-        { label: "Fidelidade", desc: "Sentimento de dever espiritual e cumplicidade em acordos, agindo com extrema transparência." },
-        { label: "Compromisso", desc: "Aliança de alma profunda (karma positivo), resistindo com resiliência existencial impecável." },
-        { label: "Construção de patrimônio", desc: "Ganhos sólidos prósperos. Unem Júpiter de avanço e Saturno de segurança material de casal." },
-        { label: "Construção de família", desc: "Desejo mútuo de fincar raízes, estabelecer legado e educar gerações em berço de doçura." },
-        { label: "Projetos de vida", desc: "Seus planos profissionais, afetivos e de moradia andam de mãos dadas, se retroalimentando." },
-        { label: "Objetivos em comum", desc: "Conquista conjunta de bens estruturais em prazos definidos de forma muito madura." },
-        { label: "Resolução de crises", desc: "Afastam o ego estéril para zelar pelo compromisso divino do casamento, agindo com amor." },
-        { label: "Capacidade de superar desafios", desc: "Fé recíproca total. Superam adversidades civis de cabeças erguidas em mútua proteção." },
-        { label: "Convivência diária", desc: "Cúmplice e fraterna. Prazer da presença silenciosa física e pequenos carinhos no dia a dia." },
-        { label: "Potencial de envelhecer juntos", desc: "Altíssimo. As posições planetárias indicam união de almas que atravessa fases sorrindo." }
-      ] : [
-        { label: "Compatibilidade empresarial", desc: "Altíssima capacidade mercantil. A sinergia de Mercúrio protege as finanças contra amadorismos." },
-        { label: "Capacidade de empreender juntos", desc: "Audácia organizada. Unem Marte de impulso à estratégia fria de Saturno de forma impecável." },
-        { label: "Tomada de decisões", desc: "Ponderadas e focadas no longo prazo fiduciário, sem espaço para gastos movidos por impulsividade." },
-        { label: "Gestão financeira", desc: "Caixa auditado de forma rigorosa. Excelente segurança financeira baseada em investimentos estáveis." },
-        { label: "Distribuição de responsabilidades", desc: "Divisão exata baseada nos Ascendentes de ambos, otimizando o andamento das metas comerciais." },
-        { label: "Visão estratégica", desc: `Desenho de planos comerciais arrojados baseados em Júpiter em ${jupiter1}, antecipando tendências.` },
-        { label: "Liderança", desc: "Exercida de forma carismática e justa, inspirando respeito e conformidade pródiga." },
-        { label: "Administração", desc: "Bases sólidas e processos rígidos mantidos sob auditoria contínua das obrigações fiscais." },
-        { label: "Capacidade de expansão", desc: "Audácia para buscar filiais e novos acordos industriais de alto giro de capital." },
-        { label: "Capacidade de negociação", desc: "Excelente! A oratória fluida desfaz barreiras comerciais, gerando lucros prósperos." },
-        { label: "Gestão de crises", desc: "Resiliência total. Sabem reagir a tempestades fiscais com frieza tática e união de propósitos." },
-        { label: "Riscos potenciais", desc: "Teimosia excessiva em processos antigos. Exercitar a adaptabilidade comercial a novos mercados." },
-        { label: "Áreas de crescimento", desc: "Expansão de franquias, investimentos imobiliários corporativos e parcerias industriais." },
-        { label: "Áreas vulneráveis", desc: "Pequenos debates em verbas secundárias de representação empresarial." }
+      title: defaultTitle,
+      items: [
+        {
+          label: { pt: "Rotina", en: "Routine", es: "Rutina", de: "Routine", fr: "Routine" }[lang],
+          desc: {
+            pt: `Organização minuciosa e divisão equilibrada de metas baseada em Ascendente em ${tAsc1}.`,
+            en: `Meticulous organization and balanced goal division based on Ascendant in ${tAsc1}.`,
+            es: `Organización meticulosa y división equilibrada de metas basada en Ascendente en ${tAsc1}.`,
+            de: `Sorgfältige Organisation und ausgewogene Zielaufteilung basierend auf Aszendent in ${tAsc1}.`,
+            fr: `Organisation méticuleuse et répartition équilibrée des objectifs basées sur l'Ascendant en ${tAsc1}.`
+          }[lang]
+        }
       ]
     },
     resumoScores: [
-      { label: 'Harmonia Estelar', percent: scoreBase },
-      { label: 'Estabilidade', percent: Math.min(100, scoreBase + 8) },
-      { label: 'Resiliência Civil', percent: Math.min(100, scoreBase + 11) },
-      { label: 'Conflitos menores', percent: Math.round(Math.abs(100 - scoreBase) * 0.7) },
-      { label: 'Afinidade Geral', percent: scoreBase }
+      { label: isFriend ? labels.harmoniaAmistosa : isBusiness ? labels.harmoniaProfissional : labels.harmoniaEstelar, percent: scoreBase },
+      { label: isFriend ? labels.lealdadeMutua : isBusiness ? labels.eficienciaMetas : labels.estabilidade, percent: Math.min(100, scoreBase + 11) },
+      { label: isFriend ? labels.entrosamentoSocial : isBusiness ? labels.sinergiaFiduciaria : labels.resilienciaCivil, percent: Math.min(100, scoreBase + 6) },
+      { label: isFriend ? labels.conflitosMenores : isBusiness ? labels.conflitoEgos : labels.conflitos, percent: Math.round(Math.abs(100 - scoreBase) * 0.7) },
+      { label: labels.afinidadeGeral, percent: scoreBase }
     ],
     transitosAtuais: {
-      title: `Trânsitos de ${descAux} em Tempo Real`,
-      data: `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()}`,
-      hora: `${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}:${dateObj.getSeconds().toString().padStart(2, '0')}`,
-      fuso: fuso,
+      title: isFriend ? labels.transitosTitleFriend : isBusiness ? labels.transitosTitleBusiness : labels.transitosTitleFallback,
+      data: dateObj.toLocaleDateString(currentLocale),
+      hora: dateObj.toLocaleTimeString(currentLocale),
+      fuso: fusoText,
       atualizacao: formattedUpdate,
-      influencia: `Atualmente, Saturno e Júpiter de trânsito emitem trígonos de proteção para as suas Casas Fiduciárias e Angulares Sinastrais. Há uma blindagem celestial propícia para consolidação civil, estabilidade financeira e assinaturas de prazos.`
+      influencia: {
+        pt: `Neste momento, trânsitos favoráveis de Saturno em ${tSaturn1} atuam blindando decisões de longo prazo e organizando caminhos prósperos.`,
+        en: `At this moment, favorable transits of Saturn in ${tSaturn1} act to shield long-term decisions and organize prosperous paths.`,
+        es: `En este momento, tránsitos favorables de Saturno en ${tSaturn1} actúan protegiendo decisiones de largo plazo y organizando caminos prósperos.`,
+        de: `In diesem Moment wirken günstige Transite des Saturns in ${tSaturn1}, um langfristige Entscheidungen zu schützen und wohlhabende Wege zu organisieren.`,
+        fr: `En ce moment, des transits favorables de Saturne en ${tSaturn1} agissent pour protéger les décisions à long terme et organiser des voies prospères.`
+      }[lang]
     },
     calendarioIndicadores: {
-      label7Dias: "Excelente clima celeste para conciliar rotinas e desfrutar do convívio doméstico calmo com carinho.",
-      label30Dias: "Fase de Mercúrio direto excelente para assentar termos de contratos civis ou reestruturar as economias de ambos.",
-      label3Meses: "Oportunidade extraordinária para aquisição de propriedade fiduciária ou reformas estéticas conjuntas.",
-      label6Meses: "Pleno florescer de investimentos e expansão de metas comuns com altíssima harmonia estelar.",
-      label1Ano: "Consolidação de herança material relevante de longo prazo com excelente sucesso durável.",
-      labelRangeX: cat === 'family' ? "Próximos 3 Anos" : cat === 'marriage' ? "Próximos 10 Anos" : "Próximos 5 Anos",
-      descRangeX: cat === 'family' ? "Amadurecimento e consolidação inabalável da união de sangue e alma fronte a tempestades externas." : cat === 'marriage' ? "Consolidação espiritual irrevogável. Uma caminhada estelar madura que inspira de forma exemplar o clã familiar." : "Estabilização da marca corporativa no mercado civil liderando com faturamento constante duradouro."
+      label7Dias: {
+        pt: "Fase de alta produtividade. Excelente clima para colocar pendências em ordem.",
+        en: "High productivity phase. Excellent atmosphere to sort out pending tasks.",
+        es: "Fase de alta productividad. Excelente ambiente para poner al día tareas pendientes.",
+        de: "Hochproduktive Phase. Hervorragende Atmosphäre, um ausstehende Aufgaben zu erledigen.",
+        fr: "Phase de productivité élevée. Excellente ambiance pour régler les tâches en attente."
+      }[lang],
+      label30Dias: {
+        pt: "Excelente período para realizar auditorias ou planejamento estratégico em conjunto.",
+        en: "Excellent period for conducting joint audits or strategic planning.",
+        es: "Excelente período para realizar auditorías o planificación estratégica en conjunto.",
+        de: "Hervorragende Zeit für gemeinsame Prüfungen oder strategische Planungen.",
+        fr: "Excellente période pour mener des audits conjoints ou une planification stratégique."
+      }[lang],
+      label3Meses: {
+        pt: "Maturidade e solidez. O trânsito de Saturno atua promovendo segurança e contratos sérios.",
+        en: "Maturity and solidity. Saturn's transit promotes security and serious contracts.",
+        es: "Madurez y solidez. El tránsito de Saturno promueve seguridad y contratos serios.",
+        de: "Reife und Solidität. Der Transit des Saturns fördert Sicherheit und ernsthafte Verträge.",
+        fr: "Maturité et solidité. Le transit de Saturne favorise la sécurité et les contrats sérieux."
+      }[lang],
+      label6Meses: {
+        pt: "Plena colheita material e consolidação financeira de ações conjuntas.",
+        en: "Full material harvest and financial consolidation of joint actions.",
+        es: "Plena cosecha material y consolidación financiera de acciones conjuntas.",
+        de: "Volle materielle Ernte und finanzielle Konsolidierung gemeinsamer Aktionen.",
+        fr: "Pleine récolte matérielle et consolidation financière des actions conjointes."
+      }[lang],
+      label1Ano: {
+        pt: "Grandes auspícios para consolidar legado e faturamento constante de longo prazo.",
+        en: "Great auspices to consolidate legacy and steady long-term faturamento.",
+        es: "Grandes auspicios para consolidar legado y facturación constante a largo plazo.",
+        de: "Großartige Vorzeichen zur Festigung des Vermächtnisses und stetiger langfristiger Einnahmen.",
+        fr: "Grands auspices pour consolider l'héritage et des revenus constants à long terme."
+      }[lang]
     },
-    diasFavoraveisItems: cat === 'family' ? [
-      { icon: "👨‍👩‍👧", category: "Assuntos Familiares", description: "Dias 15 e 28 — Excelente para sanar dores antigas de moradia ou certificar heranças." },
-      { icon: "🎉", category: "Reuniões Familiares", description: "Dias 10 e 22 — Clima propício de doçura com almoços prolongados fáceis." }
-    ] : cat === 'marriage' ? [
-      { icon: "💍", category: "Para Casamento", description: "Fase de Vênus conjunta ao Sol, trazendo brilho secular e bênçãos de estabilidade." },
-      { icon: "🎀", category: "Para Noivado", description: "Lua crescente aspectando favoravelmente a Vênus natal, perfeito para juras de afeto." },
-      { icon: "📅", category: "Decisões Graves", description: "Trânsitos em casas fiduciárias favoráveis do mês, garantindo solidez material." }
-    ] : [
-      { icon: "🏢", category: "Abrir Negócios", description: "Lua Nova mercadológica favorável com trígono benéfico com a Casa X profissional." },
-      { icon: "💵", category: "Investimentos", description: "Trânsito direto de Júpiter de passagem na sua Casa VIII, estimulando lucros." },
-      { icon: "🌐", category: "Para Expansão", description: "Aspectos de Mercúrio e Sol ativam sua visibilidade com investidores comerciais graves." }
+    diasFavoraveisItems: [
+      { icon: "💼", category: { pt: "Negócios", en: "Business", es: "Negocios", de: "Geschäft", fr: "Affaires" }[lang], description: { pt: "Foco tático e solidez de papéis comerciais.", en: "Tactical focus and stability in commercial papers.", es: "Enfoque táctico y solidez en documentos comerciales.", de: "Taktischer Fokus und Stabilität bei Handelspapieren.", fr: "Focus tactique et solidité des documents commerciaux." }[lang] }
     ],
     diasAtencaoItems: [
-      { category: "Dias críticas", description: "Dias 13 e 26 — Cuidado redobrado para que cansaços de rotina externa não invadam o trato civil íntimo." }
+      { category: { pt: "Prazos", en: "Deadlines", es: "Plazos", de: "Fristen", fr: "Délais" }[lang], description: { pt: "Revise detalhes finos em relatórios operacionais.", en: "Review fine details in operational reports.", es: "Revise detalles finos en informes operativos.", de: "Überprüfen Sie feine Details in operativen Berichten.", fr: "Examinez les détails précis dans les rapports opérationnels." }[lang] }
     ],
     visaoLongoPrazoItems: [
-      { category: "Visão estelar fiduciária", description: `Sob o Sol em ${sun1} de um e Saturno em ${saturn2} de outro, as bases materiais e de afeto de longo prazo gozam de blindagem cósmica total.` }
+      { category: { pt: "Estabilidade", en: "Stability", es: "Estabilidad", de: "Stabilität", fr: "Stabilité" }[lang], description: { pt: `Base forte guiada pela maturidade de Saturno em ${tSaturn1}.`, en: `Strong base guided by Saturn's maturity in ${tSaturn1}.`, es: `Base fuerte guiada por la madurez de Saturno en ${tSaturn1}.`, de: `Starkes Fundament, geleitet von Saturns Reife in ${tSaturn1}.`, fr: `Base solide guidée par la maturité de Saturne en ${tSaturn1}.` }[lang] }
     ],
     pontosOcultosItems: [
-      { category: "Lições carmáticas", description: "Aprender a acolher e consolar a fragilidade material de forma cúmplice sem impor críticas intelectuais secas." },
-      { category: "Aprendizados", description: "Dificuldades de rotina superadas com paciência recíproca verdadeira." },
-      { category: "Bloqueios", description: "Tendência a se recolher mentalmente para se defender em momentos em que a comunicação fiduciária de dinheiro falhar." },
-      { category: "Transformações", description: "Sinergia de almas que atua limpando traumas de carência mundana e reerguendo dignidade espiritual profunda." }
+      { category: { pt: "Transformação", en: "Transformation", es: "Transformación", de: "Transformation", fr: "Transformation" }[lang], description: { pt: "Desenvolver tolerância mútua em rotinas cansativas.", en: "Develop mutual tolerance in tiring routines.", es: "Desarrollar tolerancia mutua en rutinas agotadoras.", de: "Gegenseitige Toleranz in anstrengenden Routinen entwickeln.", fr: "Développer une tolérance mutuelle dans les routines fatigantes." }[lang] }
     ],
     inteligenciaRelacionamento: {
-      oQueFazer: [
-        "Definir orçamentos de lazer e providências fiduciárias em acordos de papéis claros.",
-        "Praticarem o convívio em silêncios terapêuticos de massagem e relaxamento na natureza."
-      ],
-      oQueEvitar: [
-        "Agirem de forma seca ou impessoal motivada por estresses materiais civis externos temporários.",
-        "Silenciarem dúvidas de dinheiro ou investimentos fiduciários para evitar debates lógicos."
-      ],
-      melhorarComunicacao: "Certifiquem-se de expressar sentimentos de segurança com falas calmas descontraídas.",
-      reduzirConflitos: "Evitarem conversas de finanças em horários de fadiga física do fim de tarde.",
-      fortalecerConexao: "Trocarem abraços longos de acolhimento físico de 30 segundos ao chegarem em casa da vida corporativa."
+      oQueFazer: {
+        pt: ["Definir metas semanais com prazos exatos.", "Manter acordos de forma transparente."],
+        en: ["Define weekly goals with exact deadlines.", "Maintain agreements transparently."],
+        es: ["Definir metas semanales con plazos exactos.", "Mantener acuerdos de forma transparente."],
+        de: ["Wöchentliche Ziele mit genauen Fristen definieren.", "Vereinbarungen transparent einhalten."],
+        fr: ["Définir des objectifs hebdomadaires avec des délais précis.", "Maintenir les accords de manière transparente."]
+      }[lang],
+      oQueEvitar: {
+        pt: ["Decisões baseadas em impulsos emocionais temporários.", "Críticas excessivas de desempenho em público."],
+        en: ["Decisions based on temporary emotional impulses.", "Excessive performance criticism in public."],
+        es: ["Decisiones basadas en impulsos emocionales temporales.", "Críticas excesivas de desempeño en público."],
+        de: ["Entscheidungen basierend auf vorübergehenden emotionalen Impulsen.", "Übermäßige Leistungskritik in der Öffentlichkeit."],
+        fr: ["Décisions basées sur des impulsions émotionnelles temporaires.", "Critiques excessives de performance en public."]
+      }[lang],
+      melhorarComunicacao: {
+        pt: "Apresentar dados de forma clara, didática e serena.",
+        en: "Present data clearly, didactically, and calmly.",
+        es: "Presentar datos de forma clara, didáctica y serena.",
+        de: "Präsentieren Sie Daten klar, didaktisch und ruhig.",
+        fr: "Présenter les données de manière claire, didactique et sereine."
+      }[lang],
+      reduzirConflitos: {
+        pt: "Divisão territorial exata de tarefas para evitar choques.",
+        en: "Exact division of tasks to avoid clashes.",
+        es: "División territorial exacta de tareas para evitar choques.",
+        de: "Genaue Aufgabenaufteilung zur Vermeidung von Konflikten.",
+        fr: "Répartition précise des tâches pour éviter les conflits."
+      }[lang],
+      fortalecerConexao: {
+        pt: "Celebrar metas concluídas com agradecimentos sinceros.",
+        en: "Celebrate completed goals with sincere thanks.",
+        es: "Celebrar metas concluidas con agradecimientos sinceros.",
+        de: "Erreichte Ziele mit aufrichtigem Dank feiern.",
+        fr: "Célébrer les objectifs atteints avec des remerciements sincères."
+      }[lang]
     }
   };
 }

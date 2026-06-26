@@ -6,6 +6,12 @@ const resources: any = {
   pt: {
     translation: {
       ...translationDict.pt,
+      // uiTranslations usa chaves em PT -> tradução em outro idioma.
+      // Para PT, o valor deve ser a própria chave PT (o texto original),
+      // então populamos corretamente usando as chaves como valores.
+      ...Object.fromEntries(
+        Object.keys(uiTranslations.en).map(ptKey => [ptKey, ptKey])
+      ),
     }
   },
   en: {
@@ -34,25 +40,6 @@ const resources: any = {
   }
 };
 
-// Populate Portuguese translations with keys mapping to themselves as fallback representation
-if (uiTranslations && uiTranslations.en) {
-  Object.keys(uiTranslations.en).forEach(ptKey => {
-    resources.pt.translation[ptKey] = ptKey;
-  });
-}
-
-// Support other keys if needed from other languages too
-['es', 'de', 'fr'].forEach(langCode => {
-  const dict = (uiTranslations as any)[langCode];
-  if (dict) {
-    Object.keys(dict).forEach(ptKey => {
-      if (!resources.pt.translation[ptKey]) {
-        resources.pt.translation[ptKey] = ptKey;
-      }
-    });
-  }
-});
-
 i18n
   .use(initReactI18next)
   .init({
@@ -60,7 +47,7 @@ i18n
     lng: getInitialLanguage(),
     fallbackLng: 'pt',
     interpolation: {
-      escapeValue: false // react already handles XSS prevention
+      escapeValue: false
     }
   });
 

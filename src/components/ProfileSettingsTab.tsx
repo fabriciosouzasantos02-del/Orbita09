@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import { User, Shield, Info, LogOut, Globe, Heart, RefreshCw, KeyRound } from "lucide-react";
 import { Language, translations } from "../translations";
 import { UserProfile } from "../types";
+import { useTranslation } from "react-i18next";
+import { translateUiText } from "../lib/translations";
+import { useIdioma } from "../context/IdiomaContext";
 
 interface ProfileSettingsTabProps {
   userProfile: UserProfile;
@@ -11,6 +14,7 @@ interface ProfileSettingsTabProps {
 }
 
 export default function ProfileSettingsTab({ userProfile, lang, setLang, onLogout }: ProfileSettingsTabProps) {
+  const { mudarIdioma } = useIdioma();
   const [name, setName] = useState(userProfile.name);
   const [birthCity, setBirthCity] = useState(userProfile.birthDetails.birthCity);
   const [birthTime, setBirthTime] = useState(userProfile.birthDetails.birthTime);
@@ -18,6 +22,16 @@ export default function ProfileSettingsTab({ userProfile, lang, setLang, onLogou
   const [success, setSuccess] = useState(false);
 
   const t = translations[lang];
+  const { t: tI18nRaw } = useTranslation();
+
+  const tI18n = (text: string) => {
+    if (!text) return "";
+    const res = tI18nRaw(text);
+    if (res === text || !res) {
+      return translateUiText(text, lang || 'pt');
+    }
+    return res;
+  };
 
   const handleUpdate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +64,7 @@ export default function ProfileSettingsTab({ userProfile, lang, setLang, onLogou
       <div className="bg-white border border-neutral-200/90 rounded-2xl p-6 shadow-sm">
         <h2 className="text-xl font-display font-semibold text-neutral-900">{t.profile}</h2>
         <p className="text-neutral-500 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
-          Inspecione as chaves criptográficas locais de seu mapa astral místico e gerencie as configurações de privacidade.
+          {tI18n("Inspecione as chaves criptográficas locais de seu mapa astral místico e gerencie as configurações de privacidade.")}
         </p>
       </div>
 
@@ -60,13 +74,13 @@ export default function ProfileSettingsTab({ userProfile, lang, setLang, onLogou
         <section className="bg-white border border-neutral-200/90 rounded-2xl p-6 shadow-sm md:col-span-8 space-y-4">
           <div className="flex items-center gap-2 border-b border-neutral-100 pb-3 mb-2">
             <User className="w-5 h-5 text-indigo-600" />
-            <h3 className="font-display font-semibold text-neutral-900 text-sm">Dados de Nascimento e Orbe</h3>
+            <h3 className="font-display font-semibold text-neutral-900 text-sm">{tI18n("Dados de Nascimento e Orbe")}</h3>
           </div>
 
           <form onSubmit={handleUpdate} className="space-y-4 text-xs sm:text-sm">
             {success && (
               <div className="p-3 bg-emerald-50 border border-emerald-150 text-emerald-800 font-semibold rounded-xl text-center">
-                Dados atualizados com êxito! Recalculando coordenadas estelares...
+                {tI18n("Dados atualizados com êxito! Recalculando coordenadas estelares...")}
               </div>
             )}
 
@@ -96,7 +110,7 @@ export default function ProfileSettingsTab({ userProfile, lang, setLang, onLogou
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-neutral-500">Data de Nascimento</label>
+                <label className="block text-xs font-semibold text-neutral-500">{tI18n("Data de Nascimento")}</label>
                 <input
                   type="date"
                   required
@@ -107,7 +121,7 @@ export default function ProfileSettingsTab({ userProfile, lang, setLang, onLogou
               </div>
 
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-neutral-500">Horário exato</label>
+                <label className="block text-xs font-semibold text-neutral-500">{tI18n("Horário exato")}</label>
                 <input
                   type="time"
                   required
@@ -124,7 +138,7 @@ export default function ProfileSettingsTab({ userProfile, lang, setLang, onLogou
                 className="px-5 py-2.5 bg-neutral-900 border border-transparent hover:bg-neutral-800 text-white rounded-xl text-xs sm:text-sm font-semibold cursor-pointer transition shadow flex items-center gap-2"
               >
                 <RefreshCw className="w-3.5 h-3.5 animate-spin-slow" />
-                <span>Atualizar e Recalcular Mapa</span>
+                <span>{tI18n("Atualizar e Recalcular Mapa")}</span>
               </button>
             </div>
           </form>
@@ -135,16 +149,19 @@ export default function ProfileSettingsTab({ userProfile, lang, setLang, onLogou
           
           {/* Theme language options cards */}
           <div className="space-y-3.5">
-            <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-50 pb-2">Preferências Globais</h3>
+            <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-50 pb-2">{tI18n("Preferências Globais")}</h3>
             
             {/* Lang toggler widget */}
             <div className="space-y-1.5Col space-y-2">
-              <span className="text-[10px] sm:text-xs font-semibold text-neutral-500 block">Idioma do Oráculo</span>
-              <div className="grid grid-cols-4 gap-1.5 text-xs">
-                {(["pt", "en", "de", "es"] as Language[]).map((l) => (
+              <span className="text-[10px] sm:text-xs font-semibold text-neutral-500 block">{tI18n("Idioma do Oráculo")}</span>
+              <div className="grid grid-cols-5 gap-1.5 text-xs">
+                {(["pt", "en", "de", "es", "fr"] as Language[]).map((l) => (
                   <button
                     key={l}
-                    onClick={() => setLang(l)}
+                    onClick={() => {
+                      setLang(l);
+                      mudarIdioma(l as any);
+                    }}
                     className={`py-1.5 border rounded-lg uppercase font-bold text-center transition cursor-pointer ${
                       lang === l 
                         ? "bg-neutral-900 text-white border-neutral-900" 
@@ -162,9 +179,9 @@ export default function ProfileSettingsTab({ userProfile, lang, setLang, onLogou
           <div className="p-3.5 bg-neutral-50 rounded-xl border border-neutral-100 flex gap-2.5 items-start">
             <Shield className="w-5 h-5 text-indigo-500 flex-shrink-0 mt-0.5" />
             <div className="space-y-1 leading-relaxed">
-              <span className="font-bold text-[11px] text-neutral-800 block">Autenticação Segura Local</span>
+              <span className="font-bold text-[11px] text-neutral-800 block">{tI18n("Autenticação Segura Local")}</span>
               <p className="text-[10px] text-neutral-500">
-                Seus diários de sonhos, oráculos de tarot e configurações são guardadas unicamente na caixa sandbox local do navegador do dispositivo para manter sigilo absoluto.
+                {tI18n("Seus diários de sonhos, oráculos de tarot e configurações são guardadas unicamente na caixa sandbox local do navegador do dispositivo para manter sigilo absoluto.")}
               </p>
             </div>
           </div>

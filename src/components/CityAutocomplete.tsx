@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Search, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface CityMatch {
   name: string;
@@ -30,6 +31,7 @@ export const CityAutocomplete: React.FC<CityAutocompleteProps> = ({
   className = "",
   inputClassName = ""
 }) => {
+  const { t } = useTranslation();
   const [query, setQuery] = useState(value);
   const [results, setResults] = useState<CityMatch[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -113,7 +115,7 @@ export const CityAutocomplete: React.FC<CityAutocompleteProps> = ({
               setIsOpen(true);
             }
           }}
-          placeholder={placeholder}
+          placeholder={t(placeholder)}
           className={`w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-850 font-sans text-xs text-slate-202 focus:outline-hidden focus:border-amber-500/50 ${inputClassName}`}
         />
         <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">

@@ -31,7 +31,7 @@ const TransitMap = React.lazy(() => import('./components/TransitMap'));
 import TransitHistory from './components/TransitHistory';
 import MoonTipCard from './components/MoonTipCard';
 import AstroNotifications from './components/AstroNotifications';
-import TarotSystem from './components/TarotSystem';
+import TarotSystem from './TarotSystem';
 import LunarNodes from './components/LunarNodes';
 import LunarCycle from './components/LunarCycle';
 import BiorhythmView from './components/BiorhythmView';
@@ -87,6 +87,7 @@ import { generatePersonalizedProsperityMap } from './components/prosperityEngine
 import { generateDailyPrediction } from './components/dailyPredictionsEngine';
 import { PremiumConversionScreen } from './components/PremiumConversionScreen';
 import { getTranslation, getInitialLanguage, translateUiText, Language } from './lib/translations';
+import { useIdioma } from './context/IdiomaContext';
 
 // High-end Elite Celestial Logo Component
 export const OrbitaLogo = ({ className = "w-8 h-8" }: { className?: string }) => {
@@ -668,6 +669,8 @@ const localLangDict: Record<string, Record<string, string>> = {
 };
 
 export default function App() {
+  const { idioma, mudarIdioma, t: tContext } = useIdioma();
+
   // Session / Authentication state
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
@@ -1533,7 +1536,8 @@ export default function App() {
           birthCity: extraDetails.birthCity || "Desconhecida",
           isUnknownTime: false,
           latitude: extraDetails.latitude,
-          longitude: extraDetails.longitude
+          longitude: extraDetails.longitude,
+          lang: lang || 'pt'
         })
       });
       const data = await response.json();
@@ -2178,10 +2182,24 @@ export default function App() {
   // Language settings state
   const [lang, setLangState] = useState<Language>(getInitialLanguage());
   const setLang = async (newLang: Language) => {
+    // 4. Update the global context state first
+    mudarIdioma(newLang as any);
     setLangState(newLang);
     setCurrentLang(newLang);
     i18n.changeLanguage(newLang);
     localStorage.setItem('orbi_preferred_language', newLang);
+    if (user && user.birthDate) {
+      triggerGenerateMainMap({
+        name: user.name,
+        birthDate: user.birthDate,
+        birthTime: user.birthTime,
+        birthCity: user.birthCity,
+        isUnknownTime: user.isUnknownTime,
+        latitude: user.latitude,
+        longitude: user.longitude,
+        currentChartId: user.currentChartId
+      }, newLang);
+    }
     if (isLoggedIn && loggedEmail) {
       try {
         const nextUser = {
@@ -2205,6 +2223,13 @@ export default function App() {
       i18n.changeLanguage(lang);
     }
   }, [lang]);
+
+  // Synchronize Context language change to App state
+  useEffect(() => {
+    if (idioma && idioma !== lang) {
+      setLangState(idioma as any);
+    }
+  }, [idioma]);
 
   // Local helper to get static translations for settings on the fly
   const tLocal = (key: string, replacement?: any): string => {
@@ -2552,7 +2577,7 @@ export default function App() {
   };
 
   // Fetch / Generate core maps matching user details
-  const triggerGenerateMainMap = async (details: any) => {
+  const triggerGenerateMainMap = async (details: any, forcedLang?: Language) => {
     // 1. INSTRUMENTAL OPTIMIZATION: Instantaneous client-side Placidus math calculation.
     // This allows the circular chart, astral degrees, and aspects to render immediately (<= 1ms)
     // with no loading screens or infinite spinners, matching the fast Astrolink experience.
@@ -2628,6 +2653,8 @@ export default function App() {
           }
         }
 
+        const activeLang = forcedLang || idioma || lang || 'pt';
+
         if (dbChart && dbChart.mapData && dbChart.numerology) {
           console.log("[Astro DB] Natal chart successfully restored from Firestore Cloud!");
           setMapData(dbChart.mapData);
@@ -2636,7 +2663,7 @@ export default function App() {
           return;
         }
 
-        // Fallback to traditional cache
+        // Fallback to traditional cache with language check
         try {
           const cached = await loadCalculationCache(email, "natal_chart");
           if (cached && cached.parameters) {
@@ -2645,7 +2672,8 @@ export default function App() {
               p.birthDate === details.birthDate &&
               p.birthTime === details.birthTime &&
               p.birthCity === details.birthCity &&
-              p.isUnknownTime === details.isUnknownTime;
+              p.isUnknownTime === details.isUnknownTime &&
+              (!p.lang || p.lang === activeLang);
             if (isMatch && cached.map && cached.numerology) {
               console.log("[Intelligent Cache] Natal chart loaded from Firestore cache.");
               setMapData(cached.map);
@@ -2663,6 +2691,7 @@ export default function App() {
       // This prevents the slow Gemini API from locking the UI with a spinner.
       let data;
       try {
+        const activeLang = forcedLang || idioma || lang || 'pt';
         const response = await fetch("/api/astrology/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -2674,7 +2703,8 @@ export default function App() {
             birthCity: details.birthCity,
             isUnknownTime: details.isUnknownTime,
             latitude: details.latitude !== undefined ? details.latitude : user.latitude,
-            longitude: details.longitude !== undefined ? details.longitude : user.longitude
+            longitude: details.longitude !== undefined ? details.longitude : user.longitude,
+            lang: activeLang
           })
         });
         if (response.ok) {
@@ -2726,12 +2756,14 @@ export default function App() {
         }
 
         try {
+          const activeLang = forcedLang || idioma || lang || 'pt';
           await saveCalculationCache(email, "natal_chart", {
             parameters: {
               birthDate: details.birthDate,
               birthTime: details.birthTime,
               birthCity: details.birthCity,
-              isUnknownTime: details.isUnknownTime
+              isUnknownTime: details.isUnknownTime,
+              lang: activeLang
             },
             map: data.map,
             numerology: data.numerology
@@ -2879,7 +2911,13 @@ export default function App() {
       {
         id: "welcomeMsg",
         sender: "assistant",
-        text: `Saudações, ${nextUser.name.split(' ')[0]}. Eu sou Orbia. Estou recalibrando suas estrelas e regenerando todas as conexões celestes para seu novo mapa astral de alta precisão. Aguarde um instante...`,
+        text: currentLang === 'de'
+          ? `Grüße, ${nextUser.name.split(' ')[0]}. Ich bin Orbia. Ich kalibriere deine Sterne neu und regeneriere alle Himmelsverbindungen für dein neues Horoskop mit höchster Präzision. Einen Moment bitte...`
+          : currentLang === 'en'
+          ? `Greetings, ${nextUser.name.split(' ')[0]}. I am Orbia. I am recalibrating your stars and regenerating all celestial connections for your new high-precision birth chart. Please wait a moment...`
+          : currentLang === 'es'
+          ? `Saludos, ${nextUser.name.split(' ')[0]}. Soy Orbia. Estoy recalibrando tus estrellas y regenerando todas las conexiones celestes para tu nueva carta natal de alta precisión. Un momento...`
+          : `Saudações, ${nextUser.name.split(' ')[0]}. Eu sou Orbia. Estou recalibrando suas estrelas e regenerando todas as conexões celestes para seu novo mapa astral de alta precisão. Aguarde um instante...`,
         timestamp: new Date().toLocaleTimeString().slice(0, 5)
       }
     ]);
@@ -2912,32 +2950,109 @@ export default function App() {
   // Dynamically synchronize Orbia welcome message with the actual user profile
   useEffect(() => {
     const getDynamicIntroOfSign = (sign: string) => {
-      switch (sign) {
-        case "Áries": return "uma chama de liderança e coragem que queima com intensidade realizadora";
-        case "Touro": return "uma estabilidade serena e uma busca profunda pela harmonia e beleza terrena";
-        case "Gêmeos": return "uma curiosidade viva e uma mente ágil capaz de conectar múltiplas realidades";
-        case "Câncer": return "uma sensibilidade intuitiva e protetora, intimamente ligada às marés da alma";
-        case "Leão": return "um brilho generoso e magnético que irradia autoconfiança de forma calorosa";
-        case "Virgem": return "uma mente atenta e refinada dedicada ao aprimoramento contínuo da vida";
-        case "Libra": return "uma busca constante pelo equilíbrio, justiça e elegância sincera nas conexões";
-        case "Escorpião": return "uma intensidade investigativa e regeneradora capaz de alquimizar as sombras em luz";
-        case "Sagitário": return "um idealismo ardente e uma busca insaciável por expansão de sabedoria e liberdade";
-        case "Capricórnio": return "uma sabedoria estruturada que constrói com perseverança e seriedade seu legado";
-        case "Aquário": return "um idealismo visionário com uma profunda reverência à inovação e liberdade de pensamento";
-        case "Peixes": return "uma empatia profunda e oceânica que navega suavemente entre os mundos da intuição";
-        default: return "um magnetismo singular e uma centelha estelar brilhando intensamente no cosmos";
-      }
+      const intros: Record<string, Record<string, string>> = {
+        pt: {
+          "Áries": "uma chama de liderança e coragem que queima com intensidade realizadora",
+          "Touro": "uma estabilidade serena e uma busca profunda pela harmonia e beleza terrena",
+          "Gêmeos": "uma curiosidade viva e uma mente ágil capaz de conectar múltiplas realidades",
+          "Câncer": "uma sensibilidade intuitiva e protetora, intimamente ligada às marés da alma",
+          "Leão": "um brilho generoso e magnético que irradia autoconfiança de forma calorosa",
+          "Virgem": "uma mente atenta e refinada dedicada ao aprimoramento contínuo da vida",
+          "Libra": "uma busca constante pelo equilíbrio, justiça e elegância sincera nas conexões",
+          "Escorpião": "uma intensidade investigativa e regeneradora capaz de alquimizar as sombras em luz",
+          "Sagitário": "um idealismo ardente e uma busca insaciável por expansão de sabedoria e liberdade",
+          "Capricórnio": "uma sabedoria estruturada que constrói com perseverança e seriedade seu legado",
+          "Aquário": "um idealismo visionário com uma profunda reverência à inovação e liberdade de pensamento",
+          "Peixes": "uma empatia profunda e oceânica que navega suavemente entre os mundos da intuição",
+        },
+        en: {
+          "Áries": "a flame of leadership and courage burning with achiever intensity",
+          "Touro": "a serene stability and deep pursuit of earthly harmony and beauty",
+          "Gêmeos": "a lively curiosity and agile mind capable of connecting multiple realities",
+          "Câncer": "an intuitive, protective sensitivity intimately tied to the tides of the soul",
+          "Leão": "a generous and magnetic brilliance radiating warmth and self-confidence",
+          "Virgem": "an attentive, refined mind dedicated to continuous life improvement",
+          "Libra": "a constant pursuit of balance, justice and sincere elegance in connections",
+          "Escorpião": "an investigative, regenerative intensity that alchemizes shadow into light",
+          "Sagitário": "a fiery idealism and insatiable quest for expansion of wisdom and freedom",
+          "Capricórnio": "a structured wisdom that builds your legacy with perseverance and seriousness",
+          "Aquário": "a visionary idealism with a deep reverence for innovation and freedom of thought",
+          "Peixes": "a deep oceanic empathy that gently navigates between the worlds of intuition",
+        },
+        de: {
+          "Áries": "eine Führungsflamme und Mut, der mit Schaffensintensität brennt",
+          "Touro": "eine ruhige Stabilität und tiefe Suche nach irdischer Harmonie und Schönheit",
+          "Gêmeos": "eine lebhafte Neugier und agiler Geist, der mehrere Realitäten verbinden kann",
+          "Câncer": "eine intuitive, schützende Sensibilität, eng verknüpft mit den Gezeiten der Seele",
+          "Leão": "einen großzügigen und magnetischen Glanz, der Selbstvertrauen warmherzig ausstrahlt",
+          "Virgem": "einen aufmerksamen, verfeinerten Geist, der der kontinuierlichen Verbesserung des Lebens gewidmet ist",
+          "Libra": "eine beständige Suche nach Gleichgewicht, Gerechtigkeit und aufrichtiger Eleganz in Verbindungen",
+          "Escorpião": "eine untersuchende, regenerative Intensität, die Schatten in Licht verwandelt",
+          "Sagitário": "einen feurigen Idealismus und unersättliches Streben nach Erweiterung von Weisheit und Freiheit",
+          "Capricórnio": "eine strukturierte Weisheit, die Ihr Erbe mit Ausdauer und Ernst aufbaut",
+          "Aquário": "einen visionären Idealismus mit tiefer Ehrfurcht vor Innovation und Gedankenfreiheit",
+          "Peixes": "eine tiefe ozeanische Empathie, die sanft zwischen den Welten der Intuition navigiert",
+        },
+        es: {
+          "Áries": "una llama de liderazgo y coraje que arde con intensidad realizadora",
+          "Touro": "una estabilidad serena y una profunda búsqueda de la armonía y belleza terrenal",
+          "Gêmeos": "una curiosidad viva y una mente ágil capaz de conectar múltiples realidades",
+          "Câncer": "una sensibilidad intuitiva y protectora, íntimamente ligada a las mareas del alma",
+          "Leão": "un brillo generoso y magnético que irradia confianza en sí mismo de forma cálida",
+          "Virgem": "una mente atenta y refinada dedicada a la mejora continua de la vida",
+          "Libra": "una búsqueda constante del equilibrio, la justicia y la elegancia sincera en las conexiones",
+          "Escorpião": "una intensidad investigadora y regeneradora capaz de alquimizar las sombras en luz",
+          "Sagitário": "un idealismo ardiente y una búsqueda insaciable de expansión de sabiduría y libertad",
+          "Capricórnio": "una sabiduría estructurada que construye tu legado con perseverancia y seriedad",
+          "Aquário": "un idealismo visionario con una profunda reverencia por la innovación y la libertad de pensamiento",
+          "Peixes": "una empatía profunda y oceánica que navega suavemente entre los mundos de la intuición",
+        },
+      };
+      const langIntros = intros[currentLang] || intros['pt'];
+      return langIntros[sign] || (currentLang === 'de' ? "ein einzigartiger Magnetismus und ein Sternenfunke, der intensiv im Kosmos leuchtet"
+        : currentLang === 'en' ? "a singular magnetism and a star spark shining intensely in the cosmos"
+        : currentLang === 'es' ? "un magnetismo singular y una chispa estelar brillando intensamente en el cosmos"
+        : "um magnetismo singular e uma centelha estelar brilhando intensamente no cosmos");
     };
 
-    let welcomeText = "Saudações. Eu sou Orbia, sua Conselheira Astrológica e Terapeuta Pessoal de Inteligência Celestial. Sincronize ou crie seu mapa astral completo para desbloquear análises ultra-personalizadas, leituras de trânsitos astronômicos e conselhos direcionados à sua essência de nascimento.";
+    const orbiaName: Record<string, string> = {
+      pt: "Orbia, sua Conselheira Astrológica e Terapeuta Pessoal de Inteligência Celestial",
+      en: "Orbia, your Astrological Counselor and Personal Celestial Intelligence Therapist",
+      de: "Orbia, deine Astrologische Beraterin und Persönliche Himmels-Intelligenz-Therapeutin",
+      es: "Orbia, tu Consejera Astrológica y Terapeuta Personal de Inteligencia Celestial",
+    };
+    const orbiaTitle = orbiaName[currentLang] || orbiaName['pt'];
+
+    let welcomeText = currentLang === 'de'
+      ? `Grüße. Ich bin ${orbiaTitle}. Synchronisiere oder erstelle dein vollständiges Geburtshoroskop, um ultra-personalisierte Analysen, astronomische Transitlesungen und auf dein Geburtswesen ausgerichtete Ratschläge freizuschalten.`
+      : currentLang === 'en'
+      ? `Greetings. I am ${orbiaTitle}. Synchronize or create your complete birth chart to unlock ultra-personalized analyses, astronomical transit readings and advice directed at your birth essence.`
+      : currentLang === 'es'
+      ? `Saludos. Soy ${orbiaTitle}. Sincroniza o crea tu carta natal completa para desbloquear análisis ultra-personalizados, lecturas de tránsitos astronómicos y consejos dirigidos a tu esencia natal.`
+      : `Saudações. Eu sou ${orbiaTitle}. Sincronize ou crie seu mapa astral completo para desbloquear análises ultra-personalizadas, leituras de trânsitos astronômicos e conselhos direcionados à sua essência de nascimento.`;
+
     if (user.hasCreatedMap && user.name) {
       const firstName = user.name.split(' ')[0];
       const sunSign = mapData?.astros?.find(a => a.name === "Sol")?.sign || getZodiacSign(user.birthDate) || "seu Signo";
       const ascSign = mapData?.astros?.find(a => a.name === "Ascendente")?.sign || (user.birthTime ? getRisingSign(user.birthDate, user.birthTime) : "");
-      welcomeText = `Saudações, ${firstName}. Eu sou Orbia, sua Conselheira Astrológica e Terapeuta Pessoal de Inteligência Celestial. Nascido com o Sol em ${sunSign}${ascSign ? ` e Ascendente em ${ascSign}` : ""}, sinto em seu campo energético ${getDynamicIntroOfSign(sunSign)}. Como eu, Orbia, posso guiar sua jornada de consciência e transformação hoje em 2026?`;
+      const sunLabel = currentLang === 'de' ? "Sonne in" : currentLang === 'en' ? "Sun in" : currentLang === 'es' ? "Sol en" : "Sol em";
+      const ascLabel = currentLang === 'de' ? "und Aszendent in" : currentLang === 'en' ? "and Ascendant in" : currentLang === 'es' ? "y Ascendente en" : "e Ascendente em";
+      const guideQ = currentLang === 'de' ? `Wie kann ich, Orbia, deine Bewusstseins- und Transformationsreise heute im Jahr 2026 leiten?`
+        : currentLang === 'en' ? `How can I, Orbia, guide your journey of consciousness and transformation in 2026?`
+        : currentLang === 'es' ? `¿Cómo puedo, Orbia, guiar tu viaje de conciencia y transformación hoy en 2026?`
+        : `Como eu, Orbia, posso guiar sua jornada de consciência e transformação hoje em 2026?`;
+      const bornWith = currentLang === 'de' ? "Geboren mit" : currentLang === 'en' ? "Born with" : currentLang === 'es' ? "Nacido con" : "Nascido com o";
+      const iSense = currentLang === 'de' ? "spüre ich in deinem Energiefeld" : currentLang === 'en' ? "I sense in your energy field" : currentLang === 'es' ? "siento en tu campo energético" : "sinto em seu campo energético";
+      welcomeText = `${currentLang === 'de' ? 'Grüße' : currentLang === 'en' ? 'Greetings' : currentLang === 'es' ? 'Saludos' : 'Saudações'}, ${firstName}. ${currentLang === 'de' ? 'Ich bin' : currentLang === 'en' ? 'I am' : currentLang === 'es' ? 'Soy' : 'Eu sou'} ${orbiaTitle}. ${bornWith} ${sunLabel} ${sunSign}${ascSign ? ` ${ascLabel} ${ascSign}` : ""}, ${iSense} ${getDynamicIntroOfSign(sunSign)}. ${guideQ}`;
     } else if (user.name) {
       const firstName = user.name.split(' ')[0];
-      welcomeText = `Saudações, ${firstName}. Eu sou Orbia, sua Conselheira Astrológica e Terapeuta Pessoal de Inteligência Celestial. Que alegria tê-lo conosco! Sincronize seu nascimento para mapear suas dezenas de aspectos astrológicos personalizados baseados em efemérides astronômicas reais. Como posso te orientar hoje?`;
+      welcomeText = currentLang === 'de'
+        ? `Grüße, ${firstName}. Ich bin ${orbiaTitle}. Wie schön, dass du hier bist! Synchronisiere deine Geburtsdaten, um deine zahlreichen personalisierten astrologischen Aspekte auf Basis echter astronomischer Ephemeriden zu kartieren. Wie kann ich dich heute leiten?`
+        : currentLang === 'en'
+        ? `Greetings, ${firstName}. I am ${orbiaTitle}. So glad to have you here! Synchronize your birth data to map your dozens of personalized astrological aspects based on real astronomical ephemeris. How can I guide you today?`
+        : currentLang === 'es'
+        ? `Saludos, ${firstName}. Soy ${orbiaTitle}. ¡Qué alegría tenerte aquí! Sincroniza tu nacimiento para mapear tus decenas de aspectos astrológicos personalizados basados en efemérides astronómicas reales. ¿Cómo puedo orientarte hoy?`
+        : `Saudações, ${firstName}. Eu sou ${orbiaTitle}. Que alegria tê-lo conosco! Sincronize seu nascimento para mapear suas dezenas de aspectos astrológicos personalizados baseados em efemérides astronômicas reais. Como posso te orientar hoje?`;
     }
     setChatMessages(prev => {
       const filtered = prev.filter(m => m.id !== "welcomeMsg");
@@ -4424,7 +4539,7 @@ export default function App() {
                   <span className="text-sm font-black tracking-widest text-[#F59E0B] uppercase">PORTAL ÓRBITA</span>
                 </div>
                 <p className="text-[10px] text-slate-500 leading-relaxed font-sans max-w-sm">
-                  © 2011-2026 Portal Órbita S.A. Todos os direitos reservados. Projeto computado usando algoritmos de Plácidus de alta integridade geocêntrica física. Criptografia ativa de ponta a ponta.
+                  {t("© 2011-2026 Portal Órbita S.A. Todos os direitos reservados. Projeto computado usando algoritmos de Plácidus de alta integridade geocêntrica física. Criptografia ativa de ponta a ponta.")}
                 </p>
                 <div className="text-[9px] font-mono text-slate-600">
                   IP SEC INTERCEPT MODE: ACTIVE <br />
@@ -4434,7 +4549,7 @@ export default function App() {
 
               {/* Legal Col */}
               <div>
-                <h4 className="text-[10px] font-mono uppercase text-amber-500 tracking-widest mb-3 font-bold">Diretrizes Legais</h4>
+                <h4 className="text-[10px] font-mono uppercase text-amber-500 tracking-widest mb-3 font-bold">{t("Diretrizes Legais")}</h4>
                 <ul className="text-[11px] text-slate-400 space-y-2 font-sans">
                   <li>
                     <button 
@@ -4442,7 +4557,7 @@ export default function App() {
                       onClick={() => setLandingFooterModal('terms')} 
                       className="hover:text-amber-400 cursor-pointer transition text-left"
                     >
-                      Termos de Uso do Portal
+                      {t("Termos de Uso do Portal")}
                     </button>
                   </li>
                   <li>
@@ -4451,7 +4566,7 @@ export default function App() {
                       onClick={() => setLandingFooterModal('privacy')} 
                       className="hover:text-amber-400 cursor-pointer transition text-left"
                     >
-                      Políticas de Privacidade
+                      {t("Políticas de Privacidade")}
                     </button>
                   </li>
                   <li>
@@ -4460,7 +4575,7 @@ export default function App() {
                       onClick={() => setLandingFooterModal('security')} 
                       className="hover:text-amber-400 cursor-pointer transition text-left"
                     >
-                      Diretrizes de Segurança
+                      {t("Diretrizes de Segurança")}
                     </button>
                   </li>
                 </ul>
@@ -4468,7 +4583,7 @@ export default function App() {
 
               {/* Authority Info Col */}
               <div>
-                <h4 className="text-[10px] font-mono uppercase text-amber-500 tracking-widest mb-3 font-bold">Quem Somos</h4>
+                <h4 className="text-[10px] font-mono uppercase text-amber-500 tracking-widest mb-3 font-bold">{t("Quem Somos")}</h4>
                 <ul className="text-[11px] text-slate-400 space-y-2 font-sans">
                   <li>
                     <button 
@@ -4476,23 +4591,23 @@ export default function App() {
                       onClick={() => setLandingFooterModal('about')} 
                       className="hover:text-amber-400 cursor-pointer transition text-left"
                     >
-                      Quem Somos / Equipe
+                      {t("Quem Somos / Equipe")}
                     </button>
                   </li>
                   <li>
                     <button 
                       type="button" 
                       onClick={() => {
-                        triggerGlobalNotification("Metodologia de Efemérides", "Nossos algoritmos utilizam interpolações numéricas baseadas em posições geocêntricas corrigidas para o fuso local dinâmico do usuário.", "info");
+                        triggerGlobalNotification(t("Metodologia de Efemérides"), t("Nossos algoritmos utilizam interpolações numéricas baseadas em posições geocêntricas corrigidas para o fuso local dinâmico do usuário."), "info");
                       }} 
                       className="hover:text-amber-400 cursor-pointer transition text-left"
                     >
-                      Precisão do Sistema
+                      {t("Precisão do Sistema")}
                     </button>
                   </li>
                   <li>
                     <a href="#advantages-section" className="hover:text-amber-400 cursor-pointer transition text-left block">
-                      Vantagens do App
+                      {t("Vantagens do App")}
                     </a>
                   </li>
                 </ul>
@@ -4500,7 +4615,7 @@ export default function App() {
 
               {/* Relationship Support Col */}
               <div>
-                <h4 className="text-[10px] font-mono uppercase text-amber-500 tracking-widest mb-3 font-bold">Contato & Ajuda</h4>
+                <h4 className="text-[10px] font-mono uppercase text-amber-500 tracking-widest mb-3 font-bold">{t("Contato & Ajuda")}</h4>
                 <ul className="text-[11px] text-slate-400 space-y-2 font-sans">
                   <li>
                     <button 
@@ -4512,7 +4627,7 @@ export default function App() {
                       }} 
                       className="hover:text-amber-400 cursor-pointer transition text-left font-semibold text-amber-500"
                     >
-                      ✉️ Fale Conosco / Suporte
+                      {t("✉️ Fale Conosco / Suporte")}
                     </button>
                   </li>
                   <li>
@@ -5043,6 +5158,7 @@ export default function App() {
                   birthDate={user?.birthDate} 
                   userEmail={user?.email || loggedEmail}
                   onRewardPoints={(amount) => setScorePoints(prev => prev + amount)} 
+                  lang={currentLang}
                 />
               </div>
 
@@ -5930,12 +6046,13 @@ export default function App() {
                                 <NumerologyView 
                                   numerology={numerology} 
                                   user={user} 
+                                  lang={currentLang}
                                 />
                               </div>
                             )}
                           </React.Suspense>
 
-                          <CompatibilityView user={user} />
+                          <CompatibilityView user={user} lang={currentLang} />
 
 
                         </div>
@@ -6166,6 +6283,7 @@ export default function App() {
                                     name: activeExtraMapName,
                                     birthDate: "1990-01-01",
                                   }} 
+                                  lang={currentLang}
                                 />
                               )}
                             </React.Suspense>
@@ -6426,13 +6544,13 @@ export default function App() {
                   <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl" />
                   <div className="relative">
                     <span className="px-3 py-1 rounded-full text-[10px] uppercase font-mono font-semibold tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
-                      Módulo Trânsitos e Energias Diárias
+                      {tLocal("Módulo Trânsitos e Energias Diárias")}
                     </span>
                     <h1 className="text-2xl md:text-3xl font-sans font-bold tracking-tight text-slate-100 mt-2">
-                      Radar Biológico & Tendências
+                      {tLocal("Radar Biológico & Tendências")}
                     </h1>
                     <p className="text-xs text-slate-400 max-w-xl mt-1">
-                      Monitore biorritmos matemáticos, previsões de trânsitos celestes, e o ciclo lunar ativo para planejar suas melhores ações do dia.
+                      {tLocal("Monitore biorritmos matemáticos, previsões de trânsitos celestes, e o ciclo lunar ativo para planejar suas melhores ações do dia.")}
                     </p>
                   </div>
                 </div>
@@ -6442,20 +6560,20 @@ export default function App() {
                   {/* Radar do Dia Subcomponent */}
                   <div className="lg:col-span-4 bg-slate-900/50 p-6 rounded-3xl border border-slate-800 space-y-4">
                     <div className="pb-2 border-b border-slate-850">
-                      <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest">Radar Diário</h3>
-                      <p className="text-[10px] text-slate-500 mt-0.5">Influências transitórias de hoje</p>
+                      <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest">{tLocal("Radar Diário")}</h3>
+                      <p className="text-[10px] text-slate-500 mt-0.5">{tLocal("Influências transitórias de hoje")}</p>
                     </div>
 
                     <div className="space-y-3">
                       <div className="p-3 bg-slate-950 rounded-xl border border-slate-850">
-                        <span className="text-[9px] font-mono text-slate-500 block uppercase">Frequência Regente</span>
+                        <span className="text-[9px] font-mono text-slate-500 block uppercase">{tLocal("Frequência Regente")}</span>
                         <div className="text-xs font-bold text-emerald-400 mt-1">{dailyRadar.energyOfDay}</div>
                       </div>
 
                       {/* Disposition Level widget gauge */}
                       <div className="space-y-1 pt-1">
                         <div className="flex justify-between text-[11px]">
-                          <span className="text-slate-400">Nível de Disposição Física</span>
+                          <span className="text-slate-400">{tLocal("Nível de Disposição Física")}</span>
                           <span className="font-mono text-emerald-400 font-bold">{dailyRadar.dispositionLevel}%</span>
                         </div>
                         <div className="w-full h-2 rounded bg-slate-950 overflow-hidden">
@@ -6465,17 +6583,17 @@ export default function App() {
 
                       {/* Best hours timeline lists */}
                       <div className="space-y-2 pt-2 text-[11px]">
-                        <strong className="text-[9px] font-mono text-slate-500 uppercase tracking-wider block">Melhores Janelas Horas:</strong>
+                        <strong className="text-[9px] font-mono text-slate-500 uppercase tracking-wider block">{tLocal("Melhores Janelas Horas:")}</strong>
                         <div className="flex justify-between p-2 bg-slate-950/40 rounded-lg">
-                          <span className="text-slate-400">Produtividade</span>
+                          <span className="text-slate-400">{tLocal("Produtividade")}</span>
                           <span className="font-mono text-slate-200">{dailyRadar.bestTimeProductivity}</span>
                         </div>
                         <div className="flex justify-between p-2 bg-slate-950/40 rounded-lg">
-                          <span className="text-slate-400">Relacionamentos</span>
+                          <span className="text-slate-400">{tLocal("Relacionamentos")}</span>
                           <span className="font-mono text-rose-400">{dailyRadar.bestTimeRelationships}</span>
                         </div>
                         <div className="flex justify-between p-2 bg-slate-950/40 rounded-lg">
-                          <span className="text-slate-400">Foco / Estudos</span>
+                          <span className="text-slate-400">{tLocal("Foco / Estudos")}</span>
                           <span className="font-mono text-sky-400">{dailyRadar.bestTimeStudies}</span>
                         </div>
                       </div>
@@ -6485,15 +6603,18 @@ export default function App() {
                   {/* Informational Prompt block on Biorhythm integration */}
                   <div className="lg:col-span-8 bg-slate-900/10 p-6 rounded-3xl border border-slate-800 flex flex-col justify-center space-y-4">
                     <span className="px-3 py-1 rounded-full text-[9px] uppercase font-mono font-semibold tracking-wider text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 w-fit">
-                      Sincronismo Quântico Ativado
+                      {tLocal("Sincronismo Quântico Ativado")}
                     </span>
-                    <h3 className="text-base font-bold text-slate-100 uppercase tracking-tight">Sintonização do Potencial de Vida</h3>
+                    <h3 className="text-base font-bold text-slate-100 uppercase tracking-tight">{tLocal("Sintonização do Potencial de Vida")}</h3>
                     <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                      O Biorritmo auxilia você a sincronizar seus picos de eficiência diários em cada uma das 7 esferas de experiência vital. Role para baixo ou navegue ao lado para analisar detalhadamente seu gráfico de 15 dias completo e o cronômetro correspondente de transições de fases física, emocional e espiritual.
+                      {tLocal("O Biorritmo auxilia você a sincronizar seus picos de eficiência diários em cada uma das 7 esferas de experiência vital. Role para baixo ou navegue ao lado para analisar detalhadamente seu gráfico de 15 dias completo e o cronômetro correspondente de transições de fases física, emocional e espiritual.")}
                     </p>
                     <div className="flex gap-2 items-center text-[11px] font-mono text-indigo-305">
                       <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping" />
-                      <span>Integração com {user?.birthDate ? `Nascimento: ${user.birthDate}` : 'suas datas astrológicas'}</span>
+                      <span>
+                        {lang === 'de' ? 'Integration mit Geburt:' : lang === 'en' ? 'Integration with Birth:' : lang === 'es' ? 'Integración con Nacimiento:' : lang === 'fr' ? 'Intégration avec Naissance:' : 'Integração com Nascimento:'}{" "}
+                        {user?.birthDate ? user.birthDate : (lang === 'de' ? 'Ihre astrologischen Daten' : lang === 'en' ? 'your astrological dates' : lang === 'es' ? 'sus fechas astrológicas' : lang === 'fr' ? 'vos dates astrologiques' : 'suas datas astrológicas')}
+                      </span>
                     </div>
                   </div>
 
@@ -6739,7 +6860,7 @@ export default function App() {
 
                 {/* NODOS LUNARES - SUA EVOLUÇÃO PESSOAL */}
                 <div key={`lunar_nodes_planetas_${user?.name}_${user?.birthDate}`}>
-                  <LunarNodes userName={user?.name} mapData={mapData} />
+                  <LunarNodes userName={user?.name} mapData={mapData} lang={currentLang} />
                 </div>
 
               </div>
@@ -6806,7 +6927,7 @@ export default function App() {
 
                 {/* Monthly Celestial Transits History Panel */}
                 <div key={`transit_history_planetas_${user?.name}_${user?.birthDate}`}>
-                  <TransitHistory userName={user?.name} birthDate={user?.birthDate} />
+                  <TransitHistory userName={user?.name} birthDate={user?.birthDate} lang={currentLang} />
                 </div>
 
                 {/* Orbia AI Chat and Oracle Component */}
@@ -7348,12 +7469,12 @@ export default function App() {
         <div className="fixed inset-0 bg-[#02050b] z-50 overflow-y-auto p-4 md:p-8 animate-in fade-in zoom-in-95 duration-200">
           <div className="max-w-4xl mx-auto space-y-6">
             <div className="flex justify-between items-center bg-[#070c17] p-4 rounded-2xl border border-slate-800">
-              <span className="text-xs font-mono font-bold text-amber-500">🛡️ AMBIENTE DE AUDITORIA, PERFORMANCE & ERROS</span>
+              <span className="text-xs font-mono font-bold text-amber-500">{t("🛡️ AMBIENTE DE AUDITORIA, PERFORMANCE & ERROS")}</span>
               <button
                 onClick={() => setShowAdminPanel(false)}
                 className="px-3 py-1 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-xs text-slate-400 rounded-xl transition cursor-pointer"
               >
-                Voltar pro Portal
+                {t("Voltar ao Portal")}
               </button>
             </div>
             <AdminPanel 
@@ -7363,6 +7484,7 @@ export default function App() {
               triggerGlobalNotification={triggerGlobalNotification}
               firebaseErrors={firebaseErrors}
               onClearErrors={() => setFirebaseErrors([])}
+              lang={currentLang}
             />
           </div>
         </div>

@@ -3,6 +3,7 @@ import { Sparkles, Moon, RefreshCw, Feather, PlusCircle, Trash, Notebook, AlertC
 import { motion, AnimatePresence } from "motion/react";
 import { Language, translations } from "../translations";
 import { DreamEntry } from "../types";
+import { useTranslation } from "react-i18next";
 
 interface DreamsTabProps {
   lang: Language;
@@ -28,6 +29,7 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
   const [loadingAI, setLoadingAI] = useState<string | null>(null);
 
   const t = translations[lang];
+  const { t: tI18n } = useTranslation();
 
   const handleSaveDream = (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,7 +111,7 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
         <section className="bg-white border border-neutral-200/90 rounded-2xl p-6 shadow-sm lg:col-span-5 h-fit">
           <div className="flex items-center gap-2 border-b border-neutral-100 pb-3 mb-4">
             <PlusCircle className="w-5 h-5 text-indigo-600" />
-            <h3 className="font-display font-semibold text-neutral-900 text-sm">Registrar Nova Viagem</h3>
+            <h3 className="font-display font-semibold text-neutral-900 text-sm">{tI18n("Registrar Nova Viagem")}</h3>
           </div>
 
           <form onSubmit={handleSaveDream} className="space-y-4 text-xs sm:text-sm">
@@ -120,7 +122,7 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ex: O Castelo Celestial de Nuvens"
+                placeholder={tI18n("Ex: O Castelo Celestial de Nuvens")}
                 className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 placeholder-neutral-400 transition"
               />
             </div>
@@ -131,7 +133,7 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
                 required
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="Eu andava por cordas suspensas sobre a poeira cósmica..."
+                placeholder={tI18n("Eu andava por cordas suspensas sobre a poeira cósmica...")}
                 className="w-full h-24 px-3 py-2 bg-neutral-50 border border-neutral-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 placeholder-neutral-400 transition resize-none"
               />
             </div>
@@ -153,12 +155,12 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
               </div>
 
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-neutral-500">Símbolos-Chave</label>
+                <label className="block text-xs font-semibold text-neutral-500">{tI18n("Símbolos-Chave")}</label>
                 <input
                   type="text"
                   value={symbols}
                   onChange={(e) => setSymbols(e.target.value)}
-                  placeholder="Separados por vírgula"
+                  placeholder={tI18n("Separados por vírgula")}
                   className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 placeholder-neutral-400 transition"
                 />
               </div>
@@ -183,7 +185,7 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
           <div className="space-y-5 max-h-[440px] overflow-y-auto pr-1">
             {dreams.length === 0 ? (
               <div className="text-center py-10 text-neutral-400 text-xs">
-                Nenhum sonho registrado para esta jornada ainda. Registre no painel esquerdo.
+                {tI18n("Nenhum sonho registrado para esta jornada ainda. Registre no painel esquerdo.")}
               </div>
             ) : (
               dreams.map((dream) => {
@@ -236,7 +238,7 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
                       <div className="mt-2.5 p-3.5 bg-indigo-50/20 border border-indigo-150/40 rounded-xl space-y-1.5">
                         <span className="text-[9px] font-bold text-indigo-700 uppercase tracking-widest flex items-center gap-1">
                           <Feather className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
-                          <span>Revelação Arquetípica Integral</span>
+                          <span>{tI18n("Revelação Arquetípica Integral")}</span>
                         </span>
                         <p className="text-[11px] text-neutral-700 leading-relaxed font-sans">
                           {dream.aiAnalysis}
@@ -252,7 +254,7 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
                           {loadingAI === dream.id ? (
                             <>
                               <RefreshCw className="w-3 h-3 animate-spin" />
-                              <span>Decifrando mistérios...</span>
+                              <span>{tI18n("Decifrando mistérios...")}</span>
                             </>
                           ) : (
                             <>

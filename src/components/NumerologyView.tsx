@@ -1,4 +1,6 @@
 import React, { useState, useMemo, memo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { translateUiText, Language } from '../lib/translations';
 import { NumerologyCycle } from '../types';
 import { 
   Hash, 
@@ -26,6 +28,7 @@ interface NumerologyViewProps {
     birthDate: string;
     [key: string]: any;
   };
+  lang?: string;
 }
 
 // 1. DATA DICTIONARY FOR VIBRATIONAL NUMEROLOGY ARCHETYPES (1 to 9, plus Master Numbers 11 & 22)
@@ -175,7 +178,17 @@ export const numerologyInterpretations: Record<number, {
   }
 };
 
-const NumerologyView = memo(function NumerologyView({ numerology, user }: NumerologyViewProps) {
+const NumerologyView = memo(function NumerologyView({ numerology, user, lang }: NumerologyViewProps) {
+  const { t: i18nT } = useTranslation();
+  const t = (text: string) => {
+    if (!text) return "";
+    const res = i18nT(text);
+    if (res === text || !res) {
+      return translateUiText(text, (lang as Language) || 'pt');
+    }
+    return res;
+  };
+
   const userName = user.name;
   const userBirthDate = user.birthDate || "1990-01-01";
 

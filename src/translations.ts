@@ -1,4 +1,4 @@
-export type Language = 'pt' | 'en' | 'de' | 'es';
+export type Language = 'pt' | 'en' | 'de' | 'es' | 'fr';
 
 export const translations = {
   pt: {
@@ -432,5 +432,113 @@ export const translations = {
     logout: "Desconectar Sesión",
     unsupportedFirebase: "Modo Local Activo: Tu sesión y datos están seguros localmente.",
     astroModelEngine: "Motor Cósmico Interno: Precisión matemática offline.",
+  },
+  fr: {
+    title: "Órbita Next",
+    subtitle: "Votre voyage cosmique et astrologique personnel",
+    welcome: "Bienvenue sur Órbita Next",
+    tagline: "Le pouvoir de l'univers calculé de manière simple, élégante et entièrement gratuite.",
+    
+    // Auth & Form
+    name: "Nom complet",
+    birthDate: "Date de naissance",
+    birthTime: "Heure de naissance",
+    birthCity: "Ville de naissance",
+    email: "E-mail",
+    password: "Mot de passe",
+    signUp: "Créer un compte & Calculer la carte",
+    signIn: "Se connecter avec E-mail et Mot de passe",
+    googleLogin: "Se connecter avec Google",
+    haveAccount: "Vous avez déjà un compte ? Connectez-vous ici",
+    needAccount: "Nouveau ici ? Créez votre compte gratuitement",
+    forgotPass: "Mot de passe oublié ?",
+    invalidFields: "Veuillez remplir correctement tous les champs obligatoires.",
+    authSuccess: "Authentification réussie !",
+    
+    // Navbar / Tabs
+    dashboard: "Tableau de bord",
+    natalChart: "Carte du ciel",
+    transits: "Transits",
+    numerology: "Numérologie",
+    tarot: "Tarot",
+    dreams: "Rêves",
+    aiAssistant: "Assistants cosmiques",
+    profile: "Profil",
+
+    // Dashboard
+    dailyHoroscope: "Horoscope quotidien",
+    weeklyHoroscope: "Horoscope hebdomadaire",
+    lunarPhase: "Phase lunaire actuelle",
+    transitForecast: "Prévisions cosmiques",
+    insightOfTheDay: "Aperçu du jour selon vos transits",
+    recalculatingCode: "Couche de calculs synchronisée hors ligne.",
+
+    // Astrology
+    sun: "Soleil",
+    moon: "Lune",
+    mercury: "Mercure",
+    venus: "Vênus",
+    mars: "Mars",
+    jupiter: "Jupiter",
+    saturn: "Saturne",
+    uranus: "Uranus",
+    neptune: "Neptune",
+    pluto: "Pluton",
+    chiron: "Chiron",
+    ascendant: "Ascendant (Maison 1)",
+    midheaven: "Milieu du Ciel (Maison 10)",
+    degree: "degré",
+    retrograde: "Rétrograde",
+    aspectsList: "Aspects actifs",
+    houseSystem: "Cuspides des maisons (Système de maisons Placidus)",
+    generateDeepInterpretation: "Générer une interprétation approfondie par l'IA",
+    interpreting: "Consultation des astres et de l'IA...",
+    deepReport: "Rapport d'interprétation personnalisé",
+    natalDescription: "Votre empreinte cosmique unique, révélant votre essence solaire, votre lune émotionnelle et votre ascendant motivateur.",
+
+    // Numerology
+    numerologyTitle: "Matrice mathématique personnelle",
+    numerologyDesc: "Découvrez les nombres qui régissent votre destin et votre personnalité, extraits de votre nom et de votre date de naissance.",
+    lifePathNum: "Chemin de vie",
+    expressionNum: "Expression divine",
+    soulUrgeNum: "Désir de l'âme",
+    personalityNum: "Personnalité externe",
+    destinyNum: "Destin primordial",
+    
+    // Tarot
+    tarotTitle: "Le Portail du Tarot",
+    tarotDesc: "Accédez à la sagesse cachée dans les arcanes. Posez des questions sur le passé, le présent ou le futur.",
+    tarotPlaceholder: "Écrivez votre question ici... (ex : Quel conseil pour ma carrière aujourd'hui ?)",
+    drawCards: "Tirer 3 cartes",
+    tarotSpreadPast: "Passé / Cause",
+    tarotSpreadPresent: "Présent / Défi",
+    tarotSpreadFuture: "Futur / Conseil",
+    uprightPosition: "Position droite",
+    reversedPosition: "Position inversée",
+    newReading: "Nouvelle lecture",
+    
+    // Dreams
+    dreamsTitle: "Carnet de rêves cosmiques",
+    dreamsDesc: "Enregistrez vos voyages subconscients. Analysez les symboles rituels et recevez des interprétations mystiques.",
+    dreamTitleLabel: "Titre du rêve",
+    dreamContentLabel: "Que s'est-il passé dans votre rêve ?",
+    dreamMood: "Ambiance du rêve",
+    dreamSymbolsPlaceholder: "Ajoutez des symboles séparés par des virgules (ex : eau, voler, clés)",
+    saveDream: "Enregistrer le rêve",
+    dreamJournal: "Votre journal des rêves",
+    peaceful: "Paisible",
+    neutral: "Neutre",
+    lucid: "Lucide",
+    intense: "Intense",
+    nightmare: "Cauchemar",
+    analyzeDreamAI: "Interpreter le rêve avec le mysticisme IA",
+
+    // Profile & Settings
+    themeVisual: "Thème de couleurs",
+    languageSelection: "Langue du système",
+    currentLocation: "Vos coordonnées natales",
+    logout: "Se déconnecter",
+    unsupportedFirebase: "Mode local actif : Votre session et vos données sont stockées localement et de manière privée.",
+    astroModelEngine: "Moteur cosmique interne : Précision mathématique hors ligne.",
   }
 };

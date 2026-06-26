@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Send } from 'lucide-react';
 import { ChatMessage, DailyOracleResponse } from '../types';
 import { translateUiText, Language } from '../lib/translations';
@@ -35,7 +36,15 @@ export default function OrbiaAIAndOracle({
   handleAskOracle,
   lang
 }: OrbiaAIAndOracleProps) {
-  const t = (text: string) => translateUiText(text, (lang as Language) || 'pt');
+  const { t: i18nT } = useTranslation();
+  const t = (text: string) => {
+    if (!text) return "";
+    const res = i18nT(text);
+    if (res === text || !res) {
+      return translateUiText(text, (lang as Language) || 'pt');
+    }
+    return res;
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6" id="orbia-oracle-grid">

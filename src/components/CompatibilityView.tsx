@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { translateUiText, Language } from '../lib/translations';
 import { CompatibilityResult, UserProfile } from '../types';
 import { computeDetailedCompatibility } from './compatibilityEngine';
 import { motion, AnimatePresence } from 'motion/react';
@@ -34,6 +36,7 @@ import {
 
 interface CompatibilityViewProps {
   user: UserProfile;
+  lang?: string;
 }
 
 interface SavedContact {
@@ -476,7 +479,17 @@ const FIND_PEOPLE_DATABASE = [
   }
 ];
 
-export default function CompatibilityView({ user }: CompatibilityViewProps) {
+export default function CompatibilityView({ user, lang }: CompatibilityViewProps) {
+  const { t: i18nT } = useTranslation();
+  const t = (text: string) => {
+    if (!text) return "";
+    const res = i18nT(text);
+    if (res === text || !res) {
+      return translateUiText(text, (lang as Language) || 'pt');
+    }
+    return res;
+  };
+
   const [activeSubTab, setActiveSubTab] = useState<'geral'>('geral'); // Only Cruzamento Astrológico remains
   const [relationCategory, setRelationCategory] = useState<'love' | 'business' | 'friend' | 'family' | 'marriage' | 'partnership'>('love');
   const [partnerName, setPartnerName] = useState('');

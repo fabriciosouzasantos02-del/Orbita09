@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from "react-i18next";
+import { translateUiText, Language } from '../lib/translations';
 import { 
   Heart, Users, Sparkles, UserPlus, UserMinus, Search, 
   MapPin, Award, Check, TrendingUp, RefreshCw, MessageSquare, 
@@ -65,6 +67,7 @@ interface SocialNetworkViewProps {
     friendsCount?: number;
   };
   onUpdateCurrentUser: (updated: any) => void;
+  lang?: Language;
 }
 
 const SEED_USERS = [
@@ -135,7 +138,16 @@ const SEED_USERS = [
   }
 ];
 
-export default function SocialNetworkView({ currentUser, onUpdateCurrentUser }: SocialNetworkViewProps) {
+export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, lang }: SocialNetworkViewProps) {
+  const { t: tI18nRaw } = useTranslation();
+  const tI18n = (text: string) => {
+    if (!text) return "";
+    const res = tI18nRaw(text);
+    if (res === text || !res) {
+      return translateUiText(text, lang || 'pt');
+    }
+    return res;
+  };
   const currentEmail = (currentUser.email || "viajante@starportal.com").toLowerCase().trim();
   
   // State variables
@@ -618,13 +630,13 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser }: 
           {/* SEARCH COMPONENT BOARD */}
           <div className="bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-6 rounded-3xl border border-slate-850 space-y-4 shadow-xl text-left">
             <div className="space-y-1">
-              <span className="text-[10px] uppercase font-mono tracking-widest text-[#E5C158] font-black">Comunidade e Conexões Celestes</span>
-              <h2 className="text-base sm:text-lg font-black tracking-tight text-slate-100">Encontrar Novas Conexões</h2>
-              <p className="text-xs text-slate-400">Entre em sintonia e explore perfis de buscadores no portal Cósmica Órbita.</p>
+              <span className="text-[10px] uppercase font-mono tracking-widest text-[#E5C158] font-black">{tI18n("Comunidade e Conexões Celestes")}</span>
+              <h2 className="text-base sm:text-lg font-black tracking-tight text-slate-100">{tI18n("Encontrar Novas Conexões")}</h2>
+              <p className="text-xs text-slate-400">{tI18n("Entre em sintonia e explore perfis de buscadores no portal Cósmica Órbita.")}</p>
               <div className="p-2.5 bg-cyan-950/20 rounded-xl border border-cyan-900/30 flex items-center gap-2 mt-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0 animate-pulse" />
                 <p className="text-[10px] text-slate-400 font-sans leading-relaxed">
-                  Nota do Portal: Este ambiente destina-se à descoberta de afinidade e sinastria astrológica. O envio de chats e troca de mensagens diretas entre usuários é <strong>indisponível</strong> para assegurar total privacidade e proteção de tráfego áurico.
+                  <strong>{tI18n("Nota do Portal:")}</strong> {tI18n("Este ambiente destina-se à descoberta de afinidade e sinastria astrológica. O envio de chats e troca de mensagens diretas entre usuários é")} <strong>{tI18n("indisponível")}</strong> {tI18n("para assegurar total privacidade e proteção de tráfego áurico.")}
                 </p>
               </div>
             </div>
@@ -636,7 +648,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser }: 
                   type="text" 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Digite o nome da pessoa"
+                  placeholder={tI18n("Digite o nome da pessoa")}
                   className="w-full pl-10 pr-4 py-3 bg-slate-950/80 border border-slate-850 focus:border-cyan-500/50 rounded-2xl text-xs text-slate-200 placeholder-slate-500 outline-hidden transition font-medium"
                 />
               </div>
@@ -644,7 +656,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser }: 
                 type="submit"
                 className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-teal-605 text-slate-950 font-sans font-black text-xs uppercase tracking-wider rounded-2xl hover:opacity-100 opacity-90 active:scale-95 transition-all shadow-md cursor-pointer shrink-0"
               >
-                Buscar
+                {tI18n("Buscar")}
               </button>
             </form>
           </div>
@@ -662,8 +674,8 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser }: 
                 )}
               </div>
               <div>
-                <h4 className="text-xs font-black text-slate-100 font-sans">Meu Cartão de Identidade Social</h4>
-                <p className="text-[10px] text-slate-500 mt-0.5">Bio: <span className="text-slate-300 italic">"{currentUser.bio || 'Sem bio editada...'}"</span></p>
+                <h4 className="text-xs font-black text-slate-100 font-sans">{tI18n("Meu Cartão de Identidade Social")}</h4>
+                <p className="text-[10px] text-slate-500 mt-0.5">Bio: <span className="text-slate-300 italic">"{currentUser.bio || tI18n('Sem bio editada...')}"</span></p>
                 <div className="flex items-center gap-2 mt-1">
                   {currentUser.instagram && <span className="text-[9px] bg-slate-900 px-1.5 py-0.5 rounded text-pink-400 font-mono">{currentUser.instagram}</span>}
                   {currentUser.facebook && <span className="text-[9px] bg-slate-900 px-1.5 py-0.5 rounded text-blue-400 font-mono">fb://{currentUser.facebook}</span>}
@@ -681,7 +693,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser }: 
               className="py-2 px-4 rounded-xl border border-slate-800 hover:border-slate-700 hover:bg-slate-900 text-[10px] font-sans font-black uppercase tracking-wider text-slate-300 flex items-center gap-2 transition cursor-pointer"
             >
               <Edit className="w-3.5 h-3.5" />
-              Editar Perfil
+              {tI18n("Editar Perfil")}
             </button>
           </div>
 
@@ -689,7 +701,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser }: 
           {hasSearched ? (
             <div className="space-y-4">
               <h3 className="text-xs font-mono font-bold text-slate-500 uppercase tracking-widest text-left">
-                Resultados da busca ({searchResults.length})
+                {tI18n("Resultados da busca")} ({searchResults.length})
               </h3>
               
               {searchResults.length > 0 ? (
@@ -979,8 +991,8 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser }: 
                   }`}
                 >
                   <Compass className="w-6 h-6 text-amber-500 animate-pulse" />
-                  <span className="font-black text-xs uppercase tracking-wide">Ver Mapa Astral</span>
-                  <span className="text-[9px] text-slate-500 font-sans font-medium">Posições natais públicas</span>
+                  <span className="font-black text-xs uppercase tracking-wide">{tI18n("Ver Mapa Astral")}</span>
+                  <span className="text-[9px] text-slate-500 font-sans font-medium">{tI18n("Posições natais públicas")}</span>
                   </button>
 
                 <button 
@@ -995,8 +1007,8 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser }: 
                   }`}
                 >
                   <Sparkles className="w-6 h-6 text-cyan-400 animate-spin-slow" />
-                  <span className="font-black text-xs uppercase tracking-wide">Sinastria Astral</span>
-                  <span className="text-[9px] text-slate-500 font-sans font-medium">Compatibilidade detalhada</span>
+                  <span className="font-black text-xs uppercase tracking-wide">{tI18n("Sinastria Astral")}</span>
+                  <span className="text-[9px] text-slate-500 font-sans font-medium">{tI18n("Compatibilidade detalhada")}</span>
                 </button>
               </div>
 
@@ -1011,38 +1023,38 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser }: 
                   <div className="bg-slate-950 p-6 rounded-3xl border border-amber-500/20 text-left space-y-4 animate-in duration-200 slide-in-from-top-3">
                     <div className="border-b border-slate-900 pb-2 flex justify-between items-center">
                       <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-amber-500">
-                        Mapa Primordial de {activeProfile.name}
+                        {tI18n("Mapa Primordial de")} {activeProfile.name}
                       </h4>
                       <button onClick={() => setShowPublicMap(false)} className="text-slate-500 hover:text-slate-200">✕</button>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <div className="p-3.5 bg-slate-900/60 rounded-2xl border border-slate-850 flex flex-col justify-between">
-                        <span className="text-[8px] font-mono text-slate-500 uppercase font-black block">☀️ Signo Solar</span>
-                        <strong className="text-sm font-black text-slate-100 block mt-1">{sun?.sign || getZodiacSign(activeProfile.birthDate)}</strong>
-                        <span className="text-[9px] text-slate-500 font-mono mt-0.5">Essência interior, ego e propósito</span>
+                        <span className="text-[8px] font-mono text-slate-500 uppercase font-black block">☀️ {tI18n("Signo Solar")}</span>
+                        <strong className="text-sm font-black text-slate-100 block mt-1">{tI18n(sun?.sign || getZodiacSign(activeProfile.birthDate))}</strong>
+                        <span className="text-[9px] text-slate-500 font-mono mt-0.5">{tI18n("Essência interior, ego e propósito")}</span>
                       </div>
 
                       <div className="p-3.5 bg-slate-900/60 rounded-2xl border border-slate-850 flex flex-col justify-between">
-                        <span className="text-[8px] font-mono text-slate-500 uppercase font-black block">🌙 Signo Lunar</span>
-                        <strong className="text-sm font-black text-slate-100 block mt-1">{moon?.sign || "Câncer"}</strong>
-                        <span className="text-[9px] text-slate-500 font-mono mt-0.5">Lado subonírico, emoções alimentadas</span>
+                        <span className="text-[8px] font-mono text-slate-500 uppercase font-black block">🌙 {tI18n("Signo Lunar")}</span>
+                        <strong className="text-sm font-black text-slate-100 block mt-1">{tI18n(moon?.sign || "Câncer")}</strong>
+                        <span className="text-[9px] text-slate-500 font-mono mt-0.5">{tI18n("Lado subonírico, emoções alimentadas")}</span>
                       </div>
 
                       <div className="p-3.5 bg-slate-900/60 rounded-2xl border border-slate-850 flex flex-col justify-between">
-                        <span className="text-[8px] font-mono text-slate-500 uppercase font-black block">🧭 Ascendente</span>
-                        <strong className="text-sm font-black text-slate-100 block mt-1">{ascObj?.sign || "Libra"}</strong>
-                        <span className="text-[9px] text-slate-500 font-mono mt-0.5">Foco de projeção física social externa</span>
+                        <span className="text-[8px] font-mono text-slate-500 uppercase font-black block">🧭 {tI18n("Ascendente")}</span>
+                        <strong className="text-sm font-black text-slate-100 block mt-1">{tI18n(ascObj?.sign || "Libra")}</strong>
+                        <span className="text-[9px] text-slate-500 font-mono mt-0.5">{tI18n("Foco de projeção física social externa")}</span>
                       </div>
                     </div>
 
                     <div className="space-y-2 pt-2 border-t border-slate-900">
-                      <span className="text-[9px] font-mono text-slate-500 uppercase tracking-wider block font-bold">Distribuição de Planetas Públicos</span>
+                      <span className="text-[9px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{tI18n("Distribuição de Planetas Públicos")}</span>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px]">
                         {chart.astros.slice(0, 8).map(a => (
                           <div key={a.name} className="p-2 bg-slate-900/30 rounded-xl border border-slate-850 flex justify-between items-center">
-                            <span className="text-slate-450 font-bold">{a.name}</span>
-                            <span className="font-mono text-amber-500">{a.sign}</span>
+                            <span className="text-slate-450 font-bold">{tI18n(a.name)}</span>
+                            <span className="font-mono text-amber-500">{tI18n(a.sign)}</span>
                           </div>
                         ))}
                       </div>
@@ -1058,62 +1070,62 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser }: 
                   <div className="bg-slate-950 p-6 rounded-3xl border border-cyan-500/20 text-left space-y-5 animate-in duration-200 slide-in-from-top-3 font-sans">
                     <div className="border-b border-slate-900 pb-2 flex justify-between items-center">
                       <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-404">
-                        Sintonia de Compatibilidade Astral
+                        {tI18n("Sintonia de Compatibilidade Astral")}
                       </h4>
                       <button onClick={() => setShowCompatibility(false)} className="text-slate-500 hover:text-slate-200">✕</button>
                     </div>
 
                     {/* General Score display */}
                     <div className="py-4 rounded-2xl bg-slate-900/40 text-center space-y-1 relative">
-                      <span className="text-[9px] font-mono uppercase font-black text-[#E5C158] tracking-widest block">Média de Ressonância Estelar</span>
+                      <span className="text-[9px] font-mono uppercase font-black text-[#E5C158] tracking-widest block">{tI18n("Média de Ressonância Estelar")}</span>
                       <div className="text-3xl font-black text-cyan-400 font-mono tracking-tight">{results.totalMedia}%</div>
-                      <p className="text-[10px] text-slate-450 mt-1 max-w-sm mx-auto">Calculado unindo e comparando as frequências fundamentais do seu Sol ao astros de {activeProfile.name}.</p>
+                      <p className="text-[10px] text-slate-450 mt-1 max-w-sm mx-auto">{tI18n("Calculado unindo e comparando as frequências fundamentais do seu Sol ao astros de")} {activeProfile.name}.</p>
                     </div>
 
                     {/* Breakdown metrics lists */}
                     <div className="space-y-3 font-sans text-xs">
                       <div>
                         <div className="flex justify-between text-[11px] mb-1 font-bold">
-                          <span className="text-rose-450">Compatibilidade Amorosa</span>
+                          <span className="text-rose-450">{tI18n("Compatibilidade Amorosa")}</span>
                           <span className="font-mono text-rose-455">{results.amor}%</span>
                         </div>
                         <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden border border-slate-850">
                           <div className="h-full bg-rose-500" style={{ width: `${results.amor}%` }} />
                         </div>
-                        <p className="text-[10px] text-slate-450 mt-1 pl-1">{getCompatibilityExplanation(results.amor)}</p>
+                        <p className="text-[10px] text-slate-450 mt-1 pl-1">{tI18n(getCompatibilityExplanation(results.amor))}</p>
                       </div>
 
                       <div className="pt-2">
                         <div className="flex justify-between text-[11px] mb-1 font-bold">
-                          <span className="text-sky-400">Compatibilidade Emocional</span>
+                          <span className="text-sky-400">{tI18n("Compatibilidade Emocional")}</span>
                           <span className="font-mono text-sky-400">{results.emocional}%</span>
                         </div>
                         <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden border border-slate-850">
                           <div className="h-full bg-sky-500" style={{ width: `${results.emocional}%` }} />
                         </div>
-                        <p className="text-[10px] text-slate-450 mt-1 pl-1">{getCompatibilityExplanation(results.emocional)}</p>
+                        <p className="text-[10px] text-slate-450 mt-1 pl-1">{tI18n(getCompatibilityExplanation(results.emocional))}</p>
                       </div>
 
                       <div className="pt-2">
                         <div className="flex justify-between text-[11px] mb-1 font-bold">
-                          <span className="text-green-400">Compatibilidade Mental</span>
+                          <span className="text-green-400">{tI18n("Compatibilidade Mental")}</span>
                           <span className="font-mono text-green-400">{results.mental}%</span>
                         </div>
                         <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden border border-slate-850">
                           <div className="h-full bg-green-500" style={{ width: `${results.mental}%` }} />
                         </div>
-                        <p className="text-[10px] text-slate-450 mt-1 pl-1">{getCompatibilityExplanation(results.mental)}</p>
+                        <p className="text-[10px] text-slate-450 mt-1 pl-1">{tI18n(getCompatibilityExplanation(results.mental))}</p>
                       </div>
 
                       <div className="pt-2">
                         <div className="flex justify-between text-[11px] mb-1 font-bold">
-                          <span className="text-purple-400">Compatibilidade Energética</span>
+                          <span className="text-purple-400">{tI18n("Compatibilidade Energética")}</span>
                           <span className="font-mono text-purple-400">{results.energetica}%</span>
                         </div>
                         <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden border border-slate-850">
                           <div className="h-full bg-purple-500" style={{ width: `${results.energetica}%` }} />
                         </div>
-                        <p className="text-[10px] text-slate-450 mt-1 pl-1">{getCompatibilityExplanation(results.energetica)}</p>
+                        <p className="text-[10px] text-slate-450 mt-1 pl-1">{tI18n(getCompatibilityExplanation(results.energetica))}</p>
                       </div>
                     </div>
 
@@ -1122,9 +1134,9 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser }: 
               })()}
 
               <div className="bg-slate-900/20 p-5 rounded-3xl border border-slate-850 text-left font-sans space-y-4">
-                <span className="text-[9px] font-mono text-slate-500 block uppercase font-bold border-b border-slate-900 pb-1.5">Conselhos para Interagirem</span>
+                <span className="text-[9px] font-mono text-slate-500 block uppercase font-bold border-b border-slate-900 pb-1.5">{tI18n("Conselhos para Interagirem")}</span>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  Lembre-se de que a Astrologia serve como guia para compreender as nuances sutis das pessoas. Utilize as redes sociais de forma sintonizada para elevar os valores de amizade e cooperação mútua.
+                  {tI18n("Lembre-se de que a Astrologia serve como guia para compreender as nuances sutis das pessoas. Utilize as redes sociais de forma sintonizada para elevar os valores de amizade e cooperação mútua.")}
                 </p>
               </div>
 
@@ -1151,25 +1163,25 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser }: 
             </button>
 
             <div className="space-y-1.5 border-b border-slate-850 pb-3">
-              <h3 className="text-base font-extrabold text-slate-100 font-sans">Editar Dados do Perfil Social</h3>
-              <p className="text-[10px] text-slate-500">Adicione suas mídias sociais e bio para os outros visualizadores.</p>
+              <h3 className="text-base font-extrabold text-slate-100 font-sans">{tI18n("Editar Dados do Perfil Social")}</h3>
+              <p className="text-[10px] text-slate-500">{tI18n("Adicione suas mídias sociais e bio para os outros visualizadores.")}</p>
             </div>
 
             <div className="space-y-4 font-sans text-xs">
               <div className="space-y-1.5">
-                <label className="text-slate-400 font-bold block">Bio Curta</label>
+                <label className="text-slate-400 font-bold block">{tI18n("Bio Curta")}</label>
                 <textarea 
                   value={editBio}
                   onChange={(e) => setEditBio(e.target.value)}
                   maxLength={150}
                   rows={3}
                   className="w-full p-3 bg-slate-950 border border-slate-850 rounded-xl text-slate-200"
-                  placeholder="Escreva algo curto sobre você..."
+                  placeholder={tI18n("Escreva algo curto sobre você...")}
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-slate-400 font-bold block">Instagram (@usuario)</label>
+                <label className="text-slate-400 font-bold block">{tI18n("Instagram (@usuario)")}</label>
                 <input 
                   type="text"
                   value={editInstagram}
@@ -1180,7 +1192,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser }: 
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-slate-400 font-bold block">Facebook (usuário ou link)</label>
+                <label className="text-slate-400 font-bold block">{tI18n("Facebook (usuário ou link)")}</label>
                 <input 
                   type="text"
                   value={editFacebook}
@@ -1197,14 +1209,14 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser }: 
                 onClick={() => setIsEditingProfile(false)}
                 className="px-4 py-2.5 bg-slate-950 text-slate-400 hover:text-white text-xs font-bold rounded-xl border border-slate-850 cursor-pointer"
               >
-                Cancelar
+                {tI18n("Cancelar")}
               </button>
               
               <button 
                 type="submit"
                 className="px-5 py-2.5 bg-gradient-to-r from-[#E5C158] to-amber-600 text-slate-950 text-xs font-black uppercase tracking-wider rounded-xl cursor-pointer"
               >
-                Salvar Perfil
+                {tI18n("Salvar Perfil")}
               </button>
             </div>
           </form>
@@ -1224,7 +1236,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser }: 
 
             <div className="border-b border-slate-850 pb-2">
               <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-404">
-                {listModalType === 'followers' ? 'Seguidores' : listModalType === 'following' ? 'Seguindo' : 'Lista de Amigos'}
+                {listModalType === 'followers' ? tI18n('Seguidores') : listModalType === 'following' ? tI18n('Seguindo') : tI18n('Lista de Amigos')}
               </h4>
             </div>
 
@@ -1252,13 +1264,13 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser }: 
                       </div>
                     </div>
                     <span className="text-[9px] text-[#E5C158] font-mono leading-none shrink-0 border border-[#E5C158]/20 px-1.5 py-0.5 rounded">
-                      {getZodiacSign(u.birthDate)}
+                      {tI18n(getZodiacSign(u.birthDate))}
                     </span>
                   </button>
                 ))
               ) : (
                 <div className="py-8 text-center text-[10px] text-slate-500 font-mono">
-                  Nenhum usuário registrado nesta categoria.
+                  {tI18n("Nenhum usuário registrado nesta categoria.")}
                 </div>
               )}
             </div>
@@ -1268,7 +1280,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser }: 
                 onClick={() => setListModalType(null)}
                 className="px-4 py-2 bg-slate-950 hover:bg-slate-900 border border-slate-850 text-slate-400 text-[10px] font-mono rounded-lg transition"
               >
-                Fechar
+                {tI18n("Fechar")}
               </button>
             </div>
           </div>

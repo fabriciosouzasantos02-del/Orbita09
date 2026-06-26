@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { OracleDreamEntry } from '../types';
 import { jsPDF } from 'jspdf';
+import { useTranslation } from 'react-i18next';
 
 interface OraculoDosSonhosCardProps {
   newDreamDesc: string;
@@ -27,6 +28,269 @@ interface OraculoDosSonhosCardProps {
   preferredLanguage?: string;
 }
 
+interface OracleUI {
+  oracleTitle: string;
+  oracleSubtitle: string;
+  tellDream: string;
+  describeHint: string;
+  revealBtn: string;
+  decipheringBtn: string;
+  dreamVault: string;
+  downloadDream: string;
+  searchPlaceholder: string;
+  meaningPrefix: string;
+  noArchived: string;
+  archivedOn: string;
+  atTime: string;
+  scribeReport: string;
+  downloadPDF: string;
+  primaryMeaning: string;
+  energyIndex: string;
+  tuned: string;
+  oracleAdvice: string;
+  loveArea: string;
+  financeArea: string;
+  careerArea: string;
+  attentionLabel: string;
+  opportunitiesLabel: string;
+  protectionLabel: string;
+  luckyNumbers: string;
+  energyColors: string;
+  highlights: string;
+  predominantEmotion: string;
+  numberSymbols: string;
+  numberPrefix: string;
+  animalArchetypes: string;
+  colorSymbolism: string;
+  universeMessage: string;
+  waitingDream: string;
+  waitingDesc: string;
+  downloadModal: string;
+  downloadModalDesc: string;
+  noArchivedDownload: string;
+  close: string;
+  dreamsCount: (n: number) => string;
+}
+
+// UI string dictionary for OraculoDosSonhosCard
+const ORACLE_UI: Record<string, OracleUI> = {
+  pt: {
+    oracleTitle: "🔮 Oráculo dos Sonhos",
+    oracleSubtitle: "Sintonize os segredos do seu subconsciente com a IA.",
+    tellDream: "Conte seu sonho em detalhes",
+    describeHint: "Descreva tudo o que aconteceu no sonho. Pessoas, animais, lugares, emoções, objetos, cores, números e acontecimentos importantes.",
+    revealBtn: "Revelar Significado",
+    decipheringBtn: "Decifrando Dimensão Astral...",
+    dreamVault: "📁 Cofre de Sonhos",
+    downloadDream: "📥 Baixar Sonho",
+    searchPlaceholder: "Pesquisar sonhos...",
+    meaningPrefix: "🔍 Significado:",
+    noArchived: "Nenhum sonho arquivado encontrado.",
+    archivedOn: "Cofre de Sonhos · Arquivado em",
+    atTime: "às",
+    scribeReport: "Relato do Scribe:",
+    downloadPDF: "📥 Baixar PDF",
+    primaryMeaning: "🔍 Significado Primário do Sonho",
+    energyIndex: "⚡ Índice de Energia",
+    tuned: "Sintonizado Celestial",
+    oracleAdvice: "Conselho do Oráculo",
+    loveArea: "Área Amorosa",
+    financeArea: "Área Financeira",
+    careerArea: "Área Profissional",
+    attentionLabel: "⚠️ Onde Você Deve Se Atentar",
+    opportunitiesLabel: "🍀 Oportunidades Próximas",
+    protectionLabel: "🛡️ Proteção e Livramento",
+    luckyNumbers: "🔢 Números da Sorte Recomendados",
+    energyColors: "🎨 Cores de Energia Sintonizadas",
+    highlights: "🔥 Elementos em Destaque Interpretados",
+    predominantEmotion: "🎭 Emoção Predominante:",
+    numberSymbols: "🔢 Símbolos de Números Revelados",
+    numberPrefix: "Número",
+    animalArchetypes: "🦁 Arquétipos de Animais no Sonho",
+    colorSymbolism: "🎨 Simbolismo Estrito das Cores",
+    universeMessage: "🌌 Mensagem do Universo",
+    waitingDream: "Aguardando seu Sonho",
+    waitingDesc: "Digite os acontecimentos do seu sonho no campo ao lado e clique em Revelar Significado para consultar o Oráculo Celestial.",
+    downloadModal: "📥 BAIXAR REGISTRO DE SONHO",
+    downloadModalDesc: "Selecione um sonho do seu cofre para baixar a interpretação em PDF localmente no seu dispositivo.",
+    noArchivedDownload: "Nenhum sonho arquivado para download.",
+    close: "Fechar",
+    dreamsCount: (n: number) => `📁 Cofre de Sonhos (${n})`,
+  },
+  en: {
+    oracleTitle: "🔮 Dream Oracle",
+    oracleSubtitle: "Tune into your subconscious secrets with AI.",
+    tellDream: "Tell your dream in detail",
+    describeHint: "Describe everything that happened in the dream: people, animals, places, emotions, objects, colors, numbers and important events.",
+    revealBtn: "Reveal Meaning",
+    decipheringBtn: "Deciphering Astral Dimension...",
+    dreamVault: "📁 Dream Vault",
+    downloadDream: "📥 Download Dream",
+    searchPlaceholder: "Search dreams...",
+    meaningPrefix: "🔍 Meaning:",
+    noArchived: "No archived dreams found.",
+    archivedOn: "Dream Vault · Archived on",
+    atTime: "at",
+    scribeReport: "Scribe Report:",
+    downloadPDF: "📥 Download PDF",
+    primaryMeaning: "🔍 Primary Dream Meaning",
+    energyIndex: "⚡ Energy Index",
+    tuned: "Celestially Tuned",
+    oracleAdvice: "Oracle Advice",
+    loveArea: "Love Area",
+    financeArea: "Finance Area",
+    careerArea: "Career Area",
+    attentionLabel: "⚠️ Where You Should Pay Attention",
+    opportunitiesLabel: "🍀 Upcoming Opportunities",
+    protectionLabel: "🛡️ Protection & Sanctuary",
+    luckyNumbers: "🔢 Recommended Lucky Numbers",
+    energyColors: "🎨 Tuned Energy Colors",
+    highlights: "🔥 Highlighted Interpreted Elements",
+    predominantEmotion: "🎭 Predominant Emotion:",
+    numberSymbols: "🔢 Revealed Number Symbols",
+    numberPrefix: "Number",
+    animalArchetypes: "🦁 Animal Archetypes in the Dream",
+    colorSymbolism: "🎨 Strict Color Symbolism",
+    universeMessage: "🌌 Universe Message",
+    waitingDream: "Awaiting Your Dream",
+    waitingDesc: "Type the events of your dream in the field beside and click Reveal Meaning to consult the Celestial Oracle.",
+    downloadModal: "📥 DOWNLOAD DREAM RECORD",
+    downloadModalDesc: "Select a dream from your vault to download its interpretation as a PDF to your device.",
+    noArchivedDownload: "No archived dreams available for download.",
+    close: "Close",
+    dreamsCount: (n: number) => `📁 Dream Vault (${n})`,
+  },
+  de: {
+    oracleTitle: "🔮 Traumorakel",
+    oracleSubtitle: "Stimme dich mit deinen unbewussten Geheimnissen durch KI ab.",
+    tellDream: "Erzähle deinen Traum im Detail",
+    describeHint: "Beschreibe alles, was im Traum passiert ist: Personen, Tiere, Orte, Gefühle, Objekte, Farben, Zahlen und wichtige Ereignisse.",
+    revealBtn: "Bedeutung enthüllen",
+    decipheringBtn: "Astrale Dimension entschlüsseln...",
+    dreamVault: "📁 Traumtresor",
+    downloadDream: "📥 Traum herunterladen",
+    searchPlaceholder: "Träume suchen...",
+    meaningPrefix: "🔍 Bedeutung:",
+    noArchived: "Keine archivierten Träume gefunden.",
+    archivedOn: "Traumtresor · Archiviert am",
+    atTime: "um",
+    scribeReport: "Schreiberbericht:",
+    downloadPDF: "📥 PDF herunterladen",
+    primaryMeaning: "🔍 Primäre Traumbedeutung",
+    energyIndex: "⚡ Energieindex",
+    tuned: "Himmlisch abgestimmt",
+    oracleAdvice: "Orakelrat",
+    loveArea: "Liebesbereich",
+    financeArea: "Finanzbereich",
+    careerArea: "Berufsbereich",
+    attentionLabel: "⚠️ Worauf du achten solltest",
+    opportunitiesLabel: "🍀 Bevorstehende Chancen",
+    protectionLabel: "🛡️ Schutz & Erlösung",
+    luckyNumbers: "🔢 Empfohlene Glückszahlen",
+    energyColors: "🎨 Abgestimmte Energiefarben",
+    highlights: "🔥 Hervorgehobene interpretierte Elemente",
+    predominantEmotion: "🎭 Vorherrschende Emotion:",
+    numberSymbols: "🔢 Enthüllte Zahlensymbole",
+    numberPrefix: "Zahl",
+    animalArchetypes: "🦁 Tierarchetypen im Traum",
+    colorSymbolism: "🎨 Strikte Farbsymbolik",
+    universeMessage: "🌌 Botschaft des Universums",
+    waitingDream: "Warte auf deinen Traum",
+    waitingDesc: "Gib die Ereignisse deines Traums im Feld daneben ein und klicke auf Bedeutung enthüllen, um das himmlische Orakel zu befragen.",
+    downloadModal: "📥 TRAUMAUFZEICHNUNG HERUNTERLADEN",
+    downloadModalDesc: "Wähle einen Traum aus deinem Tresor, um die Interpretation als PDF auf dein Gerät herunterzuladen.",
+    noArchivedDownload: "Keine archivierten Träume zum Herunterladen verfügbar.",
+    close: "Schließen",
+    dreamsCount: (n: number) => `📁 Traumtresor (${n})`,
+  },
+  es: {
+    oracleTitle: "🔮 Oráculo de los Sueños",
+    oracleSubtitle: "Sintoniza los secretos de tu subconsciente con la IA.",
+    tellDream: "Cuéntanos tu sueño en detalle",
+    describeHint: "Describe todo lo que sucedió en el sueño: personas, animales, lugares, emociones, objetos, colores, números y eventos importantes.",
+    revealBtn: "Revelar Significado",
+    decipheringBtn: "Descifrando Dimensión Astral...",
+    dreamVault: "📁 Cofre de Sueños",
+    downloadDream: "📥 Descargar Sueño",
+    searchPlaceholder: "Buscar sueños...",
+    meaningPrefix: "🔍 Significado:",
+    noArchived: "No se encontraron sueños archivados.",
+    archivedOn: "Cofre de Sueños · Archivado el",
+    atTime: "a las",
+    scribeReport: "Relato del Escriba:",
+    downloadPDF: "📥 Descargar PDF",
+    primaryMeaning: "🔍 Significado Primario del Sueño",
+    energyIndex: "⚡ Índice de Energía",
+    tuned: "Sintonizado Celestial",
+    oracleAdvice: "Consejo del Oráculo",
+    loveArea: "Área Amorosa",
+    financeArea: "Área Financiera",
+    careerArea: "Área Profesional",
+    attentionLabel: "⚠️ Donde Debes Prestar Atención",
+    opportunitiesLabel: "🍀 Oportunidades Próximas",
+    protectionLabel: "🛡️ Protección y Liberación",
+    luckyNumbers: "🔢 Números de la Suerte Recomendados",
+    energyColors: "🎨 Colores de Energía Sintonizados",
+    highlights: "🔥 Elementos Destacados Interpretados",
+    predominantEmotion: "🎭 Emoción Predominante:",
+    numberSymbols: "🔢 Símbolos de Números Revelados",
+    numberPrefix: "Número",
+    animalArchetypes: "🦁 Arquetipos de Animales en el Sueño",
+    colorSymbolism: "🎨 Simbolismo Estricto de los Colores",
+    universeMessage: "🌌 Mensaje del Universo",
+    waitingDream: "Esperando tu Sueño",
+    waitingDesc: "Escribe los acontecimentos de tu sueño en el campo al lado y haz clic en Revelar Significado para consultar el Oráculo Celestial.",
+    downloadModal: "📥 DESCARGAR REGISTRO DE SUEÑO",
+    downloadModalDesc: "Selecciona un sueño de tu cofre para descargar la interpretación en PDF a tu dispositivo.",
+    noArchivedDownload: "No hay sueños archivados para descargar.",
+    close: "Cerrar",
+    dreamsCount: (n: number) => `📁 Cofre de Sueños (${n})`,
+  },
+  fr: {
+    oracleTitle: "🔮 Oracle des Rêves",
+    oracleSubtitle: "Accordez-vous aux secrets de votre subconscient grâce à l'IA.",
+    tellDream: "Racontez votre rêve en détail",
+    describeHint: "Décrivez tout ce qui s'est passé dans le rêve : personnes, animaux, lieux, émotions, objets, couleurs, nombres et événements importants.",
+    revealBtn: "Révéler la Signification",
+    decipheringBtn: "Déchiffrement de la Dimension Astrale...",
+    dreamVault: "📁 Coffre des Rêves",
+    downloadDream: "📥 Télécharger le Rêve",
+    searchPlaceholder: "Rechercher des rêves...",
+    meaningPrefix: "🔍 Signification :",
+    noArchived: "Aucun rêve archivé trouvé.",
+    archivedOn: "Coffre des Rêves · Archivé le",
+    atTime: "à",
+    scribeReport: "Rapport du Scribe :",
+    downloadPDF: "📥 Télécharger le PDF",
+    primaryMeaning: "🔍 Signification Primaire du Rêve",
+    energyIndex: "⚡ Indice d'Énergie",
+    tuned: "Harmonisé Céleste",
+    oracleAdvice: "Conseil de l'Oracle",
+    loveArea: "Zone Amoureuse",
+    financeArea: "Zone Financière",
+    careerArea: "Zone Professionnelle",
+    attentionLabel: "⚠️ Points d'Attention",
+    opportunitiesLabel: "🍀 Opportunités Proches",
+    protectionLabel: "🛡️ Protection et Libération",
+    luckyNumbers: "🔢 Numéros de Chance Recommandés",
+    energyColors: "🎨 Couleurs d'Énergie Harmonisées",
+    highlights: "🔥 Éléments Marquants Interprétés",
+    predominantEmotion: "🎭 Émotion Prédominante :",
+    numberSymbols: "🔢 Symboles de Nombres Révélés",
+    numberPrefix: "Nombre",
+    animalArchetypes: "🦁 Archétypes d'Animaux dans le Rêve",
+    colorSymbolism: "🎨 Symbolisme Strict des Couleurs",
+    universeMessage: "🌌 Message de l'Univers",
+    waitingDream: "En attente de votre Rêve",
+    waitingDesc: "Saisissez les événements de votre rêve dans le champ ci-contre et cliquez sur Révéler la Signification pour consulter l'Oracle Céleste.",
+    downloadModal: "📥 TÉLÉCHARGER LE REGISTRE DE RÊVE",
+    downloadModalDesc: "Sélectionnez un rêve dans votre coffre pour télécharger son interprétation en PDF localement sur votre appareil.",
+    noArchivedDownload: "Aucun rêve archivé disponible pour le téléchargement.",
+    close: "Fermer",
+    dreamsCount: (n: number) => `📁 Coffre des Rêves (${n})`,
+  },
+};
+
 export default function OraculoDosSonhosCard({
   newDreamDesc,
   setNewDreamDesc,
@@ -37,6 +301,9 @@ export default function OraculoDosSonhosCard({
   setSelectedDreamDisplay,
   preferredLanguage = "pt"
 }: OraculoDosSonhosCardProps) {
+  const { i18n } = useTranslation();
+  const langKey = (i18n.language || preferredLanguage || 'pt').toLowerCase().split('-')[0];
+  const ui = ORACLE_UI[langKey] || ORACLE_UI['pt'];
   // Search state inside dreams list sidebar
   const [dreamSearch, setDreamSearch] = useState('');
   const [isDownloadListOpen, setIsDownloadListOpen] = useState(false);
@@ -395,18 +662,18 @@ export default function OraculoDosSonhosCard({
               <Sparkles className="w-4 h-4 animate-pulse" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest font-mono">🔮 Oráculo dos Sonhos</h3>
-              <p className="text-[10px] text-slate-500 mt-0.5">Sintonize os segredos do seu subconsciente com a IA.</p>
+              <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest font-mono">{ui.oracleTitle}</h3>
+              <p className="text-[10px] text-slate-500 mt-0.5">{ui.oracleSubtitle}</p>
             </div>
           </div>
 
           <form onSubmit={handleRecordAndInterpretDream} className="space-y-4 mt-4" id="dream-scribe-form">
             <div className="space-y-2">
               <label className="block text-[10px] font-mono font-semibold text-slate-400 uppercase tracking-wider">
-                Conte seu sonho em detalhes
+                {ui.tellDream}
               </label>
               <p className="text-[9px] text-slate-500 leading-normal">
-                Descreva tudo o que aconteceu no sonho. Pessoas, animais, lugares, emoções, objetos, cores, números e acontecimentos importantes.
+                {ui.describeHint}
               </p>
               <textarea 
                 rows={6}
@@ -428,12 +695,12 @@ export default function OraculoDosSonhosCard({
               {isInterpretingDream ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin text-slate-200" />
-                  <span>Decifrando Dimensão Astral...</span>
+                  <span>{ui.decipheringBtn}</span>
                 </>
               ) : (
                 <>
                   <Sparkles className="w-4 h-4" />
-                  <span>Revelar Significado</span>
+                  <span>{ui.revealBtn}</span>
                 </>
               )}
             </button>
@@ -445,7 +712,7 @@ export default function OraculoDosSonhosCard({
           
           <div className="pb-3 border-b border-slate-850 flex items-center justify-between shrink-0" id="dream-history-header">
             <h4 className="text-[10.5px] font-bold font-mono text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-              📁 Cofre de Sonhos ({dreamsHistory.length})
+              {ui.dreamsCount(dreamsHistory.length)}
             </h4>
             {dreamsHistory.length > 0 && (
               <button
@@ -453,7 +720,7 @@ export default function OraculoDosSonhosCard({
                 onClick={() => setIsDownloadListOpen(true)}
                 className="px-2 py-1 bg-rose-600/20 hover:bg-rose-600/35 border border-rose-500/30 text-rose-400 hover:text-rose-350 rounded-lg text-[9px] font-mono uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 font-bold"
               >
-                📥 Baixar Sonho
+                {ui.downloadDream}
               </button>
             )}
           </div>
@@ -463,7 +730,7 @@ export default function OraculoDosSonhosCard({
             <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-600" />
             <input 
               type="text"
-              placeholder="Pesquisar sonhos..."
+              placeholder={ui.searchPlaceholder}
               value={dreamSearch}
               onChange={(e) => setDreamSearch(e.target.value)}
               className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-slate-950 border border-slate-850 text-[10px] text-slate-300 placeholder:text-slate-600 focus:outline-hidden"
@@ -499,7 +766,7 @@ export default function OraculoDosSonhosCard({
                     </p>
                     {d.interpretation?.mainMeaning && (
                       <span className="text-[8.5px] font-mono font-bold text-rose-455 line-clamp-1 tracking-wide">
-                        🔍 Significado: {d.interpretation.mainMeaning}
+                        {ui.meaningPrefix} {d.interpretation.mainMeaning}
                       </span>
                     )}
                   </button>
@@ -507,7 +774,7 @@ export default function OraculoDosSonhosCard({
               })
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                <p className="text-[10px] text-slate-600 font-mono">Nenhum sonho arquivado encontrado.</p>
+                <p className="text-[10px] text-slate-600 font-mono">{ui.noArchived}</p>
               </div>
             )}
           </div>
@@ -541,10 +808,10 @@ export default function OraculoDosSonhosCard({
             <div className="pb-4 border-b border-slate-800 flex justify-between items-start sm:flex-nowrap flex-wrap gap-3" id="dream-display-header">
               <div className="space-y-1 flex-1">
                 <span className="text-[8.5px] font-mono text-rose-400 font-bold uppercase tracking-widest block">
-                  Cofre de Sonhos · Arquivado em {selectedDreamDisplay.date} {selectedDreamDisplay.time ? ` às ${selectedDreamDisplay.time}` : ''}
+                  {ui.archivedOn} {selectedDreamDisplay.date} {selectedDreamDisplay.time ? ` ${ui.atTime} ${selectedDreamDisplay.time}` : ''}
                 </span>
                 <h3 className="text-xs font-mono font-bold text-slate-400">
-                  Relato do Scribe:
+                  {ui.scribeReport}
                 </h3>
                 <p className="text-xs text-slate-350 leading-relaxed font-serif bg-slate-950 border border-slate-850 p-3 rounded-xl italic block">
                   "{selectedDreamDisplay.description}"
@@ -556,7 +823,7 @@ export default function OraculoDosSonhosCard({
                 className="px-3 py-1.5 bg-rose-600/15 hover:bg-rose-600/30 border border-rose-500/30 text-rose-400 hover:text-rose-350 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer shrink-0"
                 title="Download PDF"
               >
-                📥 Baixar PDF
+                {ui.downloadPDF}
               </button>
             </div>
 
@@ -569,7 +836,7 @@ export default function OraculoDosSonhosCard({
                 {/* Significance board */}
                 <div className="md:col-span-8 p-5 bg-slate-950 border border-slate-850 rounded-2xl space-y-2" id="dream-meaning-pane">
                   <span className="text-[8.5px] font-mono font-bold text-rose-455 uppercase tracking-widest block">
-                    🔍 Significado Primário do Sonho
+                    {ui.primaryMeaning}
                   </span>
                   <h4 className="text-sm font-bold text-slate-100 leading-snug">
                     {selectedDreamDisplay.interpretation?.mainMeaning}
@@ -582,7 +849,7 @@ export default function OraculoDosSonhosCard({
                 {/* Energy index metrics card */}
                 <div className="md:col-span-4 p-5 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col justify-between items-center text-center relative overflow-hidden" id="dream-energy-card">
                   <span className="text-[8.5px] font-mono font-bold text-slate-500 uppercase tracking-widest block">
-                    ⚡ Índice de Energia
+                    {ui.energyIndex}
                   </span>
                   
                   {/* Circular indicator placeholder visualization */}
@@ -615,7 +882,7 @@ export default function OraculoDosSonhosCard({
                     <span className="text-[10px] font-extrabold text-slate-300 uppercase font-mono block">
                       {selectedDreamDisplay.interpretation?.dreamEnergyType}
                     </span>
-                    <span className="text-[7.5px] font-mono text-slate-550 block">Sintonizado Celestial</span>
+                    <span className="text-[7.5px] font-mono text-slate-550 block">{ui.tuned}</span>
                   </div>
                 </div>
 
@@ -626,7 +893,7 @@ export default function OraculoDosSonhosCard({
                 <div className="p-5 bg-amber-500/5 border border-amber-500/10 rounded-2xl flex gap-4" id="dream-oracle-advice">
                   <span className="text-2xl mt-1 select-none">📜</span>
                   <div className="space-y-1">
-                    <h4 className="text-[10px] font-mono font-bold text-amber-500 uppercase tracking-widest">Conselho do Oráculo</h4>
+                    <h4 className="text-[10px] font-mono font-bold text-amber-500 uppercase tracking-widest">{ui.oracleAdvice}</h4>
                     <p className="text-xs text-slate-300 leading-relaxed font-serif italic">
                       {selectedDreamDisplay.interpretation.oracleAdvice}
                     </p>
@@ -642,7 +909,7 @@ export default function OraculoDosSonhosCard({
                   <div className="p-4 bg-pink-950/10 border border-pink-500/10 rounded-2xl space-y-1.5" id="area-love">
                     <div className="flex items-center gap-1.5 text-pink-400">
                       <Heart className="w-3.5 h-3.5 fill-pink-400/20" />
-                      <span className="text-[9px] font-mono font-bold uppercase tracking-widest">Área Amorosa</span>
+                      <span className="text-[9px] font-mono font-bold uppercase tracking-widest">{ui.loveArea}</span>
                     </div>
                     <p className="text-[10.5px] text-slate-400 leading-normal font-sans">
                       {selectedDreamDisplay.interpretation.loveArea}
@@ -655,7 +922,7 @@ export default function OraculoDosSonhosCard({
                   <div className="p-4 bg-emerald-950/10 border border-emerald-500/10 rounded-2xl space-y-1.5" id="area-finance">
                     <div className="flex items-center gap-1.5 text-emerald-400">
                       <DollarSign className="w-3.5 h-3.5" />
-                      <span className="text-[9px] font-mono font-bold uppercase tracking-widest">Área Financeira</span>
+                      <span className="text-[9px] font-mono font-bold uppercase tracking-widest">{ui.financeArea}</span>
                     </div>
                     <p className="text-[10.5px] text-slate-400 leading-normal font-sans">
                       {selectedDreamDisplay.interpretation.financeArea}
@@ -668,7 +935,7 @@ export default function OraculoDosSonhosCard({
                   <div className="p-4 bg-indigo-950/10 border border-indigo-500/10 rounded-2xl space-y-1.5" id="area-career">
                     <div className="flex items-center gap-1.5 text-indigo-400">
                       <Orbit className="w-3.5 h-3.5" />
-                      <span className="text-[9px] font-mono font-bold uppercase tracking-widest">Área Profissional</span>
+                      <span className="text-[9px] font-mono font-bold uppercase tracking-widest">{ui.careerArea}</span>
                     </div>
                     <p className="text-[10.5px] text-slate-400 leading-normal font-sans">
                       {selectedDreamDisplay.interpretation.careerArea}
@@ -686,7 +953,7 @@ export default function OraculoDosSonhosCard({
                   <div className="p-4 bg-red-950/15 border border-red-500/15 rounded-2xl flex gap-3" id="attention-box">
                     <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
                     <div className="space-y-0.5">
-                      <span className="text-[9px] font-mono font-bold text-red-400 uppercase tracking-wider block">⚠️ Onde Você Deve Se Atentar</span>
+                      <span className="text-[9px] font-mono font-bold text-red-400 uppercase tracking-wider block">{ui.attentionLabel}</span>
                       <p className="text-[11px] text-slate-300 leading-relaxed font-sans">{selectedDreamDisplay.interpretation.attention}</p>
                     </div>
                   </div>
@@ -697,7 +964,7 @@ export default function OraculoDosSonhosCard({
                   <div className="p-4 bg-teal-950/15 border border-teal-500/15 rounded-2xl flex gap-3" id="opportunities-box">
                     <Award className="w-4 h-4 text-teal-400 shrink-0 mt-0.5" />
                     <div className="space-y-0.5">
-                      <span className="text-[9px] font-mono font-bold text-teal-400 uppercase tracking-wider block">🍀 Oportunidades Próximas</span>
+                      <span className="text-[9px] font-mono font-bold text-teal-400 uppercase tracking-wider block">{ui.opportunitiesLabel}</span>
                       <p className="text-[11px] text-slate-300 leading-relaxed font-sans">{selectedDreamDisplay.interpretation.opportunities}</p>
                     </div>
                   </div>
@@ -708,7 +975,7 @@ export default function OraculoDosSonhosCard({
                   <div className="p-4 bg-blue-950/15 border border-blue-500/15 rounded-2xl flex gap-3" id="protection-box">
                     <ShieldCheck className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
                     <div className="space-y-0.5">
-                      <span className="text-[9px] font-mono font-bold text-blue-400 uppercase tracking-wider block">🛡️ Proteção e Livramento</span>
+                      <span className="text-[9px] font-mono font-bold text-blue-400 uppercase tracking-wider block">{ui.protectionLabel}</span>
                       <p className="text-[11px] text-slate-300 leading-relaxed font-sans">{selectedDreamDisplay.interpretation.protection}</p>
                     </div>
                   </div>
@@ -722,7 +989,7 @@ export default function OraculoDosSonhosCard({
                 {/* Lucky Numbers */}
                 <div className="p-4 rounded-2xl bg-slate-950 border border-slate-850/80 space-y-2">
                   <span className="text-[8.5px] font-mono font-bold text-slate-500 uppercase tracking-widest block">
-                    🔢 Números da Sorte Recomendados
+                    {ui.luckyNumbers}
                   </span>
                   <div className="flex flex-wrap gap-2 pt-1">
                     {selectedDreamDisplay.interpretation?.luckyNumbers && selectedDreamDisplay.interpretation.luckyNumbers.map((num) => (
@@ -739,7 +1006,7 @@ export default function OraculoDosSonhosCard({
                 {/* Favorable Energy Colors */}
                 <div className="p-4 rounded-2xl bg-slate-950 border border-slate-850/80 space-y-2">
                   <span className="text-[8.5px] font-mono font-bold text-slate-500 uppercase tracking-widest block">
-                    🎨 Cores de Energia Sintonizadas
+                    {ui.energyColors}
                   </span>
                   <div className="flex flex-wrap gap-2 pt-1">
                     {selectedDreamDisplay.interpretation?.favorableColors && selectedDreamDisplay.interpretation.favorableColors.map((color) => {
@@ -778,7 +1045,7 @@ export default function OraculoDosSonhosCard({
               <div className="space-y-4 pt-2 border-t border-slate-800" id="dream-archetypes-highlights">
                 
                 <h4 className="text-[9.5px] font-mono font-black text-slate-500 uppercase tracking-widest">
-                  🔥 Elementos em Destaque Interpretados
+                  {ui.highlights}
                 </h4>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -787,7 +1054,7 @@ export default function OraculoDosSonhosCard({
                   {selectedDreamDisplay.interpretation?.predominantEmotion && (
                     <div className="p-4 rounded-2xl bg-slate-950 border border-slate-850/80 space-y-1">
                       <div className="text-[9px] font-mono text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
-                        <span>🎭 Emoção Predominante:</span>
+                        <span>{ui.predominantEmotion}</span>
                         <span className="text-yellow-400 font-extrabold uppercase">
                           {selectedDreamDisplay.interpretation.predominantEmotion.emotion}
                         </span>
@@ -802,12 +1069,12 @@ export default function OraculoDosSonhosCard({
                   {selectedDreamDisplay.interpretation?.detectedNumbers && selectedDreamDisplay.interpretation.detectedNumbers.length > 0 && (
                     <div className="p-4 rounded-2xl bg-slate-950 border border-slate-850/80 space-y-2">
                       <span className="text-[9.5px] font-mono font-bold text-slate-500 uppercase tracking-widest block">
-                        🔢 Símbolos de Números Revelados
+                        {ui.numberSymbols}
                       </span>
                       <div className="space-y-2">
                         {selectedDreamDisplay.interpretation.detectedNumbers.map((obj, idx) => (
                           <div key={idx} className="text-[11px] font-sans leading-relaxed">
-                            <strong className="text-[10.5px] font-mono text-rose-455 block mb-0.5">Número {obj.number}:</strong>
+                            <strong className="text-[10.5px] font-mono text-rose-455 block mb-0.5">{ui.numberPrefix} {obj.number}:</strong>
                             <p className="text-slate-400">{obj.meaning}</p>
                           </div>
                         ))}
@@ -819,7 +1086,7 @@ export default function OraculoDosSonhosCard({
                   {selectedDreamDisplay.interpretation?.detectedAnimals && selectedDreamDisplay.interpretation.detectedAnimals.length > 0 && (
                     <div className="p-4 rounded-2xl bg-slate-950 border border-slate-850/80 space-y-2 col-span-1 md:col-span-2">
                       <span className="text-[9.5px] font-mono font-bold text-slate-500 uppercase tracking-widest block">
-                        🦁 Arquétipos de Animais no Sonho
+                        {ui.animalArchetypes}
                       </span>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {selectedDreamDisplay.interpretation.detectedAnimals.map((obj, idx) => (
@@ -838,7 +1105,7 @@ export default function OraculoDosSonhosCard({
                   {selectedDreamDisplay.interpretation?.detectedColors && selectedDreamDisplay.interpretation.detectedColors.length > 0 && (
                     <div className="p-4 rounded-2xl bg-slate-950 border border-slate-850/80 space-y-2 col-span-1 md:col-span-2">
                       <span className="text-[9.5px] font-mono font-bold text-slate-500 uppercase tracking-widest block">
-                        🎨 Simbolismo Estrito das Cores
+                        {ui.colorSymbolism}
                       </span>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {selectedDreamDisplay.interpretation.detectedColors.map((obj, idx) => (
@@ -862,7 +1129,7 @@ export default function OraculoDosSonhosCard({
                 <div className="p-6 rounded-3xl bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-950 border border-indigo-500/20 shadow-inner space-y-2 text-center relative overflow-hidden group">
                   <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-500/10 via-transparent to-transparent opacity-50 blur-xl pointer-events-none" />
                   <span className="text-[8.5px] font-mono font-black text-indigo-400 uppercase tracking-widest block">
-                    🌌 Mensagem do Universo
+                    {ui.universeMessage}
                   </span>
                   <p className="text-xs sm:text-[13px] leading-relaxed italic text-indigo-200 font-serif max-w-xl mx-auto">
                     "{selectedDreamDisplay.interpretation.universeMessage}"
@@ -878,9 +1145,9 @@ export default function OraculoDosSonhosCard({
           /* If history is empty and nothing is selected */
           <div className="bg-slate-900/10 border border-dashed border-slate-800 rounded-[32px] p-12 text-center flex flex-col items-center justify-center min-h-[500px]" id="dream-empty-landing">
             <Moon className="w-12 h-12 text-slate-700 animate-pulse mb-4" />
-            <h4 className="text-sm font-bold font-mono tracking-widest text-slate-500 uppercase">Aguardando seu Sonho</h4>
+            <h4 className="text-sm font-bold font-mono tracking-widest text-slate-500 uppercase">{ui.waitingDream}</h4>
             <p className="text-xs text-slate-600 mt-2 max-w-xs mx-auto leading-relaxed">
-              Digite os acontecimentos do seu sonho no campo ao lado e clique em Revelar Significado para consultar o Oráculo Celestial.
+              {ui.waitingDesc}
             </p>
           </div>
         )}
@@ -896,10 +1163,10 @@ export default function OraculoDosSonhosCard({
             <div className="flex justify-between items-center pb-4 border-b border-slate-800">
               <div>
                 <h3 className="text-sm font-bold text-slate-100 font-mono flex items-center gap-2">
-                  📥 BAIXAR REGISTRO DE SONHO
+                  {ui.downloadModal}
                 </h3>
                 <p className="text-[10px] text-slate-400 mt-1 leading-normal font-sans">
-                  Selecione um sonho do seu cofre para baixar a interpretação em PDF localmente no seu dispositivo.
+                  {ui.downloadModalDesc}
                 </p>
               </div>
               <button
@@ -940,7 +1207,7 @@ export default function OraculoDosSonhosCard({
                 ))
               ) : (
                 <div className="p-8 text-center text-slate-600 font-mono text-xs">
-                  Nenhum sonho arquivado para download.
+                  {ui.noArchivedDownload}
                 </div>
               )}
             </div>
@@ -951,7 +1218,7 @@ export default function OraculoDosSonhosCard({
                 onClick={() => setIsDownloadListOpen(false)}
                 className="px-4 py-2 bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-slate-100 rounded-xl text-xs font-mono uppercase tracking-wider transition-all cursor-pointer"
               >
-                Fechar
+                {ui.close}
               </button>
             </div>
           </div>

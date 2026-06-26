@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { translateUiText, Language } from '../lib/translations';
 import { Moon, Sparkles, ChevronDown, ChevronUp, X, CheckCircle } from 'lucide-react';
 import { loadCalculationCache, saveCalculationCache } from '../lib/firebase';
 
@@ -12,9 +14,20 @@ interface MoonTipCardProps {
   userName?: string;
   birthDate?: string;
   onRewardPoints?: (amount: number) => void;
+  lang?: string;
 }
 
-export default function MoonTipCard({ userName, birthDate, onRewardPoints }: MoonTipCardProps) {
+export default function MoonTipCard({ userName, birthDate, onRewardPoints, lang }: MoonTipCardProps) {
+  const { t: i18nT } = useTranslation();
+  const t = (text: string) => {
+    if (!text) return "";
+    const res = i18nT(text);
+    if (res === text || !res) {
+      return translateUiText(text, (lang as Language) || 'pt');
+    }
+    return res;
+  };
+
   const [data, setData] = useState<MoonTipData | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [isOpen, setIsOpen] = useState<boolean>(true);
@@ -55,7 +68,7 @@ export default function MoonTipCard({ userName, birthDate, onRewardPoints }: Moo
         const res = await fetch('/api/astrology/moon-tip', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: userName, birthDate: birthDate })
+          body: JSON.stringify({ name: userName, birthDate: birthDate, lang: lang })
         });
         if (res.ok) {
           const fetchedData = await res.json();
@@ -102,7 +115,7 @@ export default function MoonTipCard({ userName, birthDate, onRewardPoints }: Moo
         id="moon-tip-floating-bubble"
         onClick={() => setIsMinimized(false)}
         className="fixed bottom-24 right-6 z-55 w-12 h-12 rounded-full bg-slate-900 border border-amber-500/30 text-amber-500 flex items-center justify-center shadow-2xl hover:bg-slate-850 hover:border-amber-400 cursor-pointer animate-bounce transition-all duration-300"
-        title="Abrir Dica Lunar Rápida"
+        title={t("Abrir Dica Lunar Rápida")}
       >
         <Moon className="w-5 h-5 text-amber-500 fill-amber-500/20" />
         <span className="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 rounded-full animate-ping" />
@@ -121,7 +134,7 @@ export default function MoonTipCard({ userName, birthDate, onRewardPoints }: Moo
         <div className="flex items-center gap-1.5">
           <Moon className="w-4 h-4 text-amber-400 fill-amber-400/20 animate-pulse" />
           <span className="text-[10px] font-mono uppercase text-amber-450 tracking-wider">
-            Sussurro Lunar Diário
+            {t("Sussurro Lunar Diário")}
           </span>
         </div>
         
@@ -129,7 +142,7 @@ export default function MoonTipCard({ userName, birthDate, onRewardPoints }: Moo
           {/* Minimize toggle */}
           <button
             onClick={() => setIsMinimized(true)}
-            title="Minimizar dica"
+            title={t("Minimizar dica")}
             className="p-1 rounded text-slate-500 hover:text-slate-300 hover:bg-slate-900 cursor-pointer"
           >
             <ChevronDown className="w-3.5 h-3.5" />
@@ -137,7 +150,7 @@ export default function MoonTipCard({ userName, birthDate, onRewardPoints }: Moo
           {/* Close toggle */}
           <button
             onClick={() => setIsOpen(false)}
-            title="Fechar"
+            title={t("Fechar")}
             className="p-1 rounded text-slate-500 hover:text-slate-300 hover:bg-slate-900 cursor-pointer"
           >
             <X className="w-3.5 h-3.5" />
@@ -149,28 +162,28 @@ export default function MoonTipCard({ userName, birthDate, onRewardPoints }: Moo
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <span className="text-xs bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded text-amber-400 font-mono font-bold">
-            {data.moonPhase}
+            {t(data.moonPhase)}
           </span>
           <span className="text-[10px] text-slate-400 font-sans">
-            em <strong className="text-emerald-400">{data.moonSign}</strong>
+            {t("em")} <strong className="text-emerald-400">{t(data.moonSign)}</strong>
           </span>
         </div>
 
         <p className="text-[11px] text-slate-300 font-sans leading-relaxed italic">
-          "{data.tip}"
+          "{t(data.tip)}"
         </p>
       </div>
 
       {/* Reward Action element */}
       <div className="pt-2 border-t border-slate-900 flex items-center justify-between">
         <span className="text-[8px] font-mono text-slate-500 uppercase">
-          {claimed ? 'Foco Conectado' : 'Sintonizar Freqüência'}
+          {claimed ? t('Foco Conectado') : t('Sintonizar Freqüência')}
         </span>
         
         {claimed ? (
           <div className="flex items-center gap-1 text-[9px] font-mono text-emerald-400 font-bold bg-emerald-500/5 px-2 py-1 rounded">
             <CheckCircle className="w-3 h-3 text-emerald-400" />
-            +150 Pontos Ativados
+            {t("+150 Pontos Ativados")}
           </div>
         ) : (
           <button
@@ -178,7 +191,7 @@ export default function MoonTipCard({ userName, birthDate, onRewardPoints }: Moo
             className="flex items-center gap-1 px-2.5 py-1 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 rounded-lg text-[9px] font-mono font-bold text-amber-400 cursor-pointer transition active:scale-95"
           >
             <Sparkles className="w-2.5 h-2.5 text-amber-400" />
-            Venerar Lua (+150 pts)
+            {t("Venerar Lua (+150 pts)")}
           </button>
         )}
       </div>

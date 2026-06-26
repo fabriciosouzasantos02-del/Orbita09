@@ -3,6 +3,7 @@ import { Sparkles, Star, Compass, AlertCircle, RefreshCw, FileText, Globe } from
 import { motion } from "motion/react";
 import { Language, translations } from "../translations";
 import { NatalChartData, UserProfile } from "../types";
+import { useTranslation } from "react-i18next";
 
 interface AstroTabProps {
   userProfile: UserProfile;
@@ -15,6 +16,7 @@ export default function AstroTab({ userProfile, natalChart, lang }: AstroTabProp
   const [loading, setLoading] = useState<boolean>(false);
   const [errorWord, setErrorWord] = useState<string>("");
   const t = translations[lang];
+  const { t: tI18n } = useTranslation();
 
   const handleGenerateReport = async () => {
     setLoading(true);
@@ -103,7 +105,7 @@ export default function AstroTab({ userProfile, natalChart, lang }: AstroTabProp
         {/* Left Grid: Astronomical Coordinates Table */}
         <section className="bg-white border border-neutral-200/90 rounded-2xl p-6 shadow-sm md:col-span-6 space-y-4">
           <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
-            <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Planetas e Luminares</h3>
+            <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">{tI18n("Planetas e Luminares")}</h3>
             <Star className="w-4 h-4 text-indigo-600" />
           </div>
 
@@ -121,10 +123,10 @@ export default function AstroTab({ userProfile, natalChart, lang }: AstroTabProp
                       {icons[planet.name] || "⭐"}
                     </span>
                     <div>
-                      <span className="font-semibold text-neutral-800">{planet.name}</span>
+                      <span className="font-semibold text-neutral-800">{tI18n(planet.name)}</span>
                       {planet.isRetrograde && (
                         <span className="ml-2 px-1 py-0.5 bg-amber-50 text-amber-700 font-bold text-[9px] rounded uppercase tracking-wider">
-                          Rx
+                          {tI18n("Rx")}
                         </span>
                       )}
                     </div>
@@ -132,10 +134,10 @@ export default function AstroTab({ userProfile, natalChart, lang }: AstroTabProp
                   
                   <div className="text-right">
                     <span className="font-medium text-neutral-500">
-                      {planet.degree}° {planet.sign}
+                      {planet.degree}° {tI18n(planet.sign)}
                     </span>
                     <span className="block text-[10px] text-neutral-400 font-medium">
-                      Casa {planet.house}
+                      {tI18n("Casa")} {planet.house}
                     </span>
                   </div>
                 </div>
@@ -152,7 +154,7 @@ export default function AstroTab({ userProfile, natalChart, lang }: AstroTabProp
             <div className="flex items-center justify-between border-b border-neutral-100 pb-2.5">
               <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">{t.aspectsList}</h3>
               <span className="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-bold">
-                {natalChart.aspects.length} Aspectos
+                {natalChart.aspects.length} {tI18n("Aspectos")}
               </span>
             </div>
 
@@ -173,12 +175,12 @@ export default function AstroTab({ userProfile, natalChart, lang }: AstroTabProp
                     }`}
                   >
                     <div className="font-semibold flex items-center gap-1">
-                      <span>{aspect.planet1}</span>
-                      <span className="font-normal text-[10px] text-neutral-400">({aspect.type})</span>
-                      <span>{aspect.planet2}</span>
+                      <span>{tI18n(aspect.planet1)}</span>
+                      <span className="font-normal text-[10px] text-neutral-400">({tI18n(aspect.type)})</span>
+                      <span>{tI18n(aspect.planet2)}</span>
                     </div>
                     <div className="text-[10px] text-neutral-400 font-medium mt-1">
-                      Distância: {aspect.angle}° (orbe: {aspect.orb}°)
+                      {tI18n("Distância")}: {aspect.angle}° ({tI18n("orbe")}: {aspect.orb}°)
                     </div>
                   </div>
                 );
@@ -196,8 +198,8 @@ export default function AstroTab({ userProfile, natalChart, lang }: AstroTabProp
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 text-[10px] sm:text-xs">
               {natalChart.houses.slice(0, 12).map((house) => (
                 <div key={house.house} className="p-2 bg-neutral-50 rounded-xl border border-neutral-100 text-center">
-                  <span className="block text-neutral-400 font-bold uppercase tracking-wider text-[9px] mb-0.5">Casa {house.house}</span>
-                  <span className="font-semibold text-neutral-800">{house.sign}</span>
+                  <span className="block text-neutral-400 font-bold uppercase tracking-wider text-[9px] mb-0.5">{tI18n("Casa")} {house.house}</span>
+                  <span className="font-semibold text-neutral-800">{tI18n(house.sign)}</span>
                   <span className="block text-[10px] text-neutral-400">{house.degree}°</span>
                 </div>
               ))}
@@ -214,7 +216,7 @@ export default function AstroTab({ userProfile, natalChart, lang }: AstroTabProp
           <div className="space-y-1">
             <h3 className="font-display font-semibold text-neutral-900 text-base">{t.deepReport}</h3>
             <p className="text-neutral-500 text-xs">
-              Uma imersão literária no seu design existencial analisado pelo Google Gemini AI.
+              {tI18n("Uma imersão literária no seu design existencial analisado pelo Google Gemini AI.")}
             </p>
           </div>
 
@@ -247,7 +249,7 @@ export default function AstroTab({ userProfile, natalChart, lang }: AstroTabProp
             <div className="flex flex-col items-center justify-center py-10 text-center text-neutral-400 space-y-2">
               <FileText className="w-10 h-10 text-neutral-300 stroke-[1.5]" />
               <p className="text-xs max-w-sm">
-                Nenhum relatório de Inteligência Artificial gerado para esta sessão ainda. Clique no botão acima para sintonizar.
+                {tI18n("Nenhum relatório de Inteligência Artificial gerado para esta sessão ainda. Clique no botão acima para sintonizar.")}
               </p>
             </div>
           )}
