@@ -99,7 +99,7 @@ export default function WelcomeScreen({ onAuthenticate, lang, setLang }: Welcome
         
         {/* Language Selection Header */}
         <div className="flex justify-end gap-2 mb-6 text-xs text-slate-400">
-          {(["pt", "en", "de", "es"] as Language[]).map((l) => (
+          {(["pt", "en", "de", "es", "fr"] as Language[]).map((l) => (
             <button
               key={l}
               onClick={() => setLang(l)}

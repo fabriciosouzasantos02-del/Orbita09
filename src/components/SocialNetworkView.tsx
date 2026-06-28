@@ -394,7 +394,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
     const isFollowing = myFollows.includes(targetEmail);
     
     try {
-      setLoadingAction(isFollowing ? "Deixando de seguir..." : "Seguindo...");
+      setLoadingAction(isFollowing ? tI18n("Deixando de seguir...") : tI18n("Seguindo..."));
       
       const myFollowingRef = doc(db, "users", currentEmail, "following", targetEmail);
       const theirFollowersRef = doc(db, "users", targetEmail, "followers", currentEmail);
@@ -453,7 +453,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
             type: 'friend',
             senderEmail: currentEmail,
             senderName: currentUser.name,
-            message: "aceitou sua amizade. Vocês agora são amigos estelares!",
+            message: tI18n("aceitou sua amizade. Vocês agora são amigos estelares!"),
             createdAt: new Date().toISOString(),
             read: false
           });
@@ -465,7 +465,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
           type: 'follow',
           senderEmail: currentEmail,
           senderName: currentUser.name,
-          message: "começou a seguir você.",
+          message: tI18n("começou a seguir você."),
           createdAt: new Date().toISOString(),
           read: false
         });
@@ -488,7 +488,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
     const isLiked = myLikes.includes(targetEmail);
 
     try {
-      setLoadingAction(isLiked ? "Removendo curtida..." : "Registrando curtida...");
+      setLoadingAction(isLiked ? tI18n("Removendo curtida...") : tI18n("Registrando curtida..."));
       const myLikesGivenRef = doc(db, "users", currentEmail, "likesGiven", targetEmail);
       const theirLikesCol = doc(db, "users", targetEmail, "likesSnapshot", currentEmail);
       
@@ -517,7 +517,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
           type: 'like',
           senderEmail: currentEmail,
           senderName: currentUser.name,
-          message: "curtiu seu perfil.",
+          message: tI18n("curtiu seu perfil."),
           createdAt: new Date().toISOString(),
           read: false
         });
@@ -899,7 +899,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
                   <span className="text-sm font-black text-slate-100 font-mono tracking-tight">
                     {activeFollowers.length}
                   </span>
-                  <span className="text-[9px] text-slate-500 mt-0.5">Seguidores</span>
+                  <span className="text-[9px] text-slate-500 mt-0.5">{tI18n("Seguidores")}</span>
                 </button>
 
                 <button 
@@ -912,7 +912,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
                   <span className="text-sm font-black text-slate-100 font-mono tracking-tight">
                     {activeFollowing.length}
                   </span>
-                  <span className="text-[9px] text-slate-500 mt-0.5">Seguindo</span>
+                  <span className="text-[9px] text-slate-500 mt-0.5">{tI18n("Seguindo")}</span>
                 </button>
 
                 <button 
@@ -925,14 +925,14 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
                   <span className="text-sm font-black text-slate-100 font-mono tracking-tight">
                     {activeFriends.length}
                   </span>
-                  <span className="text-[9px] text-slate-500 mt-0.5">Amigos</span>
+                  <span className="text-[9px] text-slate-500 mt-0.5">{tI18n("Amigos")}</span>
                 </button>
 
                 <div className="p-2 flex flex-col items-center">
                   <span className="text-sm font-black text-slate-100 font-mono tracking-tight">
                     {activeProfile.likesCount || 0}
                   </span>
-                  <span className="text-[9px] text-slate-500 mt-0.5">Curtidas</span>
+                  <span className="text-[9px] text-slate-500 mt-0.5">{tI18n("Curtidas")}</span>
                 </div>
               </div>
 
@@ -947,7 +947,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
                   }`}
                 >
                   <Heart className={`w-4 h-4 ${myLikes.includes(activeProfile.email.toLowerCase().trim()) ? 'fill-rose-500 text-rose-500' : ''}`} />
-                  <span>{myLikes.includes(activeProfile.email.toLowerCase().trim()) ? 'Curtido' : 'Curtir Perfil'}</span>
+                  <span>{myLikes.includes(activeProfile.email.toLowerCase().trim()) ? tI18n('Curtido') : tI18n('Curtir Perfil')}</span>
                 </button>
 
                 <button 
@@ -961,12 +961,12 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
                   {myFollows.includes(activeProfile.email.toLowerCase().trim()) ? (
                     <>
                       <Check className="w-4 h-4 text-cyan-404" />
-                      <span>Seguindo</span>
+                      <span>{tI18n("Seguindo")}</span>
                     </>
                   ) : (
                     <>
                       <UserPlus className="w-4 h-4" />
-                      <span>Seguir</span>
+                      <span>{tI18n("Seguir")}</span>
                     </>
                   )}
                 </button>

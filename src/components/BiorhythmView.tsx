@@ -401,7 +401,7 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
               <span>{t("SINTONIA SINDICAL ATIVA AMARA")}</span>
             </div>
             <p>
-              <strong>{t("Sabedoria e confiança!")}</strong> {t("No momento, hay uma sintonia benéfica entre seu ciclo intelectual e emocional, algo que pode te influenciar a tomar as decisões cruciais de longo prazo com muito mais clareza, harmonia e estabilidade de alma.")}
+              <strong>{t("Sabedoria e confiança!")}</strong> {t("No momento, há uma sintonia benéfica entre seu ciclo intelectual e emocional, algo que pode te influenciar a tomar as decisões cruciais de longo prazo com muito mais clareza, harmonia e estabilidade de alma.")}
             </p>
           </div>
 

@@ -97,6 +97,7 @@ export interface AstrologyMap {
   timezone?: string;
   originalTime?: string;
   adjustedTime?: string;
+  lang?: string;
   distribution: {
     elements: AstroElementDistribution;
     qualities: AstroQualityDistribution;

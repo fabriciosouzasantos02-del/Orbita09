@@ -561,7 +561,8 @@ export function performAstroCalculation(
   birthTime: string,
   latitude: number = -23.5505, // SP Default
   longitude: number = -46.6333, // SP Default
-  timezoneOffset?: number
+  timezoneOffset?: number,
+  passedLang?: string
 ): CalculatedChart {
   // Parse birth details
   const [year, month, day] = birthDate.split("-").map(v => parseInt(v, 10));

@@ -35,9 +35,9 @@ export default function AstroTab({ userProfile, natalChart, lang }: AstroTabProp
         }),
       });
       const data = await response.json();
-      setReport(data.interpretation || "Falha ao receber insights.");
+      setReport(data.interpretation || tI18n("Falha ao receber insights."));
     } catch (err: any) {
-      setErrorWord("Erro ao processar trânsito Celeste natal: " + err.message);
+      setErrorWord(tI18n("Erro ao processar trânsito Celeste natal:") + " " + err.message);
     } finally {
       setLoading(false);
     }

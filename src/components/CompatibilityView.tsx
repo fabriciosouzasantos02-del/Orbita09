@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateUiText, Language } from '../lib/translations';
+import { useIdioma } from '../context/IdiomaContext';
 import { CompatibilityResult, UserProfile } from '../types';
 import { computeDetailedCompatibility } from './compatibilityEngine';
 import { motion, AnimatePresence } from 'motion/react';
@@ -480,14 +481,12 @@ const FIND_PEOPLE_DATABASE = [
 ];
 
 export default function CompatibilityView({ user, lang }: CompatibilityViewProps) {
-  const { t: i18nT } = useTranslation();
+  const { idioma } = useIdioma();
+  const idiomaAtual = (idioma as Language) || (lang as Language) || 'pt';
+
   const t = (text: string) => {
     if (!text) return "";
-    const res = i18nT(text);
-    if (res === text || !res) {
-      return translateUiText(text, (lang as Language) || 'pt');
-    }
-    return res;
+    return translateUiText(text, idiomaAtual);
   };
 
   const [activeSubTab, setActiveSubTab] = useState<'geral'>('geral'); // Only Cruzamento Astrológico remains
@@ -615,6 +614,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
           companionBirthCity: partnerCity,
           companionBirthCountry: partnerCountry,
           category: relationCategory,
+          lang: idiomaAtual,
         })
       });
       const data = await response.json();
@@ -696,13 +696,13 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
         <div className="absolute bottom-0 left-0 w-84 h-84 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10">
           <span className="px-3 py-1 rounded-full text-[10px] uppercase font-mono font-semibold tracking-wider text-pink-400 bg-pink-500/10 border border-pink-500/20">
-            Módulo Sinastria & Interesse Premium
+            {t("Módulo Sinastria & Interesse Premium")}
           </span>
           <h1 className="text-2xl md:text-3xl font-sans font-bold tracking-tight text-white mt-2">
-            Compatibilidade Astrológica
+            {t("Compatibilidade Astrológica")}
           </h1>
           <p className="text-xs text-slate-400 max-w-xl mt-1 leading-relaxed">
-            Compare o seu mapa astral com as pessoas cruciais da sua vida. Descubra forças de comunicação, química amorosa, afinidade profissional e descubra quem demonstrou interesse em você.
+            {t("Compare o seu mapa astral com as pessoas cruciais da sua vida. Descubra forças de comunicação, química amorosa, afinidade profissional e descubra quem demonstrou interesse em você.")}
           </p>
         </div>
       </div>
@@ -1018,7 +1018,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                         <div className="flex items-center gap-4">
                           <div className="text-right">
                             <span className="text-[8px] font-mono text-slate-500 uppercase block">{visitor.time}</span>
-                            <span className="text-xs font-bold font-mono text-cyan-400">{visitor.match}% Afinidade</span>
+                            <span className="text-xs font-bold font-mono text-cyan-400">{visitor.match}% {t("Afinidade")}</span>
                           </div>
                           
                           <div className="p-2 bg-cyan-500/10 rounded-xl text-cyan-400 border border-cyan-500/10">
@@ -1060,7 +1060,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
 
                           <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-mono text-[10px] rounded-full font-bold">
                             <Sparkles className="w-3.5 h-3.5" />
-                            {visitor.match}% Alinhamento Vibracional
+                            {visitor.match}% {t("Alinhamento Vibracional")}
                           </div>
                         </div>
 
@@ -1068,21 +1068,21 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                         <div className="space-y-3 pt-1">
                           
                           <div className="space-y-1">
-                            <span className="text-[8px] font-mono text-slate-500 uppercase block font-bold">Ressonância Vibracional</span>
+                            <span className="text-[8px] font-mono text-slate-500 uppercase block font-bold">{t("Ressonância Vibracional")}</span>
                             <p className="text-xs text-indigo-300 font-mono font-semibold bg-indigo-500/5 p-2 rounded-xl border border-indigo-500/10">
                               ⚡ {visitor.astroAura}
                             </p>
                           </div>
 
                           <div className="space-y-1">
-                            <span className="text-[8px] font-mono text-slate-500 uppercase block font-bold">Objetivo da Visita Sideral</span>
+                            <span className="text-[8px] font-mono text-slate-500 uppercase block font-bold">{t("Objetivo da Visita Sideral")}</span>
                             <p className="text-xs text-slate-350 leading-relaxed">
                               {visitor.purpose}
                             </p>
                           </div>
 
                           <div className="p-3 bg-slate-950 rounded-xl border border-slate-850/60 flex justify-between items-center text-[10px] font-mono text-slate-400">
-                            <span>Último acesso ao seu sinal:</span>
+                            <span>{t("Último acesso ao seu sinal:")}</span>
                             <span className="text-cyan-400 font-bold">{visitor.time}</span>
                           </div>
 
@@ -1103,7 +1103,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                             }`}
                           >
                             <Sparkles className="w-3.5 h-3.5" />
-                            <span>{notifiedVisitors[visitor.id] ? "Sinal Cósmico Enviado!" : "Enviar Sinal Cósmico de Sintonia"}</span>
+                            <span>{notifiedVisitors[visitor.id] ? t("Sinal Cósmico Enviado!") : t("Enviar Sinal Cósmico de Sintonia")}</span>
                           </button>
                         </div>
 
@@ -1112,7 +1112,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                   })() : (
                     <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-805 text-center text-slate-400 space-y-2">
                       <Eye className="w-8 h-8 text-slate-800 mx-auto animate-pulse" />
-                      <p className="text-xs font-mono">Selecione algum visitante recente da lista para expandir seus relatórios de acesso planetário e intenção astrológica.</p>
+                      <p className="text-xs font-mono">{t("Selecione algum visitante recente da lista para expandir seus relatórios de acesso planetário e intenção astrológica.")}</p>
                     </div>
                   )}
                 </div>
@@ -1136,10 +1136,10 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 border-b border-slate-850 pb-3">
                 <div>
                   <h4 className="text-[10px] font-bold font-mono text-amber-500 uppercase tracking-widest">
-                    Procure por amigos ou pessoas com o perfil astrológico desejado.
+                    {t("Procure por amigos ou pessoas com o perfil astrológico desejado.")}
                   </h4>
                   <h2 className="text-base font-bold text-white mt-1 uppercase font-mono tracking-tight">
-                    Encontrar Pessoas
+                    {t("Encontrar Pessoas")}
                   </h2>
                 </div>
                 
@@ -1148,7 +1148,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                 </span>
               </div>
               <p className="text-xs text-slate-405 leading-relaxed">
-                Utilize o filtro de busca avançada para cruzar posições de Sol, Ascendente, Lua, Vênus e mais. Encontre afinidades naturais ou posições astronômicas específicas perfeitas para suas sinastrias.
+                {t("Utilize o filtro de busca avançada para cruzar posições de Sol, Ascendente, Lua, Vênus e mais. Encontre afinidades naturais ou posições astronômicas específicas perfeitas para suas sinastrias.")}
               </p>
             </div>
 
@@ -1450,39 +1450,39 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
         <div id="sinastria-full-view" className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Comparison Form Input */}
           <div className="lg:col-span-4 bg-slate-900/40 p-6 rounded-3xl border border-slate-800 space-y-4 text-left self-start shadow-xl">
-            <h3 className="text-sm font-semibold text-slate-200">Comparar Mapas</h3>
+            <h3 className="text-sm font-semibold text-slate-200">{t("Comparar Mapas")}</h3>
             <form onSubmit={handleEvaluate} className="space-y-4">
               
               {/* Elegant Visual Card explaining that User's Map is used automatically */}
               <div className="p-4 rounded-2xl bg-slate-950/60 border border-indigo-500/10 shadow-lg text-left">
                 <span className="text-[9px] font-mono font-bold text-indigo-400 uppercase tracking-wider block mb-1">
-                  🔮 Mapa Principal Ativo
+                  🔮 {t("Mapa Principal Ativo")}
                 </span>
                 <p className="text-xs font-sans text-slate-200 font-semibold">
-                  {user.name || "Seu Perfil"}
+                  {user.name || t("Seu Perfil")}
                 </p>
                 <p className="text-[10px] font-mono text-slate-500 mt-0.5 leading-normal">
-                  Nascimento: {user.birthDate ? user.birthDate.split('-').reverse().join('/') : "Não informado"} {user.birthTime ? `às ${user.birthTime}` : ""} {user.birthCity ? `em ${user.birthCity}` : ""}
+                  {t("Nascimento:")} {user.birthDate ? user.birthDate.split('-').reverse().join('/') : t("Não informado")} {user.birthTime ? `${t("às")} ${user.birthTime}` : ""} {user.birthCity ? `${t("em")} ${user.birthCity}` : ""}
                 </p>
                 
                 <div className="mt-3 pt-3 border-t border-slate-800/60">
                   <p className="text-[11px] font-sans text-amber-500/95 leading-relaxed font-semibold">
-                    Preencha as informações abaixo com os dados da pessoa que você deseja comparar com seu mapa principal.
+                    {t("Preencha as informações abaixo com os dados da pessoa que você deseja comparar com seu mapa principal.")}
                   </p>
                 </div>
               </div>
 
               <div id="dados-outra-pessoa-form" className="space-y-3.5 pt-1">
                 <span className="block text-[10px] font-mono text-slate-400 uppercase tracking-widest font-bold">
-                  Dados da outra pessoa
+                  {t("Dados da outra pessoa")}
                 </span>
                 
                 <div>
-                  <label className="block text-[10px] font-mono text-slate-450 mb-1">NOME DA PESSOA</label>
+                  <label className="block text-[10px] font-mono text-slate-450 mb-1">{t("NOME DA PESSOA")}</label>
                   <input
                     type="text"
                     required
-                    placeholder="Nome completo"
+                    placeholder={t("Nome completo")}
                     value={partnerName}
                     onChange={(e) => setPartnerName(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-200 focus:border-rose-500/40 focus:outline-hidden transition"
@@ -1490,7 +1490,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                 </div>
                 
                 <div>
-                  <label className="block text-[10px] font-mono text-slate-450 mb-1">DATA DE NASCIMENTO</label>
+                  <label className="block text-[10px] font-mono text-slate-450 mb-1">{t("DATA DE NASCIMENTO")}</label>
                   <input
                     type="date"
                     required
@@ -1501,7 +1501,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-mono text-slate-450 mb-1">HORA DE NASCIMENTO</label>
+                  <label className="block text-[10px] font-mono text-slate-450 mb-1">{t("HORA DE NASCIMENTO")}</label>
                   <input
                     type="time"
                     required
@@ -1512,11 +1512,11 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-mono text-slate-450 mb-1">CIDADE DE NASCIMENTO</label>
+                  <label className="block text-[10px] font-mono text-slate-450 mb-1">{t("CIDADE DE NASCIMENTO")}</label>
                   <input
                     type="text"
                     required
-                    placeholder="Cidade de nascimento"
+                    placeholder={t("Cidade de nascimento")}
                     value={partnerCity}
                     onChange={(e) => setPartnerCity(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-200 focus:border-rose-500/40 focus:outline-hidden transition"
@@ -1524,10 +1524,10 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-mono text-slate-450 mb-1">PAÍS (OPCIONAL)</label>
+                  <label className="block text-[10px] font-mono text-slate-450 mb-1">{t("PAÍS (OPCIONAL)")}</label>
                   <input
                     type="text"
-                    placeholder="País de nascimento"
+                    placeholder={t("País de nascimento")}
                     value={partnerCountry}
                     onChange={(e) => setPartnerCountry(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-200 focus:border-rose-500/40 focus:outline-hidden transition"
@@ -1541,7 +1541,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                 className="w-full py-2.5 mt-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-slate-100 font-sans font-bold text-xs uppercase transition duration-300 cursor-pointer flex items-center justify-center gap-1.5 shadow-lg shadow-rose-950/20"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>{isEvaluating ? 'Efetuando Alinhamento...' : 'Efetuar Cruzamento de Mapas'}</span>
+                <span>{isEvaluating ? t("Efetuando Alinhamento...") : t("Efetuar Cruzamento de Mapas")}</span>
               </button>
             </form>
           </div>
@@ -1553,19 +1553,19 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
             <div className="bg-slate-900/60 p-5 border border-pink-500/10 rounded-3xl text-[11px] leading-relaxed text-slate-350 font-sans flex items-start gap-3 text-left">
               <Sparkles className="w-4 h-4 text-pink-400 shrink-0 mt-0.5 animate-pulse" />
               <span>
-                Esta é a análise profissional da sua <strong>Compatibilidade Astrológica (Sinastria de Alinhamento)</strong> executada com base nas efemérides reais e trânsitos em tempo real de altíssima precisão. Escolha o tipo de relação que deseja analisar no menu abaixo.
+                {t("Esta é a análise profissional da sua")} <strong>{t("Compatibilidade Astrológica (Sinastria de Alinhamento)")}</strong> {t("executada com base nas efemérides reais e trânsitos em tempo real de altíssima precisão. Escolha o tipo de relação que deseja analisar no menu abaixo.")}
               </span>
             </div>
 
             {/* CATEGORIES FILTERS SEGMENT */}
             <div id="sinastria-category-filters" className="bg-slate-900/40 p-1.5 rounded-2xl border border-slate-800/80 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-1.5">
               {[
-                { id: 'love', label: 'Amor', icon: Heart, gradient: 'from-rose-600 to-pink-600 shadow-pink-500/5' },
-                { id: 'friend', label: 'Amizade', icon: Users, gradient: 'from-amber-600 to-orange-600 shadow-orange-500/5' },
-                { id: 'business', label: 'Trabalho', icon: Briefcase, gradient: 'from-blue-600 to-cyan-600 shadow-cyan-500/5' },
-                { id: 'family', label: 'Família', icon: Smile, gradient: 'from-emerald-600 to-teal-600 shadow-emerald-500/5' },
-                { id: 'marriage', label: 'Casamento', icon: Star, gradient: 'from-indigo-600 to-violet-600 shadow-indigo-500/5' },
-                { id: 'partnership', label: 'Sociedade', icon: Compass, gradient: 'from-purple-600 to-fuchsia-600 shadow-fuchsia-500/5' }
+                { id: 'love', label: t('Amor'), icon: Heart, gradient: 'from-rose-600 to-pink-600 shadow-pink-500/5' },
+                { id: 'friend', label: t('Amizade'), icon: Users, gradient: 'from-amber-600 to-orange-600 shadow-orange-500/5' },
+                { id: 'business', label: t('Trabalho'), icon: Briefcase, gradient: 'from-blue-600 to-cyan-600 shadow-cyan-500/5' },
+                { id: 'family', label: t('Família'), icon: Smile, gradient: 'from-emerald-600 to-teal-600 shadow-emerald-500/5' },
+                { id: 'marriage', label: t('Casamento'), icon: Star, gradient: 'from-indigo-600 to-violet-600 shadow-indigo-500/5' },
+                { id: 'partnership', label: t('Sociedade'), icon: Compass, gradient: 'from-purple-600 to-fuchsia-600 shadow-fuchsia-500/5' }
               ].map((cat) => {
                 const IconComponent = cat.icon;
                 const isSelected = relationCategory === cat.id;
@@ -1596,11 +1596,11 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                   
                   <div className="text-center space-y-1">
                     <span className="text-[10px] font-mono font-bold text-rose-450 uppercase tracking-widest block">
-                      GRAU DE SINTONIA FINAL
+                      {t("GRAU DE SINTONIA FINAL")}
                     </span>
                     <div className="flex items-center justify-center gap-3 py-1.5 max-w-sm mx-auto">
-                      <span className="text-sm font-bold font-mono text-slate-100 uppercase">{user.name || "Você"}</span>
-                      <span className="text-xs text-rose-505 font-bold">⭐ SINASTRIA ⭐</span>
+                      <span className="text-sm font-bold font-mono text-slate-100 uppercase">{user.name || t("Você")}</span>
+                      <span className="text-xs text-rose-505 font-bold">⭐ {t("SINASTRIA")} ⭐</span>
                       <span className="text-sm font-bold font-mono text-slate-100 uppercase">{result.partnerName}</span>
                     </div>
                   </div>
@@ -1633,36 +1633,36 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                           <span className="text-3xl font-black font-mono text-slate-50 tracking-tighter">
                             {result.compatibilidadeGeral * 10}
                           </span>
-                          <span className="text-[9px] font-mono text-slate-450 uppercase font-bold tracking-widest leading-none mt-0.5">Pontos</span>
-                          <span className="text-[10px] font-mono text-pink-400 font-bold leading-none mt-1">{result.compatibilidadeGeral}% Geral</span>
+                          <span className="text-[9px] font-mono text-slate-450 uppercase font-bold tracking-widest leading-none mt-0.5">{t("Pontos")}</span>
+                          <span className="text-[10px] font-mono text-pink-400 font-bold leading-none mt-1">{result.compatibilidadeGeral}% {t("Geral")}</span>
                         </div>
                       </div>
                     </div>
 
                     <div className="space-y-3">
                       <h4 className="text-sm font-bold text-rose-400 tracking-wide font-sans">
-                        Alinhamento e Sinergia Estelar
+                        {t("Alinhamento e Sinergia Estelar")}
                       </h4>
                       <p className="text-xs text-slate-350 leading-relaxed font-sans">
-                        {result.porQueExisteCompatibilidade.slice(0, 180)}... Suas posições estelares em relação ao perfil de {result.partnerName} mostram uma magnífica ponte fiduciária na categoria de {relationCategory === 'love' ? 'Amor' : relationCategory === 'friend' ? 'Amizade' : 'Cooperação'}.
+                        {t(result.porQueExisteCompatibilidade).slice(0, 180)}... {t("Suas posições estelares em relação ao perfil de")} {result.partnerName} {t("mostram uma magnífica ponte fiduciária na categoria de")} {relationCategory === 'love' ? t('Amor') : relationCategory === 'friend' ? t('Amizade') : t('Cooperação')}.
                       </p>
                     </div>
                   </div>
 
                   {/* 9 compatibility fields grid */}
                   <div className="border-t border-slate-850 pt-5 space-y-3">
-                    <h5 className="text-[10px] font-mono text-slate-400 uppercase tracking-widest font-semibold">Tabela de Percentagens Astrológicas</h5>
+                    <h5 className="text-[10px] font-mono text-slate-400 uppercase tracking-widest font-semibold">{t("Tabela de Percentagens Astrológicas")}</h5>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {[
-                        { label: 'Compatibilidade Geral', score: result.compatibilidadeGeral, color: 'sky' },
-                        { label: 'Compatibilidade Emocional', score: result.compatibilidadeEmocional, color: 'pink' },
-                        { label: 'Compatibilidade Intelectual', score: result.compatibilidadeIntelectual, color: 'blue' },
-                        { label: 'Compatibilidade Amorosa', score: result.compatibilidadeAmorosa, color: 'rose' },
-                        { label: 'Compatibilidade Sexual', score: result.compatibilidadeSexual, color: 'orange' },
-                        { label: 'Compatibilidade Financeira', score: result.compatibilidadeFinanceira, color: 'emerald' },
-                        { label: 'Compatibilidade Profissional', score: result.compatibilidadeProfissional, color: 'teal' },
-                        { label: 'Compatibilidade Espiritual', score: result.compatibilidadeEspiritual, color: 'indigo' },
-                        { label: 'Compatibilidade Familiar', score: result.compatibilidadeFamiliar, color: 'amber' }
+                        { label: t('Compatibilidade Geral'), score: result.compatibilidadeGeral, color: 'sky' },
+                        { label: t('Compatibilidade Emocional'), score: result.compatibilidadeEmocional, color: 'pink' },
+                        { label: t('Compatibilidade Intelectual'), score: result.compatibilidadeIntelectual, color: 'blue' },
+                        { label: t('Compatibilidade Amorosa'), score: result.compatibilidadeAmorosa, color: 'rose' },
+                        { label: t('Compatibilidade Sexual'), score: result.compatibilidadeSexual, color: 'orange' },
+                        { label: t('Compatibilidade Financeira'), score: result.compatibilidadeFinanceira, color: 'emerald' },
+                        { label: t('Compatibilidade Profissional'), score: result.compatibilidadeProfissional, color: 'teal' },
+                        { label: t('Compatibilidade Espiritual'), score: result.compatibilidadeEspiritual, color: 'indigo' },
+                        { label: t('Compatibilidade Familiar'), score: result.compatibilidadeFamiliar, color: 'amber' }
                       ].map((bar, bIdx) => (
                         <div key={bIdx} className="p-2 rounded-xl bg-slate-950/40 border border-slate-850 text-left space-y-1">
                           <div className="flex justify-between items-center text-[10px] font-sans">
@@ -1687,20 +1687,20 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                     const categoryData = (result as any).categories?.[relationCategory];
                     if (!categoryData) return (
                       <div className="p-6 text-center text-xs font-mono text-slate-500">
-                        Nenhum dado estelar calculado para esta categoria.
+                        {t("Nenhum dado estelar calculado para esta categoria.")}
                       </div>
                     );
 
                     // Get category identity info
                     const catTheme = {
-                      love: { title: "Amor & Paixão", icon: Heart, text: "text-rose-400", border: "border-rose-500/15", bg: "bg-rose-500/5", glow: "from-rose-500 to-pink-500" },
-                      friend: { title: "Amizade & Cumplicidade", icon: Users, text: "text-amber-400", border: "border-amber-500/15", bg: "bg-amber-500/5", glow: "from-amber-600 to-orange-600" },
-                      business: { title: "Trabalho & Produtividade", icon: Briefcase, text: "text-blue-400", border: "border-blue-500/15", bg: "bg-blue-500/5", glow: "from-blue-600 to-cyan-600" },
-                      family: { title: "Família & Clã", icon: Smile, text: "text-emerald-400", border: "border-emerald-500/15", bg: "bg-emerald-500/5", glow: "from-emerald-500 to-teal-500" },
-                      marriage: { title: "Casamento & Longo Prazo", icon: Star, text: "text-indigo-450", border: "border-indigo-500/15", bg: "bg-indigo-500/5", glow: "from-indigo-600 to-violet-600" },
-                      partnership: { title: "Sociedade & Negócios", icon: Compass, text: "text-purple-400", border: "border-purple-500/15", bg: "bg-purple-500/5", glow: "from-purple-600 to-fuchsia-600" }
+                      love: { title: t("Amor & Paixão"), icon: Heart, text: "text-rose-400", border: "border-rose-500/15", bg: "bg-rose-500/5", glow: "from-rose-500 to-pink-500" },
+                      friend: { title: t("Amizade & Cumplicidade"), icon: Users, text: "text-amber-400", border: "border-amber-500/15", bg: "bg-amber-500/5", glow: "from-amber-600 to-orange-600" },
+                      business: { title: t("Trabalho & Produtividade"), icon: Briefcase, text: "text-blue-400", border: "border-blue-500/15", bg: "bg-blue-500/5", glow: "from-blue-600 to-cyan-600" },
+                      family: { title: t("Família & Clã"), icon: Smile, text: "text-emerald-400", border: "border-emerald-500/15", bg: "bg-emerald-500/5", glow: "from-emerald-500 to-teal-500" },
+                      marriage: { title: t("Casamento & Longo Prazo"), icon: Star, text: "text-indigo-450", border: "border-indigo-500/15", bg: "bg-indigo-500/5", glow: "from-indigo-600 to-violet-600" },
+                      partnership: { title: t("Sociedade & Negócios"), icon: Compass, text: "text-purple-400", border: "border-purple-500/15", bg: "bg-purple-500/5", glow: "from-purple-600 to-fuchsia-600" }
                     }[relationCategory as 'love' | 'friend' | 'business' | 'family' | 'marriage' | 'partnership'] || {
-                      title: "Sinastria Estelar", icon: Sparkles, text: "text-pink-450", border: "border-slate-800", bg: "bg-slate-900/40", glow: "from-rose-500 to-indigo-500"
+                      title: t("Sinastria Estelar"), icon: Sparkles, text: "text-pink-450", border: "border-slate-800", bg: "bg-slate-900/40", glow: "from-rose-500 to-indigo-500"
                     };
 
                     const IconComp = catTheme.icon;
@@ -1716,13 +1716,13 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                                 <IconComp className={`w-5 h-5 ${catTheme.text}`} />
                               </div>
                               <div className="text-left">
-                                <span className="text-[9px] font-mono text-slate-400 uppercase tracking-widest font-bold">MÓDULO PROFISSIONAL DE CRUZAMENTO</span>
+                                <span className="text-[9px] font-mono text-slate-400 uppercase tracking-widest font-bold">{t("MÓDULO PROFISSIONAL DE CRUZAMENTO")}</span>
                                 <h3 className="text-base font-bold text-slate-50 tracking-wide font-sans">{catTheme.title}</h3>
                               </div>
                             </div>
                             <div className="flex items-center gap-3.5 bg-slate-950/60 px-4 py-2.5 rounded-2xl border border-slate-800 max-w-fit shrink-0">
                               <div className="text-left leading-none font-mono">
-                                <span className="text-[8px] text-slate-500 uppercase font-bold tracking-wider">AFINIDADE ESPECÍFICA</span>
+                                <span className="text-[8px] text-slate-500 uppercase font-bold tracking-wider">{t("AFINIDADE ESPECÍFICA")}</span>
                                 <div className="text-lg font-black text-slate-100 tracking-tighter mt-1">{categoryData.score}%</div>
                               </div>
                               <div className="w-8 h-8 rounded-full bg-slate-900 overflow-hidden relative border border-slate-800 flex items-center justify-center">
@@ -1750,20 +1750,20 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                         <div className="space-y-4">
                           <h4 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                             <Compass className="w-3.5 h-3.5 text-slate-400" />
-                            <span>1. Mapa de Harmonia de {catTheme.title}</span>
+                            <span>{t("1. Mapa de Harmonia de")} {catTheme.title}</span>
                           </h4>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {/* Pontos Fortes */}
                             <div className="p-5 rounded-2xl bg-emerald-950/15 border border-emerald-900/30 text-left space-y-2.5">
                               <div className="flex items-center gap-2 text-emerald-400">
                                 <Check className="w-4 h-4 shrink-0" />
-                                <span className="text-[10.5px] font-mono font-bold uppercase tracking-wider">PONTOS FORTES</span>
+                                <span className="text-[10.5px] font-mono font-bold uppercase tracking-wider">{t("PONTOS FORTES")}</span>
                               </div>
                               <ul className="space-y-2 text-[11px] text-slate-300 leading-relaxed font-sans">
                                 {categoryData.mapaHarmonia.pontosFortes.map((p: string, idx: number) => (
                                   <li key={idx} className="flex items-start gap-1.5">
                                     <span className="text-emerald-500 font-bold mt-0.5">•</span>
-                                    <span>{p}</span>
+                                    <span>{t(p)}</span>
                                   </li>
                                 ))}
                               </ul>
@@ -1772,13 +1772,13 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                             <div className="p-5 rounded-2xl bg-amber-950/15 border border-amber-900/30 text-left space-y-2.5">
                               <div className="flex items-center gap-2 text-amber-400">
                                 <AlertCircle className="w-4 h-4 shrink-0" />
-                                <span className="text-[10.5px] font-mono font-bold uppercase tracking-wider">PONTOS DE ATENÇÃO</span>
+                                <span className="text-[10.5px] font-mono font-bold uppercase tracking-wider">{t("PONTOS DE ATENÇÃO")}</span>
                               </div>
                               <ul className="space-y-2 text-[11px] text-slate-300 leading-relaxed font-sans">
                                 {categoryData.mapaHarmonia.pontosAtencao.map((p: string, idx: number) => (
                                   <li key={idx} className="flex items-start gap-1.5">
                                     <span className="text-amber-500 font-bold mt-0.5">•</span>
-                                    <span>{p}</span>
+                                    <span>{t(p)}</span>
                                   </li>
                                 ))}
                               </ul>
@@ -1787,13 +1787,13 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                             <div className="p-5 rounded-2xl bg-red-950/15 border border-red-900/30 text-left space-y-2.5">
                               <div className="flex items-center gap-2 text-red-400">
                                 <ShieldAlert className="w-4 h-4 shrink-0" />
-                                <span className="text-[10.5px] font-mono font-bold uppercase tracking-wider">ÁREAS DE CONFLITO</span>
+                                <span className="text-[10.5px] font-mono font-bold uppercase tracking-wider">{t("ÁREAS DE CONFLITO")}</span>
                               </div>
                               <ul className="space-y-2 text-[11px] text-slate-300 leading-relaxed font-sans">
                                 {categoryData.mapaHarmonia.areasConflito.map((p: string, idx: number) => (
                                   <li key={idx} className="flex items-start gap-1.5">
                                     <span className="text-red-500 font-bold mt-0.5">•</span>
-                                    <span>{p}</span>
+                                    <span>{t(p)}</span>
                                   </li>
                                 ))}
                               </ul>
@@ -1805,35 +1805,35 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                         <div className="space-y-4">
                           <h4 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                             <Info className="w-3.5 h-3.5 text-slate-400" />
-                            <span>2. Análise Detalhada Estelar</span>
+                            <span>{t("2. Análise Detalhada Estelar")}</span>
                           </h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 text-left space-y-3">
-                              <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest block font-bold">POR QUE EXISTE COMPATIBILIDADE</span>
-                              <p className="text-xs text-slate-300 leading-relaxed font-sans">{categoryData.analiseDetalhada.compatibilidadeMessage}</p>
+                              <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest block font-bold">{t("POR QUE EXISTE COMPATIBILIDADE")}</span>
+                              <p className="text-xs text-slate-300 leading-relaxed font-sans">{t(categoryData.analiseDetalhada.compatibilidadeMessage)}</p>
                             </div>
                             <div className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 text-left space-y-3">
-                              <span className="text-[10px] font-mono font-bold text-rose-400 uppercase tracking-widest block font-bold">POR QUE EXISTE CONFLITO</span>
-                              <p className="text-xs text-slate-300 leading-relaxed font-sans">{categoryData.analiseDetalhada.conflitoMessage}</p>
+                              <span className="text-[10px] font-mono font-bold text-rose-400 uppercase tracking-widest block font-bold">{t("POR QUE EXISTE CONFLITO")}</span>
+                              <p className="text-xs text-slate-300 leading-relaxed font-sans">{t(categoryData.analiseDetalhada.conflitoMessage)}</p>
                             </div>
                             <div className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 text-left space-y-3">
-                              <span className="text-[10px] font-mono font-bold text-indigo-400 uppercase tracking-widest block font-bold">CARACTERÍSTICAS QUE UNEM</span>
+                              <span className="text-[10px] font-mono font-bold text-indigo-400 uppercase tracking-widest block font-bold">{t("CARACTERÍSTICAS QUE UNEM")}</span>
                               <ul className="space-y-1.5 text-xs text-slate-300 font-sans">
                                 {categoryData.analiseDetalhada.caracteristicasUnem.map((u: string, idx: number) => (
                                   <li key={idx} className="flex items-center gap-1.5">
                                     <span className="text-indigo-400 text-sm">✔</span>
-                                    <span>{u}</span>
+                                    <span>{t(u)}</span>
                                   </li>
                                 ))}
                               </ul>
                             </div>
                             <div className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 text-left space-y-3">
-                              <span className="text-[10px] font-mono font-bold text-red-400 uppercase tracking-widest block font-bold">CARACTERÍSTICAS QUE AFASTAM</span>
+                              <span className="text-[10px] font-mono font-bold text-red-400 uppercase tracking-widest block font-bold">{t("CARACTERÍSTICAS QUE AFASTAM")}</span>
                               <ul className="space-y-1.5 text-xs text-slate-300 font-sans">
                                 {categoryData.analiseDetalhada.caracteristicasAfastam.map((u: string, idx: number) => (
                                   <li key={idx} className="flex items-start gap-1.5">
                                     <span className="text-red-400 font-bold block mt-0.5">•</span>
-                                    <span>{u}</span>
+                                    <span>{t(u)}</span>
                                   </li>
                                 ))}
                               </ul>
@@ -1845,13 +1845,13 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                         <div className="space-y-4">
                           <h4 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                             <Zap className="w-3.5 h-3.5 text-slate-400" />
-                            <span>3. {categoryData.dinamicaConviver.title}</span>
+                            <span>3. {t(categoryData.dinamicaConviver.title)}</span>
                           </h4>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {categoryData.dinamicaConviver.items.map((item: { label: string; desc: string }, idx: number) => (
                               <div key={idx} className="p-4 rounded-xl bg-slate-950/45 border border-slate-800 text-left space-y-1">
-                                <span className="font-mono font-bold text-slate-300 text-[10.5px] block uppercase">{item.label}</span>
-                                <p className="text-slate-400 leading-normal text-[11px] mt-0.5 font-sans">{item.desc}</p>
+                                <span className="font-mono font-bold text-slate-300 text-[10.5px] block uppercase">{t(item.label)}</span>
+                                <p className="text-slate-400 leading-normal text-[11px] mt-0.5 font-sans">{t(item.desc)}</p>
                               </div>
                             ))}
                           </div>
@@ -1859,12 +1859,12 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
 
                         {/* 4. RESUMO DE COMPATIBILIDADE (PERCENTUAIS) */}
                         <div className="space-y-4">
-                          <h5 className="text-[10px] font-mono text-slate-400 uppercase tracking-widest font-semibold text-left">4. Resumo de Compatibilidades Detalhadas</h5>
+                          <h5 className="text-[10px] font-mono text-slate-400 uppercase tracking-widest font-semibold text-left">{t("4. Resumo de Compatibilidades Detalhadas")}</h5>
                           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
                             {categoryData.resumoScores.map((bar: { label: string; percent: number }, bIdx: number) => (
                               <div key={bIdx} className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800 text-left space-y-1.5">
                                 <div className="flex justify-between items-center text-[10px] font-sans">
-                                  <span className="text-slate-400 truncate uppercase font-bold text-[8.5px]">{bar.label}</span>
+                                  <span className="text-slate-400 truncate uppercase font-bold text-[8.5px]">{t(bar.label)}</span>
                                   <span className="font-bold font-mono text-slate-100">{bar.percent}%</span>
                                 </div>
                                 <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
@@ -1882,28 +1882,28 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                         <div className="space-y-4">
                           <h4 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                             <Clock className="w-3.5 h-3.5 text-slate-400" />
-                            <span>5. {categoryData.transitosAtuais.title}</span>
+                            <span>5. {t(categoryData.transitosAtuais.title)}</span>
                           </h4>
                           <div className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-4 text-left">
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center border-b border-slate-800 pb-3">
                               <div>
-                                <span className="text-[8px] font-mono text-slate-400 uppercase block font-bold">Data Real</span>
+                                <span className="text-[8px] font-mono text-slate-400 uppercase block font-bold">{t("Data Real")}</span>
                                 <span className="text-xs font-mono text-slate-200 mt-0.5 block">{categoryData.transitosAtuais.data}</span>
                               </div>
                               <div>
-                                <span className="text-[8px] font-mono text-slate-400 uppercase block font-bold">Hora Local</span>
+                                <span className="text-[8px] font-mono text-slate-400 uppercase block font-bold">{t("Hora Local")}</span>
                                 <span className="text-xs font-mono text-slate-200 mt-0.5 block">{categoryData.transitosAtuais.hora}</span>
                               </div>
                               <div>
-                                <span className="text-[8px] font-mono text-slate-400 uppercase block font-bold">Fuso Horário</span>
+                                <span className="text-[8px] font-mono text-slate-400 uppercase block font-bold">{t("Fuso Horário")}</span>
                                 <span className="text-xs font-mono text-slate-405 mt-0.5 block truncate">{categoryData.transitosAtuais.fuso.split(' ')[0]}</span>
                               </div>
                               <div>
-                                <span className="text-[8px] font-mono text-slate-400 uppercase block font-bold">Última Atualização</span>
+                                <span className="text-[8px] font-mono text-slate-400 uppercase block font-bold">{t("Última Atualização")}</span>
                                 <span className="text-xs font-mono text-slate-200 mt-0.5 block">{categoryData.transitosAtuais.atualizacao.split(' ')[1]}</span>
                               </div>
                             </div>
-                            <p className="text-xs text-slate-300 leading-relaxed font-sans">{categoryData.transitosAtuais.influencia}</p>
+                            <p className="text-xs text-slate-300 leading-relaxed font-sans">{t(categoryData.transitosAtuais.influencia)}</p>
                           </div>
                         </div>
 
@@ -1911,15 +1911,15 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                         <div className="space-y-4">
                           <h4 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                             <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                            <span>6. Calendário & Ciclos de Tendências Futuras</span>
+                            <span>{t("6. Calendário & Ciclos de Tendências Futuras")}</span>
                           </h4>
                           <div className="relative border-l border-slate-800 ml-3.5 pl-5 space-y-5 text-left">
                             {[
-                              { label: "Próximos 7 Dias", desc: categoryData.calendarioIndicadores.label7Dias },
-                              { label: "Próximos 30 Dias", desc: categoryData.calendarioIndicadores.label30Dias },
-                              { label: "Próximos 3 Meses", desc: categoryData.calendarioIndicadores.label3Meses },
-                              { label: "Próximos 6 Meses", desc: categoryData.calendarioIndicadores.label6Meses },
-                              { label: "Próximo Ano", desc: categoryData.calendarioIndicadores.label1Ano },
+                              { label: t("Próximos 7 Dias"), desc: categoryData.calendarioIndicadores.label7Dias },
+                              { label: t("Próximos 30 Dias"), desc: categoryData.calendarioIndicadores.label30Dias },
+                              { label: t("Próximos 3 Meses"), desc: categoryData.calendarioIndicadores.label3Meses },
+                              { label: t("Próximos 6 Meses"), desc: categoryData.calendarioIndicadores.label6Meses },
+                              { label: t("Próximo Ano"), desc: categoryData.calendarioIndicadores.label1Ano },
                               ...(categoryData.calendarioIndicadores.labelRangeX ? [{
                                 label: categoryData.calendarioIndicadores.labelRangeX,
                                 desc: categoryData.calendarioIndicadores.descRangeX || ""
@@ -1929,8 +1929,8 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                                 <span className="absolute -left-[27.5px] top-1 w-3.5 h-3.5 rounded-full bg-slate-900 border border-rose-500/60 flex items-center justify-center">
                                   <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                                 </span>
-                                <span className="text-[10px] font-mono text-rose-500 block uppercase font-bold tracking-wider">{cycle.label}</span>
-                                <p className="text-[11.5px] text-slate-300 mt-0.5 leading-relaxed font-sans">{cycle.desc}</p>
+                                <span className="text-[10px] font-mono text-rose-500 block uppercase font-bold tracking-wider">{t(cycle.label)}</span>
+                                <p className="text-[11.5px] text-slate-300 mt-0.5 leading-relaxed font-sans">{t(cycle.desc)}</p>
                               </div>
                             ))}
                           </div>
@@ -1940,15 +1940,15 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                         <div className="space-y-4">
                           <h4 className="text-xs font-mono font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2">
                             <Check className="w-3.5 h-3.5" />
-                            <span>7. Dias Favoráveis Reais Calculados</span>
+                            <span>{t("7. Dias Favoráveis Reais Calculados")}</span>
                           </h4>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {categoryData.diasFavoraveisItems.map((df: { icon: string; category: string; description: string }, dfIdx: number) => (
                               <div key={dfIdx} className="p-4 rounded-xl bg-slate-950/45 border border-slate-800 text-left flex items-start gap-3">
                                 <span className="text-lg shrink-0 mt-0.5">{df.icon}</span>
                                 <div className="space-y-0.5">
-                                  <span className="font-mono font-bold text-slate-200 text-[10.5px] uppercase block">{df.category}</span>
-                                  <p className="text-slate-405 leading-relaxed text-[11px] font-sans">{df.description}</p>
+                                  <span className="font-mono font-bold text-slate-200 text-[10.5px] uppercase block">{t(df.category)}</span>
+                                  <p className="text-slate-450 leading-relaxed text-[11px] font-sans">{t(df.description)}</p>
                                 </div>
                               </div>
                             ))}
@@ -1959,15 +1959,15 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                         <div className="space-y-4">
                           <h4 className="text-xs font-mono font-bold text-rose-500 uppercase tracking-widest flex items-center gap-2">
                             <AlertCircle className="w-3.5 h-3.5" />
-                            <span>8. Dias de Atenção & Cautela Cósmica</span>
+                            <span>{t("8. Dias de Atenção & Cautela Cósmica")}</span>
                           </h4>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {categoryData.diasAtencaoItems.map((da: { category: string; description: string }, daIdx: number) => (
                               <div key={daIdx} className="p-4 rounded-xl bg-slate-950/45 border border-slate-800 text-left flex items-start gap-2.5">
                                 <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
                                 <div className="space-y-0.5">
-                                  <span className="font-mono font-bold text-red-400 text-[10.5px] uppercase block">{da.category}</span>
-                                  <p className="text-slate-405 leading-relaxed text-[11px] font-sans">{da.description}</p>
+                                  <span className="font-mono font-bold text-red-400 text-[10.5px] uppercase block">{t(da.category)}</span>
+                                  <p className="text-slate-450 leading-relaxed text-[11px] font-sans">{t(da.description)}</p>
                                 </div>
                               </div>
                             ))}
@@ -1978,13 +1978,13 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                         <div className="space-y-4">
                           <h4 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                             <TrendingUp className="w-3.5 h-3.5 text-slate-400" />
-                            <span>9. Visão Estelar de Longo Prazo</span>
+                            <span>{t("9. Visão Estelar de Longo Prazo")}</span>
                           </h4>
                           <div className="grid grid-cols-1 gap-3.5">
                             {categoryData.visaoLongoPrazoItems.map((vlp: { category: string; description: string }, vlpIdx: number) => (
                               <div key={vlpIdx} className="p-4 rounded-xl bg-slate-950/45 border border-slate-800 text-left space-y-1">
-                                <span className="font-mono font-bold text-slate-350 text-[10.5px] block uppercase">{vlp.category}</span>
-                                <p className="text-slate-405 leading-normal text-[11px] font-sans">{vlp.description}</p>
+                                <span className="font-mono font-bold text-slate-350 text-[10.5px] block uppercase">{t(vlp.category)}</span>
+                                <p className="text-slate-405 leading-normal text-[11px] font-sans">{t(vlp.description)}</p>
                               </div>
                             ))}
                           </div>
@@ -1994,13 +1994,13 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                         <div className="space-y-4">
                           <h4 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                             <Lock className="w-3.5 h-3.5 text-slate-400" />
-                            <span>10. Pontos Ocultos & Ligações Kármicas</span>
+                            <span>{t("10. Pontos Ocultos & Ligações Kármicas")}</span>
                           </h4>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {categoryData.pontosOcultosItems.map((po: { category: string; description: string }, poIdx: number) => (
                               <div key={poIdx} className="p-4 rounded-xl bg-slate-950/45 border border-slate-800 text-left space-y-1">
-                                <span className="font-mono font-bold text-slate-300 text-[10.5px] block uppercase">{po.category}</span>
-                                <p className="text-slate-405 leading-normal text-[11px] font-sans">{po.description}</p>
+                                <span className="font-mono font-bold text-slate-300 text-[10.5px] block uppercase">{t(po.category)}</span>
+                                <p className="text-slate-405 leading-normal text-[11px] font-sans">{t(po.description)}</p>
                               </div>
                             ))}
                           </div>
@@ -2010,42 +2010,42 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                         <div className="space-y-4">
                           <h4 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                             <Sparkles className="w-3.5 h-3.5 text-slate-400" />
-                            <span>11. Inteligência de Relacionamento Cósmico</span>
+                            <span>{t("11. Inteligência de Relacionamento Cósmico")}</span>
                           </h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="p-5 rounded-2xl bg-emerald-950/10 border border-emerald-900/20 text-left space-y-3">
-                              <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest block font-bold">O QUE FAZER</span>
+                              <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest block font-bold">{t("O QUE FAZER")}</span>
                               <ul className="space-y-1.5 text-xs text-slate-300 font-sans">
                                 {categoryData.inteligenciaRelacionamento.oQueFazer.map((doItem: string, idx: number) => (
                                   <li key={idx} className="flex items-start gap-1.5">
                                     <span className="text-emerald-500 font-bold block mt-0.5">•</span>
-                                    <span>{doItem}</span>
+                                    <span>{t(doItem)}</span>
                                   </li>
                                 ))}
                               </ul>
                             </div>
                             <div className="p-5 rounded-2xl bg-red-950/10 border border-red-900/20 text-left space-y-3">
-                              <span className="text-[10px] font-mono font-bold text-red-500 uppercase tracking-widest block font-bold">O QUE EVITAR</span>
+                              <span className="text-[10px] font-mono font-bold text-red-500 uppercase tracking-widest block font-bold">{t("O QUE EVITAR")}</span>
                               <ul className="space-y-1.5 text-xs text-slate-300 font-sans">
                                 {categoryData.inteligenciaRelacionamento.oQueEvitar.map((dontItem: string, idx: number) => (
                                   <li key={idx} className="flex items-start gap-1.5">
                                     <span className="text-red-500 font-bold block mt-0.5">•</span>
-                                    <span>{dontItem}</span>
+                                    <span>{t(dontItem)}</span>
                                   </li>
                                 ))}
                               </ul>
                             </div>
                             <div className="p-4 rounded-xl bg-slate-950/45 border border-slate-800 text-left space-y-1">
-                              <span className="font-mono font-bold text-slate-300 text-[10.5px] block uppercase">COMO MELHORAR A COMUNICAÇÃO</span>
-                              <p className="text-slate-400 leading-normal text-[11px] mt-0.5 font-sans">{categoryData.inteligenciaRelacionamento.melhorarComunicacao}</p>
+                              <span className="font-mono font-bold text-slate-300 text-[10.5px] block uppercase">{t("COMO MELHORAR A COMUNICAÇÃO")}</span>
+                              <p className="text-slate-400 leading-normal text-[11px] mt-0.5 font-sans">{t(categoryData.inteligenciaRelacionamento.melhorarComunicacao)}</p>
                             </div>
                             <div className="p-4 rounded-xl bg-slate-950/45 border border-slate-800 text-left space-y-1">
-                              <span className="font-mono font-bold text-slate-300 text-[10.5px] block uppercase">COMO REDUZIR CONFLITOS</span>
-                              <p className="text-slate-400 leading-normal text-[11px] mt-0.5 font-sans">{categoryData.inteligenciaRelacionamento.reduzirConflitos}</p>
+                              <span className="font-mono font-bold text-slate-300 text-[10.5px] block uppercase">{t("COMO REDUZIR CONFLITOS")}</span>
+                              <p className="text-slate-400 leading-normal text-[11px] mt-0.5 font-sans">{t(categoryData.inteligenciaRelacionamento.reduzirConflitos)}</p>
                             </div>
                             <div className="p-4 rounded-xl bg-slate-950/45 border border-slate-800 text-left space-y-1 md:col-span-2">
-                              <span className="font-mono font-bold text-slate-300 text-[10.5px] block uppercase">COMO FORTALECER A CONEXÃO</span>
-                              <p className="text-slate-400 leading-normal text-[11px] mt-0.5 font-sans">{categoryData.inteligenciaRelacionamento.fortalecerConexao}</p>
+                              <span className="font-mono font-bold text-slate-300 text-[10.5px] block uppercase">{t("COMO FORTALECER A CONEXÃO")}</span>
+                              <p className="text-slate-400 leading-normal text-[11px] mt-0.5 font-sans">{t(categoryData.inteligenciaRelacionamento.fortalecerConexao)}</p>
                             </div>
                           </div>
                         </div>
@@ -2068,7 +2068,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
               <div className="flex flex-col items-center justify-center p-12 text-slate-600">
                 <Users className="w-12 h-12 text-slate-800 animate-pulse" />
                 <p className="text-xs font-mono mt-4 text-center max-w-sm leading-relaxed">
-                  Preencha os dados do parceiro(a) ao lado para realizar o cruzamento astrológico de sinastria e obter o relatório completo de 15 módulos.
+                  {t("Preencha os dados do parceiro(a) ao lado para realizar o cruzamento astrológico de sinastria e obter o relatório completo de 15 módulos.")}
                 </p>
               </div>
             )}

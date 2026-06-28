@@ -348,7 +348,7 @@ export default function TransitMap({ mapData }: TransitMapProps) {
       .text(d => d.symbol);
 
     zodiacTextsMerge.select("title")
-      .text(d => `${d.name} (${d.element.toUpperCase()})`);
+      .text(d => `${t(d.name)} (${t(d.element.toUpperCase())})`);
 
     // Prepare Dynamic Transition Variables
     const transitionDuration = isPlaying ? 55 : 370;

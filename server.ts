@@ -1316,54 +1316,232 @@ Responda APENAS com o JSON literal. Não inclua blocos de código adicionais for
 
 // API: Dream Interpretation using Gemini (New Oráculo dos Sonhos)
 app.post("/api/dreams/interpret", async (req, res) => {
-  const { title, description } = req.body;
+  const { title, description, lang } = req.body;
   if (!description) {
     return res.status(400).json({ error: "Descrição do sonho é obrigatória." });
   }
 
-  const fallbackInterpretation = {
-    title: title || "Visão de Alquimia Onírica",
-    mainMeaning: "Seu sonho revela uma profunda fase de transição e o despertar de sentimentos ocultos. O contraste de elementos como sombra e luz, ou terra e água, indica que você está equilibrando intuição com ação prática.",
-    psychological: "Psicologicamente, este sonho representa os impulsos reprimidos do subconsciente que buscam aprovação consciente pelo ego. Elementos inusitados denotam que sua mente racional percebe emoções puras e sinceras como extraordinárias ou instigantes.",
-    spiritual: "Sua alma está cruzando portais multidimensionais de purificação. Momentos onde você supera desafios simbolizam que você possui a autoridade sutil sobre pressões materiais terrenas.",
-    attention: "Atenção a sentimentos de desconfiança ou isolamento excessivo. Lembre-se de aceitar apoio quando for oferecido espontaneamente por quem você preza.",
-    opportunities: "Novas conexões inesperadas com mentores maduros e oportunidades de demonstrar sua sabedoria única.",
-    protection: "Você está sob forte manto de proteção ancestral. Obstáculos e situações imprevistas se resolvem de forma surpreendentemente segura.",
-    loveArea: "No amor, os fluxos oníricos indicam que sentimentos antigos estão passando por cura para dar espaço a conexões mais sinceras e desimpedidas.",
-    financeArea: "Sinal verde de colheita. Esforços passados começam a se materializar em recompensas estáveis no plano material.",
-    careerArea: "Sua capacidade de adaptação e liderança sob pressão chama a atenção positiva de superiores ou parceiros de projetos comerciais.",
-    luckyNumbers: ["07", "14", "22", "33", "48"],
-    favorableColors: ["Dourado", "Azul", "Branco"],
-    positivityLevel: 4.7,
-    oracleAdvice: "Navegue com calma. O ritmo do universo é perfeito e cada mistério se revelará no tempo exato. Respire e confie na sua intuição soberana.",
-    detectedAnimals: [
-      {
-        animal: "Cobra",
-        meaning: "Simboliza cura, renovação profunda, superação de medos atávicos e o despertar da energia vital da terra."
-      }
-    ],
-    detectedColors: [
-      {
-        color: "Dourado",
-        meaning: "Representa a iluminação espiritual, abundância material majestosa e alinhamento com a energia do Sol e do plexo solar."
-      }
-    ],
-    detectedNumbers: [
-      {
-        number: "7",
-        meaning: "Representa espiritualidade mística, introspecção sagrada, o buscador da verdade e o alinhamento pleno com leis cósmicas."
-      }
-    ],
-    predominantEmotion: {
-      emotion: "Paz",
-      explanation: "Apesar do início incerto, o fechamento espiritual que assenta em seu corpo astral é de paz e profunda serenidade."
+  const activeLang = (lang || "pt").toLowerCase();
+  const langNames: Record<string, string> = {
+    pt: "Português",
+    en: "English (Inglês)",
+    es: "Spanish (Espanhol)",
+    de: "German (Alemão)",
+    fr: "French (Francês)"
+  };
+  const targetLangName = langNames[activeLang] || "Português";
+
+  const fallbackInterpretationMap: Record<string, any> = {
+    pt: {
+      title: title || "Visão de Alquimia Onírica",
+      mainMeaning: "Seu sonho revela uma profunda fase de transição e o despertar de sentimentos ocultos. O contraste de elementos como sombra e luz, ou terra e água, indica que você está equilibrando intuição com ação prática.",
+      psychological: "Psicologicamente, este sonho representa os impulsos reprimidos do subconsciente que buscam aprovação consciente pelo ego. Elementos inusitados denotam que sua mente racional percebe emoções puras e sinceras como extraordinárias ou instigantes.",
+      spiritual: "Sua alma está cruzando portais multidimensionais de purificação. Momentos onde você supera desafios simbolizam que você possui a autoridade sutil sobre pressões materiais terrenas.",
+      attention: "Atenção a sentimentos de desconfiança ou isolamento excessivo. Lembre-se de aceitar apoio quando for oferecido espontaneamente por quem você preza.",
+      opportunities: "Novas conexões inesperadas com mentores maduros e oportunidades de demonstrar sua sabedoria única.",
+      protection: "Você está sob forte manto de proteção ancestral. Obstáculos e situações imprevistas se resolvem de forma surpreendentemente segura.",
+      loveArea: "No amor, os fluxos oníricos indicam que sentimentos antigos estão passando por cura para dar espaço a conexões mais sinceras e desimpedidas.",
+      financeArea: "Sinal verde de colheita. Esforços passados começam a se materializar em recompensas estáveis no plano material.",
+      careerArea: "Sua capacidade de adaptação e liderança sob pressão chama a atenção positiva de superiores ou parceiros de projetos comerciais.",
+      luckyNumbers: ["07", "14", "22", "33", "48"],
+      favorableColors: ["Dourado", "Azul", "Branco"],
+      positivityLevel: 4.7,
+      oracleAdvice: "Navegue com calma. O ritmo do universo é perfeito e cada mistério se revelará no tempo exato. Respire e confie na sua intuição soberana.",
+      detectedAnimals: [
+        {
+          animal: "Cobra",
+          meaning: "Simboliza cura, renovação profunda, superação de medos atávicos e o despertar da energia vital da terra."
+        }
+      ],
+      detectedColors: [
+        {
+          color: "Dourado",
+          meaning: "Representa a iluminação espiritual, abundância material majestosa e alinhamento com a energia do Sol e do plexo solar."
+        }
+      ],
+      detectedNumbers: [
+        {
+          number: "7",
+          meaning: "Representa espiritualidade mística, introspecção sagrada, o buscador da verdade e o alinhamento pleno com leis cósmicas."
+        }
+      ],
+      predominantEmotion: {
+        emotion: "Paz",
+        explanation: "Apesar do início incerto, o fechamento espiritual que assenta em seu corpo astral é de paz e profunda serenidade."
+      },
+      dreamEnergyIndex: 85,
+      dreamEnergyType: "Energia Espiritual",
+      universeMessage: "O Universo saúda seu caminhar sutil. Continue confiando no invisível, pois suas águas internas estão calmas, prontas para manifestar o brilho solar!"
     },
-    dreamEnergyIndex: 85,
-    dreamEnergyType: "Energia Espiritual",
-    universeMessage: "O Universo saúda seu caminhar sutil. Continue confiando no invisível, pois suas águas internas estão calmas, prontas para manifestar o brilho solar!"
+    en: {
+      title: title || "Dream Alchemy Vision",
+      mainMeaning: "Your dream reveals a profound transition phase and the awakening of hidden feelings. The contrast of elements like shadow and light, or earth and water, indicates that you are balancing intuition with practical action.",
+      psychological: "Psychologically, this dream represents the repressed impulses of the subconscious seeking conscious approval by the ego. Unusual elements denote that your rational mind perceives pure and sincere emotions as extraordinary or intriguing.",
+      spiritual: "Your soul is crossing multidimensional portals of purification. Moments where you overcome challenges symbolize that you possess subtle authority over earthly material pressures.",
+      attention: "Attention to feelings of distrust or excessive isolation. Remember to accept support when offered spontaneously by those you esteem.",
+      opportunities: "Unexpected new connections with mature mentors and opportunities to demonstrate your unique wisdom.",
+      protection: "You are under a strong mantle of ancestral protection. Obstacles and unforeseen situations are resolved in a surprisingly safe way.",
+      loveArea: "In love, dream flows indicate that old feelings are undergoing healing to make room for more sincere and unhindered connections.",
+      financeArea: "Green light of harvest. Past efforts begin to materialize in stable rewards on the material plane.",
+      careerArea: "Your ability to adapt and lead under pressure draws positive attention from superiors or commercial project partners.",
+      luckyNumbers: ["07", "14", "22", "33", "48"],
+      favorableColors: ["Gold", "Blue", "White"],
+      positivityLevel: 4.7,
+      oracleAdvice: "Navigate calmly. The rhythm of the universe is perfect and each mystery will reveal itself at the exact time. Breathe and trust in your sovereign intuition.",
+      detectedAnimals: [
+        {
+          animal: "Snake",
+          meaning: "Symbolizes healing, deep renewal, overcoming atavistic fears and the awakening of the earth's vital energy."
+        }
+      ],
+      detectedColors: [
+        {
+          color: "Gold",
+          meaning: "Represents spiritual enlightenment, majestic material abundance and alignment with the energy of the Sun and the solar plexus."
+        }
+      ],
+      detectedNumbers: [
+        {
+          number: "7",
+          meaning: "Represents mystical spirituality, sacred introspection, the truth seeker and full alignment with cosmic laws."
+        }
+      ],
+      predominantEmotion: {
+        emotion: "Peace",
+        explanation: "Despite the uncertain beginning, the spiritual closure that settles in your astral body is of peace and deep serenity."
+      },
+      dreamEnergyIndex: 85,
+      dreamEnergyType: "Spiritual Energy",
+      universeMessage: "The Universe greets your subtle walking. Continue to trust the invisible, for your inner waters are calm, ready to manifest solar brilliance!"
+    },
+    es: {
+      title: title || "Visión de Alquimia Onírica",
+      mainMeaning: "Tu sueño revela una profunda fase de transición y el despertar de sentimientos ocultos. El contraste de elementos como sombra y luz, o tierra y agua, indica que estás equilibrando la intuición con la acción práctica.",
+      psychological: "Psicológicamente, este sueño representa los impulsos reprimidos del subconsciente que buscan la aprobación consciente del ego. Los elementos inusuales denotan que tu mente racional percibe las emociones puras y sinceras como extraordinarias o intrigantes.",
+      spiritual: "Tu alma está cruzando portales multidimensionales de purificación. Los momentos en los que superas desafíos simbolizan que posees una sutil autoridad sobre las presiones materiales terrenales.",
+      attention: "Atención a los sentimientos de desconfianza o aislamiento excesivo. Recuerda aceptar el apoyo cuando te lo ofrezcan espontáneamente quienes estimas.",
+      opportunities: "Nuevas conexiones inesperadas con mentores maduros y oportunidades para demostrar tu sabiduría única.",
+      protection: "Estás bajo un fuerte manto de protección ancestral. Los obstáculos y situaciones imprevistas se resuelven de forma sorprendentemente segura.",
+      loveArea: "En el amor, los flujos oníricos indican que los sentimientos antiguos están pasando por una curación para dar espacio a conexiones más sinceras y sin trabas.",
+      financeArea: "Luz verde de cosecha. Los esfuerzos pasados ​​comienzan a materializarse en recompensas estables en el plano material.",
+      careerArea: "Tu capacidad para adaptarte y liderar bajo presión atrae la atención positiva de superiores o socios de proyectos comerciales.",
+      luckyNumbers: ["07", "14", "22", "33", "48"],
+      favorableColors: ["Dorado", "Azul", "Blanco"],
+      positivityLevel: 4.7,
+      oracleAdvice: "Navega con calma. El ritmo del universo es perfecto y cada misterio se revelará en el momento exacto. Respira y confía en tu intuición soberana.",
+      detectedAnimals: [
+        {
+          animal: "Serpiente",
+          meaning: "Simboliza la curación, la renovación profunda, la superación de miedos atávicos y el despertar de la energía vital de la tierra."
+        }
+      ],
+      detectedColors: [
+        {
+          color: "Dorado",
+          meaning: "Representa la iluminación espiritual, la abundancia material majestuosa y la alineación con la energía del Sol y del plexo solar."
+        }
+      ],
+      detectedNumbers: [
+        {
+          number: "7",
+          meaning: "Representa la espiritualidad mística, la introspección sagrada, el buscador de la verdad y la plena alineación con las leyes cósmicas."
+        }
+      ],
+      predominantEmotion: {
+        emotion: "Paz",
+        explanation: "A pesar del comienzo incierto, el cierre espiritual que se asienta en tu cuerpo astral es de paz y profunda serenidad."
+      },
+      dreamEnergyIndex: 85,
+      dreamEnergyType: "Energía Espiritual",
+      universeMessage: "¡El Universo saluda tu sutil caminar. Continúa confiando en lo invisible, pues tus aguas internas están tranquilas, listas para manifestar el brillo solar!"
+    },
+    de: {
+      title: title || "Traumalchemie-Vision",
+      mainMeaning: "Ihr Traum offenbart eine tiefgreifende Übergangsphase und das Erwachen verborgener Gefühle. Der Kontrast der Elemente deutet darauf hin, dass Sie Intuition mit praktischem Handeln in Einklang bringen.",
+      psychological: "Psychologisch gesehen repräsentiert dieser Traum die verdrängten Impulse des Unterbewusstseins, die nach bewusster Anerkennung durch das Ego suchen. Ungewöhnliche Elemente deuten darauf hin, dass Ihr rationaler Verstand reine und aufrichtige Emotionen als außergewöhnlich wahrnimmt.",
+      spiritual: "Ihre Seele durchquert multidimensionale Portale der Reinigung. Momente, in denen Sie Herausforderungen meistern, symbolisieren, dass Sie subtile Autorität über irdische materielle Zwänge besitzen.",
+      attention: "Achten Sie auf Gefühle des Misstrauens oder übermäßiger Isolation. Denken Sie daran, Unterstützung anzunehmen, wenn sie von denjenigen, die Sie schätzen, spontan angeboten wird.",
+      opportunities: "Unerwartete neue Verbindungen mit reifen Mentoren und Gelegenheiten, Ihre einzigartige Weisheit unter Beweis zu stellen.",
+      protection: "Sie stehen unter einem starken Mantel des Schutzes Ihrer Vorfahren. Hindernisse und unvorhergesehene Situationen werden auf überraschend sichere Weise gelöst.",
+      loveArea: "In der Liebe deuten Traumflüsse darauf hin, dass alte Gefühle geheilt werden, um Platz für aufrichtigere und ungehinderte Verbindungen zu machen.",
+      financeArea: "Grünes Licht für die Ernte. Vergangene Bemühungen beginnen sich in stabilen Belohnungen auf der materiellen Ebene niederzuschlagen.",
+      careerArea: "Ihre Fähigkeit, sich unter Druck anzupassen und zu führen, zieht die positive Aufmerksamkeit von Vorgesetzten oder Geschäftspartnern auf sich.",
+      luckyNumbers: ["07", "14", "22", "33", "48"],
+      favorableColors: ["Gold", "Blau", "Weiß"],
+      positivityLevel: 4.7,
+      oracleAdvice: "Segeln Sie ruhig. Der Rhythmus des Universums ist perfekt und jedes Geheimnis wird sich zur genauen Zeit offenbaren. Atmen Sie durch und vertrauen Sie auf Ihre souveräne Intuition.",
+      detectedAnimals: [
+        {
+          animal: "Schlange",
+          meaning: "Symbolisiert Heilung, tiefe Erneuerung, die Überwindung atavistischer Ängste und das Erwachen der lebenswichtigen Energie der Erde."
+        }
+      ],
+      detectedColors: [
+        {
+          color: "Gold",
+          meaning: "Repräsentiert spirituelle Erleuchtung, majestätischen materiellen Überfluss und die Ausrichtung auf die Energie der Sonne und des Solarplexus."
+        }
+      ],
+      detectedNumbers: [
+        {
+          number: "7",
+          meaning: "Repräsentiert mystische Spiritualität, heilige Selbstbeobachtung, den Wahrheitssucher und die vollständige Ausrichtung auf kosmische Gesetze."
+        }
+      ],
+      predominantEmotion: {
+        emotion: "Frieden",
+        explanation: "Trotz des ungewissen Anfangs ist der spirituelle Abschluss, der sich in Ihrem Astralkörper einstellt, von Frieden und tiefer Gelassenheit geprägt."
+      },
+      dreamEnergyIndex: 85,
+      dreamEnergyType: "Spirituelle Energie",
+      universeMessage: "Das Universum grüßt Ihr subtiles Gehen. Vertrauen Sie weiterhin auf das Unsichtbare, denn Ihre inneren Gewässer sind ruhig und bereit, solare Brillanz zu manifestieren!"
+    },
+    fr: {
+      title: title || "Vision d'Alchimie Onirique",
+      mainMeaning: "Votre rêve révèle une profonde phase de transition et l'éveil de sentiments cachés. Le contraste d'éléments comme l'ombre et la lumière, ou la terre et l'eau, indique que vous équilibrez intuition et action pratique.",
+      psychological: "Psychologiquement, ce rêve représente les pulsions refoulées du subconscient qui cherchent l'approbation consciente du moi. Des éléments inhabituels dénotent que votre esprit rationnel perçoit les émotions pures et sincères comme extraordinaires ou intrigantes.",
+      spiritual: "Votre âme traverse des portails de purification multidimensionnels. Les moments où vous surmontez des défis symbolisent que vous possédez une autoridade subtile sur les pressions matérielles terrestres.",
+      attention: "Attention aux sentiments de méfiance ou d'isolement excessif. N'oubliez pas d'accepter le soutien lorsqu'il est offert spontanément par ceux que vous estimez.",
+      opportunities: "Nouvelles connexions inattendues avec des mentors mûrs et opportunités de démontrer votre sagesse unique.",
+      protection: "Vous êtes sous un puissant manteau de protection ancestrale. Les obstacles et les situations imprévues se résolvent de manière étonnamment sûre.",
+      loveArea: "En amour, les flux de rêve indiquent que les sentiments anciens guérissent pour faire place à des connexions plus sincères et sans entraves.",
+      financeArea: "Feu vert pour la récolte. Les efforts passés commencent à se matérialiser en récompenses stables sur le plan matériel.",
+      careerArea: "Votre capacité à s'adapter et à diriger sous pression attire l'attention positive de supérieurs ou de partenaires de projets commerciaux.",
+      luckyNumbers: ["07", "14", "22", "33", "48"],
+      favorableColors: ["Doré", "Bleu", "Blanc"],
+      positivityLevel: 4.7,
+      oracleAdvice: "Naviguez sereinement. Le rythme de l'univers est parfait et chaque mystère se révélera au moment exact. Respirez et faites confiance à votre intuition souveraine.",
+      detectedAnimals: [
+        {
+          animal: "Serpent",
+          meaning: "Symbolise la guérison, le renouveau profond, le dépassement des peurs ataviques et l'éveil de l'énergie vitale de la terre."
+        }
+      ],
+      detectedColors: [
+        {
+          color: "Doré",
+          meaning: "Représente l'illumination spirituelle, l'abondance matérielle majestueuse et l'alignement avec l'énergie du Soleil et du plexus solaire."
+        }
+      ],
+      detectedNumbers: [
+        {
+          number: "7",
+          meaning: "Représente la spiritualité mystique, l'introspection sacrée, le chercheur de vérité et l'alignement complet avec les lois cosmiques."
+        }
+      ],
+      predominantEmotion: {
+        emotion: "Paix",
+        explanation: "Malgré un début incertain, la résolution spirituelle qui s'établit dans votre corps astral est empreinte de paix et de profonde sérénité."
+      },
+      dreamEnergyIndex: 85,
+      dreamEnergyType: "Énergie Spirituelle",
+      universeMessage: "L'Univers salue votre marche subtile. Continuez à faire confiance à l'invisible, car vos eaux intérieures sont calmes, prêtes à manifester l'éclat solaire !"
+    }
   };
 
-  const cacheKey = `oraculo_dreams:${description}`;
+  const fallbackInterpretation = fallbackInterpretationMap[activeLang] || fallbackInterpretationMap["pt"];
+
+  const cacheKey = `oraculo_dreams:${description}:${activeLang}`;
   const cached = getCachedResponse(cacheKey);
   if (cached) {
     return res.json(cached);
@@ -1377,46 +1555,43 @@ app.post("/api/dreams/interpret", async (req, res) => {
 
   try {
     const prompt = `Você é o Oráculo dos Sonhos (Oráculo Celestial), assistente espiritual e terapeuta de sonhos profissional.
-Analise a descrição deste sonho e gere uma interpretação mágica, profunda, rica e detalhada em Português.
+Analise a descrição deste sonho e gere uma interpretação mágica, profunda, rica e detalhada escrita 100% no idioma ${targetLangName}.
 
 Descrição do Sonho: "${description}"
 
-Você DEVE produzir e retornar EXCLUSIVAMENTE um objeto JSON estruturado exatamente com o seguinte formato, sem nenhum texto adicional ou explicações externas:
+Você DEVE produzir e retornar EXCLUSIVAMENTE um objeto JSON estruturado exatamente com o seguinte formato, sem nenhum texto adicional ou explicações externas. Todas as chaves e valores textuais de string DEVEM ser escritos 100% no idioma ${targetLangName}:
 
 {
-  "title": "Título elegante curto do sonho",
-  "mainMeaning": "Significado geral principal bem rico e detalhado do sonho",
-  "psychological": "Interpretação psicológica detalhada baseada no subconsciente",
-  "spiritual": "Mensagem espiritual (se houver relevância, senão explique brevemente a conexão sutil ou retorne a frase 'Transição de alma e conexão elemental')",
-  "attention": "Explicação detalhada do que se atentar nos próximos dias (se houver, senão avise para manter-se em equilíbrio emocional)",
-  "opportunities": "Oportunidades próximas que este sonho indica para sua vida",
-  "protection": "Sinais de proteção e livramentos mostrados no sonho",
-  "loveArea": "Como o sonho ressoa na área amorosa do sonhador",
-  "financeArea": "Impacto e previsões para a área financeira",
-  "careerArea": "Direções do sonho para a área profissional",
-  "luckyNumbers": ["lista com 5 números da sorte de 2 dígitos como strings baseados em símbolos do sonho, ex: '07', '14', '22', '33', '48'"],
-  "favorableColors": ["lista com 2 ou 3 cores favoráveis identificadas no sonho ou sintonizadas, ex: 'Dourado', 'Azul', 'Branco'"],
-  "positivityLevel": 4.5, // Número float de 0.0 a 5.0 representando o nível de positividade
-  "oracleAdvice": "O conselho direto e misterioso do Oráculo para o dia a dia do sonhador",
+  "title": "Título elegante curto do sonho em ${targetLangName}",
+  "mainMeaning": "Significado geral principal bem rico e detalhado do sonho em ${targetLangName}",
+  "psychological": "Interpretação psicológica detalhada baseada no subconsciente em ${targetLangName}",
+  "spiritual": "Mensagem espiritual em ${targetLangName} (se houver relevância, senão explique brevemente a conexão sutil ou retorne a frase correspondente a 'Transição de alma e conexão elemental')",
+  "attention": "Explicação detalhada do que se atentar nos próximos dias em ${targetLangName} (se houver, senão avise para manter-se em equilíbrio emocional)",
+  "opportunities": "Oportunidades próximas que este sonho indica para sua vida em ${targetLangName}",
+  "protection": "Sinais de proteção e livramentos mostrados no sonho em ${targetLangName}",
+  "loveArea": "Como o sonho ressoa na área amorosa do sonhador em ${targetLangName}",
+  "financeArea": "Impacto e previsões para a área financeira em ${targetLangName}",
+  "careerArea": "Direções do sonho para a área profissional em ${targetLangName}",
+  "luckyNumbers": ["lista com 5 números da sorte de 2 dígitos como strings, ex: '07', '14', '22', '33', '48'"],
+  "favorableColors": ["lista com 2 ou 3 cores favoráveis identificadas em ${targetLangName}, ex: 'Gold', 'Blue', 'White'"],
+  "positivityLevel": 4.5,
+  "oracleAdvice": "O conselho direto e misterioso do Oráculo para o dia a dia do sonhador em ${targetLangName}",
   "detectedAnimals": [
-    // Procure ativamente menções aos seguintes animais (Cobra, Leão, Cachorro, Coruja, Águia, etc.) ou outros se presentes no texto. Para cada animal detectado ou relevante, explique seu significado metafórico individualmente. Retorne array vazio [] se nenhum animal estiver presente ou fizer sentido.
-    { "animal": "Nome do Animal", "meaning": "Significado individual e papel místico desse animal neste sonho" }
+    { "animal": "Nome do Animal em ${targetLangName}", "meaning": "Significado individual do animal em ${targetLangName}" }
   ],
   "detectedColors": [
-    // Procure menções a cores (Vermelho, Azul, Preto, Branco, Dourado, Rosa, etc.) no texto. Para cada cor mencionada, dê seu significado espiritual/psicológico no sonho. Retorne array vazio [] se nenhuma cor relevante.
-    { "color": "Nome da Cor", "meaning": "Interpretação espiritual da cor" }
+    { "color": "Nome da Cor em ${targetLangName}", "meaning": "Interpretação da cor em ${targetLangName}" }
   ],
   "detectedNumbers": [
-    // Identifique se há números explicitamente mencionados ou se há uma contagem sutil de elementos (ex: 'cinco árvores', '3 portas', ou o número '9'). Interprete sua numerologia. Retorne array vazio [] se nenhum número proeminente.
-    { "number": "Número", "meaning": "Interpretação numerológica do número no sonho" }
+    { "number": "Número", "meaning": "Interpretação do número no sonho em ${targetLangName}" }
   ],
   "predominantEmotion": {
-    "emotion": "Uma das seguintes palavras exatas: Medo, Alegria, Tristeza, Ansiedade ou Paz",
-    "explanation": "Explicação detalhada de por que essa foi a emoção predominante sintonizada no plano onírico"
+    "emotion": "Uma das seguintes palavras exatas traduzida para ${targetLangName}: Medo, Alegria, Tristeza, Ansiedade ou Paz (ou correspondente em ${targetLangName})",
+    "explanation": "Explicação detalhada em ${targetLangName}"
   },
-  "dreamEnergyIndex": 82, // Número inteiro de 0 a 100 representing o índice de energia
-  "dreamEnergyType": "Escolha o melhor termo complementar: Energia Espiritual, Vibração Psíquica ou Alinhamento Astral",
-  "universeMessage": "Mensagem mística direta enviada do Universo para a consciência do sonhador como uma canalização sagrada"
+  "dreamEnergyIndex": 82,
+  "dreamEnergyType": "Escolha o melhor termo complementar em ${targetLangName}: Energia Espiritual, Vibração Psíquica ou Alinhamento Astral",
+  "universeMessage": "Mensagem mística direta enviada do Universo em ${targetLangName} como uma canalização sagrada"
 }
 
 Retorne apenas o JSON puro para que o sistema possa parsear com JSON.parse com segurança absoluta.`;
@@ -1453,7 +1628,8 @@ app.post("/api/compatibility/evaluate", async (req, res) => {
     companionBirthTime,
     companionBirthCity,
     companionBirthCountry,
-    category
+    category,
+    lang
   } = req.body;
 
   if (!name || !companionName) {
@@ -1474,7 +1650,7 @@ app.post("/api/compatibility/evaluate", async (req, res) => {
     category || "love"
   );
 
-  const cacheKey = `compatibility:${name}:${birthDate}:${companionName}:${companionBirthDate}:${category || 'love'}`;
+  const cacheKey = `compatibility:${name}:${birthDate}:${companionName}:${companionBirthDate}:${category || 'love'}:${lang || 'pt'}`;
   const cached = getCachedResponse(cacheKey);
   if (cached) {
     return res.json({ compatibility: cached });
@@ -1486,15 +1662,26 @@ app.post("/api/compatibility/evaluate", async (req, res) => {
   }
 
   try {
-    const prompt = `Você é um astrólogo de elite da Astrolink. O usuário ${name} realizou um cruzamento de mapas (sinastria) em categoria de "${category || 'love'}" com ${companionName}.
-Abaixo estão os dados reais calculados de posicionamentos, elementos, planetas e dezenas de métricas estruturadas que geramos determinoristicamente baseados nas efemérides reais:
+    const langNames: Record<string, string> = {
+      pt: "Português (Portuguese)",
+      en: "Inglês (English)",
+      es: "Espanhol (Spanish)",
+      de: "Alemão (German)",
+      fr: "Francês (French)"
+    };
+    const targetLangName = langNames[lang] || langNames.pt;
+
+    const prompt = `You are an elite astrologer. The user ${name} performed a chart crossover (synastry) in the category of "${category || 'love'}" with ${companionName}.
+Below are the actual calculated data of positions, elements, planets, and dozens of structured metrics we deterministically generated based on actual ephemerides:
 
 ${JSON.stringify(compResult, null, 2)}
 
-Sua tarefa única é retornar um objeto JSON IDÊNTICO em estrutura. Preencha todos os campos de texto descritivos com análises ainda mais longas, majestosas, profundas, poéticas e sob o tom autêntico de astrologia premium (em Português), contextualizados com estes dois nomes, signos natalícios calculados, trânsitos atuais do momento de 2026 e previsões de ciclos sugeridos.
-MANTENHA OS DIAS NO FORMATO DO CALENDÁRIO COM TEXTOS EXPANDIDOS E MANTENHA TODOS OS PERCENTUAIS NUMÉRICOS EXATAMENTE COMO ESTÃO NO MAPA PARA GARANTIR A PRECISÃO MATEMÁTICA DA SINASTRIA.
+Your sole task is to return an IDENTICAL JSON object in structure. Fill all descriptive text fields, array lists, titles, and explanations with even longer, majestic, profound, poetic analyses in the authentic tone of premium astrology.
+CRITICAL REQUIREMENT: All generated descriptive text fields, descriptions, items, and string arrays MUST be written 100% in the language: ${targetLangName}.
+Do not translate JSON keys (like 'porQueExisteCompatibilidade', 'pontosFortes', etc.). Keep all keys exactly as they are.
+MAINTAIN THE DAYS IN THE CALENDAR FORMAT WITH EXPANDED TEXTS AND KEEP ALL NUMERICAL PERCENTAGES EXACTLY AS THEY ARE IN THE CHART TO ENSURE THE MATHEMATICAL ACCURACY OF THE SYNASTRY.
 
-Retorne APENAS o JSON literal bruto sem blocos de código markdown ou texto secundário fora do JSON.`;
+Return ONLY the raw literal JSON without any markdown code blocks or secondary text outside the JSON.`;
 
     const response = await generateContentWithFallback({
       contents: prompt,
@@ -1558,18 +1745,51 @@ Retorne APENAS o JSON literal bruto sem blocos de código markdown ou texto secu
 
 // API: Daily Oracle limit checking + prompt calculation
 app.post("/api/oraculo/query", async (req, res) => {
-  const { question } = req.body;
+  const { question, lang } = req.body;
   if (!question) {
     return res.status(400).json({ error: "Pergunta do oráculo é obrigatória." });
   }
 
-  const fallbackOracle = {
-    reflection: "Todo ciclo que se fecha é na verdade a preparação de um solo novo. Pare e observe o que realmente está demandando sua energia.",
-    inspiringMessage: "A originalidade reside em aceitar seus padrões ocultos enquanto projeta novos amanheceres sem medo.",
-    counsel: "Não precipite escolhas. Silencie suas inquietações cerebrais hoje e permita que sua intuição (que vibra alto) indique a resposta natural."
+  const activeLang = (lang || "pt").toLowerCase();
+  const fallbackOracleMap: Record<string, any> = {
+    pt: {
+      reflection: "Todo ciclo que se fecha é na verdade a preparação de um solo novo. Pare e observe o que realmente está demandando sua energia.",
+      inspiringMessage: "A originalidade reside em aceitar seus padrões ocultos enquanto projeta novos amanheceres sem medo.",
+      counsel: "Não precipite escolhas. Silencie suas inquietações cerebrais hoje e permita que sua intuição (que vibra alto) indique a resposta natural."
+    },
+    en: {
+      reflection: "Every cycle that closes is actually the preparation of a new soil. Stop and observe what is really demanding your energy.",
+      inspiringMessage: "Originality lies in accepting your hidden patterns while projecting new dawns without fear.",
+      counsel: "Do not rush choices. Silence your brain worries today and allow your intuition (which vibrates high) to indicate the natural response."
+    },
+    es: {
+      reflection: "Cada ciclo que se cierra es en realidad la preparación de un nuevo suelo. Detente y observa qué está demandando realmente tu energía.",
+      inspiringMessage: "La originalidad reside en aceptar tus patrones ocultos mientras proyectas nuevos amaneceres sin temor.",
+      counsel: "No apresures elecciones. Silencia tus inquietudes cerebrales hoy y permite que tu intuición (que vibra alto) indique la respuesta natural."
+    },
+    de: {
+      reflection: "Jeder geschlossene Zyklus ist in Wirklichkeit die Vorbereitung eines neuen Bodens. Halten Sie inne und beobachten Sie, was Ihre Energie wirklich fordert.",
+      inspiringMessage: "Originalität liegt darin, Ihre verborgenen Muster zu akzeptieren und gleichzeitig ohne Angst neue Morgenröten zu entwerfen.",
+      counsel: "Übereilen Sie keine Entscheidungen. Beruhigen Sie heute Ihre Sorgen und lassen Sie Ihre Intuition die natürliche Antwort anzeigen."
+    },
+    fr: {
+      reflection: "Chaque cycle qui se ferme est en réalité la préparation d'un nouveau sol. Arrêtez-vous et observez ce qui réclame réellement votre énergie.",
+      inspiringMessage: "L'originalité réside dans l'acceptation de vos schémas cachés tout en projetant de nouvelles aurores sans crainte.",
+      counsel: "Ne précipitez pas les choix. Silencez vos inquiétudes cérébrales aujourd'hui et permettez à votre intuition d'indiquer la réponse naturelle."
+    }
   };
 
-  const cacheKey = `oraculo:${question}`;
+  const fallbackOracle = fallbackOracleMap[activeLang] || fallbackOracleMap["pt"];
+  const langNames: Record<string, string> = {
+    pt: "Português",
+    en: "English (Inglês)",
+    es: "Spanish (Espanhol)",
+    de: "German (Alemão)",
+    fr: "French (Francês)"
+  };
+  const targetLangName = langNames[activeLang] || "Português";
+
+  const cacheKey = `oraculo:${question}:${activeLang}`;
   const cached = getCachedResponse(cacheKey);
   if (cached) {
     return res.json(cached);
@@ -1584,11 +1804,11 @@ app.post("/api/oraculo/query", async (req, res) => {
   try {
     const prompt = `O usuário fez uma pergunta ao Oráculo do Dia: "${question}".
 Considere que as energias astrológicas regentes estimulam idealismo, independência e crescimento pessoal metódico.
-Responda com um conselho meditativo e reflexivo em Português no seguinte formato JSON estrito:
+Responda com um conselho meditativo e reflexivo escrito 100% em ${targetLangName} no seguinte formato JSON estrito:
 {
-  "reflection": "Um parágrafo de profunda reflexão metafísica relacionada à pergunta...",
-  "inspiringMessage": "Uma mensagem de 2 frases de grande inspiração e incentivo...",
-  "counsel": "Um conselho prático e objective sobre o que o usuário deve fazer hoje..."
+  "reflection": "Um parágrafo de profunda reflexão metafísica relacionada à pergunta escrito em ${targetLangName}...",
+  "inspiringMessage": "Uma mensagem de 2 frases de grande inspiração e incentivo escrita em ${targetLangName}...",
+  "counsel": "Um conselho prático e objetivo sobre o que o usuário deve fazer hoje escrito em ${targetLangName}..."
 }`;
 
     const response = await generateContentWithFallback({
@@ -2060,7 +2280,7 @@ Não coloque blocos markdown ou preâmbulos, retorne APENAS o JSON literal limpo
 // API: Astrological Rare Notifications system customized to user's birth map
 app.post("/api/astrology/rare-notifications", async (req, res) => {
   try {
-    const { birthDate, name, email } = req.body || {};
+    const { birthDate, name, email, lang } = req.body || {};
     let safeBirthDate = birthDate;
 
     // Elegant fallback if birthDate is absent or undefined
@@ -2083,101 +2303,307 @@ app.post("/api/astrology/rare-notifications", async (req, res) => {
     const moonSign = isDefaultPersona ? "Aquário" : getAscendedAstrologicalSign(safeBirthDate, 5);
     const ascSign = isDefaultPersona ? "Sagitário" : getAscendedAstrologicalSign(safeBirthDate, 8);
 
-  const fallbackData = {
-    notifications: [
-      {
-        id: "rare-node-shift-1",
-        title: "Alinhamento Crítico de Plutão",
-        message: `Plutão retrógrado em Aquário faz aspecto singular sobre seu Sol de nascimento em ${solSign}, convocando um encerramento kármico definitivo e uma renovação revolucionária da sua autoimagem de liderança.`,
-        severity: "high",
-        date: todayStr,
-        read: false,
-        planet: "Plutão",
-        aspect: "Conjunção",
-        category: "alignment"
+    const activeLang = (lang || "pt").toLowerCase();
+    const langNames: Record<string, string> = {
+      pt: "Português",
+      en: "English (Inglês)",
+      es: "Spanish (Espanhol)",
+      de: "German (Alemão)",
+      fr: "French (Francês)"
+    };
+    const targetLangName = langNames[activeLang] || "Português";
+
+    const localizedFallbackData: Record<string, any> = {
+      pt: {
+        notifications: [
+          {
+            id: "rare-node-shift-1",
+            title: "Alinhamento Crítico de Plutão",
+            message: `Plutão retrógrado em Aquário faz aspecto singular sobre seu Sol de nascimento em ${solSign}, convocando um encerramento kármico definitivo e uma renovação revolucionária da sua autoimagem de liderança.`,
+            severity: "high",
+            date: todayStr,
+            read: false,
+            planet: "Plutão",
+            aspect: "Conjunção",
+            category: "alignment"
+          },
+          {
+            id: "jupiter-trine-2",
+            title: "Farol Kármico de Júpiter",
+            message: `Júpiter entra em trígono perfeito de expansão com sua Lua natal em ${moonSign}. Um Portal de sorte emocional, clareza intuitiva profunda e magnetismo prático está aberto nas próximas 48 horas.`,
+            severity: "medium",
+            date: todayStr,
+            read: false,
+            planet: "Júpiter",
+            aspect: "Trígono",
+            category: "alignment"
+          },
+          {
+            id: "retrograde-saturn-3",
+            title: "Estação de Saturno em Peixes",
+            message: `Saturno estaciona no céu em quadratura exata com seu Ascendente natal em ${ascSign}. A cobrança sobre limites pessoais, limites de saúde e reestruturação emocional ganha peso extraordinário.`,
+            severity: "high",
+            date: todayStr,
+            read: false,
+            planet: "Saturno",
+            aspect: "Quadratura",
+            category: "retrograde"
+          },
+          {
+            id: "mars-opposition-4",
+            title: "Oposição de Marte Celeste",
+            message: `Marte celeste em trânsito realiza oposição desafiadora ao seu Sol de nascimento em ${solSign}. Cuidado com picos de irritabilidade, exaustão impaciente ou conflitos com autoridades. Pratique desapego.`,
+            severity: "low",
+            date: todayStr,
+            read: false,
+            planet: "Marte",
+            aspect: "Oposição",
+            category: "alignment"
+          }
+        ]
       },
-      {
-        id: "jupiter-trine-2",
-        title: "Farol Kármico de Júpiter",
-        message: `Júpiter entra em trígono perfeito de expansão com sua Lua natal em ${moonSign}. Um Portal de sorte emocional, clareza intuitiva profunda e magnetismo prático está aberto nas próximas 48 horas.`,
-        severity: "medium",
-        date: todayStr,
-        read: false,
-        planet: "Júpiter",
-        aspect: "Trígono",
-        category: "alignment"
+      en: {
+        notifications: [
+          {
+            id: "rare-node-shift-1",
+            title: "Critical Pluto Alignment",
+            message: `Pluto retrograde in Aquarius forms a unique aspect on your natal Sun in ${solSign}, calling for a final karmic closure and a revolutionary renewal of your self-image of leadership.`,
+            severity: "high",
+            date: todayStr,
+            read: false,
+            planet: "Pluto",
+            aspect: "Conjunction",
+            category: "alignment"
+          },
+          {
+            id: "jupiter-trine-2",
+            title: "Jupiter's Karmic Beacon",
+            message: `Jupiter enters a perfect trine of expansion with your natal Moon in ${moonSign}. A portal of emotional fortune, deep intuitive clarity, and practical magnetism is open for the next 48 hours.`,
+            severity: "medium",
+            date: todayStr,
+            read: false,
+            planet: "Jupiter",
+            aspect: "Trine",
+            category: "alignment"
+          },
+          {
+            id: "retrograde-saturn-3",
+            title: "Saturn Station in Pisces",
+            message: `Saturn stations in the sky in exact square with your natal Ascendant in ${ascSign}. The demand for personal limits, health boundaries, and emotional restructuring gains extraordinary weight.`,
+            severity: "high",
+            date: todayStr,
+            read: false,
+            planet: "Saturn",
+            aspect: "Square",
+            category: "retrograde"
+          },
+          {
+            id: "mars-opposition-4",
+            title: "Mars Celestial Opposition",
+            message: `Transit celestial Mars creates a challenging opposition to your natal Sun in ${solSign}. Beware of irritability spikes, impatient exhaustion, or conflicts with authority. Practice letting go.`,
+            severity: "low",
+            date: todayStr,
+            read: false,
+            planet: "Mars",
+            aspect: "Opposition",
+            category: "alignment"
+          }
+        ]
       },
-      {
-        id: "retrograde-saturn-3",
-        title: "Estação de Saturno em Peixes",
-        message: `Saturno estaciona no céu em quadratura exata com seu Ascendente natal em ${ascSign}. A cobrança sobre limites pessoais, limites de saúde e reestruturação emocional ganha peso extraordinário.`,
-        severity: "high",
-        date: todayStr,
-        read: false,
-        planet: "Saturno",
-        aspect: "Quadratura",
-        category: "retrograde"
+      es: {
+        notifications: [
+          {
+            id: "rare-node-shift-1",
+            title: "Alineación Crítica de Plutón",
+            message: `Plutón retrógrado en Acuario hace un aspecto singular sobre tu Sol natal en ${solSign}, convocando a un cierre kármico definitivo y a una renovación revolucionaria de tu autoimagen de liderazgo.`,
+            severity: "high",
+            date: todayStr,
+            read: false,
+            planet: "Plutón",
+            aspect: "Conjunción",
+            category: "alignment"
+          },
+          {
+            id: "jupiter-trine-2",
+            title: "Faro Kármico de Júpiter",
+            message: `Júpiter entra en trígono perfecto de expansión con tu Luna natal en ${moonSign}. Un portal de suerte emocional, claridad intuitiva profunda y magnetismo práctico está abierto en las próximas 48 horas.`,
+            severity: "medium",
+            date: todayStr,
+            read: false,
+            planet: "Júpiter",
+            aspect: "Trígono",
+            category: "alignment"
+          },
+          {
+            id: "retrograde-saturn-3",
+            title: "Estación de Saturno en Piscis",
+            message: `Saturno se estaciona en el cielo en cuadratura exacta con tu Ascendente natal en ${ascSign}. La exigencia sobre los límites personales, los límites de salud y la reestructuración emocional adquiere un peso extraordinario.`,
+            severity: "high",
+            date: todayStr,
+            read: false,
+            planet: "Saturno",
+            aspect: "Cuadratura",
+            category: "retrograde"
+          },
+          {
+            id: "mars-opposition-4",
+            title: "Oposición del Marte Celeste",
+            message: `Marte celeste en tránsito realiza una oposición desafiante a tu Sol natal en ${solSign}. Cuidado con los picos de irritabilidad, el cansancio impaciente o los conflictos con las autoridades. Practica el desapego.`,
+            severity: "low",
+            date: todayStr,
+            read: false,
+            planet: "Marte",
+            aspect: "Oposición",
+            category: "alignment"
+          }
+        ]
       },
+      de: {
+        notifications: [
+          {
+            id: "rare-node-shift-1",
+            title: "Kritische Pluto-Ausrichtung",
+            message: `Der rückläufige Pluto im Wassermann bildet einen einzigartigen Aspekt auf Ihre Geburts-Sonne in ${solSign} und fordert einen endgültigen karmischen Abschluss und eine revolutionäre Erneuerung Ihres Selbstbildes als Führungspersönlichkeit.`,
+            severity: "high",
+            date: todayStr,
+            read: false,
+            planet: "Pluto",
+            aspect: "Konjunktion",
+            category: "alignment"
+          },
+          {
+            id: "jupiter-trine-2",
+            title: "Karmisches Leuchtfeuer von Jupiter",
+            message: `Jupiter tritt in ein perfektes Trigon der Expansion mit Ihrem Geburts-Mond in ${moonSign}. Ein Portal für emotionales Glück, tiefe intuitive Klarheit und praktischen Magnetismus ist für die nächsten 48 Stunden geöffnet.`,
+            severity: "medium",
+            date: todayStr,
+            read: false,
+            planet: "Jupiter",
+            aspect: "Trigon",
+            category: "alignment"
+          },
+          {
+            id: "retrograde-saturn-3",
+            title: "Saturn-Station in Fische",
+            message: `Saturn steht am Himmel im exakten Quadrat zu Ihrem Geburts-Aszendenten in ${ascSign}. Die Forderung nach persönlichen Grenzen, gesundheitlichen Grenzen und emotionaler Umstrukturierung gewinnt an außergewöhnlichem Gewicht.`,
+            severity: "high",
+            date: todayStr,
+            read: false,
+            planet: "Saturn",
+            aspect: "Quadrat",
+            category: "retrograde"
+          },
+          {
+            id: "mars-opposition-4",
+            title: "Himmlische Mars-Opposition",
+            message: `Der himmlische Mars im Transit bildet eine herausfordernde Opposition zu Ihrer Geburts-Sonne in ${solSign}. Achten Sie auf Reizbarkeitsschübe, ungeduldige Erschöpfung oder Konflikte mit Autoritäten. Üben Sie sich im Loslassen.`,
+            severity: "low",
+            date: todayStr,
+            read: false,
+            planet: "Mars",
+            aspect: "Opposition",
+            category: "alignment"
+          }
+        ]
+      },
+      fr: {
+        notifications: [
+          {
+            id: "rare-node-shift-1",
+            title: "Alignement Critique de Pluton",
+            message: `Pluton rétrograde en Verseau forme un aspect unique sur votre Soleil natal en ${solSign}, appelant à une clôture karmique définitive et à un renouvellement révolutionnaire de votre image de leader.`,
+            severity: "high",
+            date: todayStr,
+            read: false,
+            planet: "Pluton",
+            aspect: "Conjonction",
+            category: "alignment"
+          },
+          {
+            id: "jupiter-trine-2",
+            title: "Phare Karmique de Jupiter",
+            message: `Jupiter entre en trigone parfait d'expansion avec votre Lune natale en ${moonSign}. Un portail de chance émotionnelle, de clarté intuitive profonde et de magnétisme pratique est ouvert pour les prochaines 48 heures.`,
+            severity: "medium",
+            date: todayStr,
+            read: false,
+            planet: "Jupiter",
+            aspect: "Trigone",
+            category: "alignment"
+          },
+          {
+            id: "retrograde-saturn-3",
+            title: "Station de Saturne en Poissons",
+            message: `Saturne stationne dans le ciel en carré exact avec votre Ascendant natal en ${ascSign}. L'exigence de limites personnelles, de frontières de santé et de restructuration émotionnelle prend un poids extraordinaire.`,
+            severity: "high",
+            date: todayStr,
+            read: false,
+            planet: "Saturne",
+            aspect: "Carré",
+            category: "retrograde"
+          },
+          {
+            id: "mars-opposition-4",
+            title: "Opposition Céleste de Mars",
+            message: `Mars céleste en transit crée une opposition difficile à votre Soleil natal en ${solSign}. Attention aux pics d'irritabilité, à l'épuisement impatient ou aux conflits avec l'autorité. Pratiquez le détachement.`,
+            severity: "low",
+            date: todayStr,
+            read: false,
+            planet: "Mars",
+            aspect: "Opposition",
+            category: "alignment"
+          }
+        ]
+      }
+    };
+
+    const fallbackData = localizedFallbackData[activeLang] || localizedFallbackData['pt'];
+
+    const today = new Date();
+    const startOfYear = new Date(today.getFullYear(), 0, 1);
+    const pastDaysOfYear = (today.getTime() - startOfYear.getTime()) / 86400000;
+    const weekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+    const weekStr = `${today.getFullYear()}-W${weekNumber}`;
+
+    const cacheKey = `rarenotif:${name || ''}:${safeBirthDate}:${weekStr}:${activeLang}`;
+    const cached = getCachedResponse(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
+    if (!aiClient) {
+      const result = fallbackData;
+      setCachedResponse(cacheKey, result);
+      return res.json(result);
+    }
+
+    try {
+      const prompt = `Gere uma lista de 3 a 4 "Alertas Astrológicos Raros / Alinhamentos Planetários Excepcionalmente Raros" em ${targetLangName} adaptados especificamente para o mapa natal do usuário abaixo.
+      Os alertas devem refletir trânsitos celestes reais ou altamente plausíveis ocorrendo em Junho de 2026 e seus impactos calculados nos planetas de nascimento do usuário.
+      
+      DADOS DE NASCIMENTO DO USUÁRIO:
+      - Nome: ${name || "Buscador Celestial"}
+      - Nascimento: ${safeBirthDate}
+      - Signo Solar Natal estimado: ${solSign}
+      - Signo Lunar Natal estimado: ${moonSign}
+      - Ascendente Natal estimado: ${ascSign}
+
+  Importante: O retorno DEVE ser um objeto JSON estrito com a seguinte estrutura de dados:
+  {
+    "notifications": [
       {
-        id: "mars-opposition-4",
-        title: "Oposição de Marte Celeste",
-        message: `Marte celeste em trânsito realiza oposição desafiadora ao seu Sol de nascimento em ${solSign}. Cuidado com picos de irritabilidade, exaustão impaciente ou conflitos com autoridades. Pratique desapego.`,
-        severity: "low",
-        date: todayStr,
-        read: false,
-        planet: "Marte",
-        aspect: "Oposição",
-        category: "alignment"
+        "id": "string-id-unico",
+        "title": "Título Curto do Alerta (ex: 'Grande Oposição de Marte kármica')",
+        "message": "Explicação astrológica densa, poética e altamente personalizada de 2 a 3 frases em ${targetLangName} sobre este trânsito celeste (ex: Júpiter em trânsito de oposição ao seu Sol em ${solSign}) e como isso atua como um raro chamado energético em sua vida.",
+        "severity": "high" | "medium" | "low",
+        "date": "2026-06-09",
+        "read": false,
+        "planet": "O planeta em trânsito preponderante (ex: 'Plutão', 'Saturno', 'Júpiter', 'Marte', 'Netuno')",
+        "aspect": "O aspecto astrológico exato (ex: 'Conjunção', 'Trígono', 'Oposição', 'Quadratura')",
+        "category": "alignment" | "eclipse" | "retrograde" | "node"
       }
     ]
-  };
-
-  const today = new Date();
-  const startOfYear = new Date(today.getFullYear(), 0, 1);
-  const pastDaysOfYear = (today.getTime() - startOfYear.getTime()) / 86400000;
-  const weekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
-  const weekStr = `${today.getFullYear()}-W${weekNumber}`;
-
-  const cacheKey = `rarenotif:${name || ''}:${safeBirthDate}:${weekStr}`;
-  const cached = getCachedResponse(cacheKey);
-  if (cached) {
-    return res.json(cached);
   }
-
-  if (!aiClient) {
-    const result = fallbackData;
-    setCachedResponse(cacheKey, result);
-    return res.json(result);
-  }
-
-  try {
-    const prompt = `Gere uma lista de 3 a 4 "Alertas Astrológicos Raros / Alinhamentos Planetários Excepcionalmente Raros" em Português adaptados especificamente para o mapa natal do usuário abaixo.
-    Os alertas devem refletir trânsitos celestes reais ou altamente plausíveis ocorrendo em Junho de 2026 e seus impactos calculados nos planetas de nascimento do usuário.
-    
-    DADOS DE NASCIMENTO DO USUÁRIO:
-    - Nome: ${name || "Buscador Celestial"}
-    - Nascimento: ${safeBirthDate}
-    - Signo Solar Natal estimado: ${solSign}
-    - Signo Lunar Natal estimado: ${moonSign}
-    - Ascendente Natal estimado: ${ascSign}
-
-Importante: O retorno DEVE ser um objeto JSON estrito com a seguinte estrutura de dados:
-{
-  "notifications": [
-    {
-      "id": "string-id-unico",
-      "title": "Título Curto do Alerta (máx. 40 caracteres, ex: 'Grande Oposição de Marte kármica')",
-      "message": "Explicação astrológica densa, poética e altamente personalizada de 2 a 3 frases em Português sobre este trânsito celeste (ex: Júpiter em trânsito de oposição ao seu Sol em ${solSign}) e como isso atua como um raro chamado energético em sua vida.",
-      "severity": "high" | "medium" | "low",
-      "date": "2026-06-09",
-      "read": false,
-      "planet": "O planeta em trânsito preponderante (ex: 'Plutão', 'Saturno', 'Júpiter', 'Marte', 'Netuno')",
-      "aspect": "O aspecto astrológico exato (ex: 'Conjunção', 'Trígono', 'Oposição', 'Quadratura')",
-      "category": "alignment" | "eclipse" | "retrograde" | "node"
-    }
-  ]
-}
-Não coloque blocos markdown ou preâmbulos, retorne APENAS o JSON literal limpo.`;
+  Não coloque blocos markdown ou preâmbulos, retorne APENAS o JSON literal limpo.`;
 
     const response = await generateContentWithFallback({
       contents: prompt,
@@ -2959,6 +3385,17 @@ app.post("/api/tarot/draw", async (req, res) => {
   }
   const selectedCard = shuffledDeck[0];
 
+  const { lang } = req.body || {};
+  const activeLang = (lang || "pt").toLowerCase();
+  const langNames: Record<string, string> = {
+    pt: "Português",
+    en: "English (Inglês)",
+    es: "Spanish (Espanhol)",
+    de: "German (Alemão)",
+    fr: "French (Francês)"
+  };
+  const targetLangName = langNames[activeLang] || "Português";
+
   const currentDate = new Date().toLocaleDateString("pt-BR");
 
   const result: any = {
@@ -2977,9 +3414,9 @@ app.post("/api/tarot/draw", async (req, res) => {
   }
 
   try {
-    const prompt = `Gere uma leitura de tarô personalizada em Português para a carta sorteada: "${selectedCard.cardName}".
+    const prompt = `Gere uma leitura de tarô personalizada em ${targetLangName} para a carta sorteada: "${selectedCard.cardName}".
 O usuário quer saber sua previsão e conselho astrológico-tarótico com visual premium para esta semana.
-Gere um JSON exato com as seguintes chaves de texto ricas e conselhos poéticos:
+Gere um JSON exato com as seguintes chaves de texto ricas e conselhos poéticos em ${targetLangName}:
 {
   "weeklyForecast": "Parágrafo detalhado de previsão de 100 a 150 palavras para a semana unindo a energia da carta e intuição astrológica...",
   "advice": "Conselho prático específico e poético de uma frase para enfrentar dilemas..."
@@ -3007,7 +3444,6 @@ Gere um JSON exato com as seguintes chaves de texto ricas e conselhos poéticos:
   }
 });
 
-// API: Sorteio de várias cartas para tiragens específicas (inteligente, amor, tradicional)
 app.post("/api/tarot/draw-full", async (req, res) => {
   try {
     const { count } = req.body;
@@ -3030,71 +3466,243 @@ app.post("/api/tarot/draw-full", async (req, res) => {
     console.log("Erro ao sortear cartas do baralho:", err);
     res.status(500).json({ error: "Erro interno ao sortear cartas de tarot." });
   }
-});
-
-// Helper to generate deeply realistic, individualized tarot readings offline when the external API key is throttled
-function generateOfflineTarotReading(type: string, cards: any[], question: string, userName: string): { reading: string; guidance: string } {
-  const userDisplay = userName || "Buscador de Sabedoria";
+});// Helper to generate deeply realistic, individualized tarot readings offline when the external API key is throttled
+function generateOfflineTarotReading(type: string, cards: any[], question: string, userName: string, lang?: string): { reading: string; guidance: string } {
+  const activeLang = (lang || "pt").toLowerCase();
+  
+  const userDisplay = userName || (
+    activeLang === 'en' ? "Seeker of Wisdom" :
+    activeLang === 'es' ? "Buscador de Sabiduría" :
+    activeLang === 'de' ? "Suchender der Weisheit" :
+    activeLang === 'fr' ? "Chercheur de Sagesse" :
+    "Buscador de Sabedoria"
+  );
   
   const mainCardsLine = cards && Array.isArray(cards)
     ? cards.map((c: any) => c.cardName).join(", ")
-    : "forças sutis";
+    : (
+      activeLang === 'en' ? "subtle forces" :
+      activeLang === 'es' ? "fuerzas sutiles" :
+      activeLang === 'de' ? "subtile Kräfte" :
+      activeLang === 'fr' ? "forces subtiles" :
+      "forças sutis"
+    );
 
-  const guidanceMantras = [
-    "Respire fundo. A força do cosmo habita no seu silêncio divino hoje.",
-    "Abra-se para o novo caminho com fé sincera, sabedoria e pés no chão.",
-    "Afaste-se de fofocas e ruídos externos; silencie sua mente e blinde seu lar.",
-    "Consagre suas finanças à sabedoria e aja com prudência nas parcerias.",
-    "Blindagem cósmica ativada: confie no seu brilho interior único.",
-    "O amor verdadeiro e sincero flui no respeito ao próprio tempo sagrado."
-  ];
+  const guidanceMantras: Record<string, string[]> = {
+    pt: [
+      "Respire fundo. A força do cosmo habita no seu silêncio divino hoje.",
+      "Abra-se para o novo caminho com fé sincera, sabedoria e pés no chão.",
+      "Afaste-se de fofocas e ruídos externos; silencie sua mente e blinde seu lar.",
+      "Consagre suas finanças à sabedoria e aja com prudência nas parcerias.",
+      "Blindagem cósmica ativada: confie no seu brilho interior único.",
+      "O amor verdadeiro e sincero flui no respeito ao próprio tempo sagrado."
+    ],
+    en: [
+      "Take a deep breath. The strength of the cosmos dwells in your divine silence today.",
+      "Open yourself to the new path with sincere faith, wisdom, and feet on the ground.",
+      "Stay away from gossip and external noise; silence your mind and shield your home.",
+      "Consecrate your finances to wisdom and act with prudence in partnerships.",
+      "Cosmic shield activated: trust in your unique inner brilliance.",
+      "True and sincere love flows in respect of its own sacred time."
+    ],
+    es: [
+      "Respire hondo. La fuerza del cosmos habita en su silencio divino hoy.",
+      "Ábrase al nuevo camino con fe sincera, sabiduría y los pies en la tierra.",
+      "Aléjese de los chismes y el ruido externo; silencie su mente y proteja su hogar.",
+      "Consagre sus finanzas a la sabiduría y actúe con prudencia en las asociaciones.",
+      "Escudo cósmico activado: confíe en su brillo interior único.",
+      "El amor verdadero y sincero fluye con respecto a su propio tiempo sagrado."
+    ],
+    de: [
+      "Atmen Sie tief durch. Die Kraft des Kosmos wohnt heute in Ihrem göttlichen Schweigen.",
+      "Öffnen Sie sich dem neuen Weg mit aufrichtigem Glauben, Weisheit und festem Boden unter den Füßen.",
+      "Halten Sie sich von Klatsch und externem Lärm fern; Beruhigen Sie Ihren Geist und schützen Sie Ihr Zuhause.",
+      "Weihen Sie Ihre Finanzen der Weisheit und handeln Sie in Partnerschaften mit Vorsicht.",
+      "Kosmischer Schutzschild aktiviert: Vertrauen Sie auf Ihre einzigartige innere Brillanz.",
+      "Wahre und aufrichtige Liebe fließt im Respekt vor der eigenen heiligen Zeit."
+    ],
+    fr: [
+      "Respirez profondément. La force du cosmos réside aujourd'hui dans votre silence divin.",
+      "Ouvrez-vous au nouveau chemin avec une foi sincère, de la sagesse et les pieds sur terre.",
+      "Éloignez-vous des commérages et des bruits extérieurs ; calmez votre esprit et protégez votre foyer.",
+      "Consacrez vos finances à la sagesse et agissez avec prudence dans vos partenariats.",
+      "Bouclier cosmique activé : ayez confiance en votre éclat intérieur unique.",
+      "L'amour vrai et sincère coule dans le respect de son propre temps sacré."
+    ]
+  };
 
-  const randomGuidance = guidanceMantras[Math.floor(Math.random() * guidanceMantras.length)];
+  const list = guidanceMantras[activeLang] || guidanceMantras["pt"];
+  const randomGuidance = list[Math.floor(Math.random() * list.length)];
 
   if (type === "amor") {
-    const p1 = `Olá, ${userDisplay}. Sinto aqui, ao sintonizar com as cartas ${mainCardsLine}, uma vibração profunda que toca diretamente o seu campo afetivo. Como uma taróloga real com anos de experiência, vejo que sua alma procura clareza absoluta sobre sentimentos. Suas cartas revelam que o momento atual pede para você respirar fundo e se desfazer de expectativas pesadas que o passado deixou em seu coração. Há fofocas ou possíveis invejas camufladas ao seu redor; blinde o seu amor contra essas energias negativas.`;
-    const p2 = `Se a sua dúvida central é "${question || "Qual o conselho do Tarot para minha vida amorosa no momento?"}", as cartas mostram a necessidade urgente de reciprocidade sã. Evite ciladas do apego inconsciente ou o medo da rejeição. As cartas aconselham a dialogar com tranquilidade e colocar limites éticos respeitáveis.`;
-    const p3 = `Nas próximas semanas, espere por uma renovação sutil de sentimentos. A alquimia do coração cura suas dores quando você aceita sua própria dignidade e valor sagrado.`;
-    return {
-      reading: `${p1}\n\n${p2}\n\n${p3}`,
-      guidance: `Sinal espiritual de Orbia: ${randomGuidance}`
+    const templates: Record<string, { p1: string, p2: string, p3: string, g: string }> = {
+      pt: {
+        p1: `Olá, ${userDisplay}. Sinto aqui, ao sintonizar com as cartas ${mainCardsLine}, uma vibração profunda que toca diretamente o seu campo afetivo. Como uma taróloga real com anos de experiência, vejo que sua alma procura clareza absoluta sobre sentimentos. Suas cartas revelam que o momento atual pede para você respirar fundo e se desfazer de expectativas pesadas que o passado deixou em seu coração. Há fofocas ou possíveis invejas camufladas ao seu redor; blinde o seu amor contra essas energias negativas.`,
+        p2: `Se a sua dúvida central é "${question || "Qual o conselho do Tarot para minha vida amorosa no momento?"}", as cartas mostram a necessidade urgente de reciprocidade sã. Evite ciladas do apego inconsciente ou o medo da rejeição. As cartas aconselham a dialogar com tranquilidade e colocar limites éticos respeitáveis.`,
+        p3: `Nas próximas semanas, espere por uma renovação sutil de sentimentos. A alquimia do coração cura suas dores quando você aceita sua própria dignidade e valor sagrado.`,
+        g: `Sinal espiritual de Orbia: ${randomGuidance}`
+      },
+      en: {
+        p1: `Hello, ${userDisplay}. I feel here, when tuning in to the cards ${mainCardsLine}, a deep vibration that directly touches your emotional field. As a real tarot reader with years of experience, I see that your soul is seeking absolute clarity about your feelings. Your cards reveal that the current moment asks you to take a deep breath and let go of the heavy expectations that the past has left in your heart. There is gossip or possible jealousy hidden around you; shield your love against these negative energies.`,
+        p2: `If your central question is "${question || "What is the Tarot's advice for my love life right now?"}", the cards show an urgent need for healthy reciprocity. Avoid traps of unconscious attachment or the fear of rejection. The cards advise you to talk calmly and set respectable ethical boundaries.`,
+        p3: `In the coming weeks, expect a subtle renewal of feelings. The alchemy of the heart heals your pain when you accept your own dignity and sacred value.`,
+        g: `Spiritual sign of Orbia: ${randomGuidance}`
+      },
+      es: {
+        p1: `Hola, ${userDisplay}. Siento aquí, al sintonizar con las cartas ${mainCardsLine}, una profunda vibración que toca directamente tu campo afectivo. Como una tarotista real con años de experiencia, veo que tu alma busca claridad absoluta sobre tus sentimientos. Tus cartas revelan que el momento actual te pide respirar hondo y desprenderte de las pesadas expectativas que el pasado dejó en tu corazón. Hay chismes o posibles envidias camufladas a tu alrededor; protege tu amor de estas energías negativas.`,
+        p2: `Si tu pregunta central es "${question || "¿Cuál es el consejo del Tarot para mi vida amorosa en este momento?"}", las cartas muestran una necesidad urgente de reciprocidad sana. Evita las trampas del apego inconsciente o el miedo al rechazo. Las cartas aconsejan dialogar con tranquilidad y establecer límites éticos respetables.`,
+        p3: `En las próximas semanas, espera una sutil renovación de sentimientos. La alquimia del corazón cura tus dolores cuando aceptas tu propia dignidad y valor sagrado.`,
+        g: `Señal espiritual de Orbia: ${randomGuidance}`
+      },
+      de: {
+        p1: `Hallo, ${userDisplay}. Ich spüre hier bei der Einstimmung auf die Karten ${mainCardsLine} eine tiefe Schwingung, die Ihr emotionales Feld direkt berührt. Als echte Tarot-Leserin mit jahrelanger Erfahrung sehe ich, dass Ihre Seele absolute Klarheit über Ihre Gefühle sucht. Ihre Karten zeigen, dass der gegenwärtige Moment Sie auffordert, tief durchzuatmen und die schweren Erwartungen loszulassen, die die Vergangenheit in Ihrem Herzen hinterlassen hat. In Ihrer Umgebung gibt es Klatsch oder mögliche Eifersucht; Schützen Sie Ihre Liebe vor diesen negativen Energien.`,
+        p2: `Wenn Ihre zentrale Frage "${question || "Was ist der Rat des Tarots für mein Liebesleben im Moment?"}" lautet, zeigen die Karten ein dringendes Bedürfnis nach gesunder Gegenseitigkeit. Vermeiden Sie Fallen unbewusster Bindung oder die Angst vor Zurückweisung. Die Karten raten dazu, ruhig zu sprechen und respektable ethische Grenzen zu setzen.`,
+        p3: `Erwarten Sie in den kommenden Wochen eine subtile Erneuerung der Gefühle. Die Alchemie des Herzens heilt Ihren Schmerz, wenn Sie Ihre eigene Würde und Ihren heiligen Wert akzeptieren.`,
+        g: `Spirituelles Zeichen von Orbia: ${randomGuidance}`
+      },
+      fr: {
+        p1: `Bonjour, ${userDisplay}. Je ressens ici, en me connectant aux cartes ${mainCardsLine}, une vibration profonde qui touche directement votre domaine affectif. En tant que tarologue professionnelle avec des années d'expérience, je vois que votre âme cherche une clarté absolue sur vos sentiments. Vos cartes révèlent que le moment actuel vous demande de respirer profondément et de vous détacher des attentes lourdes que le passé a laissées dans votre cœur. Il y a des commérages ou des jalousies potentielles cachées autour de vous ; protégez votre amour contre ces énergies négatives.`,
+        p2: `Si votre question centrale est "${question || "Quel est le conseil du Tarot pour ma vie amoureuse en ce moment ?"}", les cartes montrent un besoin urgent de réciprocité saine. Évitez les pièges de l'attachement inconscient ou la peur du rejet. Les cartes conseillent de dialoguer calmement et de fixer des limites éthiques respectables.`,
+        p3: `Dans les semaines à venir, attendez-vous à un subtil renouveau des sentiments. L'alchimie du cœur guérit vos blessures lorsque vous acceptez votre propre dignité et votre valeur sacrée.`,
+        g: `Signe spirituel d'Orbia : ${randomGuidance}`
+      }
     };
+    const t = templates[activeLang] || templates["pt"];
+    return { reading: `${t.p1}\n\n${t.p2}\n\n${t.p3}`, guidance: t.g };
+
   } else if (type === "semanal") {
-    const p1 = `Querido(a) ${userDisplay}, a Leitura Profunda das 10 cartas consagradas (${mainCardsLine}) revela um poderoso panorama espiritual focado em sua sintonização semanal. Este é um ciclo de merecido destaque e extrema importância para sua jornada!`;
-    const p2 = `No Trabalho, negócios e caminhos profissionais, os arcanos trazem um potencial fecundo de manifestação se você estruturar suas prioridades de forma firme. Tenha muita paciência com fofocas ou mal olhado oculto no ambiente corporativo; evite partilhar todas as suas vitórias. A proteção espiritual indica que suas ações limpas triunfarão contra quaisquer artimanhas alheias.`;
-    const p3 = `No Amor e convívio social, as conexões pedem um olhar equilibrado de cura e afeto generoso. Alerte-se contra dores do subconsciente profundo que perturbam sua rotina. Uma atitude sábia e prudente no seu lar trará paz para os seus familiares e entes queridos nesta semana sagrada.`;
-    const p4 = `O resultado alquímico para a sua semana aconselha a dar o passo de fé necessário sem medo do amanhã, pois sua estrela guia está brilhando forte no firmamento.`;
-    return {
-      reading: `${p1}\n\n${p2}\n\n${p3}\n\n${p4}`,
-      guidance: `Decreto Sagrado de Blindagem Semanal: As correntes falsas caem e a sabedoria divina blinda minha alma e meus caminhos.`
+    const templates: Record<string, { p1: string, p2: string, p3: string, p4: string, g: string }> = {
+      pt: {
+        p1: `Querido(a) ${userDisplay}, a Leitura Profunda das 10 cartas consagradas (${mainCardsLine}) revela um poderoso panorama espiritual focado em sua sintonização semanal. Este é um ciclo de merecido destaque e extrema importância para sua jornada!`,
+        p2: `No Trabalho, negócios e caminhos profissionais, os arcanos trazem um potencial fecundo de manifestação se você estruturar suas prioridades de forma firme. Tenha muita paciência com fofocas ou mal olhado oculto no ambiente corporativo; evite partilhar todas as suas vitórias. A proteção espiritual indica que suas ações limpas triunfarão contra quaisquer artimanhas alheias.`,
+        p3: `No Amor e convívio social, as conexões pedem um olhar equilibrado de cura e afeto generoso. Alerte-se contra dores do subconsciente profundo que perturbam sua rotina. Uma atitude sábia e prudente no seu lar trará paz para os seus familiares e entes queridos nesta semana sagrada.`,
+        p4: `O resultado alquímico para a sua semana aconselha a dar o passo de fé necessário sem medo do amanhã, pois sua estrela guia está brilhando forte no firmamento.`,
+        g: `Decreto Sagrado de Blindagem Semanal: As correntes falsas caem e a sabedoria divina blinda minha alma e meus caminhos.`
+      },
+      en: {
+        p1: `Dear ${userDisplay}, the Deep Reading of the 10 consecrated cards (${mainCardsLine}) reveals a powerful spiritual landscape focused on your weekly tuning. This is a cycle of well-deserved prominence and extreme importance for your journey!`,
+        p2: `In Work, business, and professional paths, the arcana bring a fertile potential of manifestation if you structure your priorities firmly. Be very patient with gossip or hidden evil eye in the corporate environment; avoid sharing all your victories. Spiritual protection indicates that your clean actions will triumph over any outside tricks.`,
+        p3: `In Love and social interaction, connections ask for a balanced look of healing and generous affection. Watch out for deep subconscious pains that disrupt your routine. A wise and prudent attitude in your home will bring peace to your family and loved ones in this sacred week.`,
+        p4: `The alchemical result for your week advises taking the necessary step of faith without fear of tomorrow, for your guiding star is shining bright in the firmament.`,
+        g: `Sacred Decree of Weekly Shielding: The false chains fall and divine wisdom shields my soul and my paths.`
+      },
+      es: {
+        p1: `Querido(a) ${userDisplay}, la Lectura Profunda de las 10 cartas consagradas (${mainCardsLine}) revela un poderoso panorama espiritual enfocado en tu sintonización semanal. ¡Este es un ciclo de merecido protagonismo y extrema importancia para tu viaje!`,
+        p2: `En el Trabajo, negocios y caminos profesionales, los arcanos traen un potencial fértil de manifestación si estructuras tus prioridades firmemente. Ten mucha paciencia con los chismes o el mal de ojo oculto en el ambiente corporativo; evita compartir todas tus victorias. La protección espiritual indica que tus acciones limpias triunfarán sobre cualquier truco ajeno.`,
+        p3: `En el Amor y la convivencia social, las conexiones piden una mirada equilibrada de curación y afecto generoso. Alértate contra los dolores del subconsciente profundo que perturban tu rutina. Una actitud sabia y prudente en tu hogar traerá paz a tus familiares y seres queridos en esta semana sagrada.`,
+        p4: `El resultado alquímico para tu semana aconseja dar el paso de fe necesario sin miedo al mañana, pues tu estrella guía brilla con fuerza en el firmamento.`,
+        g: `Decreto Sagrado de Blindaje Semanal: Las falsas cadenas caen y la sabiduría divina protege mi alma y mis caminos.`
+      },
+      de: {
+        p1: `Liebe(r) ${userDisplay}, die tiefe Lesung der 10 geweihten Karten (${mainCardsLine}) enthüllt ein kraftvolles spirituelles Panorama, das auf Ihre wöchentliche Einstimmung ausgerichtet ist. Dies ist ein Zyklus wohlverdienter Prominenz und von äußerster Bedeutung für Ihre Reise!`,
+        p2: `Im Bereich Arbeit, Geschäft und Karriere bringen die Arkana ein fruchtbares Manifestationspotenzial mit sich, wenn Sie Ihre Prioritäten fest strukturieren. Seien Sie sehr geduldig mit Klatsch oder verstecktem bösen Blick im Unternehmensumfeld; Vermeiden Sie es, alle Ihre Erfolge zu teilen. Spiritueller Schutz zeigt an, dass Ihre reinen Handlungen über alle Tricks von außen triumphieren werden.`,
+        p3: `In der Liebe und im sozialen Umgang erfordern Verbindungen einen ausgewogenen Blick auf Heilung und großzügige Zuneigung. Achten Sie auf tiefe unbewusste Schmerzen, die Ihren Alltag stören. Eine weise und kluge Haltung in Ihrem Zuhause wird Ihren Angehörigen und Lieben in dieser heiligen Woche Frieden bringen.`,
+        p4: `Das alchemistische Ergebnis für Ihre Woche rät dazu, den notwendigen Schritt des Glaubens ohne Angst vor dem Morgen zu tun, da Ihr Leitstern am Firmament hell leuchtet.`,
+        g: `Heiliges Dekret zur wöchentlichen Abschirmung: Die falschen Ketten fallen und die göttliche Weisheit schirmt meine Seele und meine Wege ab.`
+      },
+      fr: {
+        p1: `Cher(e) ${userDisplay}, la Lecture Profonde des 10 cartes consacrées (${mainCardsLine}) révèle un paysage spirituel puissant axé sur votre accordage hebdomadaire. C'est un cycle de premier plan bien mérité et d'une importance extrême pour votre voyage !`,
+        p2: `Dans le Travail, les affaires et les voies professionnelles, les arcanes apportent un potentiel fertile de manifestation si vous structurez fermement vos priorités. Soyez très patient face aux commérages ou au mauvais œil caché dans l'environnement de l'entreprise ; évitez de partager toutes vos victoires. La protection spirituelle indique que vos actions honnêtes triompheront de toutes les ruses extérieures.`,
+        p3: `Dans l'Amour et les relations sociales, les connexions demandent un regard équilibré de guérison et d'affection généreuse. Méfiez-vous des douleurs inconscientes profondes qui perturbent votre routine. Une attitude sage et prudente au sein de votre foyer apportera la paix à votre famille et à vos proches en cette semaine sacrée.`,
+        p4: `Le résultat alchimique pour votre semaine conseille de faire le pas de foi nécessaire sans craindre le lendemain, car votre bonne étoile brille fort au firmament.`,
+        g: `Décret Sacré de Blindage Hebdomadaire : Les fausses chaînes tombent et la sagesse divine protège mon âme et mes chemins.`
+      }
     };
+    const t = templates[activeLang] || templates["pt"];
+    return { reading: `${t.p1}\n\n${t.p2}\n\n${t.p3}\n\n${t.p4}`, guidance: t.g };
+
   } else if (type === "inteligente") {
-    const p1 = `Olá, ${userDisplay}. Unindo a sintonização do seu momento com a força dos arquétipos sorteados (${mainCardsLine}), as cartas expressam o seu momento de vida com grande riqueza de detalhes e sentimentos humanos. Vejo uma força pessoal de autodomínio clamando por ordem e maturidade espiritual para vencer desafios diários.`;
-    const p2 = `Sobre sua questão de autoconhecimento: "${question || "Conselho geral sobre meu momento atual"}", as cartas apontam fendas abertas que se curam através do recolhimento saudável e da reflexão equilibrada. Evite fofocas, preocupações com opiniões alheias e afaste-se do convívio com pessoas de baixa vibração energética.`;
-    const p3 = `Mantenha sua concentração afiada e canalize seus recursos na sua carreira e bem-estar prático. Você possui os dons necessários para prosperar e manter a cabeça erguida diante do fluxo universal.`;
-    return {
-      reading: `${p1}\n\n${p2}\n\n${p3}`,
-      guidance: `Mantra de Poder de Orbia: ${randomGuidance}`
+    const templates: Record<string, { p1: string, p2: string, p3: string, g: string }> = {
+      pt: {
+        p1: `Olá, ${userDisplay}. Unindo a sintonização do seu momento com a força dos arquétipos sorteados (${mainCardsLine}), as cartas expressam o seu momento de vida com grande riqueza de detalhes e sentimentos humanos. Vejo uma força pessoal de autodomínio clamando por ordem e maturidade espiritual para vencer desafios diários.`,
+        p2: `Sobre sua questão de autoconhecimento: "${question || "Conselho geral sobre meu momento atual"}", as cartas apontam fendas abertas que se curam através do recolhimento saudável e da reflexão equilibrada. Evite fofocas, preocupações com opiniões alheias e afaste-se do convívio com pessoas de baixa vibração energética.`,
+        p3: `Mantenha sua concentração afiada e canalize seus recursos na sua carreira e bem-estar prático. Você possui os dons necessários para prosperar e manter a cabeça erguida diante do fluxo universal.`,
+        g: `Mantra de Poder de Orbia: ${randomGuidance}`
+      },
+      en: {
+        p1: `Hello, ${userDisplay}. Uniting the tuning of your moment with the strength of the drawn archetypes (${mainCardsLine}), the cards express your moment of life with great richness of detail and human feelings. I see a personal force of self-mastery calling for order and spiritual maturity to overcome daily challenges.`,
+        p2: `Regarding your self-knowledge question: "${question || "General advice about my current moment"}", the cards point to open gaps that heal through healthy retreat and balanced reflection. Avoid gossip, worries about other people's opinions, and stay away from socializing with low-vibration people.`,
+        p3: `Keep your concentration sharp and channel your resources into your career and practical well-being. You possess the necessary gifts to prosper and keep your head held high before the universal flow.`,
+        g: `Power Mantra of Orbia: ${randomGuidance}`
+      },
+      es: {
+        p1: `Hola, ${userDisplay}. Uniendo la sintonización de tu momento con la fuerza de los arquetipos dibujados (${mainCardsLine}), las cartas expresan tu momento de vida con gran riqueza de detalles y sentimientos humanos. Veo una fuerza personal de autodominio que clama por orden y madurez espiritual para superar los desafíos diarios.`,
+        p2: `Sobre tu pregunta de autoconocimiento: "${question || "Consejo general sobre mi momento actual"}", las cartas apuntan a brechas abiertas que se curan a través del retiro saludable y la reflexión equilibrada. Evita los chismes, las preocupaciones sobre las opiniones de los demás y aléjate de socializar con personas de baja vibración.`,
+        p3: `Mantén tu concentración aguda y canaliza tus recursos hacia tu carrera y bienestar práctico. Posees los dones necesarios para prosperar y mantener la cabeza en alto ante el flujo universal.`,
+        g: `Mantra de Poder de Orbia: ${randomGuidance}`
+      },
+      de: {
+        p1: `Hallo, ${userDisplay}. Indem wir die Abstimmung Ihres Augenblicks mit der Stärke der gezeichneten Archetypen (${mainCardsLine}) vereinen, drücken die Karten Ihren Lebensmoment mit großem Detailreichtum und menschlichen Gefühlen aus. Ich sehe eine persönliche Kraft der Selbstbeherrschung, die nach Ordnung und spiritueller Reife ruft, um tägliche Herausforderungen zu meistern.`,
+        p2: `Zu Ihrer Frage der Selbsterkenntnis: "${question || "Allgemeiner Rat zu meinem aktuellen Moment"}" weisen die Karten auf offene Lücken hin, die durch gesunden Rückzug und ausgewogene Reflexion heilen. Vermeiden Sie Klatsch, Sorgen über die Meinungen anderer Menschen und halten Sie sich vom Umgang mit Menschen mit geringer Schwingung fern.`,
+        p3: `Halten Sie Ihre Konzentration scharf und kanalisieren Sie Ihre Ressourcen in Ihre Karriere und Ihr praktisches Wohlbefinden. Sie besitzen die notwendigen Gaben, um erfolgreich zu sein und angesichts des universellen Flusses Ihren Kopf hochzuhalten.`,
+        g: `Machtmantra von Orbia: ${randomGuidance}`
+      },
+      fr: {
+        p1: `Bonjour, ${userDisplay}. En unissant l'accordage de votre moment à la force des archétypes tirés (${mainCardsLine}), les cartes expriment votre moment de vie avec une grande richesse de détails et de sentiments humains. Je vois une force personnelle de maîtrise de soi appelant à l'ordre et à la maturité spirituelle pour surmonter les défis quotidiens.`,
+        p2: `Concernant votre question sur la connaissance de soi : "${question || "Conseil général sur mon moment actuel"}", les cartes indiquent des brèches ouvertes qui se guérissent par une retraite saine et une réflexion équilibrée. Évitez les commérages, les soucis liés aux opinions des autres et éloignez-vous de la fréquentation des personnes à basse vibration.`,
+        p3: `Gardez votre concentration aiguisée et canalisez vos ressources dans votre carrière et votre bien-être pratique. Vous possédez les dons nécessaires pour prospérer et garder la tête haute face au flux universel.`,
+        g: `Mantra de Pouvoir d'Orbia : ${randomGuidance}`
+      }
     };
+    const t = templates[activeLang] || templates["pt"];
+    return { reading: `${t.p1}\n\n${t.p2}\n\n${t.p3}`, guidance: t.g };
+
   } else {
-    const p1 = `Consulente ${userDisplay}, a sua tiragem clássica de cartas tradicionais traz a emanação profunda de: ${mainCardsLine}. Cada arquétipo reflete forças milenares e nos ensina lições vivenciais indispensáveis para harmonizar nossa rotina.`;
-    const p2 = `Em relação à sua questão ou dúvida: "${question || "Conselho geral"}", o oráculo adverte que fofocas ou desequilíbrios momentâneos no ambiente laboral e familiar devem ser combatidos com prudência e retidão. Não responda à discórdia com a mesma vibração; conserve seu silêncio curativo e seu autodirecionamento maduro.`;
-    const p3 = `Aproveite as oportunidades e sintonize seu coração com os sinais que o universo envia no silêncio do seu lar. A colheita de seus esforços será muito rica no tempo certo do cosmo.`;
-    return {
-      reading: `${p1}\n\n${p2}\n\n${p3}`,
-      guidance: `Conselho dos Arcanos Clássicos: ${randomGuidance}`
+    const templates: Record<string, { p1: string, p2: string, p3: string, g: string }> = {
+      pt: {
+        p1: `Consulente ${userDisplay}, a sua tiragem clássica de cartas tradicionais traz a emanação profunda de: ${mainCardsLine}. Cada arquétipo reflete forças milenares e nos ensina lições vivenciais indispensáveis para harmonizar nossa rotina.`,
+        p2: `Em relação à sua questão ou dúvida: "${question || "Conselho geral"}", o oráculo adverte que fofocas ou desequilíbrios momentâneos no ambiente laboral e familiar devem ser combatidos com prudência e retidão. Não responda à discórdia com a mesma vibração; conserve seu silêncio curativo e seu autodirecionamento maduro.`,
+        p3: `Aproveite as oportunidades e sintonize seu coração com os sinais que o universo envia no silêncio do seu lar. A colheita de seus esforços será muito rica no tempo certo do cosmo.`,
+        g: `Conselho dos Arcanos Clássicos: ${randomGuidance}`
+      },
+      en: {
+        p1: `Querist ${userDisplay}, your classic spread of traditional cards brings the deep emanation of: ${mainCardsLine}. Each archetype reflects ancient forces and teaches us indispensable life lessons to harmonize our routine.`,
+        p2: `Regarding your question or concern: "${question || "General advice"}", the oracle warns that gossip or temporary imbalances in the work and family environment must be combated with prudence and rectitude. Do not respond to discord with the same vibration; preserve your healing silence and your mature self-direction.`,
+        p3: `Seize the opportunities and tune your heart with the signs that the universe sends in the silence of your home. The harvest of your efforts will be very rich in the right cosmic time.`,
+        g: `Advice of the Classic Arcana: ${randomGuidance}`
+      },
+      es: {
+        p1: `Consultante ${userDisplay}, tu tirada clásica de cartas tradicionales trae la profunda emanación de: ${mainCardsLine}. Cada arquetipo refleja fuerzas milenarias y nos enseña lecciones de vida indispensables para armonizar nuestra rutina.`,
+        p2: `Con respecto a tu pregunta o inquietud: "${question || "Consejo general"}", el oráculo advierte que los chismes o desequilibrios temporales en el entorno laboral y familiar deben ser combatidos con prudencia y rectitud. No respondas a la discordia con la misma vibración; conserva tu silencio curativo y tu maduro autodireccionamiento.`,
+        p3: `Aprovecha las oportunidades y sintoniza tu corazón con las señales que el universo envía en el silencio de tu hogar. La cosecha de tus esfuerzos será muy rica en el momento cósmico adecuado.`,
+        g: `Consejo de los Arcanos Clásicos: ${randomGuidance}`
+      },
+      de: {
+        p1: `Frager ${userDisplay}, Ihr klassisches Spread traditioneller Karten bringt die tiefe Ausstrahlung von: ${mainCardsLine}. Jedes Archetyp spiegelt jahrtausendealte Kräfte wider und lehrt uns unverzichtbare Lebenslektionen, um unseren Alltag zu harmonisieren.`,
+        p2: `Bezüglich Ihrer Frage oder Sorge: "${question || "Allgemeiner Rat"}" warnt das Orakel, dass Klatsch oder vorübergehende Ungleichgewichte im Arbeits- und Familienumfeld mit Vorsicht und Rechtschaffenheit bekämpft werden müssen. Antworten Sie nicht auf Zwietracht mit derselben Schwingung; Bewahren Sie Ihr heilendes Schweigen und Ihre reife Selbstführung.`,
+        p3: `Nutzen Sie die Gelegenheiten und stimmen Sie Ihr Herz auf die Zeichen ein, die das Universum in der Stille Ihres Heims sendet. Die Ernte Ihrer Bemühungen wird zur richtigen kosmischen Zeit sehr reich sein.`,
+        g: `Rat der klassischen Arkana: ${randomGuidance}`
+      },
+      fr: {
+        p1: `Consultant ${userDisplay}, votre tirage classique de cartes traditionnelles apporte la profonde émanation de : ${mainCardsLine}. Chaque archétype reflète des forces millénaires et nous enseigne des leçons de vie indispensables pour harmoniser notre routine.`,
+        p2: `Concernant votre question ou doute : "${question || "Conseil général"}", l'oracle avertit que les commérages ou déséquilibres temporaires dans l'environnement de travail et familial doivent être combattus avec prudence et rectitude. Ne répondez pas à la discorde par la même vibration ; conservez votre silence réparateur et votre direction personnelle mature.`,
+        p3: `Saisissez les opportunités et accordez votre cœur aux signes que l'univers envoie dans le silence de votre foyer. La récolte de vos efforts sera très riche au bon moment cosmique.`,
+        g: `Conseil des Arcanes Classiques : ${randomGuidance}`
+      }
     };
+    const t = templates[activeLang] || templates["pt"];
+    return { reading: `${t.p1}\n\n${t.p2}\n\n${t.p3}`, guidance: t.g };
   }
 }
 
 // API: Interpretação de cartas sintonizadas por IA
 app.post("/api/tarot/interpret", async (req, res) => {
-  const { type, cards, question, userName } = req.body;
+  const { type, cards, question, userName, lang } = req.body;
   const userDisplay = userName || "Buscador de Sabedoria";
 
   const cardsListStr = cards && Array.isArray(cards)
     ? cards.map((c: any, index: number) => `Carta ${index + 1}: ${c.cardName} (Foco: ${c.uprightMeaning || ''}. Conselho: ${c.advice || ''})`).join(", ")
     : "uma carta misteriosa";
+
+  const activeLang = (lang || "pt").toLowerCase();
+  const langNames: Record<string, string> = {
+    pt: "Português",
+    en: "English (Inglês)",
+    es: "Spanish (Espanhol)",
+    de: "German (Alemão)",
+    fr: "French (Francês)"
+  };
+  const targetLangName = langNames[activeLang] || "Português";
 
   let systemPrompt = `Você é Orbia, uma taróloga profissional de verdade, extremamente sensitiva, acolhedora e profundamente humana com anos de experiência em leituras espirituais presenciais. 
 
@@ -3108,7 +3716,7 @@ Nas suas leituras, você deve obrigatoriamente trazer e explorar elementos prát
 - Trabalho, carreira, finanças e caminhos de prosperidade.
 - Energias ao redor: se atentar contra invejas, fofocas, má vibração ou mal olhado oculto no ambiente se cartas mais pesadas ou espirituais surgirem (como Diabo, Torre, Sacerdotisa, Lua), ensinando formas de se proteger ou manter a cabeça erguida.
 
-Escreva em parágrafos envolventes, fluidos e repletos de sabedoria ancestral em português.`;
+Escreva em parágrafos envolventes, fluidos e repletos de sabedoria ancestral em ${targetLangName}.`;
 
   let userPrompt = "";
 
@@ -3119,7 +3727,7 @@ A pergunta romântica ou angústia afetiva é: "${question || "Qual o conselho d
 
 Como uma taróloga de verdade lendo os segredos do coração, faça uma leitura reveladora. Trate de ciúmes, reciprocidade, pessoas ao redor que podem trazer inveja no romance, caminhos livres ou bloqueados de conexão e dê um norte exato sobre o que fazer e como se blindar espiritualmente.
 
-Gere um JSON exato em português com este formato de chaves:
+Gere um JSON exato em ${targetLangName} com este formato de chaves:
 {
   "reading": "Texto fluido e profundo da sua leitura romântica realista de taróloga real, máximo 280 palavras...",
   "guidance": "Mantra ou sinal espiritual do coração para vibrar positivamente hoje..."
@@ -3131,7 +3739,7 @@ A questão trazida é: "${question || "Conselho geral sobre meu momento de vida 
 
 Leia esta dinâmica de forma humana e calorosa. Fale sobre as conexões cotidianas, a rotina profissional, os sabotadores mentais (inveja externa ou autorrecriminação), o que de fato está acontecendo na jornada dela e como canalizar melhor esse caminho prático.
 
-Gere um JSON exato em português com este formato de chaves:
+Gere um JSON exato em ${targetLangName} com este formato de chaves:
 {
   "reading": "Texto de leitura realista e acolhedora da taróloga Orbia, com linguagem humana e sincera, máximo 280 palavras...",
   "guidance": "Um mantra de poder ou atitude mágica personalizada para o dia..."
@@ -3150,7 +3758,7 @@ Como uma taróloga real em sua mesa sagrada, interprete essa tiragem profunda de
 
 Dê uma leitura magnífica, ampla, altamente personalizada e muito humana.
 
-Gere um JSON em português com este formato de chaves:
+Gere um JSON em ${targetLangName} com este formato de chaves:
 {
   "reading": "Leitura semanal profunda detalhando cada uma das áreas com fluidez e calor humano, em tom de conversa intimista e espiritual de terapeuta e taróloga real, máximo 380 palavras...",
   "guidance": "O grande conselho ou decreto consagrado de luz para guiar e blindar toda a semana de forma impecável..."
@@ -3163,10 +3771,10 @@ Dúvida apresentada: "${question || "Conselho geral dos arquétipos milenares"}"
 
 Interprete de maneira mística, histórica e vivencial os arcanos tirados por ele. Faça a pessoa compreender a força espiritual do herói em sua jornada diária, perigos práticos de fofocas ou traições indicados nos arquétipos, e atitudes positivas para harmonizar seu lar e trabalho.
 
-Gere um JSON exato em português com este formato de chaves:
+Gere um JSON exato em ${targetLangName} com este formato de chaves:
 {
   "reading": "A leitura e correlação clássica detalhada pela taróloga, rica em significados humanos, máximo 280 palavras...",
-  "guidance": "Um conselho clássico dos Arcanos ou mantra de sintonização..."
+  "guidance": "Um mantra de sintonização ou conselho clássico..."
 }`;
   }
 
@@ -3181,8 +3789,8 @@ Gere um JSON exato em português com este formato de chaves:
 
     const parsed = cleanAndParseJSON(response.text || "{}");
     res.json({
-      reading: parsed.reading || generateOfflineTarotReading(type, cards, question, userName).reading,
-      guidance: parsed.guidance || generateOfflineTarotReading(type, cards, question, userName).guidance
+      reading: parsed.reading || generateOfflineTarotReading(type, cards, question, userName, activeLang).reading,
+      guidance: parsed.guidance || generateOfflineTarotReading(type, cards, question, userName, activeLang).guidance
     });
   } catch (err: any) {
     const errMsg = err?.message || String(err);
@@ -3200,10 +3808,12 @@ Gere um JSON exato em português com este formato de chaves:
     }
     
     // Serve robust, fully custom simulated reading
-    const fallbackResult = generateOfflineTarotReading(type, cards, question, userName);
+    const fallbackResult = generateOfflineTarotReading(type, cards, question, userName, activeLang);
     res.json(fallbackResult);
   }
 });
+
+
 
 // ====================================================
 // BACKEND ADMIN, PREMIUM SCHEMAS & NOTIFICATIONS API
@@ -3713,7 +4323,7 @@ app.post("/api/stripe/webhook", async (req: any, res) => {
 // Real Stripe Session Creation & Verification Handlers
 app.post("/api/stripe/create-checkout-session", async (req, res) => {
   try {
-    const { email, planId, planName } = req.body;
+    const { email, planId, planName, lang } = req.body;
     if (!email || !planId) {
       return res.status(400).json({ error: "Email e ID do Plano são obrigatórios para gerar o Stripe Checkout." });
     }
@@ -3763,8 +4373,10 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
     }
 
     // Creating actual live or test checkout session in Stripe
+    const stripeLocale = lang === 'pt' ? 'pt-BR' : lang === 'es' ? 'es' : lang === 'de' ? 'de' : lang === 'fr' ? 'fr' : 'en';
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
+      locale: stripeLocale,
       line_items: [
         {
           price_data: {

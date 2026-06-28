@@ -104,6 +104,76 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
   const t = (text: string) => {
     if (!text) return "";
     const currentLang = (i18n.language || 'pt').toLowerCase();
+
+    // 1. Regex Match for Astro Position Description
+    // "Exibindo posição do astro [Astro] no signo de [Signo] na Casa [Casa]."
+    const matchAstro = text.match(/^Exibindo posição do astro (.*?) no signo de (.*?) na Casa (\d+)\.$/);
+    if (matchAstro) {
+      const pName = matchAstro[1];
+      const pSign = matchAstro[2];
+      const pHouse = matchAstro[3];
+
+      const transName = t(pName);
+      const transSign = t(pSign);
+
+      if (currentLang === 'en') {
+        return `Displaying position of the planet ${transName} in the sign of ${transSign} in House ${pHouse}.`;
+      } else if (currentLang === 'es') {
+        return `Mostrando la posición del astro ${transName} en el signo de ${transSign} en la Casa ${pHouse}.`;
+      } else if (currentLang === 'de') {
+        return `Anzeige der Position des Gestirns ${transName} im Zeichen ${transSign} im ${pHouse}. Haus.`;
+      } else if (currentLang === 'fr') {
+        return `Affichage de la position de l'astre ${transName} dans le signe de ${transSign} dans la Maison ${pHouse}.`;
+      }
+      return `Exibindo posição do astro ${transName} no signo de ${transSign} na Casa ${pHouse}.`;
+    }
+
+    // 2. Regex Match for House Cusp Interpretation
+    // "A cúspide da Casa [Casa] inicia no signo de [Signo] com graus exatos de [Graus]° de alinhamento Placidus."
+    const matchHouse = text.match(/^A cúspide da Casa (\d+) inicia no signo de (.*?) com graus exatos de (.*?)° de alinhamento Placidus\.$/);
+    if (matchHouse) {
+      const hNum = matchHouse[1];
+      const hSign = matchHouse[2];
+      const hDegree = matchHouse[3];
+
+      const transSign = t(hSign);
+
+      if (currentLang === 'en') {
+        return `The cusp of House ${hNum} begins in the sign of ${transSign} with exact degrees of ${hDegree}° of Placidus alignment.`;
+      } else if (currentLang === 'es') {
+        return `La cúspide de la Casa ${hNum} comienza en el signo de ${transSign} con grados exactos de ${hDegree}° de alineación Placidus.`;
+      } else if (currentLang === 'de') {
+        return `Die Spitze des ${hNum}. Hauses beginnt im Zeichen ${transSign} mit exakten Graden von ${hDegree}° der Placidus-Ausrichtung.`;
+      } else if (currentLang === 'fr') {
+        return `La cuspide de la Maison ${hNum} commence dans le signe de ${transSign} avec des degrés exacts de ${hDegree}° d'alignement Placidus.`;
+      }
+      return `A cúspide da Casa ${hNum} inicia no signo de ${transSign} com graus exatos de ${hDegree}° de alinhamento Placidus.`;
+    }
+
+    // 3. Regex Match for Aspect Interpretation
+    // "Conexão celeste dinâmica de [Aspecto] entre [Astro1] e [Astro2]."
+    const matchAspect = text.match(/^Conexão celeste dinâmica de (.*?) entre (.*?) e (.*?)\.$/);
+    if (matchAspect) {
+      const aType = matchAspect[1];
+      const p1 = matchAspect[2];
+      const p2 = matchAspect[3];
+
+      const transType = t(aType);
+      const transP1 = t(p1);
+      const transP2 = t(p2);
+
+      if (currentLang === 'en') {
+        return `Dynamic celestial connection of ${transType} between ${transP1} and ${transP2}.`;
+      } else if (currentLang === 'es') {
+        return `Conexión celeste dinámica de ${transType} entre ${transP1} y ${transP2}.`;
+      } else if (currentLang === 'de') {
+        return `Dynamische himmlische Verbindung von ${transType} zwischen ${transP1} und ${transP2}.`;
+      } else if (currentLang === 'fr') {
+        return `Connexion céleste dynamique de ${transType} entre ${transP1} et ${transP2}.`;
+      }
+      return `Conexão celeste dinâmica de ${transType} entre ${transP1} e ${transP2}.`;
+    }
+
     if (LOCAL_UI_TRANSLATIONS[currentLang]?.[text]) {
       return LOCAL_UI_TRANSLATIONS[currentLang][text];
     }

@@ -387,7 +387,7 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
       const res = await fetch('/api/tarot/draw-full', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ count }),
+        body: JSON.stringify({ count, lang }),
       });
 
       if (res.ok) {
@@ -450,7 +450,8 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
           type: activeMode,
           cards: tempDrawnCards,
           question: finalQuestion,
-          userName: userName
+          userName: userName,
+          lang
         }),
       });
 

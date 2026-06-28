@@ -9,8 +9,8 @@ interface DreamsTabProps {
   lang: Language;
 }
 
-export default function DreamsTab({ lang }: DreamsTabProps) {
-  const [dreams, setDreams] = useState<DreamEntry[]>([
+const DEFAULT_DREAMS_BY_LANG: Record<string, DreamEntry[]> = {
+  pt: [
     {
       id: "dream_1",
       title: "Voando sobre um mar azul-marinho",
@@ -20,7 +20,57 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
       symbols: ["voar", "mar", "chave"],
       aiAnalysis: "Este sonho evoca uma forte sensação de libertação e novos limiares intelectuais (a chave d'ouro). Seu subconsciente indica que você está destrancando velhos limites emocionais para clarear os pensamentos."
     }
-  ]);
+  ],
+  en: [
+    {
+      id: "dream_1",
+      title: "Flying over a deep blue sea",
+      content: "I floated high, wingless. The sea below was calm, and there was a huge golden key floating on the grey horizon.",
+      date: "2026-06-20",
+      mood: "peaceful",
+      symbols: ["flying", "sea", "key"],
+      aiAnalysis: "This dream evokes a strong sense of liberation and new intellectual thresholds (the golden key). Your subconscious indicates that you are unlocking old emotional boundaries to clear your thoughts."
+    }
+  ],
+  es: [
+    {
+      id: "dream_1",
+      title: "Volando sobre un mar azul marino",
+      content: "Flotaba alto, sin alas. El mar de abajo estaba en calma y había una enorme llave dorada flotando en el horizonte gris.",
+      date: "2026-06-20",
+      mood: "peaceful",
+      symbols: ["volar", "mar", "llave"],
+      aiAnalysis: "Este sueño evoca una fuerte sensación de liberación y nuevos umbrales intelectuales (la llave de oro). Tu subconsciente indica que estás desbloqueando viejos límites emocionales para despejar tus pensamientos."
+    }
+  ],
+  de: [
+    {
+      id: "dream_1",
+      title: "Über ein tiefblaues Meer fliegen",
+      content: "Ich schwebte hoch oben, ohne Flügel. Das Meer darunter war ruhig, und am grauen Horizont schwebte ein riesiger goldener Schlüssel.",
+      date: "2026-06-20",
+      mood: "peaceful",
+      symbols: ["fliegen", "Meer", "Schlüssel"],
+      aiAnalysis: "Dieser Traum ruft ein starkes Gefühl der Befreiung und neue intellektuelle Schwellen hervor (der goldene Schlüssel). Ihr Unterbewusstsein signalisiert, dass Sie alte emotionale Grenzen freisetzen, um Ihre Gedanken zu klären."
+    }
+  ],
+  fr: [
+    {
+      id: "dream_1",
+      title: "Voler au-dessus d'une mer bleu marine",
+      content: "Je flottais haut, sans ailes. La mer en dessous était calme, et il y avait une immense clé dorée qui flottait à l'horizon gris.",
+      date: "2026-06-20",
+      mood: "peaceful",
+      symbols: ["voler", "mer", "clé"],
+      aiAnalysis: "Ce rêve évoque un fort sentiment de libération et de nouveaux seuils intellectuels (la clé d'or). Votre subconscient indique que vous débloquez d'anciennes limites émotionnelles pour clarifier vos pensées."
+    }
+  ]
+};
+
+export default function DreamsTab({ lang }: DreamsTabProps) {
+  const [dreams, setDreams] = useState<DreamEntry[]>(() => {
+    return DEFAULT_DREAMS_BY_LANG[lang] || DEFAULT_DREAMS_BY_LANG["pt"];
+  });
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -197,10 +247,10 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
                   >
                     
                     {/* Entry Header */}
-                    <div className="flex justify-between items-start gap-4">
+                    <div justify-between="true" className="flex justify-between items-start gap-4">
                       <div>
                         <span className="text-[10px] text-neutral-400 font-medium">{dream.date}</span>
-                        <h4 className="font-display font-semibold text-neutral-950 text-sm">{dream.title}</h4>
+                        <h4 className="font-display font-semibold text-neutral-950 text-sm">{tI18n(dream.title)}</h4>
                       </div>
                       
                       <div className="flex items-center gap-1.5">
@@ -219,7 +269,7 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
                     </div>
 
                     <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed">
-                      {dream.content}
+                      {tI18n(dream.content)}
                     </p>
 
                     {/* Symbols pill tag row */}
@@ -227,7 +277,7 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
                       <div className="flex flex-wrap gap-1.5 pt-1">
                         {dream.symbols.map(sym => (
                           <span key={sym} className="px-2 py-0.5 bg-neutral-100 text-neutral-600 rounded-md font-mono text-[10px]">
-                            #{sym}
+                            #{tI18n(sym)}
                           </span>
                         ))}
                       </div>
@@ -240,9 +290,33 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
                           <Feather className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
                           <span>{tI18n("Revelação Arquetípica Integral")}</span>
                         </span>
-                        <p className="text-[11px] text-neutral-700 leading-relaxed font-sans">
-                          {dream.aiAnalysis}
-                        </p>
+                        <div className="text-[11px] text-neutral-700 leading-relaxed font-sans">
+                          {typeof dream.aiAnalysis === 'object' && dream.aiAnalysis !== null ? (
+                            <div className="space-y-2 text-xs">
+                              {dream.aiAnalysis.title && (
+                                <p className="font-semibold text-neutral-900 border-b border-neutral-100 pb-1 text-sm">
+                                  {dream.aiAnalysis.title}
+                                </p>
+                              )}
+                              {dream.aiAnalysis.mainMeaning && (
+                                <p><strong className="text-indigo-950">{tI18n("Significado Principal")}:</strong> {dream.aiAnalysis.mainMeaning}</p>
+                              )}
+                              {dream.aiAnalysis.psychological && (
+                                <p><strong>{tI18n("Psicológico")}:</strong> {dream.aiAnalysis.psychological}</p>
+                              )}
+                              {dream.aiAnalysis.spiritual && (
+                                <p><strong>{tI18n("Espiritual")}:</strong> {dream.aiAnalysis.spiritual}</p>
+                              )}
+                              {dream.aiAnalysis.oracleAdvice && (
+                                <p className="italic text-indigo-700 bg-indigo-50/50 p-1.5 rounded-lg border border-indigo-100/50 mt-1">
+                                  ★ <strong>{tI18n("Conselho do Oráculo")}:</strong> {dream.aiAnalysis.oracleAdvice}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <p>{tI18n(dream.aiAnalysis as unknown as string)}</p>
+                          )}
+                        </div>
                       </div>
                     ) : (
                       <div className="pt-2 flex justify-end">

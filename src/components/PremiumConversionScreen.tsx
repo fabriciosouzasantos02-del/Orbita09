@@ -19,26 +19,28 @@ export const PremiumConversionScreen: React.FC<PremiumConversionScreenProps> = (
   const [step, setStep] = useState<'checkout' | 'success'>('checkout');
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual'>('monthly');
 
+  const t = (key: string, fallback?: string) => getTranslation(currentLang, key, fallback);
+
   const plansList = [
     { 
       id: 'monthly' as const, 
-      name: currentLang === 'pt' ? 'Mensal' : 'Monthly', 
+      name: t('plan_monthly_name', 'Mensal'), 
       price: '9,99 EUR / mês', 
       stripePrice: '9,99 EUR', 
-      desc: currentLang === 'pt' ? 'Acesso completo e ilimitado a todas as ferramentas astrológicas.' : 'Full and unlimited access to all celestial tools.' 
+      desc: t('plan_monthly_desc', 'Acesso completo e ilimitado a todas as ferramentas astrológicas.') 
     },
     { 
       id: 'annual' as const, 
-      name: currentLang === 'pt' ? 'Anual (Economize 33%)' : 'Annual (Save 33%)', 
+      name: t('plan_annual_name', 'Anual (Economize 33%)'), 
       price: '79,99 EUR / ano', 
       stripePrice: '79,99 EUR', 
-      desc: currentLang === 'pt' ? 'Melhor valor. Acesso ilimitado o ano todo (apenas 6,66 EUR/mês).' : 'Best value. Unlimited access all year (only 6,66 EUR/month).' 
+      desc: t('plan_annual_desc', 'Melhor valor. Acesso ilimitado o ano todo (apenas 6,66 EUR/mês).') 
     }
   ];
 
   const handleStripeCheckout = async () => {
     if (!userEmail) {
-      alert(currentLang === 'pt' ? 'ID do usuário/Email não encontrado.' : 'User identifier not found.');
+      alert(t('user_not_found', 'ID do usuário/Email não encontrado.'));
       return;
     }
     setIsProcessing(true);
@@ -50,7 +52,8 @@ export const PremiumConversionScreen: React.FC<PremiumConversionScreenProps> = (
         body: JSON.stringify({
           email: userEmail,
           planId: selectedPlan,
-          planName: activePlan.name
+          planName: activePlan.name,
+          lang: currentLang
         })
       });
 
@@ -66,15 +69,11 @@ export const PremiumConversionScreen: React.FC<PremiumConversionScreenProps> = (
       }
     } catch (err: any) {
       console.error("Stripe Checkout error:", err);
-      alert(currentLang === 'pt' 
-        ? 'Erro ao gerar sessão de pagamento com a Stripe.' 
-        : 'Failed to generate session with Stripe.');
+      alert(t('checkout_error', 'Erro ao gerar sessão de pagamento com a Stripe.'));
     } finally {
       setIsProcessing(false);
     }
   };
-
-  const t = (key: string, fallback?: string) => getTranslation(currentLang, key, fallback);
 
   return (
     <div id="premium-conversion-screen" className="relative z-10 space-y-10 pb-4 max-w-5xl mx-auto px-1">
@@ -96,48 +95,36 @@ export const PremiumConversionScreen: React.FC<PremiumConversionScreenProps> = (
                   {t('conversion_headline', 'ALINHAMENTO CÓSMICO PREMIUM')}
                 </span>
                 <h1 className="text-2xl md:text-4xl font-sans font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-slate-50 via-slate-200 to-slate-400 leading-tight">
-                  {currentLang === 'pt' ? 'Sua Mandala Ancestral está Pronta' : 'Your Ancestral Mandala is Ready'}
+                  {t('conversion_card_title', 'Sua Mandala Ancestral está Pronta')}
                 </h1>
                 <p className="text-xs md:text-sm text-slate-300 leading-relaxed font-sans font-semibold">
-                  {currentLang === 'pt' 
-                    ? 'Durante os últimos dias você teve acesso à nossa tecnologia avançada de interpretação astrológica personalizada em tempo real.'
-                    : 'Over the last few days you have had full access to our advanced custom real-time astro-computational tools.'}
+                  {t('conversion_p1', 'Durante os últimos dias você teve acesso à nossa tecnologia avançada de interpretação astrológica personalizada em tempo real.')}
                 </p>
               </div>
 
               {/* Core Benefits / Story telling paragraphs */}
               <div className="space-y-4 text-xs text-slate-400 leading-relaxed border-l-2 border-slate-850 pl-4 font-sans">
                 <p>
-                  {currentLang === 'pt' 
-                    ? 'Por trás de cada análise existe uma avançada tecnologia astrológica e de inteligência artificial que processa continuamente milhares de cálculos personalizados com base no seu mapa astral, trânsitos planetários, posições celestes, casas astrológicas, aspectos ativos, Lua, Sol, ascendente e ciclos cósmicos que influenciam sua jornada neste exato momento.'
-                    : 'Behind each analysis is an advanced artificial intelligence and astrological database computing thousands of calculations based on your natal chart, transit charts, houses alignments, active aspects, Moon, Sun, Ascendant and dynamic cosmic streams impacting your biofield right now.'}
+                  {t('conversion_p2', 'Por trás de cada análise existe uma avançada tecnologia astrológica e de inteligência artificial que processa continuamente milhares de cálculos personalizados com base no seu mapa astral, trânsitos planetários, posições celestes, casas astrológicas, aspectos ativos, Lua, Sol, ascendente e ciclos cósmicos que influenciam sua jornada neste exato momento.')}
                 </p>
                 <p>
-                  {currentLang === 'pt' 
-                    ? 'Diferente de aplicativos genéricos, o Orbita não entrega interpretações padronizadas. Nossa tecnologia monitora constantemente as movimentações celestes e cruza essas informações com a sua configuração astral exclusiva, gerando orientações altamente personalizadas, alinhadas à sua frequência energética atual.'
-                    : 'Unlike generic horoscopes, Orbita does not output boilerplate explanations. Our technology monitors celestial mechanics in real-time, matching shifts with your specific energetic signature to supply highly tuned planetary remedies and guidance.'}
+                  {t('conversion_p3', 'Diferente de aplicativos genéricos, o Orbita não entrega interpretações padronizadas. Nossa tecnologia monitora constantemente as movimentações celestes e cruza essas informações com a sua configuração astral exclusiva, gerando orientações altamente personalizadas, alinhadas à sua frequência energética atual.')}
                 </p>
                 <p>
-                  {currentLang === 'pt' 
-                    ? 'Sua assinatura contribui para manter toda essa estrutura funcionando: servidores de processamento em tempo real, sistemas avançados de inteligência artificial, atualização contínua dos dados astrológicos globais e o desenvolvimento constante de novos recursos exclusivos.'
-                    : 'Our premium subscription powers our continuous calculations, high-performance API processing servers, advanced AI integration, cosmic datasets updates and constant development of exclusive features.'}
+                  {t('conversion_p4', 'Sua assinatura contribui para manter toda essa estrutura funcionando: servidores de processamento em tempo real, sistemas avançados de inteligência artificial, atualização contínua dos dados astrológicos globais e o desenvolvimento constante de novos recursos exclusivos.')}
                 </p>
                 <p>
-                  {currentLang === 'pt' 
-                    ? 'Ao continuar sua jornada, você mantém acesso ilimitado a uma plataforma criada para oferecer autoconhecimento, clareza, direcionamento e uma leitura cósmica profundamente personalizada, algo que nenhum mapa genérico consegue entregar.'
-                    : 'By continuing your journey, you retain unlimited access to a platform developed to grant direct self-discovery, cosmic alignment, clarity and celestial diagnostics that generic content is unable to duplicate.'}
+                  {t('conversion_p5', 'Ao continuar sua jornada, você mantém acesso ilimitado a uma plataforma criada para oferecer autoconhecimento, clareza, direcionamento e uma leitura cósmica profundamente personalizada, algo que nenhum mapa genérico consegue entregar.')}
                 </p>
                 <p className="text-amber-400/90 font-medium">
-                  {currentLang === 'pt'
-                    ? 'Milhares de cálculos astrológicos são processados continuamente para gerar suas previsões, análises e recomendações diárias.'
-                    : 'Thousands of astronomical arrays are calculated non-stop to construct your daily forecasts, analysis and planetary charts.'}
+                  {t('conversion_p6', 'Milhares de cálculos astrológicos são processados continuamente para gerar suas previsões, análises e recomendações diárias.')}
                 </p>
               </div>
 
               {/* Interactive Plan Selector */}
               <div id="stripe-plan-selector" className="space-y-3 pt-2">
                 <span className="inline-flex items-center gap-1 text-[9px] uppercase font-mono tracking-widest text-amber-500 font-bold bg-amber-500/10 px-2 py-0.5 rounded-sm">
-                  {currentLang === 'pt' ? 'Escolha sua Conexão Celeste' : 'Choose Your Celestial Connection'}
+                  {t('choose_celestial_connection', 'Escolha sua Conexão Celeste')}
                 </span>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {plansList.map((plan) => (
@@ -179,7 +166,7 @@ export const PremiumConversionScreen: React.FC<PremiumConversionScreenProps> = (
                 <div className="pb-4 border-b border-slate-850 flex justify-between items-center">
                   <div className="space-y-0.5">
                     <h3 className="text-xs font-bold text-slate-200 font-sans">{t('sub_billing_info', 'Dados de Pagamento')}</h3>
-                    <p className="text-[9px] font-mono text-slate-500 uppercase">Assinatura Via Stripe Segura</p>
+                    <p className="text-[9px] font-mono text-slate-500 uppercase">{t('stripe_secure_billing', 'Assinatura Via Stripe Segura')}</p>
                   </div>
                   <Lock className="w-4 h-4 text-slate-500" />
                 </div>
@@ -187,21 +174,19 @@ export const PremiumConversionScreen: React.FC<PremiumConversionScreenProps> = (
                 <div className="space-y-4 pt-1">
                   <div className="p-4 bg-slate-950 border border-slate-900 rounded-2xl space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-[9px] font-mono uppercase text-slate-400">{currentLang === 'pt' ? 'Plano Ativo' : 'Selected Plan'}</span>
+                      <span className="text-[9px] font-mono uppercase text-slate-400">{t('selected_plan', 'Plano Ativo')}</span>
                       <span className="text-xs font-bold text-amber-400">
                         {plansList.find(p => p.id === selectedPlan)?.name}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-xs">
-                      <span className="text-[9px] font-mono uppercase text-slate-400">{currentLang === 'pt' ? 'Custo de Assinatura' : 'Billing Price'}</span>
+                      <span className="text-[9px] font-mono uppercase text-slate-400">{t('billing_price', 'Custo de Assinatura')}</span>
                       <span className="font-mono text-[11px] font-bold text-slate-200">
                         {plansList.find(p => p.id === selectedPlan)?.stripePrice}
                       </span>
                     </div>
                     <p className="text-[9px] text-slate-500 leading-normal border-t border-slate-900 pt-2 font-mono">
-                      {currentLang === 'pt'
-                        ? 'Ao clicar no botão abaixo, você será redirecionado temporariamente para o ambiente seguro do Stripe para concluir sua assinatura com total segurança.'
-                        : 'Clicking below redirects you safely to native Stripe secure portals to finalize your subscription.'}
+                      {t('stripe_disclaimer', 'Ao clicar no botão abaixo, você será redirecionado temporariamente para o ambiente seguro do Stripe para concluir sua assinatura com total segurança.')}
                     </p>
                   </div>
 
@@ -214,11 +199,11 @@ export const PremiumConversionScreen: React.FC<PremiumConversionScreenProps> = (
                     {isProcessing ? (
                       <>
                         <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>Sintonizando Stripe...</span>
+                        <span>{t('stripe_tuning', 'Sintonizando Stripe...')}</span>
                       </>
                     ) : (
                       <>
-                        <span>{currentLang === 'pt' ? 'Continuar Minha Jornada' : 'Continue My Journey'}</span>
+                        <span>{t('btn_upgrade', 'Continuar Minha Jornada')}</span>
                       </>
                     )}
                   </button>
@@ -228,9 +213,9 @@ export const PremiumConversionScreen: React.FC<PremiumConversionScreenProps> = (
                 <div className="pt-2 border-t border-slate-900 flex justify-between items-center text-[9px] font-mono text-slate-500">
                   <span className="flex items-center gap-1 font-bold">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                    CONEXÃO SSL DIRECT
+                    {t('ssl_direct_connection', 'CONEXÃO SSL DIRECT')}
                   </span>
-                  <span>PCI SECURE CERTIFIED</span>
+                  <span>{t('pci_secure_certified', 'PCI SECURE CERTIFIED')}</span>
                 </div>
               </div>
             </div>
@@ -249,14 +234,12 @@ export const PremiumConversionScreen: React.FC<PremiumConversionScreenProps> = (
             </div>
 
             <div className="space-y-3">
-              <span className="text-[10px] uppercase font-mono tracking-widest text-amber-500 font-extrabold block">Alinhamento Concluído</span>
+              <span className="text-[10px] uppercase font-mono tracking-widest text-amber-500 font-extrabold block">{t('alignment_completed', 'Alinhamento Concluído')}</span>
               <h2 className="text-2xl font-sans font-black text-slate-50 tracking-tight">
-                {currentLang === 'pt' ? 'Bem-vindo ao Elite Celestial!' : 'Welcome to the Star Elite!'}
+                {t('welcome_celestial_elite', 'Bem-vindo ao Elite Celestial!')}
               </h2>
               <p className="text-xs text-slate-350 leading-relaxed font-sans max-w-sm mx-auto">
-                {currentLang === 'pt'
-                  ? 'Sua assinatura premium foi sintonizada com sucesso. Todos os recursos cósmicos e ferramentas astrológicas avançadas foram desbloqueados para você!'
-                  : 'Your premium subscription has been successfully synchronized. All cosmic features and tools have been immediately unlocked for your journey!'}
+                {t('success_view_unlocked', 'Sua assinatura premium foi sintonizada com sucesso. Todos os recursos cósmicos e ferramentas astrológicas avançadas foram desbloqueados para você!')}
               </p>
             </div>
 
@@ -265,7 +248,7 @@ export const PremiumConversionScreen: React.FC<PremiumConversionScreenProps> = (
                 onClick={() => onUpgradeComplete(true)}
                 className="px-8 py-3.5 bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-450 text-slate-950 text-xs font-black uppercase tracking-wider rounded-xl transition shadow-md hover:shadow-lg focus:outline-hidden cursor-pointer"
               >
-                {currentLang === 'pt' ? 'Iniciar Minhas Leituras' : 'Start My Readings'}
+                {t('start_my_readings', 'Iniciar Minhas Leituras')}
               </button>
             </div>
           </motion.div>

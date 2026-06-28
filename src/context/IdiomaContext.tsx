@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import i18n from '../lib/i18n';
 
 // 5. Definir o tipo para os idiomas suportados (pt, en, es, de, fr)
 export type Idioma = 'pt' | 'en' | 'es' | 'de' | 'fr';
@@ -192,26 +193,54 @@ export function IdiomaProvider({ children }: IdiomaProviderProps) {
   // 2. Na inicialização do app (useEffect), ler navigator.language se não houver escolha salva
   useEffect(() => {
     const salvo = localStorage.getItem('orbi_preferred_language');
-    if (!salvo) {
-      if (typeof navigator !== 'undefined') {
-        const sysLang = navigator.language.toLowerCase();
-        let detectado: Idioma = 'pt';
-        
-        if (sysLang.startsWith('de')) detectado = 'de';
-        else if (sysLang.startsWith('es')) detectado = 'es';
-        else if (sysLang.startsWith('fr')) detectado = 'fr';
-        else if (sysLang.startsWith('en')) detectado = 'en';
-        
-        setIdioma(detectado);
-        localStorage.setItem('orbi_preferred_language', detectado);
-      }
+    let detectado: Idioma = 'pt';
+    if (salvo && ['pt', 'en', 'es', 'de', 'fr'].includes(salvo)) {
+      detectado = salvo as Idioma;
+    } else if (typeof navigator !== 'undefined') {
+      const sysLang = navigator.language.toLowerCase();
+      if (sysLang.startsWith('de')) detectado = 'de';
+      else if (sysLang.startsWith('es')) detectado = 'es';
+      else if (sysLang.startsWith('fr')) detectado = 'fr';
+      else if (sysLang.startsWith('en')) detectado = 'en';
+      localStorage.setItem('orbi_preferred_language', detectado);
     }
+    setIdioma(detectado);
+    i18n.changeLanguage(detectado);
   }, []);
 
   // 4. Fornecer a função mudarIdioma que atualiza o estado instantaneamente
   const mudarIdioma = (novoIdioma: Idioma) => {
     setIdioma(novoIdioma);
     localStorage.setItem('orbi_preferred_language', novoIdioma);
+    i18n.changeLanguage(novoIdioma);
+
+    // Invalidação de Cache ao mudar o idioma (Regra 7)
+    try {
+      Object.keys(localStorage).forEach(key => {
+        if (
+          key.startsWith('orbi_natal_chart_') ||
+          key.startsWith('orbi_transit_') ||
+          key.startsWith('orbi_daily_insight_') ||
+          key.startsWith('orbi_weekly_insight_') ||
+          key.startsWith('orbi_missions_') ||
+          key.startsWith('orbi_numerology_') ||
+          key.startsWith('orbi_prosperity_') ||
+          key.startsWith('orbi_biorhythm_') ||
+          key.startsWith('orbi_lunarnodes_') ||
+          key.startsWith('tarot_saved_') ||
+          key.startsWith('tarot_last_draw_') ||
+          key.includes('_insight_') ||
+          key === 'orbi_map_data' ||
+          key === 'orbi_numerology_data'
+        ) {
+          localStorage.removeItem(key);
+        }
+      });
+      // Despachar evento global para notificar todos os componentes e helpers ativos de que o idioma mudou
+      window.dispatchEvent(new Event('orbi_language_changed'));
+    } catch (e) {
+      console.error('Erro ao invalidar caches de idioma:', e);
+    }
   };
 
   // Função helper de tradução rápida utilizando o dicionário fortemente tipado

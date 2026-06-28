@@ -1,5 +1,6 @@
 import React from 'react';
 import { useIdioma, Idioma } from '../context/IdiomaContext';
+import { translateUiText, Language } from '../lib/translations';
 
 /**
  * Exemplo prático de como consumir a estrutura de internacionalização (i18n)
@@ -12,6 +13,10 @@ export default function ExemploIdioma() {
   const handleMudarIdioma = (novoIdioma: Idioma) => {
     // Atualiza o estado global de idioma instantaneamente para todo o app
     mudarIdioma(novoIdioma);
+  };
+
+  const tI18n = (text: string) => {
+    return translateUiText(text, (idioma as Language) || 'pt');
   };
 
   return (
@@ -28,11 +33,11 @@ export default function ExemploIdioma() {
 
       <div className="bg-slate-950 p-4 rounded-2xl border border-slate-850 space-y-2">
         <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-          Informações Ativas do Contexto:
+          {tI18n("Informações Ativas do Contexto:")}
         </p>
         <div className="text-xs space-y-1 font-mono text-amber-400/80">
-          <p>• Idioma Ativo: <span className="text-white font-bold">{idioma.toUpperCase()}</span></p>
-          <p>• Texto Traduzido: <span className="text-white font-bold">{t('welcomeBuscador')}</span></p>
+          <p>{tI18n("• Idioma Ativo:")} <span className="text-white font-bold">{idioma.toUpperCase()}</span></p>
+          <p>{tI18n("• Texto Traduzido:")} <span className="text-white font-bold">{t('welcomeBuscador')}</span></p>
         </div>
       </div>
 

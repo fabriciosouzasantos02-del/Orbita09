@@ -58,7 +58,7 @@ export default function AstroNotifications({ userName, birthDate, userEmail, onR
       const res = await fetch('/api/astrology/rare-notifications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: userName, birthDate: birthDate, email: userEmail })
+        body: JSON.stringify({ name: userName, birthDate: birthDate, email: userEmail, lang })
       });
       if (res.ok) {
         const data = await res.json();
@@ -83,7 +83,7 @@ export default function AstroNotifications({ userName, birthDate, userEmail, onR
 
   useEffect(() => {
     fetchNotifications();
-  }, [userName, birthDate, userEmail]);
+  }, [userName, birthDate, userEmail, lang]);
 
   // Handle Mark All as Read
   const handleMarkAllRead = () => {

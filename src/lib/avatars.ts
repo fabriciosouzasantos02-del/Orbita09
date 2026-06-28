@@ -1,11 +1,21 @@
 // Beautiful, highly-polished mystical celestial avatars encoded as clean SVGs
 // O Firestore salva apenas o identificador (ex: 'avatar_sol') e o frontend converte na URI local.
 
+import i18next from 'i18next';
+
+function getActiveLanguage(): 'pt' | 'en' | 'es' | 'de' | 'fr' {
+  const lang = (i18next.language || 'pt').toLowerCase().split('-')[0];
+  if (['pt', 'en', 'es', 'de', 'fr'].includes(lang)) {
+    return lang as 'pt' | 'en' | 'es' | 'de' | 'fr';
+  }
+  return 'pt';
+}
+
 export interface AvatarOption {
   id: string;
   name: string;
   description: string;
-  category: "Astrologia" | "Cosmos" | "Misticismo";
+  category: string;
   svg: string;
 }
 
@@ -241,11 +251,77 @@ const AVATAR_TEMPLATES: Record<string, { name: string; description: string; cate
   }
 };
 
+const AVATAR_TRANSLATIONS: Record<string, Record<'pt' | 'en' | 'es' | 'de' | 'fr', { name: string; description: string; category: string }>> = {
+  avatar_sol: {
+    pt: { name: "Sol Místico", description: "O astro rei da consciência, brilho pessoal, vitalidade e essência de sua jornada estelar.", category: "Astrologia" },
+    en: { name: "Mystical Sun", description: "The ruling star of consciousness, personal brilliance, vitality, and the essence of your stellar journey.", category: "Astrology" },
+    es: { name: "Sol Místico", description: "El astro rey de la conciencia, brillo personal, vitalidad y esencia de tu viaje estelar.", category: "Astrología" },
+    de: { name: "Mystische Sonne", description: "Der Herrscherstern des Bewusstseins, des persönlichen Glanzes, der Vitalität und der Essenz Ihrer stellaren Reise.", category: "Astrologie" },
+    fr: { name: "Soleil Mystique", description: "L'astre roi de la conscience, de l'éclat personnel, de la vitalité et de l'essence de votre voyage stellaire.", category: "Astrologie" }
+  },
+  avatar_lua: {
+    pt: { name: "Lua Crescente", description: "Soberana das emoções inconscientes, intuição, sonhos profundos e marés psíquicas.", category: "Astrologia" },
+    en: { name: "Crescent Moon", description: "Sovereign of subconscious emotions, intuition, deep dreams, and psychic tides.", category: "Astrology" },
+    es: { name: "Luna Creciente", description: "Soberana de las emociones subconscientes, intuición, sueños profundos y mareas psíquicas.", category: "Astrología" },
+    de: { name: "Sichelmond", description: "Herrscher über unterbewusste Emotionen, Intuition, tiefe Träume und psychische Gezeiten.", category: "Astrologie" },
+    fr: { name: "Croissant de Lune", description: "Souveraine des émotions subconscientes, de l'intuition, des rêves profonds et des marées psychiques.", category: "Astrologie" }
+  },
+  avatar_olho: {
+    pt: { name: "Olho da Providência", description: "Símbolo ancestral da visão espiritual, discernimento cósmico e o desvelar do véu do invisível.", category: "Misticismo" },
+    en: { name: "Eye of Providence", description: "Ancestral symbol of spiritual vision, cosmic discernment, and the unveiling of the invisible.", category: "Mysticism" },
+    es: { name: "Ojo de la Providencia", description: "Símbolo ancestral de la visión espiritual, discernimiento cósmico y la revelación de lo invisible.", category: "Misticismo" },
+    de: { name: "Auge der Vorsehung", description: "Ahnen-Symbol für spirituelle Vision, kosmische Einsicht und die Enthüllung des Unsichtbaren.", category: "Mystizismus" },
+    fr: { name: "Œil de la Providence", description: "Symbole ancestral de la vision spirituelle, du discernement cosmique et du dévoilement de l'invisible.", category: "Mysticisme" }
+  },
+  avatar_saturno: {
+    pt: { name: "Saturno Astral", description: "Guardião do tempo primordial, disciplina cármica, limites estruturais e a maestria da alma.", category: "Astrologia" },
+    en: { name: "Astral Saturn", description: "Guardian of primordial time, karmic discipline, structural boundaries, and soul mastery.", category: "Astrology" },
+    es: { name: "Saturno Astral", description: "Guardián del tempo primordial, disciplina kármica, límites estructurales y maestría del alma.", category: "Astrología" },
+    de: { name: "Astraler Saturn", description: "Wächter der Urzeit, karmischen Disziplin, baulichen Grenzen und Meisterschaft der Seele.", category: "Astrologie" },
+    fr: { name: "Saturne Astral", description: "Gardien du temps primordial, de la discipline karmique, des limites structurelles et de la maîtrise de l'âme.", category: "Astrologie" }
+  },
+  avatar_estrela: {
+    pt: { name: "Estrela Guia", description: "A bússola mística do destino, trazendo sabedoria sideral e guiando seus passos escuros.", category: "Cosmos" },
+    en: { name: "Guiding Star", description: "The mystical compass of destiny, bringing sidereal wisdom and guiding your dark steps.", category: "Cosmos" },
+    es: { name: "Estrella Guía", description: "La brújula mística del destino, que trae sabiduría sideral y guía tus pasos oscuros.", category: "Cosmos" },
+    de: { name: "Leitstern", description: "Der mystische Kompass des Schicksals, der siderische Weisheit bringt und Ihre dunklen Schritte leitet.", category: "Kosmos" },
+    fr: { name: "Étoile Guide", description: "La boussole mystique du destin, apportant une sagesse sidérale et guidant vos pas sombres.", category: "Cosmos" }
+  },
+  avatar_oraculo: {
+    pt: { name: "Cálice de Luz", description: "Receptáculo místico das poções psíquicas, transmutação e das revelações oníricas de Morfeu.", category: "Misticismo" },
+    en: { name: "Chalice of Light", description: "Mystical vessel of psychic potions, transmutation, and the dream revelations of Morpheus.", category: "Mysticism" },
+    es: { name: "Cáliz de Luz", description: "Receptáculo místico de pociones psíquicas, transmutación y revelaciones oníricas de Morfeo.", category: "Misticismo" },
+    de: { name: "Kelch des Lichts", description: "Mystisches Gefäß für psychische Tränke, Transmutation und die Traumoffenbarungen von Morpheus.", category: "Mystizismus" },
+    fr: { name: "Calice de Lumière", description: "Récipient mystique de potions psychiques, de transmutation et des révélations oniriques de Morphée.", category: "Mysticisme" }
+  },
+  avatar_nebulosa: {
+    pt: { name: "Nebulosa Sagrada", description: "O berçário divino dos mistérios cósmicos, pó estelar inteligente carregado de cura.", category: "Cosmos" },
+    en: { name: "Sacred Nebula", description: "The divine nursery of cosmic mysteries, intelligent stardust loaded with healing.", category: "Cosmos" },
+    es: { name: "Nebulosa Sagrada", description: "El vivero divino de misterios cósmicos, polvo estelar inteligente cargado de curación.", category: "Cosmos" },
+    de: { name: "Heiliger Nebel", description: "Die göttliche Wiege kosmischer Geheimnisse, intelligenter Sternenstaub voller Heilung.", category: "Kosmos" },
+    fr: { name: "Nébuleuse Sacrée", description: "La pépinière divine des mystères cosmiques, poussière d'étoiles intelligente chargée de guérison.", category: "Cosmos" }
+  },
+  avatar_cometa: {
+    pt: { name: "Voo do Cometa", description: "O mensageiro veloz do espaço infinito, que corta o destino trazendo sorte e revoluções.", category: "Cosmos" },
+    en: { name: "Comet Flight", description: "The swift messenger of infinite space, cutting through destiny, bringing luck and revolutions.", category: "Cosmos" },
+    es: { name: "Vuelo del Cometa", description: "El veloz mensajero del espacio infinito, que corta el destino trayendo suerte y revoluciones.", category: "Cosmos" },
+    de: { name: "Kometenflug", description: "Der schnelle Bote des unendlichen Raums, der das Schicksal durchbricht und Glück und Revolutionen bringt.", category: "Kosmos" },
+    fr: { name: "Vol de Comète", description: "Le messager rapide de l'espace infini, traversant le destin, apportant chance et révolutions.", category: "Cosmos" }
+  }
+};
+
 export function getAvatarsList(): AvatarOption[] {
-  return Object.entries(AVATAR_TEMPLATES).map(([id, item]) => ({
-    id,
-    ...item
-  }));
+  const lang = getActiveLanguage();
+  return Object.entries(AVATAR_TEMPLATES).map(([id, item]) => {
+    const translation = AVATAR_TRANSLATIONS[id]?.[lang] || AVATAR_TRANSLATIONS[id]?.['pt'] || item;
+    return {
+      id,
+      ...item,
+      name: translation.name,
+      description: translation.description,
+      category: translation.category
+    };
+  });
 }
 
 export function getAvatarUrl(avatarIdOrUrl: string | undefined): string {

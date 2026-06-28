@@ -38,8 +38,8 @@ export default function MoonTipCard({ userName, birthDate, onRewardPoints, lang 
     const email = localStorage.getItem("orbi_logged_email") || "";
     const todayStr = new Date().toISOString().split('T')[0];
 
-    // 1. Check if we already have a calculated tip for this browser session
-    const cached = sessionStorage.getItem('astrological_moon_tip_session');
+    // 1. Check if we already have a calculated tip for this browser session and language
+    const cached = sessionStorage.getItem(`astrological_moon_tip_session_${lang}`);
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
@@ -57,7 +57,7 @@ export default function MoonTipCard({ userName, birthDate, onRewardPoints, lang 
       setLoading(true);
       try {
         if (email) {
-          const cachedFirestore = await loadCalculationCache(email, `daily_moontip_${todayStr}`);
+          const cachedFirestore = await loadCalculationCache(email, `daily_moontip_${todayStr}_${lang}`);
           if (cachedFirestore && cachedFirestore.tip) {
             setData(cachedFirestore);
             setLoading(false);
@@ -74,9 +74,9 @@ export default function MoonTipCard({ userName, birthDate, onRewardPoints, lang 
           const fetchedData = await res.json();
           setData(fetchedData);
           // Store in sessionStorage to align with "atualizando a cada nova sessão de login"
-          sessionStorage.setItem('astrological_moon_tip_session', JSON.stringify(fetchedData));
+          sessionStorage.setItem(`astrological_moon_tip_session_${lang}`, JSON.stringify(fetchedData));
           if (email) {
-            await saveCalculationCache(email, `daily_moontip_${todayStr}`, fetchedData);
+            await saveCalculationCache(email, `daily_moontip_${todayStr}_${lang}`, fetchedData);
           }
         }
       } catch (err) {
@@ -87,7 +87,7 @@ export default function MoonTipCard({ userName, birthDate, onRewardPoints, lang 
     };
 
     fetchTip();
-  }, [userName, birthDate]);
+  }, [userName, birthDate, lang]);
 
   // Check if reward was claimed already in this session
   useEffect(() => {

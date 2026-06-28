@@ -23,6 +23,7 @@ import {
 } from './types';
 import CompatibilityView from './components/CompatibilityView';
 import { calculateNatalChart } from './astrology';
+import { performAstroCalculation } from './components/astroMath';
 import { calculateNumerology } from './numerology';
 // Lazy load heavy computational views for faster initial loading
 const AstrologyView = React.lazy(() => import('./components/AstrologyView'));
@@ -764,9 +765,7 @@ export default function App() {
 
 
   // UI Navigation states
-  const [currentLang, setCurrentLang] = useState<Language>(() => {
-    return getInitialLanguage();
-  });
+  const currentLang = idioma as Language;
   // 'mapa' | 'constelacoes' | 'planetas' | 'tarot' | 'configuracoes' as specified by the bottom-bar prompt!
   const [activeTab, setActiveTab] = useState<'mapa' | 'constelacoes' | 'planetas' | 'tarot' | 'configuracoes'>('mapa');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
@@ -1635,7 +1634,7 @@ export default function App() {
           const finalName = (rawName === "Viajante Estelar") ? "Buscador" : rawName;
           
           if (updatedProfile.preferredLanguage && updatedProfile.preferredLanguage !== lang) {
-            setLangState(updatedProfile.preferredLanguage as any);
+            mudarIdioma(updatedProfile.preferredLanguage as any);
             localStorage.setItem('orbi_preferred_language', updatedProfile.preferredLanguage);
           }
 
@@ -1909,7 +1908,7 @@ export default function App() {
               };
               
               if (updatedUser.preferredLanguage && updatedUser.preferredLanguage !== lang) {
-                setLangState(updatedUser.preferredLanguage as any);
+                mudarIdioma(updatedUser.preferredLanguage as any);
                 localStorage.setItem('orbi_preferred_language', updatedUser.preferredLanguage);
               }
 
@@ -2180,14 +2179,10 @@ export default function App() {
   const [isMapJustSaved, setIsMapJustSaved] = useState<boolean>(false);
 
   // Language settings state
-  const [lang, setLangState] = useState<Language>(getInitialLanguage());
+  const lang = idioma as Language;
   const setLang = async (newLang: Language) => {
     // 4. Update the global context state first
     mudarIdioma(newLang as any);
-    setLangState(newLang);
-    setCurrentLang(newLang);
-    i18n.changeLanguage(newLang);
-    localStorage.setItem('orbi_preferred_language', newLang);
     if (user && user.birthDate) {
       triggerGenerateMainMap({
         name: user.name,
@@ -2215,21 +2210,6 @@ export default function App() {
       }
     }
   };
-
-  // Sync currentLang dynamically so that any component receiving currentLang matches the settings perfectly
-  useEffect(() => {
-    setCurrentLang(lang);
-    if (i18n.language !== lang) {
-      i18n.changeLanguage(lang);
-    }
-  }, [lang]);
-
-  // Synchronize Context language change to App state
-  useEffect(() => {
-    if (idioma && idioma !== lang) {
-      setLangState(idioma as any);
-    }
-  }, [idioma]);
 
   // Local helper to get static translations for settings on the fly
   const tLocal = (key: string, replacement?: any): string => {
@@ -2296,98 +2276,81 @@ export default function App() {
   };
 
   const mapLocalChartToAstrologyMap = (name: string, date: string, time: string, city: string): AstrologyMap => {
-    const chart = calculateNatalChart(date, time, city);
+    const activeLang = (i18n.language || 'pt').toLowerCase().split('-')[0] as 'pt' | 'en' | 'es' | 'de' | 'fr';
     
-    let fogo = 0, terra = 0, ar = 0, agua = 0;
-    let cardinal = 0, fixo = 0, mutavel = 0;
-    let ativo = 0, receptivo = 0;
-    
-    const elementMapping: Record<string, "Fogo" | "Terra" | "Ar" | "Água"> = {
-      "Áries": "Fogo", "Leão": "Fogo", "Sagitário": "Fogo",
-      "Touro": "Terra", "Virgem": "Terra", "Capricórnio": "Terra",
-      "Gêmeos": "Ar", "Libra": "Ar", "Aquário": "Ar",
-      "Câncer": "Água", "Escorpião": "Água", "Peixes": "Água"
-    };
-    
-    const qualityMapping: Record<string, "Cardinal" | "Fixo" | "Mutável"> = {
-      "Áries": "Cardinal", "Câncer": "Cardinal", "Libra": "Cardinal", "Capricórnio": "Cardinal",
-      "Touro": "Fixo", "Leão": "Fixo", "Escorpião": "Fixo", "Aquário": "Fixo",
-      "Gêmeos": "Mutável", "Virgem": "Mutável", "Sagitário": "Mutável", "Peixes": "Mutável"
-    };
-    
-    const polarityMapping: Record<string, "Ativo" | "Receptivo"> = {
-      "Áries": "Ativo", "Gêmeos": "Ativo", "Leão": "Ativo", "Libra": "Ativo", "Sagitário": "Ativo", "Aquário": "Ativo",
-      "Touro": "Receptivo", "Câncer": "Receptivo", "Virgem": "Receptivo", "Escorpião": "Receptivo", "Capricórnio": "Receptivo", "Peixes": "Receptivo"
-    };
+    // Perform high-precision mathematical astrological calculations
+    const chart = performAstroCalculation(
+      date,
+      time || "12:00",
+      user.latitude !== undefined ? user.latitude : -23.5505,
+      user.longitude !== undefined ? user.longitude : -46.6333
+    );
 
-    chart.planets.forEach(p => {
-      const el = elementMapping[p.sign] || "Fogo";
-      if (el === "Fogo") fogo++;
-      else if (el === "Terra") terra++;
-      else if (el === "Ar") ar++;
-      else if (el === "Água") agua++;
-      
-      const q = qualityMapping[p.sign] || "Cardinal";
-      if (q === "Cardinal") cardinal++;
-      else if (q === "Fixo") fixo++;
-      else if (q === "Mutável") mutavel++;
-      
-      const pol = polarityMapping[p.sign] || "Ativo";
-      if (pol === "Ativo") ativo++;
-      else receptivo++;
-    });
-
-    const totalPoints = chart.planets.length || 1;
-
-    const astros: AstroAstroPosition[] = chart.planets.map(p => ({
+    const astros: AstroAstroPosition[] = chart.astros.map(p => ({
       name: p.name,
       sign: p.sign,
-      degree: `${p.degree}°`,
-      extraInfo: p.isRetrograde ? "retrógrado" : "direto",
-      description: `Exibindo posição do astro ${p.name} no signo de ${p.sign} na Casa ${p.house}.`
+      degree: `${p.degree}°${p.minute.toString().padStart(2, "0")}'`,
+      extraInfo: p.extraInfo,
+      description: p.description
     }));
 
     const houses: AstroHouse[] = chart.houses.map(h => ({
-      number: h.house,
+      number: h.number,
       sign: h.sign,
-      interpretation: `A cúspide da Casa ${h.house} inicia no signo de ${h.sign} com graus exatos de ${h.degree}° de alinhamento Placidus.`
+      interpretation: h.interpretation,
+      planet: h.planets.join(", ") || undefined
     }));
 
     const aspects: AstroAspect[] = chart.aspects.map(a => ({
       planet1: a.planet1,
       planet2: a.planet2,
-      aspectType: a.type as any,
-      orb: `${a.orb}°`,
-      interpretation: `Conexão celeste dinâmica de ${a.type} entre ${a.planet1} e ${a.planet2}.`
+      aspectType: a.aspectType as any,
+      orb: a.orb.replace('°', ''),
+      interpretation: a.interpretation
     }));
 
+    const welcomeMessages: Record<string, string> = {
+      pt: `Olá ${name}, suas efemérides científicas foram calculadas sob o sistema Placidus e sintonizadas no dispositivo local com sucesso!`,
+      en: `Hello ${name}, your scientific ephemeris have been calculated under the Placidus system and tuned on your local device successfully!`,
+      es: `¡Hola ${name}, sus efemérides científicas se han calculado bajo el sistema Placidus y se han sintonizado en su dispositivo local con éxito!`,
+      de: `Hallo ${name}, Ihre wissenschaftlichen Ephemeriden wurden unter dem Placidus-System berechnet und erfolgreich auf Ihrem lokalen Gerät abgestimmt!`,
+      fr: `Bonjour ${name}, vos éphémérides scientifiques ont été calculées sous le système Placidus et réglées avec succès sur votre appareil local !`
+    };
+    const welcomeMessage = welcomeMessages[activeLang] || welcomeMessages.pt;
+
+    const personalityTraitsByLang: Record<string, { harmonious: string[], disharmonious: string[] }> = {
+      pt: {
+        harmonious: ["Socialmente consciente", "Inventivo", "Esperançoso", "Amigável", "Independente", "Intuitivo"],
+        disharmonious: ["Temperamental", "Disperso", "Imprevisível", "Teimoso", "Inquieto"]
+      },
+      en: {
+        harmonious: ["Socially conscious", "Inventive", "Hopeful", "Friendly", "Independent", "Intuitive"],
+        disharmonious: ["Temperamental", "Scattered", "Unpredictable", "Stubborn", "Restless"]
+      },
+      es: {
+        harmonious: ["Socialmente consciente", "Inventivo", "Esperanzado", "Amigable", "Independiente", "Intuitivo"],
+        disharmonious: ["Temperamental", "Disperso", "Impredecible", "Terco", "Inquieto"]
+      },
+      de: {
+        harmonious: ["Sozial bewusst", "Erfinderisch", "Hoffnungsvoll", "Freundlich", "Unabhängig", "Intuitiv"],
+        disharmonious: ["Launisch", "Zerstreut", "Unberechenbar", "Eigensinnig", "Rastlos"]
+      },
+      fr: {
+        harmonious: ["Socialement conscient", "Inventif", "Plein d'espoir", "Amical", "Indépendant", "Intuitif"],
+        disharmonious: ["Capricieux", "Dispersé", "Imprévisible", "Têtu", "Inquiet"]
+      }
+    };
+    const traits = personalityTraitsByLang[activeLang] || personalityTraitsByLang.pt;
+
     return {
-      welcomeMessage: `Olá ${name}, suas efemérides foram geradas e sintonizadas no dispositivo local com sucesso!`,
+      welcomeMessage,
       originalTime: time,
       adjustedTime: time,
       timezone: "America/Sao_Paulo",
       is_dst: false,
-      distribution: {
-        elements: {
-          fire: Math.round((fogo / totalPoints) * 100),
-          earth: Math.round((terra / totalPoints) * 100),
-          air: Math.round((ar / totalPoints) * 100),
-          water: Math.round((agua / totalPoints) * 100)
-        },
-        qualities: {
-          cardinal: Math.round((cardinal / totalPoints) * 100),
-          fixed: Math.round((fixo / totalPoints) * 100),
-          mutable: Math.round((mutavel / totalPoints) * 100)
-        },
-        polarization: {
-          yang: Math.round((ativo / totalPoints) * 100),
-          yin: Math.round((receptivo / totalPoints) * 100)
-        }
-      },
-      personalityTraits: {
-        harmonious: ["Socialmente consciente", "Inventivo", "Esperançoso", "Amigável", "Independente"],
-        disharmonious: ["Temperamental", "Disperso", "Imprevisível", "Teimoso"]
-      },
+      lang: activeLang,
+      distribution: chart.distribution,
+      personalityTraits: traits,
       astros,
       houses,
       aspects
@@ -2434,12 +2397,17 @@ export default function App() {
         const birthCityClean = (localProfile.birthCity || "Sao_Paulo").replace(/[^a-zA-Z0-9]/g, "_");
         const chartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
         
+        const activeLang = (i18n.language || 'pt').toLowerCase().split('-')[0] as 'pt' | 'en' | 'es' | 'de' | 'fr';
         const finalMap = localMapData || mapLocalChartToAstrologyMap(
           localProfile.name || targetUser.name || "Buscador",
           localProfile.birthDate,
           localProfile.birthTime || "12:00",
           localProfile.birthCity
         );
+        
+        if (finalMap) {
+          finalMap.lang = activeLang;
+        }
         
         const finalNum = localNumerology || calculateNumerology(
           localProfile.name || targetUser.name || "Buscador",
@@ -2453,7 +2421,8 @@ export default function App() {
           birthCity: localProfile.birthCity,
           isUnknownTime: !!localProfile.isUnknownTime,
           mapData: finalMap,
-          numerology: finalNum
+          numerology: finalNum,
+          lang: activeLang
         });
         
         const migratedUserObj: UserProfile = {
@@ -2654,8 +2623,9 @@ export default function App() {
         }
 
         const activeLang = forcedLang || idioma || lang || 'pt';
+        const chartLang = dbChart?.lang || dbChart?.mapData?.lang || 'pt';
 
-        if (dbChart && dbChart.mapData && dbChart.numerology) {
+        if (dbChart && dbChart.mapData && dbChart.numerology && chartLang === activeLang) {
           console.log("[Astro DB] Natal chart successfully restored from Firestore Cloud!");
           setMapData(dbChart.mapData);
           setNumerology(dbChart.numerology);
@@ -2673,7 +2643,7 @@ export default function App() {
               p.birthTime === details.birthTime &&
               p.birthCity === details.birthCity &&
               p.isUnknownTime === details.isUnknownTime &&
-              (!p.lang || p.lang === activeLang);
+              p.lang === activeLang;
             if (isMatch && cached.map && cached.numerology) {
               console.log("[Intelligent Cache] Natal chart loaded from Firestore cache.");
               setMapData(cached.map);
@@ -2725,10 +2695,15 @@ export default function App() {
       }
 
       if (email && data && data.map && data.numerology) {
+        const activeLang = forcedLang || idioma || lang || 'pt';
         const birthDateClean = (details.birthDate || "1997-02-11").replace(/[^a-zA-Z0-9]/g, "_");
         const birthTimeClean = (details.birthTime || "12:00").replace(/[^a-zA-Z0-9]/g, "_");
         const birthCityClean = (details.birthCity || "Sao_Paulo").replace(/[^a-zA-Z0-9]/g, "_");
         const chartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
+
+        if (data.map) {
+          data.map.lang = activeLang;
+        }
 
         try {
           // Direct subcollection persistence in background
@@ -2739,7 +2714,8 @@ export default function App() {
             birthCity: details.birthCity,
             isUnknownTime: !!details.isUnknownTime,
             mapData: data.map,
-            numerology: data.numerology
+            numerology: data.numerology,
+            lang: activeLang
           });
 
           // Link the newly generated chart as primary
@@ -2781,10 +2757,10 @@ export default function App() {
 
   const lastGeneratedParamsRef = useRef<string>("");
 
-  // Automatically load or generate main map data whenever user profile/coordinates change (e.g. login, load, edit)
+  // Automatically load or generate main map data whenever user profile, coordinates or language change
   useEffect(() => {
     if (user.hasCreatedMap && user.birthDate && user.birthCity) {
-      const paramKey = `${user.email || "default"}_${user.birthDate}_${user.birthTime || ""}_${user.birthCity}_${user.isUnknownTime ?? false}`;
+      const paramKey = `${user.email || "default"}_${user.birthDate}_${user.birthTime || ""}_${user.birthCity}_${user.isUnknownTime ?? false}_${idioma}`;
       if (lastGeneratedParamsRef.current !== paramKey) {
         lastGeneratedParamsRef.current = paramKey;
         console.log("[Reactive Map Loader] Triggering map generation/load for:", paramKey);
@@ -2795,10 +2771,10 @@ export default function App() {
           birthCity: user.birthCity,
           isUnknownTime: user.isUnknownTime,
           email: user.email
-        });
+        }, idioma);
       }
     }
-  }, [user?.email, user?.hasCreatedMap, user?.birthDate, user?.birthTime, user?.birthCity, user?.isUnknownTime]);
+  }, [user?.email, user?.hasCreatedMap, user?.birthDate, user?.birthTime, user?.birthCity, user?.isUnknownTime, idioma]);
 
   // Run on mount to fetch default global notification ticker
   useEffect(() => {
@@ -3079,7 +3055,8 @@ export default function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          description: newDreamDesc
+          description: newDreamDesc,
+          lang: currentLang
         })
       });
       const data = await response.json();
@@ -3155,7 +3132,8 @@ export default function App() {
         body: JSON.stringify({
           messages: [...chatMessages, userMessage],
           userProfile: user,
-          requestTopic: "geral"
+          requestTopic: "geral",
+          lang: currentLang
         })
       });
       const data = await response.json();
@@ -3185,7 +3163,7 @@ export default function App() {
       const response = await fetch("/api/oraculo/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: oracleQuestion })
+        body: JSON.stringify({ question: oracleQuestion, lang: currentLang })
       });
       const data = await response.json();
       setOracleResponse(data);
@@ -3204,7 +3182,8 @@ export default function App() {
     try {
       const response = await fetch("/api/tarot/draw", {
         method: "POST",
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lang: currentLang })
       });
       const data = await response.json();
       if (data.draw) {
@@ -5652,16 +5631,16 @@ export default function App() {
                                 {/* Reivindicar Recompensa Button */}
                                 <div className="pt-3 flex justify-between items-center bg-slate-950/40 p-4 rounded-2xl border border-slate-850">
                                   <span className="text-[9.5px] font-mono text-slate-400 max-w-[250px] leading-relaxed">
-                                    Complete todas as missões para harmonização áurica integral.
+                                    {t("Complete todas as missões para harmonização áurica integral.")}
                                   </span>
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      alert("Suas recompensas cósmicas espirituais foram integradas e aplicadas ao seu campo magnético pessoal!");
+                                      alert(t("Suas recompensas cósmicas espirituais foram integradas e aplicadas ao seu campo magnético pessoal!"));
                                     }}
                                     className="px-4 py-2 bg-gradient-to-r from-amber-500 to-rose-600 text-slate-950 text-[10px] font-bold uppercase rounded-lg tracking-wider transition hover:shadow-lg active:scale-95 cursor-pointer shrink-0"
                                   >
-                                    Reivindicar Recompensa
+                                    {t("Reivindicar Recompensa")}
                                   </button>
                                 </div>
                               </div>

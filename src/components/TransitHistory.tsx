@@ -41,13 +41,18 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
   const [events, setEvents] = useState<AstroEvent[]>([]);
   
   const getCurrentMonthAndYear = () => {
-    const monthNames = [
-      "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-      "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
-    ];
+    const monthNamesLocal: Record<string, string[]> = {
+      pt: ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"],
+      en: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+      es: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
+      de: ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"],
+      fr: ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]
+    };
+    const activeL = (lang as string) || 'pt';
+    const monthList = monthNamesLocal[activeL] || monthNamesLocal['pt'];
     const date = new Date();
     return {
-      monthName: t(monthNames[date.getMonth()]),
+      monthName: monthList[date.getMonth()],
       year: date.getFullYear()
     };
   };
@@ -121,25 +126,25 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
       case 'Positive':
         return {
           bg: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
-          label: 'Favorável',
+          label: t('Favorável'),
           icon: <Heart className="w-3 h-3 text-emerald-400 shrink-0" />
         };
       case 'Challenging':
         return {
           bg: 'bg-rose-500/10 border-rose-500/20 text-rose-400',
-          label: 'Atenção/Desafio',
+          label: t('Atenção/Desafio'),
           icon: <AlertTriangle className="w-3 h-3 text-rose-400 shrink-0" />
         };
       case 'Transformative':
         return {
           bg: 'bg-purple-500/10 border-purple-500/10 text-purple-400',
-          label: 'Transmutação',
+          label: t('Transmutação'),
           icon: <Sparkles className="w-3 h-3 text-purple-400 shrink-0" />
         };
       default:
         return {
           bg: 'bg-slate-500/10 border-slate-500/20 text-slate-400',
-          label: 'Neutro',
+          label: t('Neutro'),
           icon: <Compass className="w-3 h-3 text-slate-400 shrink-0" />
         };
     }
@@ -181,14 +186,14 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-emerald-400" />
             <h3 className="text-sm font-bold text-slate-100 uppercase tracking-wider">
-              Agenda Astronômica de {monthName} {year}
+              {t("Agenda Astronômica de")} {monthName} {year}
             </h3>
             <span className="px-2 py-0.5 bg-emerald-500/15 border border-emerald-500/20 text-[8px] font-mono font-bold text-emerald-400 rounded">
-              LIVRE & ATUALIZADA
+              {t("LIVRE & ATUALIZADA")}
             </span>
           </div>
           <p className="text-[10px] text-slate-500">
-            Acompanhe os principais alinhamentos planetários com leituras personalizadas geradas pela inteligência artificial.
+            {t("Acompanhe os principais alinhamentos planetários com leituras personalizadas geradas pela inteligência artificial.")}
           </p>
         </div>
 
@@ -199,14 +204,14 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-850 border border-slate-850 text-[10px] font-semibold font-mono text-slate-440 transition hover:text-slate-200 cursor-pointer disabled:opacity-50"
         >
           <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
-          Sincronizar
+          {t("Sincronizar")}
         </button>
       </div>
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-12 space-y-3">
           <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
-          <p className="text-xs font-mono text-slate-400">Consultando efemérides planetárias no templo celeste...</p>
+          <p className="text-xs font-mono text-slate-400">{t("Consultando efemérides planetárias no templo celeste...")}</p>
         </div>
       ) : error ? (
         <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-center space-y-2">
@@ -215,7 +220,7 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
             onClick={fetchTransits}
             className="px-3 py-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-mono text-[10px] rounded transition cursor-pointer"
           >
-            Tentar Novamente
+            {t("Tentar Novamente")}
           </button>
         </div>
       ) : (
@@ -223,42 +228,42 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
           
           {/* Filters Bar */}
           <div className="flex flex-wrap gap-3 items-center bg-slate-950/40 p-3 rounded-2xl border border-slate-850">
-            <span className="text-[10px] uppercase font-mono text-slate-505 font-bold tracking-wider mr-1">Filtros:</span>
+            <span className="text-[10px] uppercase font-mono text-slate-505 font-bold tracking-wider mr-1">{t("Filtros:")}</span>
             
             {/* Planet Filter */}
             <div className="flex items-center gap-1.5">
-              <span className="text-[9px] font-mono text-slate-500">Planeta:</span>
+              <span className="text-[9px] font-mono text-slate-500">{t("Planeta:")}</span>
               <select
                 value={filterPlanet}
                 onChange={(e) => setFilterPlanet(e.target.value)}
                 className="bg-slate-900 border border-slate-800 text-[10px] font-mono rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-emerald-500"
               >
-                <option value="todos">Todos</option>
-                {uniquePlanets.map((p) => (
-                  <option key={p} value={p}>{p}</option>
+                <option value="todos">{t("Todos")}</option>
+                {uniquePlanets.map((p: any) => (
+                  <option key={p} value={p}>{t(p as string)}</option>
                 ))}
               </select>
             </div>
 
             {/* Influence Filter */}
             <div className="flex items-center gap-1.5">
-              <span className="text-[9px] font-mono text-slate-500">Energia:</span>
+              <span className="text-[9px] font-mono text-slate-500">{t("Energia:")}</span>
               <select
                 value={filterInfluence}
                 onChange={(e) => setFilterInfluence(e.target.value)}
                 className="bg-slate-900 border border-slate-800 text-[10px] font-mono rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-emerald-500"
               >
-                <option value="todos">Todas</option>
-                <option value="positive">Favorável</option>
-                <option value="challenging">Atenção/Desafio</option>
-                <option value="neutral">Neutro</option>
-                <option value="transformative">Transmutação</option>
+                <option value="todos">{t("Todas")}</option>
+                <option value="positive">{t("Favorável")}</option>
+                <option value="challenging">{t("Atenção/Desafio")}</option>
+                <option value="neutral">{t("Neutro")}</option>
+                <option value="transformative">{t("Transmutação")}</option>
               </select>
             </div>
 
             {/* Selected Count */}
             <div className="ml-auto text-[9px] font-mono text-slate-500">
-              Mostrando <span className="text-emerald-400 font-bold">{filteredEvents.length}</span> de <span className="text-slate-400">{events.length}</span> trânsitos
+              {t("Mostrando")} <span className="text-emerald-400 font-bold">{filteredEvents.length}</span> {t("de")} <span className="text-slate-400">{events.length}</span> {t("trânsitos")}
             </div>
           </div>
 
@@ -360,7 +365,7 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
                       <div className="flex justify-between items-start gap-2">
                         <div className="flex items-center gap-1.5">
                           <span className="text-xs">{symbol}</span>
-                          <span className="text-[10px] font-mono text-slate-450 uppercase font-semibold">{evt.planet}</span>
+                          <span className="text-[10px] font-mono text-slate-450 uppercase font-semibold">{t(evt.planet)}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className={`px-2 py-0.5 rounded-full border text-[8px] font-mono tracking-wider uppercase font-bold flex items-center gap-1 shrink-0 ${badge.bg}`}>
@@ -374,11 +379,11 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
                       </div>
  
                       <h4 className="text-xs font-bold text-slate-200 group-hover:text-emerald-400 transition-colors">
-                        {evt.eventName}
+                        {t(evt.eventName)}
                       </h4>
  
                       <p className="text-[10.5px] text-slate-400 leading-relaxed font-sans">
-                        {evt.description}
+                        {t(evt.description)}
                       </p>
 
                       <AnimatePresence initial={false}>
@@ -392,29 +397,29 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
                           >
                             <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
                               <div className="p-2 bg-slate-900/50 rounded-lg border border-slate-850/60">
-                                <span className="text-slate-500 block uppercase text-[8px]">Aspecto Ativo</span>
-                                <span className="text-amber-400 font-bold block mt-0.5">{tech.aspect}</span>
+                                <span className="text-slate-500 block uppercase text-[8px]">{t("Aspecto Ativo")}</span>
+                                <span className="text-amber-400 font-bold block mt-0.5">{t(tech.aspect)}</span>
                               </div>
                               <div className="p-2 bg-slate-900/50 rounded-lg border border-slate-850/60">
-                                <span className="text-slate-505 block uppercase text-[8px]">Grau Celeste</span>
+                                <span className="text-slate-505 block uppercase text-[8px]">{t("Grau Celeste")}</span>
                                 <span className="text-sky-450 font-bold block mt-0.5">{tech.degree}</span>
                               </div>
                               <div className="p-2 bg-slate-900/50 rounded-lg border border-slate-850/60">
-                                <span className="text-slate-550 block uppercase text-[8px]">Casa Ativada</span>
-                                <span className="text-emerald-400 font-semibold block mt-0.5 break-words text-[9px]">{tech.house}</span>
+                                <span className="text-slate-550 block uppercase text-[8px]">{t("Casa Ativada")}</span>
+                                <span className="text-emerald-400 font-semibold block mt-0.5 break-words text-[9px]">{t(tech.house)}</span>
                               </div>
                               <div className="p-2 bg-slate-900/50 rounded-lg border border-slate-850/60">
-                                <span className="text-slate-550 block uppercase text-[8px]">Orbe Real</span>
-                                <span className="text-rose-400 font-bold block mt-0.5">{tech.orb} (Exatidão)</span>
+                                <span className="text-slate-550 block uppercase text-[8px]">{t("Orbe Real")}</span>
+                                <span className="text-rose-400 font-bold block mt-0.5">{tech.orb} ({t("Exatidão")})</span>
                               </div>
                             </div>
 
                             <div className="p-3 bg-gradient-to-r from-amber-500/5 to-rose-500/5 border border-amber-500/10 rounded-xl space-y-1">
                               <span className="text-[8.5px] font-mono text-amber-500 uppercase tracking-widest font-bold block">
-                                Sintonização de Elemento: {tech.element}
+                                {t("Sintonização de Elemento:")} {t(tech.element)}
                               </span>
                               <p className="text-[10px] text-slate-350 font-sans italic leading-relaxed">
-                                {tech.safetyTip}
+                                {t(tech.safetyTip)}
                               </p>
                             </div>
                           </motion.div>
@@ -425,11 +430,11 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
                     <div className="pt-2 border-t border-slate-900 flex items-center justify-between">
                       <span className="text-[9px] font-mono text-slate-500 flex items-center gap-1">
                         <Clock className="w-2.5 h-2.5 text-slate-500" />
-                        Acontece em: {formatDate(evt.date)}
+                        {t("Acontece em:")} {formatDate(evt.date)}
                       </span>
                       {userName && (
                         <span className="text-[8px] font-mono text-emerald-400 bg-emerald-500/5 px-2 py-0.5 rounded-full border border-emerald-500/10">
-                          Sintonizado com {userName.split(' ')[0]}
+                          {t("Sintonizado com")} {userName.split(' ')[0]}
                         </span>
                       )}
                     </div>
@@ -439,7 +444,7 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
             </div>
           ) : (
             <div className="text-center py-8 bg-slate-950/20 rounded-2xl border border-slate-850 border-dashed text-slate-500 text-xs font-mono">
-              Nenhum trânsito correspondendo aos filtros de seleção no momento.
+              {t("Nenhum trânsito correspondendo aos filtros de seleção no momento.")}
             </div>
           )}
 

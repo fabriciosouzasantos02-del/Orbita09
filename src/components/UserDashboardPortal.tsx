@@ -226,7 +226,7 @@ export default function UserDashboardPortal({
     const fetchMissions = async () => {
       try {
         if (email) {
-          const cachedMissions = await loadCalculationCache(email, `daily_missions_${todayStr}`);
+          const cachedMissions = await loadCalculationCache(email, `daily_missions_${todayStr}_${lang}`);
           if (cachedMissions && Array.isArray(cachedMissions)) {
             const updated = cachedMissions.map((m: any) => {
               const matched = dailyMissions.find(curr => curr.id === m.id);
@@ -258,7 +258,7 @@ export default function UserDashboardPortal({
             });
             setDailyMissions(updated);
             if (email) {
-              await saveCalculationCache(email, `daily_missions_${todayStr}`, data.missions);
+              await saveCalculationCache(email, `daily_missions_${todayStr}_${lang}`, data.missions);
             }
           }
         }
@@ -272,7 +272,7 @@ export default function UserDashboardPortal({
       setOsirisLoading(true);
       try {
         if (email) {
-          const cachedDashboard = await loadCalculationCache(email, `daily_osiris_dashboard_${todayStr}`);
+          const cachedDashboard = await loadCalculationCache(email, `daily_osiris_dashboard_${todayStr}_${lang}`);
           if (cachedDashboard) {
             setOsirisDashboard(cachedDashboard);
             setOsirisLoading(false);
@@ -300,7 +300,7 @@ export default function UserDashboardPortal({
           const data = await res.json();
           setOsirisDashboard(data);
           if (email) {
-            await saveCalculationCache(email, `daily_osiris_dashboard_${todayStr}`, data);
+            await saveCalculationCache(email, `daily_osiris_dashboard_${todayStr}_${lang}`, data);
           }
         }
       } catch (err) {
@@ -312,7 +312,7 @@ export default function UserDashboardPortal({
 
     fetchMissions();
     fetchOsirisDashboard();
-  }, [user]);
+  }, [user, lang]);
 
   const handleSendOsirisMessage = async () => {
     if (!osirisChatInput.trim() || osirisChatSending) return;
@@ -338,7 +338,8 @@ export default function UserDashboardPortal({
           weather: defaultWeather,
           biorhythm: defaultBiorhythm,
           location: locationStr,
-          dreams: dreamsHistory
+          dreams: dreamsHistory,
+          lang
         })
       });
 
@@ -2340,12 +2341,12 @@ export default function UserDashboardPortal({
                   <div>
                     <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
                       <Award className="w-4 h-4 text-amber-500" />
-                      Missões Diárias Cósmicas
+                      {t("Missões Diárias Cósmicas")}
                     </h3>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Cumpra os pequenos gestos do dia para consolidar o score celestial.</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">{t("Cumpra os pequenos gestos do dia para consolidar o score celestial.")}</p>
                   </div>
                   <span className="px-2.5 py-0.5 bg-amber-500/10 border border-amber-500/20 text-[10px] font-mono text-amber-400 font-extrabold rounded-lg">
-                    XP Acumulado: {scorePoints} pts
+                    {t("XP Acumulado:")} {scorePoints} pts
                   </span>
                 </div>
 
@@ -2366,17 +2367,17 @@ export default function UserDashboardPortal({
                         </button>
                         <div>
                           <h5 className={`text-xs font-bold text-slate-200 ${task.isCompleted ? 'line-through text-slate-500' : ''}`}>
-                            {task.title}
+                            {t(task.title)}
                           </h5>
-                          <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">{task.description}</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">{t(task.description)}</p>
                           {task.benefit && (
                             <div className="mt-1.5 space-y-1">
                               <span className="px-1.5 py-0.5 bg-purple-500/10 border border-purple-500/20 text-[8.5px] font-mono text-purple-400 font-bold rounded inline-block">
-                                ✨ {task.benefit}
+                                ✨ {t(task.benefit)}
                               </span>
                               {task.benefitExplanation && (
                                 <p className="text-[9.5px] text-slate-500 italic block leading-normal pt-0.5">
-                                  <strong>Benefício ao cumprir:</strong> {task.benefitExplanation}
+                                  <strong>{t("Benefício ao cumprir:")}</strong> {t(task.benefitExplanation)}
                                 </p>
                               )}
                             </div>
@@ -2394,9 +2395,9 @@ export default function UserDashboardPortal({
                 <div className="pb-3 border-b border-slate-850">
                   <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
                     <Zap className="w-4 h-4 text-purple-400 animate-pulse" />
-                    Missões da Semana (Retenção Ativa)
+                    {t("Missões da Semana (Retenção Ativa)")}
                   </h3>
-                  <p className="text-[10px] text-slate-500 mt-0.5">Principais metas desta semana para impulsionar conexões e estancar vazos de capital.</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">{t("Principais metas desta semana para impulsionar conexões e estancar vazos de capital.")}</p>
                 </div>
 
                 <div className="space-y-3">
@@ -2416,9 +2417,9 @@ export default function UserDashboardPortal({
                         </button>
                         <div>
                           <h5 className={`text-xs font-black text-slate-200 ${task.isCompleted ? 'line-through text-slate-500' : ''}`}>
-                            "{task.title}"
+                            "{t(task.title)}"
                           </h5>
-                          <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed font-sans">{task.description}</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed font-sans">{t(task.description)}</p>
                         </div>
                       </div>
                       <span className="text-[9px] font-mono text-purple-400 font-bold shrink-0">+{task.points} XP</span>
@@ -2429,7 +2430,7 @@ export default function UserDashboardPortal({
                 {/* Claim reward block */}
                 <div className="pt-3 flex justify-between items-center bg-slate-950/40 p-4 rounded-xl border border-slate-850 flex-wrap gap-3">
                   <span className="text-[9px] font-mono text-slate-400 max-w-[280px] leading-relaxed">
-                    A conclusão semanal das missões estabiliza seu score material e clareia o Sol em Aquário.
+                    {t("A conclusão semanal das missões estabiliza seu score material e clareia o Sol em Aquário.")}
                   </span>
                   <button
                     type="button"
@@ -2438,7 +2439,7 @@ export default function UserDashboardPortal({
                     }}
                     className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-slate-950 text-[9.5px] font-black uppercase rounded-lg tracking-wider transition hover:shadow-lg active:scale-95 cursor-pointer shrink-0"
                   >
-                    Resgatar Recompensas Semanais
+                    {t("Resgatar Recompensas Semanais")}
                   </button>
                 </div>
               </div>

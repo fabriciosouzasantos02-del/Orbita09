@@ -615,25 +615,25 @@ export default function AdminPanel({
               
               <div className="flex justify-between items-center">
                 <h3 className="text-xs font-mono font-bold text-[#E5C158] uppercase tracking-widest">
-                  Banco de Usuários e Assinantes
+                  {t("Banco de Usuários e Assinantes")}
                 </h3>
                 <button
                   onClick={() => setShowCreateUser(!showCreateUser)}
                   className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 hover:text-black font-semibold text-xs transition cursor-pointer flex items-center gap-1 ml-auto"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Novo Assinante</span>
+                  <span>{t("Novo Assinante")}</span>
                 </button>
               </div>
 
               {/* Create User Form Section */}
               {showCreateUser && (
                 <form onSubmit={handleCreateUser} className="p-4 bg-[#050811] rounded-2xl border border-amber-500/20 space-y-4 animate-in slide-in-from-top-3 duration-250">
-                  <h4 className="text-xs font-semibold text-white">Adicionar Assinante ao Log</h4>
+                  <h4 className="text-xs font-semibold text-white">{t("Adicionar Assinante ao Log")}</h4>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
                     <div>
-                      <label className="block text-slate-450 mb-1">NOME COMPLETO</label>
+                      <label className="block text-slate-450 mb-1">{t("NOME COMPLETO")}</label>
                       <input 
                         type="text" 
                         value={createUserForm.name}
@@ -645,7 +645,7 @@ export default function AdminPanel({
                     </div>
 
                     <div>
-                      <label className="block text-slate-450 mb-1">E-MAIL DO PERFIL</label>
+                      <label className="block text-slate-450 mb-1">{t("E-MAIL DO PERFIL")}</label>
                       <input 
                         type="email" 
                         value={createUserForm.email}
@@ -657,7 +657,7 @@ export default function AdminPanel({
                     </div>
 
                     <div>
-                      <label className="block text-slate-450 mb-1">DATA DE NASCIMENTO</label>
+                      <label className="block text-slate-450 mb-1">{t("DATA DE NASCIMENTO")}</label>
                       <input 
                         type="date" 
                         value={createUserForm.birthDate}
