@@ -133,7 +133,7 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
       return new Intl.DateTimeFormat(lang || 'pt', { weekday: 'long' }).format(date);
     } catch {
       const daysPt = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
-      return daysPt[date.getDay()];
+      return t(daysPt[date.getDay()]);
     }
   };
 
@@ -146,7 +146,7 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
         'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
         'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
       ];
-      return monthsPt[date.getMonth()];
+      return t(monthsPt[date.getMonth()]);
     }
   };
 
@@ -159,6 +159,10 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
       const day = targetDateObj.getDate();
       const month = getMonthName(targetDateObj);
       const year = targetDateObj.getFullYear();
+      if (lang === 'en') return `${wDay}, ${month} ${day}, ${year}`;
+      if (lang === 'de') return `${wDay}, ${day}. ${month} ${year}`;
+      if (lang === 'fr') return `${wDay} ${day} ${month} ${year}`;
+      if (lang === 'es') return `${wDay}, ${day} de ${month} de ${year}`;
       return `${wDay}, ${day} de ${month} de ${year}`;
     }
   }, [targetDateObj, lang]);

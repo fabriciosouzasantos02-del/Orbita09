@@ -212,7 +212,7 @@ const TAROT_PORTUGUESE_BASE: TarotCard[] = [
   }
 ];
 
-const TRANSLATIONS_WORLD: Record<string, Record<string, Partial<TarotCard>>> = {
+export const TRANSLATIONS_WORLD: Record<string, Record<string, Partial<TarotCard>>> = {
   en: {
     fool: { name: "The Fool", arcana: "Major", uprightMeaning: "New beginnings, freedom, spontaneity, faith in the mystical path.", reversedMeaning: "Irresponsibility, unnecessary risks, recklessness, or hesitation.", description: "A young person walking excitedly towards the abyss with a dog at their side, representing the cosmic leap of faith." },
     magician: { name: "The Magician", arcana: "Major", uprightMeaning: "Power of manifestation, focus, willpower, cosmic resourcefulness.", reversedMeaning: "Illusions, manipulation, wasted potential, or unsustainable plans.", description: "The Magician with the four elemental tools, channeling the celestial infinite to shape reality." },

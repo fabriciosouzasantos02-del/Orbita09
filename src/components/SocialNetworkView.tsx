@@ -70,6 +70,321 @@ interface SocialNetworkViewProps {
   lang?: Language;
 }
 
+const localSocialTranslations: Record<Exclude<Language, 'pt'>, Record<string, string>> = {
+  en: {
+    // cities
+    "São Paulo, SP": "São Paulo, SP",
+    "Rio de Janeiro, RJ": "Rio de Janeiro, RJ",
+    "Curitiba, PR": "Curitiba, PR",
+    "Belo Horizonte, MG": "Belo Horizonte, MG",
+    "Salvador, BA": "Salvador, BA",
+    "Porto Alegre, RS": "Porto Alegre, RS",
+    "Recife, PE": "Recife, PE",
+    "Campinas, SP": "Campinas, SP",
+    
+    // bios
+    "Amante da harmonia, constelações de ar e design minimalista. Procuro trocas inteligentes e sinceras.": "Lover of harmony, air constellations, and minimalist design. Seeking smart and sincere exchanges.",
+    "Curioso por natureza, baterista e leitor voror de ficção. Sagitário me move a buscar novos horizontes.": "Curious by nature, drummer, and avid fiction reader. Sagittarius moves me to seek new horizons.",
+    "Curioso por natureza, baterista e leitor voraz de ficção. Sagitário me move a buscar novos horizontes.": "Curious by nature, drummer, and avid fiction reader. Sagittarius moves me to seek new horizons.",
+    "Vivendo guiata pelo otimismo e expansão espiritual de Júpiter. Trilhas, fotografia e cafés especiais.": "Living guided by optimism and Jupiter's spiritual expansion. Trails, photography, and specialty coffees.",
+    "Vivendo guiadora pelo otimismo e expansão espiritual de Júpiter. Trilhas, fotografia e cafés especiais.": "Living guided by optimism and Jupiter's spiritual expansion. Trails, photography, and specialty coffees.",
+    "Empreendedor social, astrônomo amador e desenvolvedor. Amigo acima de tudo, idealista ao extremo.": "Social entrepreneur, amateur astronomer, and developer. A friend above all, idealist to the extreme.",
+    "Fogo cardeal motivada a criar projetos inovadores. Amo praias quentes, shows ao vivo e meditação áurica.": "Cardinal fire motivated to create innovative projects. I love warm beaches, live shows, and auric meditation.",
+    "Apaixonado por teatro, vinhos e conversas profundas sobre destino. Busco conexões que façam brilhar o Sol.": "Passionate about theater, wine, and deep conversations about destiny. I seek connections that make the Sun shine.",
+    "Amante da gastronomia, conforto material do lar e boas discussões de negócios sustentáveis.": "Lover of gastronomy, material comfort at home, and good discussions on sustainable business.",
+    "Arquiteto na busca da proporção áurea material e social. Conciliador nas horas vagas e fã de vinis.": "Architect in search of the material and social golden ratio. Conciliator in his spare time and fan of vinyl records.",
+    
+    // Compatibility summary texts
+    "Sinergia de Ar tríplice extraordinária. O diálogo flui sem amarras teológicas, compartilhando uma visão humanitária idêntica.": "Extraordinary triple Air synergy. Dialogue flows without theological constraints, sharing an identical humanitarian vision.",
+    "Conexão intelectual efervescente. Estimulação mútua fantástica e ausência completa de cobranças materiais limitantes.": "Effervescent intellectual connection. Fantastic mutual stimulation and complete absence of limiting material demands.",
+    "Aventura idealista e filosófica sem fronteiras. Júpiter expande o desejo de independência mútua de Aquário de forma magnífica.": "Idealistic and philosophical adventure without borders. Jupiter expands Aquarius's desire for mutual independence magnificently.",
+    "Dinamismo e iniciativa entusiasmados. O fogo de Áries fornece a faísca e a força realizadora que as grandes utopias de Aquário necessitam.": "Enthusiastic dynamism and initiative. The fire of Aries provides the spark and creating force that the great utopias of Aquarius need.",
+    "Estreito canal relacional moldado pelo respeito ao espaço individual e curiosidade intelectual mútua inovadora.": "Narrow relational channel shaped by respect for individual space and innovative mutual intellectual curiosity.",
+    "Harmonia celeste sintonizada com alto teor de compatibilidade espiritual sob o elemento correspondente.": "Celestial harmony tuned with high spiritual compatibility under the corresponding element.",
+
+    // General UI texts
+    "Membros Ativos em Destaque": "Featured Active Members",
+    "Notas de Atividades Sociais em Tempo Real": "Real-time Social Activity Notes",
+    "Conexão Ativa": "Active Connection",
+    "Ajustando perfil...": "Adjusting profile...",
+    "Sem bio editada...": "No bio edited...",
+    "Origem Oculta": "Hidden Origin",
+    "Sol em": "Sun in",
+    "Origem:": "Origin:",
+    "Destaque de Sinergia": "Synergy Highlight",
+    "Sinergia": "Synergy",
+    "Trabalho": "Work",
+    "Energia": "Energy",
+    "Sol": "Sun",
+    "Pessoas Compatíveis Com Você": "People Compatible With You",
+    "Indivíduos em ressonância geométrica de nascimento sintonizados com seu Sol em": "Individuals in geometric birth resonance tuned to your Sun in",
+    "Sintonizando...": "Tuning...",
+    "Recarregar": "Reload",
+    "Atualizar sugestões do Star Map": "Update Star Map suggestions",
+    "Novos Mapas Hoje": "New Maps Today",
+    "realizados": "done",
+    "Sinastrias Avaliadas": "Synastries Evaluated",
+    "sinergias": "synergies",
+    "Leituras de Tarô": "Tarot Readings",
+    "consultas": "consultations",
+    "Sonhos Interpretados": "Dreams Interpreted",
+    "revelações": "revelations",
+    "Curtido": "Liked",
+    "Curtir": "Like",
+    "Seguindo": "Following",
+    "Seguir": "Follow",
+    "Ver": "View",
+    "Afinidades e Ressonâncias Celestiais": "Celestial Affinities and Resonances",
+    "Afinidade Amorosa & Sentimental": "Romantic & Emotional Affinity",
+    "Afinidade Intelectual & Mental": "Intellectual & Mental Affinity",
+    "Ressonância Energética & Áurica": "Energetic & Auric Resonance",
+    "Sinergia Profissional & Conquistas": "Professional Synergy & Achievements",
+    "Pontos Fortes da Conexão:": "Connection Strengths:",
+    "Convergência sublime de pensamentos voltados ao progresso tecnológico e social. Ideais compartilhados livres de possessividade ou ciúmes históricos sufocantes.": "Sublime convergence of thoughts focused on technological and social progress. Shared ideals free of possessiveness or suffocating historical jealousy.",
+    "Pontos de Atenção (Cuidado):": "Points of Attention (Caution):",
+    "O excesso de intelectualização pode às vezes minar a intimidade física calorosa e a escuta visceral de afetos espontâneos no cotidiano.": "Excessive intellectualization can sometimes undermine warm physical intimacy and visceral listening of spontaneous affections in daily life.",
+    "Concluir Análise": "Complete Analysis",
+    "Nenhum buscador correspondente focado neste nome. Revise a ortografia.": "No matching seeker focused on this name. Check spelling.",
+    "Conectar": "Connect",
+    "Abrir Perfil": "Open Profile",
+    "Ver Todas as Pessoas": "View All People",
+    "Perfil Astrológico Social": "Social Astrological Profile",
+    "Membro Premium": "Premium Member",
+    "Escreva algo curto sobre você...": "Write something short about you..."
+  },
+  es: {
+    "São Paulo, SP": "São Paulo, SP",
+    "Rio de Janeiro, RJ": "Río de Janeiro, RJ",
+    "Curitiba, PR": "Curitiba, PR",
+    "Belo Horizonte, MG": "Belo Horizonte, MG",
+    "Salvador, BA": "Salvador, BA",
+    "Porto Alegre, RS": "Porto Alegre, RS",
+    "Recife, PE": "Recife, PE",
+    "Campinas, SP": "Campinas, SP",
+    
+    "Amante da harmonia, constelações de ar e design minimalista. Procuro trocas inteligentes e sinceras.": "Amante de la armonía, constelaciones de aire y diseño minimalista. Busco intercambios inteligentes y sinceros.",
+    "Curioso por natureza, baterista e leitor voror de ficção. Sagitário me move a buscar novos horizontes.": "Curioso por naturaleza, baterista y ávido lector de ficción. Sagitario me mueve a buscar nuevos horizontes.",
+    "Curioso por natureza, baterista e leitor voraz de ficção. Sagitário me move a buscar novos horizontes.": "Curioso por naturaleza, baterista y ávido lector de ficción. Sagitario me mueve a buscar nuevos horizontes.",
+    "Vivendo guiata pelo otimismo e expansão espiritual de Júpiter. Trilhas, fotografia e cafés especiais.": "Viviendo guiada por el optimismo y la expansión espiritual de Júpiter. Senderismo, fotografía y cafés especiales.",
+    "Vivendo guiadora pelo otimismo e expansão espiritual de Júpiter. Trilhas, fotografia e cafés especiais.": "Viviendo guiada por el optimismo y la expansión espiritual de Júpiter. Senderismo, fotografía y cafés especiales.",
+    "Empreendedor social, astrônomo amador e desenvolvedor. Amigo acima de tudo, idealista ao extremo.": "Emprendedor social, astrónomo aficionado y desarrollador. Amigo ante todo, idealista al extremo.",
+    "Fogo cardeal motivada a criar projetos inovadores. Amo praias quentes, shows ao vivo e meditação áurica.": "Fuego cardinal motivado para crear proyectos innovadores. Amo las playas cálidas, los espectáculos en vivo y la meditación áurica.",
+    "Apaixonado por teatro, vinhos e conversas profundas sobre destino. Busco conexões que façam brilhar o Sol.": "Apasionado por el teatro, los vinos y las conversaciones profundas sobre el destino. Busco conexiones que hagan brillar al Sol.",
+    "Amante da gastronomia, conforto material do lar e boas discussões de negócios sustentáveis.": "Amante de la gastronomía, del confort material del hogar y de los buenos debates sobre negocios sostenibles.",
+    "Arquiteto na busca da proporção áurea material e social. Conciliador nas horas vagas e fã de vinis.": "Arquitecto en busca de la proporción áurea material y social. Conciliador en su tiempo libre y fanático de los vinilos.",
+    
+    "Sinergia de Ar tríplice extraordinária. O diálogo flui sem amarras teológicas, compartilhando uma visão humanitária idêntica.": "Sinergia extraordinaria de triple Aire. El diálogo fluye sin ataduras teológicas, compartiendo una visión humanitaria idéntica.",
+    "Conexão intelectual efervescente. Estimulação mútua fantástica e ausência completa de cobranças materiais limitantes.": "Conexión intelectual efervescente. Estimulación mutua fantástica y ausencia total de demandas materiales limitantes.",
+    "Aventura idealista e filosófica sem fronteiras. Júpiter expande o desejo de independência mútua de Aquário de forma magnífica.": "Aventura idealista y filosófica sin fronteras. Júpiter expande magníficamente el deseo de independencia mutua de Acuario.",
+    "Dinamismo e iniciativa entusiasmados. O fogo de Áries fornece a faísca e a força realizadora que as grandes utopias de Aquário necessitam.": "Dinamismo e iniciativa entusiastas. El fuego de Aries proporciona la chispa y la fuerza creadora que las grandes utopías de Acuario necesitan.",
+    "Estreito canal relacional moldado pelo respeito ao espaço individual e curiosidade intelectual mútua inovadora.": "Estrecho canal relacional moldeado por el respeto al espacio individual y una curiosidad intelectual mutua e innovadora.",
+    "Harmonia celeste sintonizada com alto teor de compatibilidade espiritual sob o elemento correspondente.": "Armonía celeste en sintonía con una alta compatibilidad espiritual bajo el elemento correspondiente.",
+
+    "Membros Ativos em Destaque": "Miembros Activos Destacados",
+    "Notas de Atividades Sociais em Tempo Real": "Notas de Actividades Sociales en Tiempo Real",
+    "Conexão Ativa": "Conexión Activa",
+    "Ajustando perfil...": "Ajustando perfil...",
+    "Sem bio editada...": "Sin biografía editada...",
+    "Origem Oculta": "Origen Oculto",
+    "Sol em": "Sol en",
+    "Origem:": "Origen:",
+    "Destaque de Sinergia": "Destacado de Sinergia",
+    "Sinergia": "Sinergia",
+    "Trabalho": "Trabajo",
+    "Energia": "Energía",
+    "Sol": "Sol",
+    "Pessoas Compatíveis Com Você": "Personas Compatibles Contigo",
+    "Indivíduos em ressonância geométrica de nascimento sintonizados com seu Sol em": "Individuos en resonancia geométrica de nacimiento sintonizados con tu Sol en",
+    "Sintonizando...": "Sintonizando...",
+    "Recarregar": "Recargar",
+    "Atualizar sugestões do Star Map": "Actualizar sugerencias del Star Map",
+    "Novos Mapas Hoje": "Nuevos Mapas Hoy",
+    "realizados": "realizados",
+    "Sinastrias Avaliadas": "Sinastrías Evaluadas",
+    "sinergias": "sinergias",
+    "Leituras de Tarô": "Lecturas de Tarot",
+    "consultas": "consultas",
+    "Sonhos Interpretados": "Sueños Interpretados",
+    "revelações": "revelaciones",
+    "Curtido": "Le gusta",
+    "Curtir": "Gusta",
+    "Seguindo": "Siguiendo",
+    "Seguir": "Seguir",
+    "Ver": "Ver",
+    "Afinidades e Ressonâncias Celestiais": "Afinidades y Resonancias Celestiales",
+    "Afinidade Amorosa & Sentimental": "Afinidad Amorosa y Sentimental",
+    "Afinidade Intelectual & Mental": "Afinidad Intelectual y Mental",
+    "Ressonância Energética & Áurica": "Resonancia Energética y Áurica",
+    "Sinergia Profissional & Conquistas": "Sinergia Profesional y Logros",
+    "Pontos Fortes da Conexão:": "Fortalezas de la Conexión:",
+    "Convergência sublime de pensamentos voltados ao progresso tecnológico e social. Ideais compartilhados livres de possessividade ou ciúmes históricos sufocantes.": "Convergencia sublime de pensamientos orientados al progreso tecnológico y social. Ideales compartidos libres de posesividad o celos históricos asfixiantes.",
+    "Pontos de Atenção (Cuidado):": "Puntos de Atención (Cuidado):",
+    "O excesso de intelectualização pode às vezes minar a intimidade física calorosa e a escuta visceral de afetos espontâneos no cotidiano.": "La intelectualización excesiva a veces puede socavar la cálida intimidad física y la escucha visceral de los afectos espontáneos en la vida cotidiana.",
+    "Concluir Análise": "Completar Análisis",
+    "Nenhum buscador correspondente focado neste nome. Revise a ortografia.": "No se encontraron buscadores con este nombre. Revise la ortografía.",
+    "Conectar": "Conectar",
+    "Abrir Perfil": "Abrir Perfil",
+    "Ver Todas as Pessoas": "Ver Todas las Personas",
+    "Perfil Astrológico Social": "Perfil Astrológico Social",
+    "Membro Premium": "Miembro Premium",
+    "Escreva algo curto sobre você...": "Escribe algo corto sobre ti..."
+  },
+  fr: {
+    "São Paulo, SP": "São Paulo, SP",
+    "Rio de Janeiro, RJ": "Rio de Janeiro, RJ",
+    "Curitiba, PR": "Curitiba, PR",
+    "Belo Horizonte, MG": "Belo Horizonte, MG",
+    "Salvador, BA": "Salvador, BA",
+    "Porto Alegre, RS": "Porto Alegre, RS",
+    "Recife, PE": "Recife, PE",
+    "Campinas, SP": "Campinas, SP",
+    
+    "Amante da harmonia, constelações de ar e design minimalista. Procuro trocas inteligentes e sinceras.": "Amoureux de l'harmonie, des constellations de l'air et du design minimaliste. Je recherche des échanges intelligents et sincères.",
+    "Curioso por natureza, baterista e leitor voror de ficção. Sagitário me move a buscar novos horizontes.": "Curieux de nature, batteur et lecteur avide de fiction. Le Sagittaire me pousse à rechercher de nouveaux horizons.",
+    "Curioso por natureza, baterista e leitor voraz de ficção. Sagitário me move a buscar novos horizontes.": "Curieux de nature, batteur et lecteur avide de fiction. Le Sagittaire me pousse à rechercher de nouveaux horizons.",
+    "Vivendo guiata pelo otimismo e expansão espiritual de Júpiter. Trilhas, fotografia e cafés especiais.": "Vivant guidé par l'optimisme et l'expansion spirituelle de Jupiter. Randonnées, photographie et cafés de spécialité.",
+    "Vivendo guiadora pelo otimismo e expansão espiritual de Júpiter. Trilhas, fotografia e cafés especiais.": "Vivant guidé par l'optimisme et l'expansion spirituelle de Jupiter. Randonnées, photographie et cafés de spécialité.",
+    "Empreendedor social, astrônomo amador e desenvolvedor. Amigo acima de tudo, idealista ao extremo.": "Entrepreneur social, astronome amateur et développeur. Un ami avant tout, idéaliste à l'extrême.",
+    "Fogo cardeal motivada a criar projetos inovadores. Amo praias quentes, shows ao vivo e meditação áurica.": "Feu cardinal motivé pour créer des projets innovants. J'aime les plages chaudes, les concerts et la méditation aurique.",
+    "Apaixonado por teatro, vinhos e conversas profundas sobre destino. Busco conexões que façam brilhar o Sol.": "Passionné de théâtre, de vins et de conversations profondes sur le destin. Je recherche des connexions qui font briller le Soleil.",
+    "Amante da gastronomia, conforto material do lar e boas discussões de negócios sustentáveis.": "Amateur de gastronomie, de confort matériel de la maison et de bonnes discussions sur le commerce durable.",
+    "Arquiteto na busca da proporção áurea material e social. Conciliador nas horas vagas e fã de vinis.": "Architecte à la recherche du nombre d'or matériel et social. Conciliateur à ses heures perdues et fan de vinyles.",
+    
+    "Sinergia de Ar tríplice extraordinária. O diálogo flui sem amarras teológicas, compartilhando uma visão humanitária idêntica.": "Synergie d'Air triple extraordinaire. Le dialogue coule sans contraintes théologiques, partageant une vision humanitaire identique.",
+    "Conexão intelectual efervescente. Estimulação mútua fantástica e ausência completa de cobranças materiais limitantes.": "Connexion intellectuelle effervescente. Stimulation mutuelle fantastique et absence totale de contraintes matérielles limitantes.",
+    "Aventura idealista e filosófica sem fronteiras. Júpiter expande o desejo de independência mútua de Aquário de forma magnífica.": "Aventure idéale et philosophique sans frontières. Jupiter élargit magnifiquement le désir d'indépendance mutuelle du Verseau.",
+    "Dinamismo e iniciativa entusiasmados. O fogo de Áries fornece a faísca e a força realizadora que as grandes utopias de Aquário necessitam.": "Dynamisme et initiative enthousiastes. Le feu du Bélier fournit l'étincelle et la force de réalisation nécessaires aux grandes utopies du Verseau.",
+    "Estreito canal relacional moldado pelo respeito ao espaço individual e curiosidade intelectual mútua inovadora.": "Canal relationnel étroit façonné par le respect de l'espace individuel et une curiosité intellectuelle mutuelle innovante.",
+    "Harmonia celeste sintonizada com alto teor de compatibilidade espiritual sob o elemento correspondente.": "Harmonie céleste accordée avec une haute compatibilité spirituelle sous l'élément correspondant.",
+
+    "Membros Ativos em Destaque": "Membres Actifs Mis en Avant",
+    "Notas de Atividades Sociais em Tempo Real": "Notes d'Activités Sociales en Temps Réel",
+    "Conexão Ativa": "Connexion Active",
+    "Ajustando perfil...": "Ajustement du profil...",
+    "Sem bio editada...": "Pas de biographie modifiée...",
+    "Origem Oculta": "Origine Cachée",
+    "Sol em": "Soleil en",
+    "Origem:": "Origine :",
+    "Destaque de Sinergia": "Point Fort de Synergie",
+    "Sinergia": "Synergie",
+    "Trabalho": "Travail",
+    "Energia": "Énergie",
+    "Sol": "Soleil",
+    "Pessoas Compatíveis Com Você": "Personas Compatibles Avec Vous",
+    "Indivíduos em ressonância geométrica de nascimento sintonizados com seu Sol em": "Individus en résonance géométrique de naissance en phase avec votre Soleil en",
+    "Sintonizando...": "Syntonisation...",
+    "Recarregar": "Recharger",
+    "Atualizar sugestões do Star Map": "Mettre à jour les suggestions de la carte du ciel",
+    "Novos Mapas Hoje": "Nouveaux Thèmes Aujourd'hui",
+    "realizados": "réalisés",
+    "Sinastrias Avaliadas": "Sinastries Évaluées",
+    "sinergias": "synergies",
+    "Leituras de Tarô": "Tirages de Tarot",
+    "consultas": "consultations",
+    "Sonhos Interpretados": "Rêves Interprétés",
+    "revelações": "révélations",
+    "Curtido": "Aimé",
+    "Curtir": "Aimer",
+    "Seguindo": "Abonné",
+    "Seguir": "Suivre",
+    "Ver": "Voir",
+    "Afinidades e Ressonâncias Celestiais": "Celestial Affinities and Resonances",
+    "Afinidade Amorosa & Sentimental": "Romantic & Emotional Affinity",
+    "Afinidade Intelectual & Mental": "Intellectual & Mental Affinity",
+    "Ressonância Energética & Áurica": "Energetic & Auric Resonance",
+    "Sinergia Profissional & Conquistas": "Professional Synergy & Achievements",
+    "Pontos Fortes da Conexão:": "Points Fortes de la Connexion :",
+    "Convergência sublime de pensamentos voltados ao progresso tecnológico e social. Ideais compartilhados livres de possessividade ou ciúmes historiques sufocantes.": "Sublime convergence de pensées tournées vers le progrès technologique et social. Idéaux partagés libres de possessivité ou de jalousie historique étouffante.",
+    "Pontos de Atenção (Cuidado):": "Points d'Attention (Attention) :",
+    "O excesso de intelectualização pode às vezes minar a intimidade física calorosa e a escuta visceral de afetos espontâneos no cotidiano.": "L'intellectualisation excessive peut parfois saper l'intimité physique chaleureuse et l'écoute viscérale d'affections spontanées au quotidien.",
+    "Concluir Análise": "Terminer l'Analyse",
+    "Nenhum buscador correspondente focado neste nome. Revise a ortografia.": "Aucun chercheur correspondant trouvé pour ce nom. Vérifiez l'orthographe.",
+    "Conectar": "Connecter",
+    "Abrir Perfil": "Ouvrir le Profil",
+    "Ver Todas as Pessoas": "Voir Tout le Monde",
+    "Perfil Astrológico Social": "Profil Astrologique Social",
+    "Membro Premium": "Membre Premium",
+    "Escreva algo curto sobre você...": "Écrivez quelque chose de court sur vous..."
+  },
+  de: {
+    "São Paulo, SP": "São Paulo, SP",
+    "Rio de Janeiro, RJ": "Rio de Janeiro, RJ",
+    "Curitiba, PR": "Curitiba, PR",
+    "Belo Horizonte, MG": "Belo Horizonte, MG",
+    "Salvador, BA": "Salvador, BA",
+    "Porto Alegre, RS": "Porto Alegre, RS",
+    "Recife, PE": "Recife, PE",
+    "Campinas, SP": "Campinas, SP",
+    
+    "Amante da harmonia, constelações de ar e design minimalista. Procuro trocas inteligentes e sinceras.": "Liebhaber der Harmonie, der Luftkonstellationen und des minimalistischen Designs. Ich suche nach klugen und aufrichtigen Begegnungen.",
+    "Curioso por natureza, baterista e leitor voror de ficção. Sagitário me move a buscar novos horizontes.": "Neugierig von Natur aus, Schlagzeuger und begeisterter Leser von Belletristik. Schütze bewegt mich dazu, neue Horizonte zu suchen.",
+    "Curioso por natureza, baterista e leitor voraz de ficção. Sagitário me move a buscar novos horizontes.": "Neugierig von Natur aus, Schlagzeuger und begeisterter Leser von Belletristik. Schütze bewegt mich dazu, neue Horizonte zu suchen.",
+    "Vivendo guiata pelo otimismo e expansão espiritual de Júpiter. Trilhas, fotografia e cafés especiais.": "Geführt von Optimismus und Jupiters spiritueller Expansion. Wandern, Fotografie und Kaffeespezialitäten.",
+    "Vivendo guiadora pelo otimismo e expansão espiritual de Júpiter. Trilhas, fotografia e cafés especiais.": "Geführt von Optimismus und Jupiters spiritueller Expansion. Wandern, Fotografie und Kaffeespezialitäten.",
+    "Empreendedor social, astrônomo amador e desenvolvedor. Amigo acima de tudo, idealista ao extremo.": "Sozialunternehmer, Amateurastronom und Entwickler. Vor allem ein Freund, idealistisch bis zum Äußersten.",
+    "Fogo cardeal motivada a criar projetos inovadores. Amo praias quentes, shows ao vivo e meditação áurica.": "Kardinales Feuer, motiviert, innovative Projekte zu schaffen. Ich liebe warme Strände, Live-Shows und Aurameditation.",
+    "Apaixonado por teatro, vinhos e conversas profundas sobre destino. Busco conexões que façam brilhar o Sol.": "Leidenschaftlich für Theater, Wein und tiefgründige Gespräche über das Schicksal. Ich suche nach Verbindungen, die die Sonne scheinen lassen.",
+    "Amante da gastronomia, conforto material do lar e boas discussões de negócios sustentáveis.": "Liebhaber von Gastronomie, materiellem Komfort zu Hause und guten Diskussionen über nachhaltiges Geschäft.",
+    "Arquiteto na busca da proporção áurea material e social. Conciliador nas horas vagas e fã de vinis.": "Architekt auf der Suche nach dem materiellen und sozialen Goldenen Schnitt. Schlichter in der Freizeit und Fan von Vinyl-Schallplatten.",
+    
+    "Sinergia de Ar tríplice extraordinária. O diálogo flui sem amarras teológicas, compartilhando uma visão humanitária idêntica.": "Außergewöhnliche dreifache Luft-Synergie. Der Dialog fließt frei von theologischen Zwängen und teilt eine identische humanitäre Vision.",
+    "Conexão intelectual efervescente. Estimulação mútua fantástica e ausência completa de cobranças materiais limitantes.": "Lebhafte intellektuelle Verbindung. Fantastische gegenseitige Stimulation und völlige Abwesenheit einschränkender materieller Forderungen.",
+    "Aventura idealista e filosófica sem fronteiras. Júpiter expande o desejo de independência mútua de Aquário de forma magnífica.": "Idealistisches und philosophisches Abenteuer ohne Grenzen. Jupiter erweitert das Bedürfnis von Wassermann nach gegenseitiger Unabhängigkeit auf großartige Weise.",
+    "Dinamismo e iniciativa entusiasmados. O fogo de Áries fornece a faísca e a força realizadora que as grandes utopias de Aquário necessitam.": "Enthusiastische Dynamik und Initiative. Das Feuer des Widders liefert den Funken und die schöpferische Kraft, die die großen Utopien von Wassermann benötigen.",
+    "Estreito canal relacional moldado pelo respeito ao espaço individual e curiosidade intelectual mútua inovadora.": "Enger Beziehungskanal, geprägt von Respekt für den individuellen Raum und innovativer gegenseitiger intellektueller Neugier.",
+    "Harmonia celeste sintonizada com alto teor de compatibilidade espiritual sob o elemento correspondente.": "Himmlische Harmonie, abgestimmt auf eine hohe spirituelle Kompatibilität unter dem entsprechenden Element.",
+
+    "Membros Ativos em Destaque": "Hervorgehobene aktive Mitglieder",
+    "Notas de Atividades Sociais em Tempo Real": "Soziale Aktivitätsnotizen in Echtzeit",
+    "Conexão Ativa": "Aktive Verbindung",
+    "Ajustando perfil...": "Profil wird angepasst...",
+    "Sem bio editada...": "Keine Biografie bearbeitet...",
+    "Origem Oculta": "Verborgener Ursprung",
+    "Sol em": "Sonne in",
+    "Origem:": "Herkunft:",
+    "Destaque de Sinergia": "Synergie-Highlight",
+    "Sinergia": "Synergie",
+    "Trabalho": "Arbeit",
+    "Energia": "Energie",
+    "Sol": "Sonne",
+    "Pessoas Compatíveis Com Você": "Mit Ihnen kompatible Personen",
+    "Indivíduos em ressonância geométrica de nascimento sintonizados com seu Sol em": "Individuen in geometrischer Geburtsresonanz, abgestimmt auf Ihre Sonne in",
+    "Sintonizando...": "Abstimmung...",
+    "Recarregar": "Neu laden",
+    "Atualizar sugestões do Star Map": "Star Map-Vorschläge aktualisieren",
+    "Novos Mapas Hoje": "Neue Karten heute",
+    "realizados": "erstellt",
+    "Sinastrias Avaliadas": "Synastrien Ausgewertet",
+    "sinergias": "Synergien",
+    "Leituras de Tarô": "Tarot-Lesungen",
+    "consultas": "Beratungen",
+    "Sonhos Interpretados": "Träume Interpretiert",
+    "revelações": "Enthüllungen",
+    "Curtido": "Geliked",
+    "Curtir": "Liken",
+    "Seguindo": "Folgt",
+    "Seguir": "Folgen",
+    "Ver": "Ansehen",
+    "Afinidades e Ressonâncias Celestiais": "Afinidades und Resonâncias Celestiais",
+    "Afinidade Amorosa & Sentimental": "Liebes- und Gefühlsaffinität",
+    "Afinidade Intelectual & Mental": "Intellektuelle und mentale Affinität",
+    "Ressonância Energética & Áurica": "Energetische und aurische Resonanz",
+    "Sinergia Profissional & Conquistas": "Berufliche Synergie & Erfolge",
+    "Pontos Fortes da Conexão:": "Stärken der Verbindung:",
+    "Convergência sublime de pensamentos voltados ao progresso tecnológico e social. Ideais compartilhados livres de possessividade ou ciúmes historischen sufocantes.": "Erhabene Konvergenz von Gedanken, die auf technologischen und sozialen Fortschritt ausgerichtet sind. Gemeinsame Ideale frei von Besitzdenken oder erstickender historischer Eifersucht.",
+    "Pontos de Atenção (Cuidado):": "Achtungspunkte (Vorsicht):",
+    "O excesso de intelectualização pode às vezes minar a intimidade física calorosa e a escuta visceral de afetos espontâneos no cotidiano.": "Übermäßige Intellektualisierung kann manchmal die herzliche körperliche Intimität und das viszerale Zuhören spontaner Zuneigung im täglichen Leben untergraben.",
+    "Concluir Análise": "Analyse abschließen",
+    "Nenhum buscador correspondente focado neste nome. Revise a ortografia.": "Kein passender Sucher mit diesem Namen gefunden. Rechtschreibung prüfen.",
+    "Conectar": "Verbinden",
+    "Abrir Perfil": "Profil öffnen",
+    "Ver Todas as Pessoas": "Alle Personen anzeigen",
+    "Perfil Astrológico Social": "Soziales astrologisches Profil",
+    "Membro Premium": "Premium-Mitglied",
+    "Escreva algo curto sobre você...": "Schreibe etwas Kurzes über dich..."
+  }
+};
+
 const SEED_USERS = [
   {
     email: "mariana.astro@starportal.com",
@@ -139,7 +454,17 @@ const SEED_USERS = [
 ];
 
 export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, lang }: SocialNetworkViewProps) {
-  const { t: tI18nRaw } = useTranslation();
+  const { t: tI18nRaw, i18n } = useTranslation();
+
+  useEffect(() => {
+    const langs: ('en' | 'es' | 'de' | 'fr')[] = ['en', 'es', 'de', 'fr'];
+    langs.forEach(l => {
+      if (i18n && i18n.addResourceBundle) {
+        i18n.addResourceBundle(l, 'translation', localSocialTranslations[l], true, true);
+      }
+    });
+  }, [i18n]);
+
   const tI18n = (text: string) => {
     if (!text) return "";
     const res = tI18nRaw(text);
@@ -322,7 +647,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
   const handleSaveMyProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      setLoadingAction("Ajustando perfil...");
+      setLoadingAction(tI18n("Ajustando perfil..."));
       const updatedProfile = {
         ...currentUser,
         bio: editBio,
@@ -587,9 +912,9 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
           <div className="flex justify-between items-center text-xs border-b border-slate-850 pb-2">
             <span className="font-mono text-cyan-400 font-extrabold uppercase tracking-widest flex items-center gap-1.5">
               <Bell className="w-4 h-4 text-cyan-400 animate-bounce" />
-              Notas de Atividades Sociais em Tempo Real ({notifications.length})
+              {tI18n("Notas de Atividades Sociais em Tempo Real")} ({notifications.length})
             </span>
-            <span className="text-[9px] text-slate-500 font-mono">Conexão Ativa</span>
+            <span className="text-[9px] text-slate-500 font-mono">{tI18n("Conexão Ativa")}</span>
           </div>
 
           <div className="max-h-24 overflow-y-auto space-y-2.5 pr-2">
@@ -600,7 +925,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
                     {notif.type === 'like' ? '❤️' : notif.type === 'friend' ? '✨' : '👥'}
                   </span>
                   <p>
-                    <strong className="text-slate-100 font-semibold">{notif.senderName}</strong> {notif.message}
+                    <strong className="text-slate-100 font-semibold">{notif.senderName}</strong> {tI18n(notif.message)}
                   </p>
                 </div>
                 <button 
@@ -725,21 +1050,21 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
                         <div className="min-w-0">
                           <h4 className="font-extrabold text-slate-100 text-xs truncate">{user.name}</h4>
                           <p className="text-[10px] text-slate-400 mt-0.5 mt-1">
-                            Sol em <span className="font-semibold text-amber-450">{getZodiacSign(user.birthDate)}</span>
+                            {tI18n("Sol em")} <span className="font-semibold text-amber-450">{tI18n(getZodiacSign(user.birthDate))}</span>
                           </p>
                         </div>
                       </div>
 
                       <div className="pt-2.5 border-t border-slate-900 flex justify-between items-center text-[10px] w-full mt-2.5">
-                        <span className="text-slate-500 font-mono">{user.birthCity || "Origem Oculta"}</span>
-                        <span className="text-cyan-400 font-bold font-mono">Abrir Perfil →</span>
+                        <span className="text-slate-500 font-mono">{tI18n(user.birthCity || "Origem Oculta")}</span>
+                        <span className="text-cyan-400 font-bold font-mono">{tI18n("Abrir Perfil")} →</span>
                       </div>
                     </button>
                   ))}
                 </div>
               ) : (
                 <div className="py-12 bg-slate-900/10 border border-slate-850/60 rounded-3xl text-center text-xs text-slate-450 font-mono">
-                  Nenhum buscador correspondente focado neste nome. Revise a ortografia.
+                  {tI18n("Nenhum buscador correspondente focado neste nome. Revise a ortografia.")}
                 </div>
               )}
             </div>
@@ -747,7 +1072,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
             // FEATURED NETWORK DISCOVERY
             <div className="space-y-4">
               <h3 className="text-xs font-mono font-bold text-slate-500 uppercase tracking-widest text-left">
-                Membros Ativos em Destaque
+                {tI18n("Membros Ativos em Destaque")}
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -771,21 +1096,21 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
                         <div className="min-w-0">
                           <h4 className="font-extrabold text-slate-100 text-xs truncate">{user.name}</h4>
                           <span className="inline-block mt-1 px-1.5 py-0.5 bg-amber-500/10 border border-amber-500/20 text-[8.5px] font-mono text-amber-450 rounded font-bold">
-                            {getZodiacSign(user.birthDate)}
+                            {tI18n(getZodiacSign(user.birthDate))}
                           </span>
                         </div>
                       </div>
 
                       {user.bio && (
                         <p className="text-[10px] text-slate-400 font-sans line-clamp-2 leading-relaxed italic pl-2 border-l border-slate-800">
-                          "{user.bio}"
+                          "{tI18n(user.bio)}"
                         </p>
                       )}
                     </div>
 
                     <div className="pt-2.5 border-t border-slate-900 flex justify-between items-center text-[10px] w-full mt-2.5">
-                      <span className="text-slate-500 font-mono">{user.birthCity || "Origem Oculta"}</span>
-                      <span className="text-[#E5C158] font-bold font-mono">Conectar →</span>
+                      <span className="text-slate-500 font-mono">{tI18n(user.birthCity || "Origem Oculta")}</span>
+                      <span className="text-[#E5C158] font-bold font-mono">{tI18n("Conectar")} →</span>
                     </div>
                   </button>
                 ))}
@@ -805,9 +1130,9 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
               className="px-3.5 py-2 rounded-xl bg-slate-950 hover:bg-slate-900 border border-slate-850 text-slate-350 hover:text-white transition flex items-center gap-2 text-xs font-sans font-bold uppercase cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4 text-slate-400" />
-              Ver Todas as Pessoas
+              {tI18n("Ver Todas as Pessoas")}
             </button>
-            <span className="text-[9px] font-mono text-slate-500 uppercase">Perfil Astrológico Social</span>
+            <span className="text-[9px] font-mono text-slate-500 uppercase">{tI18n("Perfil Astrológico Social")}</span>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -836,25 +1161,25 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
                 
                 <div className="flex flex-wrap gap-1.5 justify-center">
                   <span className="px-2.5 py-0.5 bg-amber-500/10 border border-amber-500/25 text-[9px] font-mono font-semibold text-amber-450 rounded-md">
-                    Sol em {getZodiacSign(activeProfile.birthDate)}
+                    {tI18n("Sol em")} {tI18n(getZodiacSign(activeProfile.birthDate))}
                   </span>
                   
                   {activeProfile.hasPremium && (
                     <span className="px-2 py-0.5 bg-cyan-500/10 border border-cyan-500/20 text-[9px] font-mono text-cyan-450 rounded-md">
-                      Membro Premium
+                      {tI18n("Membro Premium")}
                     </span>
                   )}
                 </div>
 
                 <p className="text-xs text-slate-400 font-sans mt-1">
-                  Origem: <span className="font-mono text-slate-300">{activeProfile.birthCity}, {activeProfile.birthDate.split('-')[0]}</span>
+                  {tI18n("Origem:")} <span className="font-mono text-slate-300">{tI18n(activeProfile.birthCity)}, {activeProfile.birthDate.split('-')[0]}</span>
                 </p>
               </div>
 
               {/* Bio and links */}
               {activeProfile.bio && (
                 <p className="p-4 bg-slate-900/40 rounded-2xl border border-slate-850 text-xs italic text-slate-350 leading-relaxed font-sans mt-4">
-                  "{activeProfile.bio}"
+                  "{tI18n(activeProfile.bio)}"
                 </p>
               )}
 
@@ -1260,7 +1585,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
                       </div>
                       <div className="min-w-0">
                         <span className="text-xs font-bold text-slate-200 block truncate">{u.name}</span>
-                        <span className="text-[10px] text-slate-500 font-mono">{u.birthCity}</span>
+                        <span className="text-[10px] text-slate-500 font-mono">{tI18n(u.birthCity)}</span>
                       </div>
                     </div>
                     <span className="text-[9px] text-[#E5C158] font-mono leading-none shrink-0 border border-[#E5C158]/20 px-1.5 py-0.5 rounded">

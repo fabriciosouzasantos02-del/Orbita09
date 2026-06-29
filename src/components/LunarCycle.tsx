@@ -262,6 +262,54 @@ function getPhaseLimitsForDate(startDate: Date) {
   return { startD, endD };
 }
 
+const LOCAL_CYCLE_EXTRA_TRANSLATIONS: Record<Language, Record<string, string>> = {
+  pt: {
+    "A Lua está posicionada nos exatos": "A Lua está posicionada nos exatos",
+    "de": "de",
+    "Elemento de": "Elemento de",
+    "Vetores de Impacto Diário: Lua em": "Vetores de Impacto Diário: Lua em",
+    "Painel de Sintonização de Coordenadas": "Painel de Sintonização de Coordenadas",
+    "Hora atual:": "Hora atual:",
+    "Fase Astronomia Real": "Fase Astronomia Real"
+  },
+  en: {
+    "A Lua está posicionada nos exatos": "The Moon is positioned at the exact",
+    "de": "of",
+    "Elemento de": "Element of",
+    "Vetores de Impacto Diário: Lua em": "Daily Impact Vectors: Moon in",
+    "Painel de Sintonização de Coordenadas": "Coordinate Tuning Panel",
+    "Hora atual:": "Current time:",
+    "Fase Astronomia Real": "Real Astronomy Phase"
+  },
+  es: {
+    "A Lua está posicionada nos exatos": "La Luna está posicionada en los exactos",
+    "de": "de",
+    "Elemento de": "Elemento de",
+    "Vetores de Impacto Diário: Lua em": "Vectores de Impacto Diario: Luna en",
+    "Painel de Sintonização de Coordenadas": "Panel de Sintonización de Coordenadas",
+    "Hora atual:": "Hora actual:",
+    "Fase Astronomia Real": "Fase de Astronomía Real"
+  },
+  de: {
+    "A Lua está posicionada nos exatos": "Der Mond befindet sich auf den exakten",
+    "de": "von",
+    "Elemento de": "Element von",
+    "Vetores de Impacto Diário: Lua em": "Tägliche Einflussvektoren: Mond in",
+    "Painel de Sintonização de Coordenadas": "Koordinatenabstimmungspanel",
+    "Hora atual:": "Aktuelle Uhrzeit:",
+    "Fase Astronomia Real": "Reale Astronomische Phase"
+  },
+  fr: {
+    "A Lua está posicionada nos exatos": "La Lune est positionnée aux exacts",
+    "de": "de",
+    "Elemento de": "Élément de",
+    "Vetores de Impacto Diário: Lua em": "Vecteurs d'Impact Quotidien : Lune en",
+    "Painel de Sintonização de Coordenadas": "Panneau de Réglage des Coordonnées",
+    "Hora atual:": "Heure actuelle :",
+    "Fase Astronomia Real": "Phase d'Astronomie Réelle"
+  }
+};
+
 interface LunarCycleProps {
   userName?: string;
   userSunSign?: string;
@@ -288,6 +336,8 @@ export default function LunarCycle({
 
   const tLocal = (ptText: string) => {
     if (activeL === 'pt') return ptText;
+    const extraItem = LOCAL_CYCLE_EXTRA_TRANSLATIONS[activeL]?.[ptText];
+    if (extraItem) return extraItem;
     const item = LOCAL_UI_TRANSLATIONS[ptText];
     if (item && item[activeL]) {
       return item[activeL];
@@ -742,10 +792,10 @@ export default function LunarCycle({
                 {/* Temporal Tuner Forms */}
                 <div className="p-4 bg-slate-950/90 rounded-2xl border border-slate-850 space-y-3.5">
                   <div className="flex justify-between items-center">
-                    <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block font-bold">Painel de Sintonização de Coordenadas</span>
+                    <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block font-bold">{tLocal("Painel de Sintonização de Coordenadas")}</span>
                     {isLiveSync && (
                       <span className="text-[9px] font-mono text-emerald-400 uppercase tracking-wider block">
-                        Hora atual: {currentClockTime.toLocaleTimeString('pt-BR')}
+                        {tLocal("Hora atual:")} {currentClockTime.toLocaleTimeString(activeL === 'en' ? 'en-US' : activeL === 'es' ? 'es-ES' : activeL === 'de' ? 'de-DE' : activeL === 'fr' ? 'fr-FR' : 'pt-BR')}
                       </span>
                     )}
                   </div>
@@ -804,7 +854,7 @@ export default function LunarCycle({
                       </div>
                       <div className="space-y-0.5">
                         <span className="px-1.5 py-0.5 bg-indigo-500/10 border border-indigo-400/20 text-[9px] font-mono text-indigo-405 rounded block uppercase tracking-widest w-fit">
-                          Fase Astronomia Real
+                          {tLocal("Fase Astronomia Real")}
                         </span>
                         <h3 className="text-base font-black font-sans text-white uppercase mt-1">
                           {t(phaseInfo.name)} ({Math.round(moonState.elongation / 3.6)}% {t("iluminada")})
@@ -830,7 +880,7 @@ export default function LunarCycle({
                   <div className="flex gap-2.5 items-start p-3 bg-slate-950/80 rounded-xl border border-slate-900 text-xs text-slate-350 leading-relaxed font-sans">
                     <span className="text-indigo-400 text-sm leading-none mt-0.5">☄</span>
                     <div>
-                      A Lua está posicionada nos exatos <strong className="text-indigo-300 font-mono font-bold">{moonState.moonDegree}º {moonState.moonMinute}'</strong> de <strong className="text-slate-105 font-bold">{moonState.moonSign}</strong> (Elemento de {medicalDetails.element}).
+                      {tLocal("A Lua está posicionada nos exatos")} <strong className="text-indigo-300 font-mono font-bold">{moonState.moonDegree}º {moonState.moonMinute}'</strong> {tLocal("de")} <strong className="text-slate-105 font-bold">{translateUiText(moonState.moonSign, activeL)}</strong> ({tLocal("Elemento de")} {medicalDetails.element}).
                     </div>
                   </div>
                 </div>
@@ -838,7 +888,7 @@ export default function LunarCycle({
                 {/* Grid of 4 sectors affected */}
                 <div className="space-y-3">
                   <h4 className="text-[10px] font-mono uppercase text-slate-400 tracking-wider font-bold">
-                    Vetores de Impacto Diário: Lua em {moonState.moonSign}
+                    {tLocal("Vetores de Impacto Diário: Lua em")} {translateUiText(moonState.moonSign, activeL)}
                   </h4>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -909,8 +959,8 @@ export default function LunarCycle({
               >
                 {/* Future feed list */}
                 <div className="space-y-2">
-                  <span className="text-[9px] font-mono text-indigo-400 uppercase tracking-widest block font-bold">Calendário de Transições Celestiais Próximas</span>
-                  <h4 className="text-xs font-bold text-slate-300">Próximos cruzamentos astronômicos de fases (com precisão de 15 minutos):</h4>
+                  <span className="text-[9px] font-mono text-indigo-400 uppercase tracking-widest block font-bold">{tLocal("Calendário de Transições Celestiais Próximas")}</span>
+                  <h4 className="text-xs font-bold text-slate-300">{tLocal("Próximos cruzamentos astronômicos de fases (com precisão de 15 minutos):")}</h4>
                 </div>
 
                 <div className="space-y-3 font-sans">

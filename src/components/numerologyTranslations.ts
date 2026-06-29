@@ -688,6 +688,7 @@ export const numerologyInterpretationsMultilang: Record<Language, Record<number,
 
 export const uiTranslationsMultilang: Record<Language, Record<string, string>> = {
   pt: {
+    "(Multiplicador de Fase)": "(Multiplicador de Fase)",
     "Módulo Pro Premium Ativo": "Módulo Pro Premium Ativo",
     "Análise Vibracional Completa": "Análise Vibracional Completa",
     "Análise Numerológica Vibracional": "Análise Numerológica Vibracional",
@@ -774,6 +775,7 @@ export const uiTranslationsMultilang: Record<Language, Record<string, string>> =
     "Ciclo de Colheita (56+ anos)": "Ciclo de Colheita (56+ anos)"
   },
   en: {
+    "(Multiplicador de Fase)": "(Phase Multiplier)",
     "Módulo Pro Premium Ativo": "Active Premium Pro Module",
     "Análise Vibracional Completa": "Complete Vibrational Analysis",
     "Análise Numerológica Vibracional": "Vibrational Numerology Analysis",
@@ -860,6 +862,7 @@ export const uiTranslationsMultilang: Record<Language, Record<string, string>> =
     "Ciclo de Colheita (56+ anos)": "Harvest Cycle (56+ years)"
   },
   es: {
+    "(Multiplicador de Fase)": "(Multiplicador de Fase)",
     "Módulo Pro Premium Ativo": "Módulo Pro Premium Activo",
     "Análise Vibracional Completa": "Análisis Vibracional Completo",
     "Análise Numerológica Vibracional": "Análisis Numerológico Vibracional",
@@ -946,6 +949,7 @@ export const uiTranslationsMultilang: Record<Language, Record<string, string>> =
     "Ciclo de Colheita (56+ anos)": "Ciclo de Cosecha (56+ años)"
   },
   de: {
+    "(Multiplicador de Fase)": "(Phasenmultiplikator)",
     "Módulo Pro Premium Ativo": "Pro Premium Modul Aktiv",
     "Análise Vibracional Completa": "Vollständige Schwingungsanalyse",
     "Análise Numerológica Vibracional": "Vibrationelle Numerologie-Analyse",
@@ -1032,6 +1036,7 @@ export const uiTranslationsMultilang: Record<Language, Record<string, string>> =
     "Ciclo de Colheita (56+ anos)": "Erntezyklus (56+ Jahre)"
   },
   fr: {
+    "(Multiplicador de Fase)": "(Multiplicateur de Phase)",
     "Módulo Pro Premium Ativo": "Module Pro Premium Activé",
     "Análise Vibracional Completa": "Analyse Vibratoire Complète",
     "Análise Numerológica Vibracional": "Analyse Numérologique Vibratoire",

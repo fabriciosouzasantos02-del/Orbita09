@@ -6,6 +6,69 @@ import { useTranslation } from "react-i18next";
 import { translateUiText } from "../lib/translations";
 import { useIdioma } from "../context/IdiomaContext";
 
+const LOCAL_SETTINGS_TRANSLATIONS: Record<Language, Record<string, string>> = {
+  pt: {
+    "Inspecione as chaves criptográficas locais de seu mapa astral místico e gerencie as configurações de privacidade.": "Inspecione as chaves criptográficas locais de seu mapa astral místico e gerencie as configurações de privacidade.",
+    "Dados de Nascimento e Orbe": "Dados de Nascimento e Orbe",
+    "Dados atualizados com êxito! Recalculando coordenadas estelares...": "Dados atualizados com êxito! Recalculando coordenadas estelares...",
+    "Data de Nascimento": "Data de Nascimento",
+    "Horário exato": "Horário exato",
+    "Atualizar e Recalcular Mapa": "Atualizar e Recalcular Mapa",
+    "Preferências Globais": "Preferências Globais",
+    "Idioma do Oráculo": "Idioma do Oráculo",
+    "Autenticação Segura Local": "Autenticação Segura Local",
+    "Seus diários de sonhos, oráculos de tarot e configurações são guardadas unicamente na caixa sandbox local do navegador do dispositivo para manter sigilo absoluto.": "Seus diários de sonhos, oráculos de tarot e configurações são guardadas unicamente na caixa sandbox local do navegador do dispositivo para manter sigilo absoluto."
+  },
+  en: {
+    "Inspecione as chaves criptográficas locais de seu mapa astral místico e gerencie as configurações de privacidade.": "Inspect the local cryptographic keys of your mystical birth chart and manage privacy settings.",
+    "Dados de Nascimento e Orbe": "Birth Data and Orb",
+    "Dados atualizados com êxito! Recalculando coordenadas estelares...": "Data successfully updated! Recalculating stellar coordinates...",
+    "Data de Nascimento": "Birth Date",
+    "Horário exato": "Exact Time",
+    "Atualizar e Recalcular Mapa": "Update and Recalculate Chart",
+    "Preferências Globais": "Global Preferences",
+    "Idioma do Oráculo": "Oracle Language",
+    "Autenticação Segura Local": "Secure Local Authentication",
+    "Seus diários de sonhos, oráculos de tarot e configurações são guardadas unicamente na caixa sandbox local do navegador do dispositivo para manter sigilo absoluto.": "Your dream journals, tarot oracles, and settings are saved solely in the device's local browser sandbox to maintain absolute privacy."
+  },
+  es: {
+    "Inspecione as chaves criptográficas locais de seu mapa astral místico e gerencie as configurações de privacidade.": "Inspeccione las claves criptográficas locales de su carta astral mística y gestione la configuración de privacidad.",
+    "Dados de Nascimento e Orbe": "Datos de Nacimiento y Orbe",
+    "Dados atualizados com êxito! Recalculando coordenadas estelares...": "¡Datos actualizados con éxito! Recalculando coordenadas estelares...",
+    "Data de Nascimento": "Fecha de Nacimiento",
+    "Horário exato": "Hora exacta",
+    "Atualizar e Recalcular Mapa": "Actualizar y Recalcular Carta",
+    "Preferências Globais": "Preferencias Globales",
+    "Idioma do Oráculo": "Idioma del Oráculo",
+    "Autenticação Segura Local": "Autenticación Segura Local",
+    "Seus diários de sonhos, oráculos de tarot e configurações são guardadas unicamente na caixa sandbox local do navegador do dispositivo para manter sigilo absoluto.": "Sus diarios de sueños, oráculos de tarot y configuraciones se guardan únicamente en la caja de arena local del navegador del dispositivo para mantener absoluta privacidad."
+  },
+  de: {
+    "Inspecione as chaves criptográficas locais de seu mapa astral místico e gerencie as configurações de privacidade.": "Überprüfen Sie die lokalen kryptografischen Schlüssel Ihres mystischen Geburtshoroskops und verwalten Sie die Datenschutzeinstellungen.",
+    "Dados de Nascimento e Orbe": "Geburtsdaten und Orbis",
+    "Dados atualizados com êxito! Recalculando coordenadas estelares...": "Daten erfolgreich aktualisiert! Sternenkoordinaten werden neu berechnet...",
+    "Data de Nascimento": "Geburtsdatum",
+    "Horário exato": "Genaue Uhrzeit",
+    "Atualizar e Recalcular Mapa": "Horoskop aktualisieren und neu berechnen",
+    "Preferências Globais": "Globale Einstellungen",
+    "Idioma do Oráculo": "Sprache des Orakels",
+    "Autenticação Segura Local": "Sichere lokale Authentifizierung",
+    "Seus diários de sonhos, oráculos de tarot e configurações são guardadas unicamente na caixa sandbox local do navegador do dispositivo para manter sigilo absoluto.": "Ihre Traumtagebücher, Tarot-Orakel und Einstellungen werden ausschließlich in der lokalen Browser-Sandbox des Geräts gespeichert, um absolute Vertraulichkeit zu gewährleisten."
+  },
+  fr: {
+    "Inspecione as chaves criptográficas locais de seu mapa astral místico e gerencie as configurações de privacidade.": "Inspectez les clés cryptographiques locales de votre carte du ciel mystique et gérez les paramètres de confidentialité.",
+    "Dados de Nascimento e Orbe": "Données de Naissance et Orbe",
+    "Dados atualizados com êxito! Recalculando coordenadas estelares...": "Données mises à jour avec succès ! Recalcul des coordonnées stellaires...",
+    "Data de Nascimento": "Date de Naissance",
+    "Horário exato": "Heure exacte",
+    "Atualizar e Recalcular Mapa": "Mettre à jour et Recalculer la Carte",
+    "Preferências Globais": "Préférences Globales",
+    "Idioma do Oráculo": "Langue de l'Oracle",
+    "Autenticação Segura Local": "Authentification Sécurisée Locale",
+    "Seus diários de sonhos, oráculos de tarot e configurações são guardadas unicamente na caixa sandbox local do navegador do dispositivo para manter sigilo absoluto.": "Vos journaux de rêves, oracles de tarot et paramètres sont enregistrés uniquement dans le bac à sable local du navigateur de l'appareil afin de maintenir une confidentialité absolue."
+  }
+};
+
 interface ProfileSettingsTabProps {
   userProfile: UserProfile;
   lang: Language;
@@ -26,6 +89,10 @@ export default function ProfileSettingsTab({ userProfile, lang, setLang, onLogou
 
   const tI18n = (text: string) => {
     if (!text) return "";
+    const localDict = LOCAL_SETTINGS_TRANSLATIONS[lang];
+    if (localDict && localDict[text]) {
+      return localDict[text];
+    }
     const res = tI18nRaw(text);
     if (res === text || !res) {
       return translateUiText(text, lang || 'pt');

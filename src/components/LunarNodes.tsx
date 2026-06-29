@@ -956,18 +956,50 @@ const NODE_UI_TRANSLATIONS: Record<string, Record<Language, string>> = {
   }
 };
 
+export const localLunarNodesTranslations: Record<Language, Record<string, string>> = {
+  pt: {
+    "na Casa": "na Casa",
+    "Buscador de Sabedoria": "Buscador de Sabedoria",
+    "Olá,": "Olá,"
+  },
+  en: {
+    "na Casa": "in House",
+    "Buscador de Sabedoria": "Seeker of Wisdom",
+    "Olá,": "Hello,"
+  },
+  es: {
+    "na Casa": "en la Casa",
+    "Buscador de Sabedoria": "Buscador de Sabiduría",
+    "Olá,": "Hola,"
+  },
+  de: {
+    "na Casa": "im Haus",
+    "Buscador de Sabedoria": "Sucher der Weisheit",
+    "Olá,": "Hallo,"
+  },
+  fr: {
+    "na Casa": "dans la Maison",
+    "Buscador de Sabedoria": "Chercheur de Sagesse",
+    "Olá,": "Bonjour,"
+  }
+};
+
 export default function LunarNodes({ userName = 'Buscador de Sabedoria', mapData, lang }: LunarNodesProps) {
   const { idioma } = useIdioma();
   const idiomaAtual = idioma || (lang as Language) || 'pt';
 
   const tLocal = (text: string) => {
     if (!text) return "";
-    if (idiomaAtual === 'pt') return text;
-    const match = NODE_UI_TRANSLATIONS[text];
-    if (match && match[idiomaAtual as Language]) {
-      return match[idiomaAtual as Language];
+    const activeLang = (idiomaAtual as Language) || 'pt';
+    if (localLunarNodesTranslations[activeLang]?.[text]) {
+      return localLunarNodesTranslations[activeLang][text];
     }
-    return translateUiText(text, idiomaAtual as Language);
+    if (activeLang === 'pt') return text;
+    const match = NODE_UI_TRANSLATIONS[text];
+    if (match && match[activeLang]) {
+      return match[activeLang];
+    }
+    return translateUiText(text, activeLang);
   };
 
   const t = tLocal;
@@ -1146,9 +1178,9 @@ export default function LunarNodes({ userName = 'Buscador de Sabedoria', mapData
                 
                 {/* Personalized axis alert banner */}
                 <div className="p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/20 text-xs text-left">
-                  <span className="text-[9px] font-mono uppercase text-indigo-400 block tracking-widest mb-1.5">{t('Eixo Sagrado Calculado de')} {userName}</span>
+                  <span className="text-[9px] font-mono uppercase text-indigo-400 block tracking-widest mb-1.5">{t('Eixo Sagrado Calculado de')} {t(userName)}</span>
                   <p className="text-slate-200 leading-relaxed">
-                    Olá, <strong>{userName}</strong>! {t('Como base no sintonizador de efemérides reais do seu nascimento, identificamos que o seu')} <strong>{t('Nodo Norte (Cabeça do Dragão)')}</strong> {t('está posicionado em')} <strong>{t(realNorthNodeSign)}</strong> {t('na')} <strong>{t('Casa')} {realNorthNodeHouse}</strong>. {t('Em oposição perfeita, o seu')} <strong>{t('Nodo Sul (Cauda do Dragão)')}</strong> {t('está localizado em')} <strong>{t(realSouthNodeSign)}</strong> {t('na')} <strong>{t('Casa')} {realSouthNodeHouse}</strong>.
+                    {t('Olá,')} <strong>{t(userName)}</strong>! {t('Com base no sintonizador de efemérides reais do seu nascimento, identificamos que o seu')} <strong>{t('Nodo Norte (Cabeça do Dragão)')}</strong> {t('está posicionado em')} <strong>{t(realNorthNodeSign)}</strong> {t('na')} <strong>{t('Casa')} {realNorthNodeHouse}</strong>. {t('Em oposição perfeita, o seu')} <strong>{t('Nodo Sul (Cauda do Dragão)')}</strong> {t('está localizado em')} <strong>{t(realSouthNodeSign)}</strong> {t('na')} <strong>{t('Casa')} {realSouthNodeHouse}</strong>.
                   </p>
                 </div>
 

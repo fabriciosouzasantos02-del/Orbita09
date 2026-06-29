@@ -84,14 +84,6 @@ export const translations = {
     uprightPosition: "Posição Direta",
     reversedPosition: "Posição Invertida",
     newReading: "Nova Leitura",
-    tarotFocusLabel: "Sua Pergunta ou Afirmação de Foco",
-    tarotShuffling: "Embaralhando arcanos...",
-    tarotArcanaLabel: "Arcano",
-    tarotPositionLabel: "Posição:",
-    tarotAiPrompt: "Gostaria que nosso sábio místico unificasse a leitura destas 3 cartas no seu contexto pessoal?",
-    tarotAiInvocating: "Invocando Oráculo místico...",
-    tarotAiInterpretButton: "Interpretar Leitura Geral",
-    tarotAiError: "Erro ao contatar oráculo cósmico.",
     
     // Dreams
     dreamsTitle: "Caderno Cósmico de Sonhos",
@@ -200,14 +192,6 @@ export const translations = {
     uprightPosition: "Upright Position",
     reversedPosition: "Reversed Position",
     newReading: "New Reading",
-    tarotFocusLabel: "Your Question or Focus Affirmation",
-    tarotShuffling: "Shuffling Arcana...",
-    tarotArcanaLabel: "Arcanum",
-    tarotPositionLabel: "Position:",
-    tarotAiPrompt: "Would you like our wise mystic to unify the reading of these 3 cards in your personal context?",
-    tarotAiInvocating: "Invoking Mystic Oracle...",
-    tarotAiInterpretButton: "Interpret General Reading",
-    tarotAiError: "Error contacting the cosmic oracle.",
     
     // Dreams
     dreamsTitle: "Cosmic Dream Notebook",
@@ -316,14 +300,6 @@ export const translations = {
     uprightPosition: "Aufrecht",
     reversedPosition: "Umgekehrt / Auf dem Kopf",
     newReading: "Neue Legung",
-    tarotFocusLabel: "Ihre Frage oder Fokus-Affirmation",
-    tarotShuffling: "Mischen der Arkana...",
-    tarotArcanaLabel: "Arkana",
-    tarotPositionLabel: "Position:",
-    tarotAiPrompt: "Möchten Sie, dass unser weiser Mystiker die Legung dieser 3 Karten in Ihrem persönlichen Kontext vereint?",
-    tarotAiInvocating: "Beschwörung des mystischen Orakels...",
-    tarotAiInterpretButton: "Allgemeine Legung interpretieren",
-    tarotAiError: "Fehler beim Kontaktieren des kosmischen Orakels.",
     
     // Dreams
     dreamsTitle: "Kosmisches Traumbuches",
@@ -432,14 +408,6 @@ export const translations = {
     uprightPosition: "Posición Derecha",
     reversedPosition: "Posición Invertida",
     newReading: "Nueva Lectura",
-    tarotFocusLabel: "Tu Pregunta o Afirmación de Enfoque",
-    tarotShuffling: "Barajando arcanos...",
-    tarotArcanaLabel: "Arcano",
-    tarotPositionLabel: "Posición:",
-    tarotAiPrompt: "¿Te gustaría que nuestro sabio místico unificara la lectura de estas 3 cartas en tu contexto personal?",
-    tarotAiInvocating: "Invocando al Oráculo Místico...",
-    tarotAiInterpretButton: "Interpretar Lectura General",
-    tarotAiError: "Error al contactar con el oráculo cósmico.",
     
     // Dreams
     dreamsTitle: "Libreta de Sueños Cósmicos",
@@ -548,14 +516,6 @@ export const translations = {
     uprightPosition: "Position droite",
     reversedPosition: "Position inversée",
     newReading: "Nouvelle lecture",
-    tarotFocusLabel: "Votre question ou affirmation de concentration",
-    tarotShuffling: "Mélange des arcanes...",
-    tarotArcanaLabel: "Arcane",
-    tarotPositionLabel: "Position :",
-    tarotAiPrompt: "Souhaitez-vous que notre sage mystique unifie la lecture de ces 3 cartes dans votre contexte personnel ?",
-    tarotAiInvocating: "Invocation de l'oracle mystique...",
-    tarotAiInterpretButton: "Interpréter la lecture générale",
-    tarotAiError: "Erreur lors du contact avec l'oracle cosmique.",
     
     // Dreams
     dreamsTitle: "Carnet de rêves cosmiques",

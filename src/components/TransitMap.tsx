@@ -50,10 +50,233 @@ const TRANSIT_METADATA: PlanetConfig[] = [
   { name: "Plutão", label: "Plutão ♇", baseAngle: 304, speed: 0.004, color: "#F43F5E", radiusOffset: 86, description: "Renascimento por expurgação, regeneração invisível e forças magnéticas inevitáveis." }
 ];
 
+const LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
+  en: {
+    // Zodiac
+    "Áries": "Aries", "Touro": "Taurus", "Gêmeos": "Gemini", "Câncer": "Cancer",
+    "Leão": "Leo", "Virgem": "Virgo", "Libra": "Libra", "Escorpião": "Scorpio",
+    "Sagitário": "Sagittarius", "Capricórnio": "Capricorn", "Aquário": "Aquarius", "Peixes": "Pisces",
+    // Elements
+    "FIRE": "Fire", "EARTH": "Earth", "AIR": "Air", "WATER": "Water",
+    // Planets
+    "Sol": "Sun", "Lua": "Moon", "Mercúrio": "Mercury", "Vênus": "Venus",
+    "Marte": "Mars", "Júpiter": "Jupiter", "Saturno": "Saturn", "Urano": "Uranus",
+    "Netuno": "Neptune", "Plutão": "Pluto",
+    // Labels
+    "Sol ☀️": "Sun ☀️", "Lua 🌙": "Moon 🌙", "Mercúrio ☿": "Mercury ☿", "Vênus ♀": "Venus ♀",
+    "Marte ♂": "Mars ♂", "Júpiter ♃": "Jupiter ♃", "Saturno ♄": "Saturn ♄", "Urano ♅": "Uranus ♅",
+    "Netuno ♆": "Neptune ♆", "Plutão ♇": "Pluto ♇",
+    // Descriptions
+    "O foco central da vitalidade física e da consciência vigilante.": "The central focus of physical vitality and watchful consciousness.",
+    "Reflete as flutuações cotidianas das emoções, intuição e receptividade pública.": "Reflects the daily fluctuations of emotions, intuition, and public receptivity.",
+    "Regente do raciocínio prático, conexões comerciais e agilidade verbal.": "Ruler of practical reasoning, business connections, and verbal agility.",
+    "Atração magnética, acordos estéticos, afetos e valorização material.": "Magnetic attraction, aesthetic agreements, affection, and material valuation.",
+    "Energia propulsora, iniciativa de conquista, coragem e impulsão física.": "Propelling energy, initiative for conquest, courage, and physical drive.",
+    "A grande expansão mental, justiça, síntese filosófica e oportunidades afortunadas.": "The great mental expansion, justice, philosophical synthesis, and fortunate opportunities.",
+    "O mestre das formas rígidas, disciplina temporal e maturação de compromissos.": "The master of rigid forms, temporal discipline, and maturation of commitments.",
+    "Estopim do progresso tecnológico, intuição disruptiva e inconformismo libertador.": "Fuse of technological progress, disruptive intuition, and liberating nonconformism.",
+    "Dissolução espiritual dos limites, imaginação onírica profunda e sensitividade extrema.": "Spiritual dissolution of limits, dream-like imagination, and extreme sensitivity.",
+    "Renascimento por expurgação, regeneração invisível e forças magnéticas inevitáveis.": "Rebirth by expurgation, invisible regeneration, and inevitable magnetic forces.",
+    // Aspects
+    "Conjunção": "Conjunction", "Oposição": "Opposition", "Trígono": "Trine", "Quadratura": "Square", "Sextil": "Sextile",
+    "Fusão de propósitos celestes e intensidade focalizada.": "Fusion of celestial purposes and focused intensity.",
+    "Polarização ou reflexão crítica exigindo diplomacia ativa.": "Polarization or critical reflection requiring active diplomacy.",
+    "Fluxo espontâneo que remove entraves com sorte natural.": "Spontaneous flow that removes obstacles with natural luck.",
+    "Força transformadora impulsionada sob pressões e atritos.": "Transformative force driven by pressure and friction.",
+    "Oportunidades de colaboração que premiam ações conscientes.": "Opportunities for collaboration that reward conscious actions.",
+    // UI
+    "Alinhamento de Trânsitos em Tempo Real": "Real-Time Transits Alignment",
+    "Analise trânsitos rotacionando dinamicamente e cruzando aspectos com suas casas de nascimento.": "Analyze transits by dynamically rotating and crossing aspects with your birth houses.",
+    "Pausar Fluxo": "Pause Flow", "Iniciar Fluxo": "Start Flow", "Resetar data oficial (Tempo Real)": "Reset to Real-Time Date",
+    "Velocidade:": "Speed:", "LESTE / ASCENDENTE": "EAST / ASCENDANT", "OESTE / DESCENDENTE": "WEST / DESCENDANT",
+    "Simulado:": "Simulated:", "dias de trânsito": "transit days",
+    "Conjunção (0°)": "Conjunction (0°)", "Oposição (180°)": "Opposition (180°)", "Trígono (120°)": "Trine (120°)",
+    "Quadratura (90°)": "Square (90°)", "Sextil (60°)": "Sextile (60°)", "Natal": "Natal", "Trânsito": "Transit",
+    "Navegar Órbitas": "Navigate Orbits", "Trânsito Atual ⓣ": "Current Transit ⓣ", "de": "of",
+    "Posição Natal ⓝ": "Natal Position ⓝ", "Não mapeado": "Not mapped", "Aspectos Ativos deste planeta": "Active Aspects of this planet",
+    "conexões": "connections", "com seu": "with your",
+    "Nenhum aspecto maior exato formado no momento com o seu mapa natal. Rotacione o tempo usando a velocidade de simulação para ver novos alinhamentos celestes dinamicamente!": "No exact major aspect formed at the moment with your natal chart. Rotate time using the simulation speed to see new celestial alignments dynamically!",
+    "Insight do Alinhamento Ativo": "Active Alignment Insight",
+    "O trânsito solar ilumina seu mapa atual estimulando renovações de identidade.": "The solar transit illuminates your current chart stimulating renewals of identity.",
+    "Sensibilidade acelerada em oscilações oníricas diárias. Excelente para journaling.": "Accelerated sensitivity in daily dream oscillations. Excellent for journaling.",
+    "Aceleração de contatos, excelente para reavaliar correspondências importantes.": "Acceleration of contacts, excellent for re-evaluating important correspondences.",
+    "Magnetismo em alta facilitando entendimentos com parcerias e acordos estéticos.": "Magnetism on the rise facilitating understandings with partnerships and aesthetic agreements.",
+    "Mantenha o foco ativo para evitar conflitos desnecessários, redirecione o impulso.": "Keep focus active to avoid unnecessary conflicts, redirect impulse.",
+    "Trânsitos de planetas geracionais influenciam as estruturas institucionais de sua jornada de longo prazo.": "Transits of generational planets influence the institutional structures of your long-term journey.",
+  },
+  es: {
+    // Zodiac
+    "Áries": "Aries", "Touro": "Tauro", "Gêmeos": "Géminis", "Câncer": "Cáncer",
+    "Leão": "Leo", "Virgem": "Virgo", "Libra": "Libra", "Escorpião": "Escorpio",
+    "Sagitário": "Sagitario", "Capricórnio": "Capricornio", "Aquário": "Acuario", "Peixes": "Piscis",
+    // Elements
+    "FIRE": "Fuego", "EARTH": "Tierra", "AIR": "Aire", "WATER": "Agua",
+    // Planets
+    "Sol": "Sol", "Lua": "Luna", "Mercúrio": "Mercurio", "Vênus": "Venus",
+    "Marte": "Marte", "Júpiter": "Júpiter", "Saturno": "Saturno", "Urano": "Urano",
+    "Netuno": "Neptuno", "Plutão": "Plutón",
+    // Labels
+    "Sol ☀️": "Sol ☀️", "Lua 🌙": "Luna 🌙", "Mercúrio ☿": "Mercurio ☿", "Vênus ♀": "Venus ♀",
+    "Marte ♂": "Marte ♂", "Júpiter ♃": "Júpiter ♃", "Saturno ♄": "Saturno ♄", "Urano ♅": "Urano ♅",
+    "Netuno ♆": "Neptuno ♆", "Plutão ♇": "Plutón ♇",
+    // Descriptions
+    "O foco central da vitalidade física e da consciência vigilante.": "El foco central de la vitalidad física y la conciencia vigilante.",
+    "Reflete as flutuações cotidianas das emoções, intuição e receptividade pública.": "Refleja las fluctuaciones cotidianas de las emociones, la intuición y la receptividad pública.",
+    "Regente do raciocínio prático, conexões comerciais e agilidade verbal.": "Regente del razonamiento práctico, conexiones comerciales y agilidad verbal.",
+    "Atração magnética, acordos estéticos, afetos e valorização material.": "Atracción magnética, acuerdos estéticos, afectos y valorización material.",
+    "Energia propulsora, iniciativa de conquista, coragem e impulsão física.": "Energía propulsora, iniciativa de conquista, coraje e impulso físico.",
+    "A grande expansão mental, justiça, síntese filosófica e oportunidades afortunadas.": "La gran expansión mental, la justicia, la síntesis filosófica y las oportunidades afortunadas.",
+    "O mestre das formas rígidas, disciplina temporal e maturação de compromissos.": "El maestro de las formas rígidas, la disciplina temporal y la maduración de los compromisos.",
+    "Estopim do progresso tecnológico, intuição disruptiva e inconformismo libertador.": "Detonante del progreso tecnológico, intuición disruptiva e inconformismo liberador.",
+    "Dissolução espiritual dos limites, imaginação onírica profunda e sensitividade extrema.": "Disolución espiritual de los límites, imaginación onírica profunda y sensibilidad extrema.",
+    "Renascimento por expurgação, regeneração invisível e forças magnéticas inevitáveis.": "Renacimiento por expurgación, regeneración invisible y fuerzas magnéticas inevitables.",
+    // Aspects
+    "Conjunção": "Conjunción", "Oposição": "Oposición", "Trígono": "Trígono", "Quadratura": "Cuadratura", "Sextil": "Sextil",
+    "Fusão de propósitos celestes e intensidade focalizada.": "Fusión de propósitos celestes e intensidad enfocada.",
+    "Polarização ou reflexão crítica exigindo diplomacia activa.": "Polarización o reflexión crítica que exige diplomacia activa.",
+    "Fluxo espontâneo que remove entraves com sorte natural.": "Flujo espontáneo que elimina obstáculos con suerte natural.",
+    "Força transformadora impulsionada sob pressões e atritos.": "Fuerza transformadora impulsada bajo presiones y fricciones.",
+    "Oportunidades de colaboração que premiam ações conscientes.": "Oportunidades de colaboración que premian acciones conscientes.",
+    // UI
+    "Alinhamento de Trânsitos em Tempo Real": "Alineación de Tránsitos en Tiempo Real",
+    "Analise trânsitos rotacionando dinamicamente e cruzando aspectos com suas casas de nascimento.": "Analice tránsitos rotando dinámicamente y cruzando aspectos con sus cartas de nacimiento.",
+    "Pausar Fluxo": "Pausar Flujo", "Iniciar Fluxo": "Iniciar Flujo", "Resetar data oficial (Tempo Real)": "Restablecer a Fecha en Tiempo Real",
+    "Velocidade:": "Velocidad:", "LESTE / ASCENDENTE": "ESTE / ASCENDENTE", "OESTE / DESCENDENTE": "OESTE / DESCENDENTE",
+    "Simulado:": "Simulado:", "dias de trânsito": "días de tránsito",
+    "Conjunção (0°)": "Conjunción (0°)", "Oposição (180°)": "Oposición (180°)", "Trígono (120°)": "Trígono (120°)",
+    "Quadratura (90°)": "Cuadratura (90°)", "Sextil (60°)": "Sextil (60°)", "Natal": "Natal", "Trânsito": "Tránsito",
+    "Navegar Órbitas": "Navegar Órbitas", "Trânsito Atual ⓣ": "Tránsito Actual ⓣ", "de": "de",
+    "Posição Natal ⓝ": "Posición Natal ⓝ", "Não mapeado": "No mapeado", "Aspectos Ativos deste planeta": "Aspectos Activos de este planeta",
+    "conexões": "conexiones", "com seu": "con su",
+    "Nenhum aspecto maior exato formado no momento com o seu mapa natal. Rotacione o tempo usando a velocidade de simulação para ver novos alinhamentos celestes dinamicamente!": "Ningún aspecto mayor exacto formado en este momento con su carta natal. ¡Rote el tiempo usando la velocidad de simulación para ver nuevas alineaciones celestes dinámicamente!",
+    "Insight do Alinhamento Ativo": "Insight del Alineamiento Activo",
+    "O trânsito solar ilumina seu mapa atual estimulando renovações de identidade.": "El tránsito solar ilumina su mapa actual estimulando renovaciones de identidad.",
+    "Sensibilidade acelerada em oscilações oníricas diárias. Excelente para journaling.": "Sensibilidad acelerada en oscilaciones oníricas diarias. Excelente para journaling.",
+    "Aceleração de contatos, excelente para reavaliar correspondências importantes.": "Aceleración de contactos, excelente para reevaluar correspondencias importantes.",
+    "Magnetismo em alta facilitando entendimentos com parcerias e acordos estéticos.": "Magnetismo en alza facilitando entendimientos con asociaciones y acuerdos estéticos.",
+    "Mantenha o foco ativo para evitar conflitos desnecessários, redirecione o impulso.": "Mantenga el foco activo para evitar conflictos innecesarios, redireccione el impulso.",
+    "Trânsitos de planetas geracionais influenciam as estruturas institucionais de sua jornada de longo prazo.": "Los tránsitos de planetas generacionales influyen en las estructuras institucionales de su viaje a largo plazo.",
+  },
+  de: {
+    // Zodiac
+    "Áries": "Widder", "Touro": "Stier", "Gêmeos": "Zwillinge", "Câncer": "Krebs",
+    "Leão": "Löwe", "Virgem": "Jungfrau", "Libra": "Waage", "Escorpião": "Skorpion",
+    "Sagitário": "Schütze", "Capricórnio": "Steinbock", "Aquário": "Wassermann", "Peixes": "Fische",
+    // Elements
+    "FIRE": "Feuer", "EARTH": "Erde", "AIR": "Luft", "WATER": "Wasser",
+    // Planets
+    "Sol": "Sonne", "Lua": "Mond", "Mercúrio": "Merkur", "Vênus": "Venus",
+    "Marte": "Mars", "Júpiter": "Jupiter", "Saturno": "Saturn", "Urano": "Uranus",
+    "Netuno": "Neptun", "Plutão": "Pluto",
+    // Labels
+    "Sol ☀️": "Sonne ☀️", "Lua 🌙": "Mond 🌙", "Mercúrio ☿": "Merkur ☿", "Vênus ♀": "Venus ♀",
+    "Marte ♂": "Mars ♂", "Júpiter ♃": "Jupiter ♃", "Saturno ♄": "Saturn ♄", "Urano ♅": "Uranus ♅",
+    "Netuno ♆": "Neptun ♆", "Plutão ♇": "Pluto ♇",
+    // Descriptions
+    "O foco central da vitalidade física e da consciência vigilante.": "Der zentrale Fokus der physischen Vitalität und des wachsamen Bewusstseins.",
+    "Reflete as flutuações cotidianas das emoções, intuição e receptividade pública.": "Spiegelt die täglichen Schwankungen von Emotionen, Intuition und öffentlicher Empfänglichkeit wider.",
+    "Regente do raciocínio prático, conexões comerciais e agilidade verbal.": "Herrscher über praktisches Denken, geschäftliche Verbindungen und verbale Agilität.",
+    "Atração magnética, acordos estéticos, afetos e valorização material.": "Magnetische Anziehungkraft, ästhetische Vereinbarungen, Zuneigung und materielle Bewertung.",
+    "Energia propulsora, iniciativa de conquista, coragem e impulsão física.": "Antriebsenergie, Initiative zur Eroberung, Mut und körperlicher Antrieb.",
+    "A grande expansão mental, justiça, síntese filosófica e oportunidades afortunadas.": "Die große mentale Expansion, Gerechtigkeit, philosophische Synthese und glückliche Gelegenheiten.",
+    "O mestre das formas rígidas, disciplina temporal e maturação de compromissos.": "Der Meister der starren Formen, der zeitlichen Disziplin und des Reifens von Verpflichtungen.",
+    "Estopim do progresso tecnológico, intuição disruptiva e inconformismo libertador.": "Zünder des technologischen Fortschritts, disruptive Intuition und befreiende Nonkonformität.",
+    "Dissolução espiritual dos limites, imaginação onírica profunda e sensitividade extrema.": "Spirituelle Auflösung von Grenzen, tiefe traumhafte Fantasie und extreme Sensibilität.",
+    "Renascimento por expurgação, regeneração invisível e forças magnéticas inevitáveis.": "Wiedergeburt durch Bereinigung, unsichtbare Regeneration und unvermeidliche magnetische Kräfte.",
+    // Aspects
+    "Conjunção": "Konjunktion", "Oposição": "Opposition", "Trígono": "Trigon", "Quadratura": "Quadrat", "Sextil": "Sextil",
+    "Fusão de propósitos celestes e intensidade focalizada.": "Verschmelzung himmlischer Absichten und fokussierter Intensität.",
+    "Polarização ou reflexão crítica exigindo diplomacia ativa.": "Polarisierung oder kritische Reflexion, die aktive Diplomatie erfordert.",
+    "Fluxo espontâneo que remove entraves com sorte natural.": "Spontaner Fluss, der Hindernisse mit natürlichem Glück beseitigt.",
+    "Força transformadora impulsionada sob pressões e atritos.": "Transformative Kraft, angetrieben von Druck und Reibung.",
+    "Oportunidades de colaboração que premiam ações conscientes.": "Möglichkeiten zur Zusammenarbeit, die bewusstes Handeln belohnen.",
+    // UI
+    "Alinhamento de Trânsitos em Tempo Real": "Echtzeit-Transit-Ausrichtung",
+    "Analise trânsitos rotacionando dinamicamente e cruzando aspectos com suas casas de nascimento.": "Analysieren Sie Transite, indem Sie Aspekte dynamisch drehen und mit Ihren Geburtshäusern kreuzen.",
+    "Pausar Fluxo": "Ablauf pausieren", "Iniciar Fluxo": "Ablauf starten", "Resetar data oficial (Tempo Real)": "Auf Echtzeit-Datum zurücksetzen",
+    "Velocidade:": "Geschwindigkeit:", "LESTE / ASCENDENTE": "OSTEN / ASZENDENT", "OESTE / DESCENDENTE": "WESTEN / DESZENDENT",
+    "Simulado:": "Simuliert:", "dias de trânsito": "Transittage",
+    "Conjunção (0°)": "Konjunktion (0°)", "Oposição (180°)": "Opposition (180°)", "Trígono (120°)": "Trigon (120°)",
+    "Quadratura (90°)": "Quadrat (90°)", "Sextil (60°)": "Sextil (60°)", "Natal": "Natal", "Trânsito": "Transit",
+    "Navegar Órbitas": "Umlaufbahnen navigieren", "Trânsito Atual ⓣ": "Aktueller Transit ⓣ", "de": "von",
+    "Posição Natal ⓝ": "Geburtsposition ⓝ", "Não mapeado": "Nicht abgebildet", "Aspectos Ativos deste planeta": "Aktive Aspekte dieses Planeten",
+    "conexões": "Verbindungen", "com seu": "mit Ihrem",
+    "Nenhum aspect maior exato formado no momento com o seu mapa natal. Rotacione o tempo usando a velocidade de simulação para ver novos alinhamentos celestes dinamicamente!": "Zurzeit bildet sich kein genauer Hauptaspekt mit Ihrem Geburtshoroskop. Drehen Sie die Zeit mit der Simulationsgeschwindigkeit, um neue himmlische Ausrichtungen dynamisch zu sehen!",
+    "Nenhum aspecto maior exato formado no momento com o seu mapa natal. Rotacione o tempo usando a velocidade de simulação para ver novos alinhamentos celestes dinamicamente!": "Zurzeit bildet sich kein genauer Hauptaspekt mit Ihrem Geburtshoroskop. Drehen Sie die Zeit mit der Simulationsgeschwindigkeit, um neue himmlische Ausrichtungen dynamisch zu sehen!",
+    "Insight do Alinhamento Ativo": "Erkenntnis der aktiven Ausrichtung",
+    "O trânsito solar ilumina seu mapa atual estimulando renovações de identidade.": "Der Sonnen-Transit erleuchtet Ihr aktuelles Horoskop und regt Erneuerungen der Identität an.",
+    "Sensibilidade acelerada em oscilações oníricas diárias. Excelente para journaling.": "Beschleunigte Empfindlichkeit bei täglichen Traumschwankungen. Hervorragend geeignet für Journaling.",
+    "Aceleração de contatos, excelente para reavaliar correspondências importantes.": "Beschleunigung der Kontakte, hervorragend zur Neubewertung wichtiger Korrespondenz.",
+    "Magnetismo em alta facilitando entendimentos com parcerias e acordos estéticos.": "Steigender Magnetismus erleichtert Vereinbarungen bei Partnerschaften und ästhetischen Absprachen.",
+    "Mantenha o foco ativo para evitar conflitos desnecessários, redirecione o impulso.": "Halten Sie den Fokus aktiv, um unnötige Konflikte zu vermeiden, leiten Sie den Impuls um.",
+    "Trânsitos de planetas geracionais influenciam as estruturas institucionais de sua jornada de longo prazo.": "Transite von Generationenplaneten beeinflussen die institutionellen Strukturen Ihrer langfristigen Reise.",
+  },
+  fr: {
+    // Zodiac
+    "Áries": "Bélier", "Touro": "Taureau", "Gêmeos": "Gémeaux", "Câncer": "Cancer",
+    "Leão": "Lion", "Virgem": "Vierge", "Libra": "Balance", "Escorpião": "Scorpion",
+    "Sagitário": "Sagittaire", "Capricórnio": "Capricorne", "Aquário": "Verseau", "Peixes": "Poissons",
+    // Elements
+    "FIRE": "Feu", "EARTH": "Terre", "AIR": "Air", "WATER": "Eau",
+    // Planets
+    "Sol": "Soleil", "Lua": "Lune", "Mercúrio": "Mercure", "Vênus": "Vénus",
+    "Marte": "Mars", "Júpiter": "Jupiter", "Saturno": "Saturne", "Urano": "Uranus",
+    "Netuno": "Neptune", "Plutão": "Pluton",
+    // Labels
+    "Sol ☀️": "Soleil ☀️", "Lua 🌙": "Lune 🌙", "Mercúrio ☿": "Mercure ☿", "Vênus ♀": "Vénus ♀",
+    "Marte ♂": "Mars ♂", "Júpiter ♃": "Jupiter ♃", "Saturno ♄": "Saturne ♄", "Urano ♅": "Uranus ♅",
+    "Netuno ♆": "Neptune ♆", "Plutão ♇": "Pluton ♇",
+    // Descriptions
+    "O foco central da vitalidade física e da consciência vigilante.": "Le foyer central de la vitalité physique et de la conscience vigilante.",
+    "Reflete as flutuações cotidianas das emoções, intuição e receptividade pública.": "Reflète les fluctuations quotidiennes des émotions, de l'intuition et de la réceptivité du public.",
+    "Regente do raciocínio prático, conexões comerciais e agilidade verbal.": "Régent du raisonnement pratique, des connexions commerciales et de l'agilité verbale.",
+    "Atração magnética, acordos estéticos, afetos e valorização material.": "Attraction magnétique, accords esthétiques, affections et valorisation matérielle.",
+    "Energia propulsora, iniciativa de conquista, coragem e impulsão física.": "Énergie de propulsion, initiative de conquête, courage et dynamisme physique.",
+    "A grande expansão mental, justiça, síntese filosófica e oportunidades afortunadas.": "La grande expansion mentale, la justice, la synthèse philosophique et les opportunités heureuses.",
+    "O mestre das formas rígidas, disciplina temporal e maturação de compromissos.": "Le maître des formes rigides, de la discipline temporelle et de la maturation des engagements.",
+    "Estopim do progresso tecnológico, intuição disruptiva e inconformismo libertador.": "Déclencheur du progrès technologique, de l'intuition disruptive et de l'anticonformisme libérateur.",
+    "Dissolução espiritual dos limites, imaginação onírica profunda e sensitividade extrema.": "Dissolution spirituelle des limites, imagination onirique profonde et sensibilité extrême.",
+    "Renascimento por expurgação, regeneração invisível e forças magnéticas inevitáveis.": "Renaissance par expurgation, régénération invisible et forces magnétiques inévitables.",
+    // Aspects
+    "Conjunção": "Conjonction", "Oposição": "Opposition", "Trígono": "Trine", "Quadratura": "Carré", "Sextil": "Sextile",
+    "Fusão de propósitos celestes e intensidade focalizada.": "Fusion d'intentions célestes et d'intensité focalisée.",
+    "Polarização ou reflexão crítica exigindo diplomacia ativa.": "Polarisation ou réflexion critique exigeant une diplomatie active.",
+    "Fluxo espontâneo que remove entraves com sorte natural.": "Flux spontané qui élimine les obstacles avec une chance naturelle.",
+    "Força transformadora impulsionada sob pressões e atritos.": "Force transformatrice entraînée par la pression et la friction.",
+    "Oportunidades de colaboração que premiam ações conscientes.": "Opportunités de collaboration qui récompensent les actions conscientes.",
+    // UI
+    "Alinhamento de Trânsitos em Tempo Real": "Alignement des Transits en Temps Réel",
+    "Analise trânsitos rotacionando dinamicamente e cruzando aspectos com suas casas de nascimento.": "Analysez les transits en faisant tourner dynamiquement et en croisant les aspects avec vos maisons de naissance.",
+    "Pausar Fluxo": "Pause Flux", "Iniciar Fluxo": "Démarrer Flux", "Resetar data oficial (Tempo Real)": "Réinitialiser à la date en temps réel",
+    "Velocidade:": "Vitesse:", "LESTE / ASCENDENTE": "EST / ASCENDANT", "OESTE / DESCENDENTE": "OUEST / DESCENDANT",
+    "Simulado:": "Simulé:", "dias de trânsito": "jours de transit",
+    "Conjunção (0°)": "Conjonction (0°)", "Oposição (180°)": "Opposition (180°)", "Trígono (120°)": "Trine (120°)",
+    "Quadratura (90°)": "Carré (90°)", "Sextil (60°)": "Sextile (60°)", "Natal": "Natal", "Trânsito": "Transit",
+    "Navegar Órbitas": "Naviguer les Orbites", "Trânsito Atual ⓣ": "Transit Actuel ⓣ", "de": "de",
+    "Posição Natal ⓝ": "Position Natale ⓝ", "Não mapeado": "Non cartographié", "Aspectos Ativos deste planeta": "Aspects Actifs de ce planète",
+    "conexões": "connexions", "com seu": "avec votre",
+    "Nenhum aspecto maior exato formado no momento com o seu mapa natal. Rotacione o tempo usando a velocidade de simulação para ver novos alinhamentos celestes dinamicamente!": "Aucun aspect majeur exact formé pour le moment avec votre carte natale. Faites pivoter le temps à l'aide de la vitesse de simulation pour voir de nouveaux alignements célestes de manière dynamique !",
+    "Insight do Alinhamento Ativo": "Aperçu de l'Alignement Actif",
+    "O trânsito solar ilumina seu mapa atual estimulando renovações de identidade.": "Le transit solaire illumine votre carte actuelle stimulant les renouvellements d'identité.",
+    "Sensibilidade acelerada em oscilações oníricas diárias. Excelente para journaling.": "Sensibilité accélérée dans les oscillations quotidiennes des rêves. Excellent pour le journaling.",
+    "Aceleração de contatos, excelente para reavaliar correspondências importantes.": "Accélération des contacts, excellente pour réévaluer les correspondances importantes.",
+    "Magnetismo em alta facilitando entendimentos com parcerias e acordos estéticos.": "Magnétisme en hausse facilitant les ententes de partenariats et les accords esthétiques.",
+    "Mantenha o foco ativo para evitar conflitos desnecessários, redirecione o impulso.": "Gardez le focus actif pour éviter les conflits inutiles, redirigez l'élan.",
+    "Trânsitos de planetas geracionais influenciam as estruturas institucionais de sua jornada de longo prazo.": "Les transits des planètes générationnelles influencent les structures institutionnelles de votre voyage à long terme.",
+  }
+};
+
 export default function TransitMap({ mapData }: TransitMapProps) {
   const { t: i18nT, i18n } = useTranslation();
   const t = (text: string) => {
     if (!text) return "";
+    const activeL = (i18n.language as string) || 'pt';
+    if (activeL !== 'pt') {
+      const localDict = LOCAL_TRANSLATIONS[activeL];
+      if (localDict && localDict[text]) {
+        return localDict[text];
+      }
+    }
     const res = i18nT(text);
     if (res === text || !res) {
       return translateUiText(text, (i18n.language as Language) || 'pt');
@@ -957,7 +1180,7 @@ export default function TransitMap({ mapData }: TransitMapProps) {
                         transition={{ type: "spring", stiffness: 380, damping: 30 }}
                       />
                     )}
-                    <span className="relative z-10">{p.name}</span>
+                    <span className="relative z-10">{t(p.name)}</span>
                   </button>
                 );
               })}

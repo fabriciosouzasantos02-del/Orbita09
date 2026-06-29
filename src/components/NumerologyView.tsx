@@ -183,7 +183,8 @@ const NumerologyView = memo(function NumerologyView({ numerology, user, lang }: 
       alignment = t("Ondas Alfa-Beta (Foco Ativo, Clareza de Propósitos, Praticidade)");
     }
 
-    const harmonic = `${(personalFreq / 7.83).toFixed(2)}x (Multiplicador de Fase)`;
+    const harmonicLabel = t("(Multiplicador de Fase)");
+    const harmonic = `${(personalFreq / 7.83).toFixed(2)}x ${harmonicLabel}`;
     const firstName = userName.split(' ')[0] || "Buscador";
 
     const diagnosis = `${t("Após analisar a assinatura de nascença registrada de")} ${userName}, ${t("o portal quântico correlacionou as forças vibracionais de seu Caminho de Vida")} (${cVidaNum}) ${t("e sua Expressão")} (${expressaoNum}) ${t("com os campos eletromagnéticos ionosféricos terrestres. O alinhamento com seu biocampo atingiu uma Coerência de Fase de incomparáveis")} ${coherence}${t("%, oscilando na banda de")} ${personalFreq} ${t("Hz. Para você,")} ${firstName}, ${t("esta ressonância exata atua de forma direta ativando as qualidades do arquétipo de vibração")} ${activeAspectData.num}, ${t("ampliando sua clareza de mente.")}`;
@@ -272,7 +273,7 @@ const NumerologyView = memo(function NumerologyView({ numerology, user, lang }: 
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-2xl font-black font-mono text-slate-200">{cVidaNum}</span>
             <span className="text-[10px] text-amber-500/70 font-sans font-medium truncate">
-              {activeInterpretations[cVidaNum]?.archetype.split(' e ')[0] || activeInterpretations[cVidaNum]?.archetype.split(' and ')[0] || ""}
+              {activeInterpretations[cVidaNum]?.archetype.split(/\s+(?:e|and|y|und|et)\s+/i)[0] || ""}
             </span>
           </div>
         </button>
@@ -295,7 +296,7 @@ const NumerologyView = memo(function NumerologyView({ numerology, user, lang }: 
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-2xl font-black font-mono text-slate-200">{expressaoNum}</span>
             <span className="text-[10px] text-cyan-400/70 font-sans font-medium truncate">
-              {activeInterpretations[expressaoNum]?.archetype.split(' e ')[0] || activeInterpretations[expressaoNum]?.archetype.split(' and ')[0] || ""}
+              {activeInterpretations[expressaoNum]?.archetype.split(/\s+(?:e|and|y|und|et)\s+/i)[0] || ""}
             </span>
           </div>
         </button>
@@ -318,7 +319,7 @@ const NumerologyView = memo(function NumerologyView({ numerology, user, lang }: 
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-2xl font-black font-mono text-slate-200">{motivacaoNum}</span>
             <span className="text-[10px] text-rose-400/70 font-sans font-medium truncate">
-              {activeInterpretations[motivacaoNum]?.archetype.split(' e ')[0] || activeInterpretations[motivacaoNum]?.archetype.split(' and ')[0] || ""}
+              {activeInterpretations[motivacaoNum]?.archetype.split(/\s+(?:e|and|y|und|et)\s+/i)[0] || ""}
             </span>
           </div>
         </button>
@@ -341,7 +342,7 @@ const NumerologyView = memo(function NumerologyView({ numerology, user, lang }: 
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-2xl font-black font-mono text-slate-200">{personalidadeNum}</span>
             <span className="text-[10px] text-emerald-400/70 font-sans font-medium truncate">
-              {activeInterpretations[personalidadeNum]?.archetype.split(' e ')[0] || activeInterpretations[personalidadeNum]?.archetype.split(' and ')[0] || ""}
+              {activeInterpretations[personalidadeNum]?.archetype.split(/\s+(?:e|and|y|und|et)\s+/i)[0] || ""}
             </span>
           </div>
         </button>
@@ -653,7 +654,7 @@ const NumerologyView = memo(function NumerologyView({ numerology, user, lang }: 
                             <span className="italic">"{cycleInterpret.motto}"</span>
                           </div>
                           <div>
-                            <span className="font-semibold text-slate-300 block">{t("Instrução Essential:")}</span>
+                            <span className="font-semibold text-slate-300 block">{t("Instrução Essencial:")}</span>
                             <span>{cycleInterpret.general.substring(0, 100)}...</span>
                           </div>
                         </div>

@@ -10,15 +10,37 @@ interface NumerologyTabProps {
   lang: Language;
 }
 
+const localTabTranslations: Record<Language, Record<string, string>> = {
+  pt: {
+    "Leitura Detalhada de seus Números Força": "Leitura Detalhada de seus Números Força"
+  },
+  en: {
+    "Leitura Detalhada de seus Números Força": "Detailed Reading of Your Power Numbers"
+  },
+  es: {
+    "Leitura Detalhada de seus Números Força": "Lectura Detallada de sus Números de Fuerza"
+  },
+  de: {
+    "Leitura Detalhada de seus Números Força": "Detaillierte Lesung Ihrer Kraftzahlen"
+  },
+  fr: {
+    "Leitura Detalhada de seus Números Força": "Lecture Détaillée de vos Nombres de Force"
+  }
+};
+
 export default function NumerologyTab({ numerologyData, lang }: NumerologyTabProps) {
   const t = translations[lang];
   const { t: tI18nRaw } = useTranslation();
 
   const tI18n = (text: string) => {
     if (!text) return "";
+    const activeLang = lang || 'pt';
+    if (localTabTranslations[activeLang]?.[text]) {
+      return localTabTranslations[activeLang][text];
+    }
     const res = tI18nRaw(text);
     if (res === text || !res) {
-      return translateUiText(text, lang || 'pt');
+      return translateUiText(text, activeLang);
     }
     return res;
   };

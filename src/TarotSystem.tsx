@@ -217,6 +217,7 @@ function romanize(num: number): string {
 
 import { useTranslation } from 'react-i18next';
 import { translateUiText, Language } from './lib/translations';
+import { TRANSLATIONS_WORLD } from './tarot';
 
 interface TarotSystemProps {
   userName?: string;
@@ -234,6 +235,246 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
       return translateUiText(text, lang || 'pt');
     }
     return res;
+  };
+
+  const rankTranslations: Record<string, Record<string, string>> = {
+    en: { "Ás": "Ace", "Dois": "Two", "Três": "Three", "Quatro": "Four", "Cinco": "Five", "Seis": "Six", "Sete": "Seven", "Oito": "Eight", "Nove": "Nine", "Dez": "Ten", "Valete": "Page", "Cavaleiro": "Knight", "Rainha": "Queen", "Rei": "King" },
+    es: { "Ás": "As", "Dois": "Dos", "Três": "Tres", "Quatro": "Cuatro", "Cinco": "Cinco", "Seis": "Seis", "Sete": "Siete", "Oito": "Ocho", "Nove": "Nueve", "Dez": "Diez", "Valete": "Sota", "Cavaleiro": "Caballero", "Rainha": "Reina", "Rei": "Rey" },
+    de: { "Ás": "As", "Dois": "Zwei", "Três": "Drei", "Quatro": "Vier", "Cinco": "Fünf", "Seis": "Sechs", "Sete": "Sieben", "Oito": "Acht", "Nove": "Neun", "Dez": "Zehn", "Valete": "Bube", "Cavaleiro": "Ritter", "Rainha": "Königin", "Rei": "König" },
+    fr: { "Ás": "As", "Dois": "Deux", "Três": "Trois", "Quatro": "Quatre", "Cinco": "Cinq", "Seis": "Six", "Sete": "Sept", "Oito": "Huit", "Nove": "Neuf", "Dez": "Dix", "Valete": "Valet", "Cavaleiro": "Chevalier", "Rainha": "Reine", "Rei": "Roi" }
+  };
+
+  const suitTranslations: Record<string, Record<string, { meaningTheme: string; adviceTheme: string }>> = {
+    en: {
+      cups: {
+        meaningTheme: "fluid feelings, affective well-being, and intuitive insights.",
+        adviceTheme: "Follow the flow of mystical love, embrace, and forgive."
+      },
+      wands: {
+        meaningTheme: "inspired actions, brilliant creative impulse, and professional vigor.",
+        adviceTheme: "Act with passion, take initiative, and invest in active dreams."
+      },
+      swords: {
+        meaningTheme: "logical discernment, rational clarity, and overcoming mental pain.",
+        adviceTheme: "Use analytical clarity, cut illusions, and shield your vibration."
+      },
+      pentacles: {
+        meaningTheme: "structured financial stability, physical harvests, and pragmatism.",
+        adviceTheme: "Focus on real results, save, and preserve stable paths."
+      }
+    },
+    es: {
+      cups: {
+        meaningTheme: "sentimientos fluidos, bienestar afectivo e intuiciones profundas.",
+        adviceTheme: "Sigue el flujo del amor místico, acoge y perdona."
+      },
+      wands: {
+        meaningTheme: "acciones inspiradas, impulso creativo brillante y vigor profesional.",
+        adviceTheme: "Actúa con pasión, toma la iniciativa e invierte en tus sueños activos."
+      },
+      swords: {
+        meaningTheme: "discernimiento lógico, claridad racional y superación del dolor mental.",
+        adviceTheme: "Usa la claridad analítica, corta las ilusiones y protege tu vibración."
+      },
+      pentacles: {
+        meaningTheme: "estabilidad financiera estructurada, cosechas físicas y pragmatismo.",
+        adviceTheme: "Enfócate en resultados reales, ahorra y preserva caminos estables."
+      }
+    },
+    de: {
+      cups: {
+        meaningTheme: "fließende Gefühle, emotionales Wohlbefinden und intuitive Erkenntnisse.",
+        adviceTheme: "Folgen Sie dem Fluss der mystischen Liebe, nehmen Sie an und vergeben Sie."
+      },
+      wands: {
+        meaningTheme: "inspirierte Handlungen, brillanter kreativer Impuls und berufliche Kraft.",
+        adviceTheme: "Handeln Sie mit Leidenschaft, ergreifen Sie die Initiative und investieren Sie in aktive Träume."
+      },
+      swords: {
+        meaningTheme: "logisches Urteilsvermögen, rationale Klarheit und Überwindung mentaler Schmerzen.",
+        adviceTheme: "Nutzen Sie analytische Klarheit, schneiden Sie Illusionen ab und schützen Sie Ihre Schwingung."
+      },
+      pentacles: {
+        meaningTheme: "strukturierte finanzielle Stabilität, physische Ernten und Pragmatismus.",
+        adviceTheme: "Konzentrieren Sie sich auf reale Ergebnisse, sparen Sie und bewahren Sie stabile Wege."
+      }
+    },
+    fr: {
+      cups: {
+        meaningTheme: "sentiments fluides, bien-être affectif et intuitions profondes.",
+        adviceTheme: "Suivez le flux de l'amour mystique, accueillez et pardonnez."
+      },
+      wands: {
+        meaningTheme: "actions inspirées, élan créateur brillant et vigueur professionnelle.",
+        adviceTheme: "Agissez avec passion, prenez des initiatives et investissez dans vos rêves actifs."
+      },
+      swords: {
+        meaningTheme: "discernement logique, clarté rationnelle et dépassement de la douleur mentale.",
+        adviceTheme: "Utilisez la clarté analytique, tranchez les illusions et protégez votre vibration."
+      },
+      pentacles: {
+        meaningTheme: "stabilité financière structurée, récoltes physiques et pragmatisme.",
+        adviceTheme: "Concentrez-vous sur les résultats réels, économisez et préservez des chemins solides."
+      }
+    }
+  };
+
+  const valueTranslations: Record<string, Record<number, string>> = {
+    en: {
+      1: "a promising seed of new and fruitful beginnings.",
+      2: "thoughtful duality, necessary agreements, and subtle balance.",
+      3: "initial growth, active partnerships of progress and expansion.",
+      4: "protective limits, firm stability, or temporary stagnation.",
+      5: "challenges or necessary adjustments of human coexistence.",
+      6: "mutual restoration of paths, nostalgia, and sincere generosity.",
+      7: "persistent challenges, difficult choices, or wise caution.",
+      8: "diligent study, favorable speed of healing, or focused effort.",
+      9: "abundance of soul achieved, fullness, and well-deserved rest.",
+      10: "rich culmination, generational stability of peace, and firm legacy.",
+      11: "new messages and insights, fruitful study, and light learning.",
+      12: "directed action, focused momentum, and diligent pursuit of goals.",
+      13: "wise receptive mastery, affective maturity, and subtle power of attraction.",
+      14: "firm leadership, authority, and sovereign control of forces."
+    },
+    es: {
+      1: "una semilla prometedora de nuevos y fructíferos comienzos.",
+      2: "dualidad reflexiva, acuerdos necesarios y equilibrio sutil.",
+      3: "crecimiento inicial, asociaciones activas de progreso y expansión.",
+      4: "límites protectores, estabilidad firme o estancamiento temporal.",
+      5: "desafíos o ajustes necesarios de la convivencia humana.",
+      6: "restauración mutua de caminos, nostalgia y generosidade sincera.",
+      7: "desafíos persistentes, elecciones difíciles o precaución sabia.",
+      8: "estudio diligente, velocidad favorable de curación o esfuerzo enfocado.",
+      9: "abundancia del alma alcanzada, plenitud y descanso merecido.",
+      10: "culminación rica, estabilidad generacional de paz y legado firme.",
+      11: "nuevos mensajes e intuiciones, estudio fructífero y aprendizaje ligero.",
+      12: "acción dirigida, impulso enfocado y búsqueda diligente de objetivos.",
+      13: "maestría receptiva sabia, madurez afectiva y sutil poder de atracción.",
+      14: "liderazgo firme, autoridad y control soberano de las fuerzas."
+    },
+    de: {
+      1: "ein vielversprechender Samen für neue und fruchtbare Anfänge.",
+      2: "nachdenkliche Dualität, notwendige Vereinbarungen und subtiles Gleichgewicht.",
+      3: "anfängliches Wachstum, aktive Partnerschaften für Fortschritt und Expansion.",
+      4: "schützende Grenzen, feste Stabilität oder vorübergehende Stagnation.",
+      5: "Herausforderungen oder notwendige Anpassungen des menschlichen Zusammenlebens.",
+      6: "gegenseitige Wiederherstellung der Wege, Nostalgie und aufrichtige Großzügigkeit.",
+      7: "anhaltende Herausforderungen, schwierige Entscheidungen oder kluge Vorsicht.",
+      8: "fleißiges Studium, günstige Heilungsgeschwindigkeit oder fokussierter Aufwand.",
+      9: "Fülle der erreichten Seele, Fülle und wohlverdiente Ruhe.",
+      10: "reiche Kulmination, generationenübergreifende Stabilität des Friedens und festes Erbe.",
+      11: "neue Botschaften und Erkenntnisse, fruchtbares Studium und leichtes Lernen.",
+      12: "gerichtetes Handeln, fokussierte Dynamik und fleißiges Verfolgen von Zielen.",
+      13: "kluge, empfängliche Meisterschaft, emotionale Reife und subtile Anziehungskraft.",
+      14: "starke Führung, Autorität und souveräne Kontrolle der Kräfte."
+    },
+    fr: {
+      1: "une graine prometteuse de nouveaux et fructueux commencements.",
+      2: "dualité réfléchie, accords nécessaires et équilibre subtil.",
+      3: "croissance initiale, partenariats actifs de progrès et d'expansion.",
+      4: "limites protectrices, stabilité ferme ou stagnation temporaire.",
+      5: "défis ou ajustements nécessaires de la coexistence humaine.",
+      6: "restauration mutuelle des chemins, nostalgie et générosité sincère.",
+      7: "défis persistants, choix difficiles ou prudence sage.",
+      8: "étude diligente, vitesse favorable de guérison ou effort ciblé.",
+      9: "abondance de l'âme atteinte, plénitude et repos bien mérité.",
+      10: "riche culmination, stabilité générationnelle de paix et héritage solide.",
+      11: "nouveaux messages et idées, étude fructueuse et apprentissage léger.",
+      12: "action dirigée, élan ciblé et poursuite diligente des objectifs.",
+      13: "maîtrise réceptive sage, maturité affective et subtil pouvoir d'attraction.",
+      14: "leadership ferme, autorité et contrôle souverain des forces."
+    }
+  };
+
+  const translateCard = (card: TarotCard | undefined): TarotCard | undefined => {
+    if (!card) return undefined;
+    const activeLang = (lang || 'pt').toLowerCase().split('-')[0];
+    if (activeLang === 'pt') return card;
+
+    if (card.arcanaType === 'major') {
+      const majorKey = card.id.replace('the_', '');
+      const trans = TRANSLATIONS_WORLD[activeLang]?.[majorKey] as any;
+      if (trans) {
+        let romanizedPart = "";
+        const match = card.cardName.match(/\(([^)]+)\)/);
+        if (match) {
+          romanizedPart = ` (${match[1]})`;
+        }
+        return {
+          ...card,
+          cardName: `${trans.name || card.nome}${romanizedPart}`,
+          uprightMeaning: trans.uprightMeaning || card.uprightMeaning,
+          advice: trans.advice || card.advice
+        };
+      }
+    } else {
+      const rankMap = rankTranslations[activeLang];
+      const suitMap = suitTranslations[activeLang];
+      const valTrans = valueTranslations[activeLang];
+
+      const valName = card.nome.split(' de ')[0] || '';
+      const translatedValName = rankMap?.[valName] || valName;
+
+      let suitKey = '';
+      if (card.id.endsWith('_cups')) suitKey = 'cups';
+      else if (card.id.endsWith('_wands')) suitKey = 'wands';
+      else if (card.id.endsWith('_swords')) suitKey = 'swords';
+      else if (card.id.endsWith('_pentacles')) suitKey = 'pentacles';
+
+      const suitPtName = card.nome.split(' de ')[1] || '';
+      let translatedSuitName = suitPtName;
+      if (suitKey) {
+        const transSuitWord = t(suitPtName);
+        if (transSuitWord && transSuitWord !== suitPtName) {
+          translatedSuitName = transSuitWord;
+        }
+      }
+
+      const linkWord = activeLang === 'en' ? 'of' : activeLang === 'de' ? 'der' : 'de';
+      const cardName = `${translatedValName} ${linkWord} ${translatedSuitName}`;
+
+      let uprightMeaning = card.uprightMeaning;
+      if (suitKey && valTrans && suitMap?.[suitKey]) {
+        const desc = valTrans[card.number];
+        const theme = suitMap[suitKey].meaningTheme;
+        if (desc && theme) {
+          if (activeLang === 'en') {
+            uprightMeaning = `${translatedValName} of ${translatedSuitName} symbolizes ${desc} This force brings ${theme}`;
+          } else if (activeLang === 'es') {
+            uprightMeaning = `${translatedValName} de ${translatedSuitName} simboliza ${desc} Esta fuerza trae ${theme}`;
+          } else if (activeLang === 'de') {
+            uprightMeaning = `${translatedValName} der ${translatedSuitName} symbolisiert ${desc} Diese Kraft bringt ${theme}`;
+          } else if (activeLang === 'fr') {
+            uprightMeaning = `${translatedValName} de ${translatedSuitName} symbolise ${desc} Cette force apporte ${theme}`;
+          }
+        }
+      }
+
+      let advice = card.advice;
+      if (suitKey && valTrans && suitMap?.[suitKey]) {
+        const advTheme = suitMap[suitKey].adviceTheme;
+        if (advTheme) {
+          if (activeLang === 'en') {
+            advice = `The energy of the ${translatedValName} of ${translatedSuitName} advises: ${advTheme}`;
+          } else if (activeLang === 'es') {
+            advice = `La energía del ${translatedValName} de ${translatedSuitName} aconseja: ${advTheme}`;
+          } else if (activeLang === 'de') {
+            advice = `Die Energie des ${translatedValName} der ${translatedSuitName} rät: ${advTheme}`;
+          } else if (activeLang === 'fr') {
+            advice = `L'énergie du ${translatedValName} de ${translatedSuitName} conseille : ${advTheme}`;
+          }
+        }
+      }
+
+      return {
+        ...card,
+        cardName,
+        uprightMeaning,
+        advice
+      };
+    }
+
+    return card;
   };
   const [activeMode, setActiveMode] = useState<TarotMode>('inteligente');
   
@@ -525,7 +766,9 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
       "9. Esperanças, Medos e Invejas",
       "10. Resultado Alquímico"
     ];
-    return labels[index] || `Influência ${index + 1}`;
+    const val = labels[index];
+    if (val) return t(val);
+    return `${t("Influência")} ${index + 1}`;
   };
 
   return (
@@ -540,19 +783,19 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
           <div className="space-y-2 text-left">
             <span className="px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-full text-[9px] font-mono tracking-widest uppercase font-bold flex items-center gap-1.5 w-fit">
               <Star className="w-3 h-3 text-amber-400 animate-spin-pulse" />
-              Templo Oculto de Orbia • Sabedoria Ancestral
+              {t("Templo Oculto de Orbia • Sabedoria Ancestral")}
             </span>
             <h2 className="text-2xl md:text-3xl font-black font-sans tracking-tight text-white uppercase">
-              Tarot Taróloga de Verdade
+              {t("Tarot Taróloga de Verdade")}
             </h2>
             <p className="text-slate-400 text-xs font-sans max-w-2xl leading-relaxed">
-              Conselhos vivos e canalizações profundas sobre sua vida amorosa, trabalho, relacionamentos e blindagem contra mal olhado e invejas. Uma experiência sensitiva realista inspirada em consultas presenciais.
+              {t("Conselhos vivos e canalizações profundas sobre sua vida amorosa, trabalho, relacionamentos e blindagem contra mal olhado e invejas. Uma experiência sensitiva realista inspirada em consultas consultas presenciais.")}
             </p>
           </div>
           
           <div className="bg-slate-900/90 px-4 py-2 rounded-2xl border border-slate-800 text-right shrink-0">
-            <span className="text-[9px] font-mono text-slate-500 block">SINTONIZADOR CELESTE</span>
-            <span className="text-xs font-mono font-bold text-amber-400">Ativo • Orbia Tarot Real</span>
+            <span className="text-[9px] font-mono text-slate-500 block">{t("SINTONIZADOR CELESTE")}</span>
+            <span className="text-xs font-mono font-bold text-amber-400">{t("Ativo • Orbia Tarot Real")}</span>
           </div>
         </div>
 
@@ -571,7 +814,7 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
             {/* Crown of stars top-right */}
             <div className="absolute top-2 right-2 flex items-center gap-1 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-450/25">
               <Flame className="w-2.5 h-2.5 text-amber-400 animate-bounce" />
-              <span className="text-[7.5px] font-mono font-bold text-amber-400 uppercase tracking-widest">DESTAQUE PRINCIPAL</span>
+              <span className="text-[7.5px] font-mono font-bold text-amber-400 uppercase tracking-widest">{t("DESTAQUE PRINCIPAL")}</span>
             </div>
 
             <div className="flex items-center justify-between">
@@ -579,9 +822,9 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
               {activeMode === 'semanal' && <span className="w-2 h-2 rounded-full bg-amber-450 animate-ping" />}
             </div>
             <div className="space-y-0.5">
-              <h4 className="text-xs font-black tracking-tight font-sans uppercase text-white">✨ Tarot Semanal Profundo</h4>
+              <h4 className="text-xs font-black tracking-tight font-sans uppercase text-white">✨ {t("Tarot Semanal Profundo")}</h4>
               <p className="text-[9px] leading-snug text-slate-400">
-                Tiragem de 10 Cartas com leitura espiritual completa de trânsitos, invejas e trabalho. Uma consulta por semana.
+                {t("Tiragem de 10 Cartas com leitura espiritual completa de trânsitos, invejas e trabalho. Uma consulta por semana.")}
               </p>
             </div>
           </button>
@@ -600,9 +843,9 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
               {activeMode === 'inteligente' && <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />}
             </div>
             <div className="space-y-0.5">
-              <h4 className="text-xs font-bold font-sans">Tarot Inteligente</h4>
+              <h4 className="text-xs font-bold font-sans">{t("Tarot Inteligente")}</h4>
               <p className="text-[9px] leading-snug text-slate-400">
-                Conselhos e tiragens mágicas unindo tecnologia espiritual planetária.
+                {t("Conselhos e tiragens mágicas unindo tecnologia espiritual planetária.")}
               </p>
             </div>
           </button>
@@ -621,9 +864,9 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
               {activeMode === 'amor' && <div className="w-1.5 h-1.5 rounded-full bg-rose-400" />}
             </div>
             <div className="space-y-0.5">
-              <h4 className="text-xs font-bold font-sans">Tarot do Amor</h4>
+              <h4 className="text-xs font-bold font-sans">{t("Tarot do Amor")}</h4>
               <p className="text-[9px] leading-snug text-slate-400">
-                Conselhos dos caminhos afetivos para os assuntos e angústias amorosas.
+                {t("Conselhos dos caminhos afetivos para os assuntos e angústias amorosas.")}
               </p>
             </div>
           </button>
@@ -642,9 +885,9 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
               {activeMode === 'tradicional' && <div className="w-1.5 h-1.5 rounded-full bg-purple-400" />}
             </div>
             <div className="space-y-0.5">
-              <h4 className="text-xs font-bold font-sans">Tarot Tradicional</h4>
+              <h4 className="text-xs font-bold font-sans">{t("Tarot Tradicional")}</h4>
               <p className="text-[9px] leading-snug text-slate-400">
-                Tiragens clássicas para aconselhamentos rápidos dos Arcanos Maiores.
+                {t("Tiragens clássicas para aconselhamentos rápidos dos Arcanos Maiores.")}
               </p>
             </div>
           </button>
@@ -666,14 +909,14 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
                 <Compass className={`w-4.5 h-4.5 shrink-0 ${
                   activeMode === 'semanal' ? 'text-amber-400' : activeMode === 'amor' ? 'text-rose-400' : activeMode === 'tradicional' ? 'text-purple-400' : 'text-amber-500'
                 }`} />
-                {activeMode === 'semanal' ? 'Tiragem Profunda Semanal (10 Cartas)' : `Sua Consulta de Tarot ${activeMode === 'inteligente' ? 'Inteligente' : activeMode === 'amor' ? 'do Amor' : 'Tradicional'}`}
+                {activeMode === 'semanal' ? t('Tiragem Profunda Semanal (10 Cartas)') : `${t("Sua Consulta de Tarot")} ${activeMode === 'inteligente' ? t('Inteligente') : activeMode === 'amor' ? t('do Amor') : t('Tradicional')}`}
               </h3>
 
               {/* Status Limit label */}
               <div className="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-full border border-slate-800 text-[10px] font-mono">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                 <span className="text-slate-400 uppercase font-semibold">
-                  Limite: 1x por {activeMode === 'semanal' ? 'semana' : 'dia'}
+                  {t("Limite: 1x por")} {activeMode === 'semanal' ? t('semana') : t('dia')}
                 </span>
               </div>
             </div>
@@ -684,12 +927,12 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
                 <div className="flex gap-2.5 text-left">
                   <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
                   <div className="space-y-1">
-                    <h5 className="text-xs font-bold text-amber-200">Energias Consagradas Conservadas</h5>
+                    <h5 className="text-xs font-bold text-amber-200">{t("Energias Consagradas Conservadas")}</h5>
                     <p className="text-[11px] leading-relaxed text-amber-400/90 font-sans">
-                      {userName ? `Olá, ${userName}. ` : "Olá! "}Você já realizou sua tiragem nesta sessão hoje! O tarot é uma ferramenta de reflexão espiritual profunda. Sorteios frequentes tumultuam o fluxo de sintonização sutil dos arcanos.
+                      {userName ? `${t("Olá")}, ${userName}. ` : `${t("Olá")}! `}{t("Você já realizou sua tiragem nesta sessão hoje! O tarot é uma ferramenta de reflexão espiritual profunda. Sorteios frequentes tumultuam o fluxo de sintonização sutil dos arcanos.")}
                     </p>
                     <p className="text-[10px] text-slate-300 font-mono mt-1">
-                      Sua próxima leitura nesta sessão estará liberada em estimadamente: <span className="text-amber-300 font-bold">{getNextAvailableTimeStr(cooldowns[activeMode]!, activeMode)}</span>.
+                      {t("Sua próxima leitura nesta sessão estará liberada em estimadamente:")} <span className="text-amber-300 font-bold">{getNextAvailableTimeStr(cooldowns[activeMode]!, activeMode)}</span>.
                     </p>
                   </div>
                 </div>
@@ -698,7 +941,7 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
                   <div className="p-3.5 bg-slate-950 border border-slate-850 rounded-xl space-y-2">
                     <div className="flex items-center gap-1.5 text-[9px] font-mono text-slate-405">
                       <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-                      RE-LEITURA DO CONSELHO ATUAL JÁ DISPONÍVEL ABAIXO
+                      {t("RE-LEITURA DO CONSELHO ATUAL JÁ DISPONÍVEL ABAIXO")}
                     </div>
                   </div>
                 )}
@@ -710,19 +953,19 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
               <>
                 {activeMode === 'inteligente' && (
                   <div className="space-y-2">
-                    <label className="text-[10px] font-mono uppercase text-slate-450 block">Qual sua questão central de autoconhecimento hoje?</label>
+                    <label className="text-[10px] font-mono uppercase text-slate-450 block">{t("Qual sua questão central de autoconhecimento hoje?")}</label>
                     <div className="relative">
                       <input
                         type="text"
                         value={intelligentQuestion}
                         onChange={(e) => setIntelligentQuestion(e.target.value)}
-                        placeholder="Ex: Qual caminho profissional devo trilhar nesta transição complicada de Saturno?"
+                        placeholder={t("Ex: Qual caminho profissional devo trilhar nesta transição complicada de Saturno?")}
                         className="w-full bg-slate-950 text-slate-200 rounded-xl px-4 py-3 text-xs border border-slate-800 focus:outline-none focus:border-amber-500/50 pr-10"
                       />
                       <HelpCircle className="w-4 h-4 text-slate-600 absolute right-3.5 top-3.5" />
                     </div>
                     <p className="text-[9px] text-slate-500 font-sans italic">
-                      * Orbia unirá a efeméride às cartas para formular uma resposta de taróloga real sobre tramas cotidianas, energias e focos.
+                      {t("* Orbia unirá a efeméride às cartas para formular uma resposta de taróloga real sobre tramas cotidianas, energias e focos.")}
                     </p>
                   </div>
                 )}
@@ -730,7 +973,7 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
                 {activeMode === 'amor' && (
                   <div className="space-y-4">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-mono uppercase text-slate-450 block">Escolha uma questão romântica profunda:</label>
+                      <label className="text-[10px] font-mono uppercase text-slate-450 block">{t("Escolha uma questão romântica profunda:")}</label>
                       <div className="grid grid-cols-1 gap-2">
                         {amorQuestions.map((q, i) => (
                           <button
@@ -743,7 +986,7 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
                             }`}
                           >
                             <Heart className="w-3.5 h-3.5 text-rose-550 shrink-0" />
-                            {q}
+                            {t(q)}
                           </button>
                         ))}
                         
@@ -756,19 +999,19 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
                           }`}
                         >
                           <Zap className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                          Quero escrever uma pergunta personalizada de amor...
+                          {t("Quero escrever uma pergunta personalizada de amor...")}
                         </button>
                       </div>
                     </div>
 
                     {isCustomAmor && (
                       <div className="space-y-1.5 animate-in slide-in-from-top-1">
-                        <label className="text-[10px] font-mono uppercase text-slate-450 block">Sua pergunta afetiva:</label>
+                        <label className="text-[10px] font-mono uppercase text-slate-450 block">{t("Sua pergunta afetiva:")}</label>
                         <input
                           type="text"
                           value={customAmorQuestion}
                           onChange={(e) => setCustomAmorQuestion(e.target.value)}
-                          placeholder="Ex: Como posso abrir meu coração novamente e me blindar de energias pesadas?"
+                          placeholder={t("Ex: Como posso abrir meu coração novamente e me blindar de energias pesadas?")}
                           className="w-full bg-slate-950 text-slate-200 rounded-xl px-4 py-3 text-xs border border-slate-800 focus:outline-none focus:border-rose-500/50"
                         />
                       </div>
@@ -778,7 +1021,7 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
 
                 {activeMode === 'tradicional' && (
                   <div className="space-y-2">
-                    <label className="text-[10px] font-mono uppercase text-slate-450 block">Escolha o formato de tiragem clássica:</label>
+                    <label className="text-[10px] font-mono uppercase text-slate-450 block">{t("Escolha o formato de tiragem clássica:")}</label>
                     <div className="grid grid-cols-2 gap-3">
                       {spreads.map((spr) => (
                         <button
@@ -791,7 +1034,7 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
                           }`}
                         >
                           <Layers className="w-4 h-4 text-purple-400" />
-                          <span className="text-[10.5px] font-sans font-bold leading-tight">{spr.name}</span>
+                          <span className="text-[10.5px] font-sans font-bold leading-tight">{t(spr.name)}</span>
                         </button>
                       ))}
                     </div>
@@ -802,10 +1045,10 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
                   <div className="p-4 bg-amber-500/5 rounded-2xl border border-amber-500/15 text-xs text-slate-400 leading-relaxed font-sans space-y-2">
                     <div className="flex items-center gap-1.5 font-bold text-amber-300">
                       <Flame className="w-3.5 h-3.5 fill-amber-300 text-amber-500" />
-                      A PREVISÃO COMPLETA DE SUA LINHA DO TEMPO
+                      {t("A PREVISÃO COMPLETA DE SUA LINHA DO TEMPO")}
                     </div>
                     <p>
-                      Essa leitura profunda sacará <strong>10 cartas</strong> do oráculo. Orbia analisará cada influenciador crucial para seu destino nos próximos 7 dias: sua atitude, finanças, trabalho, o romance sutil, medos, conselho de oração de alma e barreiras de mal olhado ou inveja no ambiente laboral e familiar. Sintonize suas intenções antes de sortear.
+                      {t("Essa leitura profunda sacará 10 cartas do oráculo. Orbia analisará cada influenciador crucial para seu destino nos próximos 7 dias: sua atitude, finanças, trabalho, o romance sutil, medos, conselho de oração de alma e barreiras de mal olhado ou inveja no ambiente laboral e familiar. Sintonize suas intenções antes de sortear.")}
                     </p>
                   </div>
                 )}
@@ -831,12 +1074,12 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
                       {isDrawing ? (
                         <>
                           <RefreshCw className="w-4 h-4 animate-spin" />
-                          Consagrando Deck de Cartas...
+                          {t("Consagrando Deck de Cartas...")}
                         </>
                       ) : (
                         <>
                           <Layers className="w-4 h-4 shrink-0" />
-                          Abra o Deck do Templo Oculto ({modeCount(activeMode)} {modeCount(activeMode) === 1 ? 'Carta' : 'Cartas'})
+                          {t("Abra o Deck do Templo Oculto")} ({modeCount(activeMode)} {modeCount(activeMode) === 1 ? t('Carta') : t('Cartas')})
                         </>
                       )}
                     </button>
@@ -852,7 +1095,7 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
                           <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
                         </span>
                         <span className="text-[10px] font-mono text-slate-400">
-                          Sintonizando: <strong className="text-amber-400 font-bold">{revealedIndices.length}</strong> de <strong className="text-amber-300">{selectableCount}</strong> cartas sorteadas
+                          {t("Sintonizando:")} <strong className="text-amber-400 font-bold">{revealedIndices.length}</strong> {t("de")} <strong className="text-amber-300">{selectableCount}</strong> {t("cartas sorteadas")}
                         </span>
                       </div>
                       
@@ -861,14 +1104,14 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
                           onClick={handleResetDraw}
                           className="text-[9px] font-mono text-slate-500 hover:text-slate-300 transition cursor-pointer uppercase font-bold"
                         >
-                          Mudar Perguntas
+                          {t("Mudar Perguntas")}
                         </button>
                       )}
                     </div>
 
                     {/* DYNAMIC CARD DECK WITH 3D FLIP EFFECT ON DECK BACKS */}
                     <span className="text-[10.5px] font-mono text-slate-450 uppercase block tracking-wider text-center">
-                      🔮 Toque nas cartas de costas para realizar sua escolha intuitiva:
+                      🔮 {t("Toque nas cartas de costas para realizar sua escolha intuitiva:")}
                     </span>
                     
                     <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 bg-slate-950/60 p-5 rounded-2xl border border-slate-850 relative">
@@ -957,88 +1200,91 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
                               {/* FRONT SIDE (Revealed Legit Tarot Card Illustration!) */}
                               <div 
                                 className="absolute inset-0 w-full h-full rounded-xl border-2 border-amber-500/80 bg-slate-950 flex flex-col overflow-hidden pointer-events-none shadow-[0_0_15px_rgba(212,175,55,0.25)]"
-                                style={{ 
+                                style={{
                                   backfaceVisibility: 'hidden',
                                   WebkitBackfaceVisibility: 'hidden',
                                   transform: 'rotateY(180deg)',
                                   zIndex: isRevealed ? 2 : 0
                                 }}
                               >
-                                {mappedCard && (
-                                  <div className="w-full h-full relative flex flex-col">
-                                    {/* Full-bleed high quality authentic Ryder-Waite illustration */}
-                                    <div className="w-full h-full relative overflow-hidden bg-slate-900">
-                                      {imageErrors[mappedCard.cardName] ? (
-                                        <div className="w-full h-full relative flex items-center justify-center bg-[#070913] p-1 select-none">
-                                          <svg viewBox="0 0 120 180" className="w-full h-full bg-[#05060d] rounded-lg">
-                                            <rect x="4" y="4" width="112" height="172" rx="6" fill="none" stroke="#d4af37" strokeWidth="1.2" strokeOpacity="0.65"/>
-                                            <rect x="7" y="7" width="106" height="166" rx="5" fill="none" stroke="#d4af37" strokeWidth="0.5" strokeDasharray="2,2" strokeOpacity="0.35"/>
-                                            <g opacity="0.4">
-                                              <circle cx="15" cy="20" r="0.6" fill="#fff"/>
-                                              <circle cx="105" cy="25" r="0.8" fill="#fff"/>
-                                              <circle cx="30" cy="75" r="0.6" fill="#fff"/>
-                                              <circle cx="90" cy="70" r="0.5" fill="#fff"/>
-                                              <circle cx="20" cy="115" r="0.7" fill="#fff"/>
-                                              <circle cx="100" cy="110" r="0.5" fill="#fff"/>
-                                              <circle cx="45" cy="145" r="0.6" fill="#fff"/>
-                                              <circle cx="75" cy="140" r="0.4" fill="#fff"/>
-                                            </g>
-                                            <g transform="translate(60, 90)">
-                                              <path d="M0 -30 L3 -10 L18 -18 L7 -3 L30 0 L7 3 L18 18 L3 10 L0 30 L-3 10 L-18 18 L-7 3 L-30 0 L-7 -3 L-18 -18 L-3 -10 Z" fill="#d4af37" fillOpacity="0.75"/>
-                                              <circle r="12" fill="none" stroke="#d4af37" strokeWidth="0.8" strokeDasharray="1,1" strokeOpacity="0.7"/>
-                                              <circle r="8" fill="#05060d" stroke="#d4af37" strokeWidth="0.5"/>
-                                              <circle cx="0" cy="0" r="1.5" fill="#d4af37"/>
-                                            </g>
-                                            <g stroke="#d4af37" strokeWidth="0.6" fill="none" opacity="0.6" transform="translate(9, 9)">
-                                              <path d="M0 6 V0 H6"/>
-                                            </g>
-                                            <g stroke="#d4af37" strokeWidth="0.6" fill="none" opacity="0.6" transform="translate(111, 9) scale(-1, 1)">
-                                              <path d="M0 6 V0 H6"/>
-                                            </g>
-                                            <g stroke="#d4af37" strokeWidth="0.6" fill="none" opacity="0.6" transform="translate(9, 171) scale(1, -1)">
-                                              <path d="M0 6 V0 H6"/>
-                                            </g>
-                                            <g stroke="#d4af37" strokeWidth="0.6" fill="none" opacity="0.6" transform="translate(111, 171) scale(-1, -1)">
-                                              <path d="M0 6 V0 H6"/>
-                                            </g>
-                                          </svg>
-                                          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center flex flex-col items-center">
-                                            <span className="text-[5px] sm:text-[6px] text-amber-500/50 uppercase tracking-[0.2em] font-mono select-none">Carta Especial</span>
+                                {mappedCard && (() => {
+                                  const translatedCard = translateCard(mappedCard);
+                                  if (!translatedCard) return null;
+                                  return (
+                                    <div className="w-full h-full relative flex flex-col">
+                                      {/* Full-bleed high quality authentic Ryder-Waite illustration */}
+                                      <div className="w-full h-full relative overflow-hidden bg-slate-900">
+                                        {imageErrors[translatedCard.cardName] ? (
+                                          <div className="w-full h-full relative flex items-center justify-center bg-[#070913] p-1 select-none">
+                                            <svg viewBox="0 0 120 180" className="w-full h-full bg-[#05060d] rounded-lg">
+                                              <rect x="4" y="4" width="112" height="172" rx="6" fill="none" stroke="#d4af37" strokeWidth="1.2" strokeOpacity="0.65"/>
+                                              <rect x="7" y="7" width="106" height="166" rx="5" fill="none" stroke="#d4af37" strokeWidth="0.5" strokeDasharray="2,2" strokeOpacity="0.35"/>
+                                              <g opacity="0.4">
+                                                <circle cx="15" cy="20" r="0.6" fill="#fff"/>
+                                                <circle cx="105" cy="25" r="0.8" fill="#fff"/>
+                                                <circle cx="30" cy="75" r="0.6" fill="#fff"/>
+                                                <circle cx="90" cy="70" r="0.5" fill="#fff"/>
+                                                <circle cx="20" cy="115" r="0.7" fill="#fff"/>
+                                                <circle cx="100" cy="110" r="0.5" fill="#fff"/>
+                                                <circle cx="45" cy="145" r="0.6" fill="#fff"/>
+                                                <circle cx="75" cy="140" r="0.4" fill="#fff"/>
+                                              </g>
+                                              <g transform="translate(60, 90)">
+                                                <path d="M0 -30 L3 -10 L18 -18 L7 -3 L30 0 L7 3 L18 18 L3 10 L0 30 L-3 10 L-18 18 L-7 3 L-30 0 L-7 -3 L-18 -18 L-3 -10 Z" fill="#d4af37" fillOpacity="0.75"/>
+                                                <circle r="12" fill="none" stroke="#d4af37" strokeWidth="0.8" strokeDasharray="1,1" strokeOpacity="0.7"/>
+                                                <circle r="8" fill="#05060d" stroke="#d4af37" strokeWidth="0.5"/>
+                                                <circle cx="0" cy="0" r="1.5" fill="#d4af37"/>
+                                              </g>
+                                              <g stroke="#d4af37" strokeWidth="0.6" fill="none" opacity="0.6" transform="translate(9, 9)">
+                                                <path d="M0 6 V0 H6"/>
+                                              </g>
+                                              <g stroke="#d4af37" strokeWidth="0.6" fill="none" opacity="0.6" transform="translate(111, 9) scale(-1, 1)">
+                                                <path d="M0 6 V0 H6"/>
+                                              </g>
+                                              <g stroke="#d4af37" strokeWidth="0.6" fill="none" opacity="0.6" transform="translate(9, 171) scale(1, -1)">
+                                                <path d="M0 6 V0 H6"/>
+                                              </g>
+                                              <g stroke="#d4af37" strokeWidth="0.6" fill="none" opacity="0.6" transform="translate(111, 171) scale(-1, -1)">
+                                                <path d="M0 6 V0 H6"/>
+                                              </g>
+                                            </svg>
+                                            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center flex flex-col items-center">
+                                              <span className="text-[5px] sm:text-[6px] text-amber-500/50 uppercase tracking-[0.2em] font-mono select-none">{t("Carta Especial")}</span>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <img 
+                                            src={translatedCard.imageUrl} 
+                                            alt={translatedCard.cardName}
+                                            referrerPolicy="no-referrer"
+                                            className="w-full h-full object-cover object-center scale-100"
+                                            onError={() => {
+                                              setImageErrors(prev => ({ ...prev, [translatedCard.cardName]: true }));
+                                            }}
+                                          />
+                                        )}
+                                        {/* Ornate border on top of card image */}
+                                        <div className="absolute inset-1.5 border border-amber-500/25 pointer-events-none rounded-lg" />
+                                        <div className="absolute inset-2 border border-amber-500/10 pointer-events-none rounded-lg" />
+
+                                        {/* Bottom banner for card title */}
+                                        <div className="absolute inset-x-0 bottom-0 h-11 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent flex items-end justify-center pb-2 px-1">
+                                          <div className="flex flex-col items-center">
+                                            <span className="text-[7.5px] sm:text-[8px] font-black uppercase text-amber-200 tracking-wider text-center leading-none truncate max-w-[95px] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]">
+                                              {translatedCard.cardName}
+                                            </span>
                                           </div>
                                         </div>
-                                      ) : (
-                                        <img 
-                                          src={mappedCard.imageUrl} 
-                                          alt={mappedCard.cardName}
-                                          referrerPolicy="no-referrer"
-                                          className="w-full h-full object-cover object-center scale-100"
-                                          onError={() => {
-                                            setImageErrors(prev => ({ ...prev, [mappedCard.cardName]: true }));
-                                          }}
-                                        />
-                                      )}
-                                      {/* Ornate border on top of card image */}
-                                      <div className="absolute inset-1.5 border border-amber-500/25 pointer-events-none rounded-lg" />
-                                      <div className="absolute inset-2 border border-amber-500/10 pointer-events-none rounded-lg" />
-
-                                      {/* Bottom banner for card title */}
-                                      <div className="absolute inset-x-0 bottom-0 h-11 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent flex items-end justify-center pb-2 px-1">
-                                        <div className="flex flex-col items-center">
-                                          <span className="text-[7.5px] sm:text-[8px] font-black uppercase text-amber-200 tracking-wider text-center leading-none truncate max-w-[95px] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]">
-                                            {mappedCard.cardName}
-                                          </span>
+                                        
+                                        {/* Index chosen badge */}
+                                        <div className="absolute top-2 left-2 bg-amber-500 text-slate-950 font-black font-mono text-[8px] w-4.5 h-4.5 rounded-full flex items-center justify-center shadow-lg border border-slate-950">
+                                          {positionInReveal + 1}
                                         </div>
                                       </div>
-                                      
-                                      {/* Index chosen badge */}
-                                      <div className="absolute top-2 left-2 bg-amber-500 text-slate-950 font-black font-mono text-[8px] w-4.5 h-4.5 rounded-full flex items-center justify-center shadow-lg border border-slate-950">
-                                        {positionInReveal + 1}
-                                      </div>
                                     </div>
-                                  </div>
-                                )}
+                                  );
+                                })()}
                               </div>
-
                             </div>
                           </div>
                         );
@@ -1051,12 +1297,14 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
                         
                         <div className="p-3.5 bg-slate-950 border border-slate-850 rounded-2xl">
                           <h4 className="text-[10px] font-mono uppercase text-slate-400 mb-2 truncate">
-                            📋 Listagem Completa de Cartas Escolhidas por Inteligência Espiritual:
+                            {t("📋 Listagem Completa de Cartas Escolhidas por Inteligência Espiritual:")}
                           </h4>
                           <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                             {revealedIndices.map((deckV, idx) => {
                               const card = cardMapping[deckV];
                               if (!card) return null;
+                              const translatedCard = translateCard(card);
+                              if (!translatedCard) return null;
                               return (
                                 <div key={idx} className="flex gap-2.5 items-start p-2 bg-slate-900/60 rounded-xl border border-slate-850 text-xs">
                                   <span className="w-5 h-5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-mono font-bold rounded flex items-center justify-center shrink-0">
@@ -1064,7 +1312,7 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
                                   </span>
                                   <div className="space-y-0.5">
                                     <h5 className="font-bold text-slate-200">
-                                      {card.cardName} 
+                                      {translatedCard.cardName} 
                                       {activeMode === 'semanal' && (
                                         <span className="text-[9px] font-mono text-amber-500 ml-1.5 font-normal">
                                           ({getWeeklyPositionLabel(idx)})
@@ -1072,7 +1320,7 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
                                       )}
                                     </h5>
                                     <p className="text-[11px] text-slate-400 leading-relaxed">
-                                      <strong>Significado Prático:</strong> {card.uprightMeaning} — <strong>Seu conselho:</strong> {card.advice}
+                                      <strong>{t("Significado Prático:")}</strong> {translatedCard.uprightMeaning} — <strong>{t("Seu conselho:")}</strong> {translatedCard.advice}
                                     </p>
                                   </div>
                                 </div>
@@ -1100,12 +1348,12 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
                               {isInterpreting ? (
                                 <>
                                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                  Canalizando Interpretação Real de Orbia por IA...
+                                  {t("Canalizando Interpretação Real de Orbia por IA...")}
                                 </>
                               ) : (
                                 <>
                                   <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                                  Revelar Leitura Humana da Taróloga Real
+                                  {t("Revelar Leitura Humana da Taróloga Real")}
                                 </>
                               )}
                             </button>
@@ -1147,11 +1395,11 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
                       activeMode === 'inteligente' || activeMode === 'semanal' ? 'text-amber-400' : activeMode === 'amor' ? 'text-rose-400' : 'text-purple-400'
                     }`} />
                     <span className="text-xs font-bold font-mono tracking-wider uppercase text-slate-100">
-                      Canalização Real da Taróloga Orbia
+                      {t("Canalização Real da Taróloga Orbia")}
                     </span>
                   </div>
                   <span className="px-2 py-0.5 bg-slate-950 rounded border border-slate-850 text-[8px] font-mono text-amber-400 font-bold uppercase tracking-wider">
-                    Sessão Ativa
+                    {t("Sessão Ativa")}
                   </span>
                 </div>
 
@@ -1173,7 +1421,7 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
                   <div className="p-4 bg-slate-950/80 rounded-2xl border border-slate-850/60 space-y-1.5">
                     <span className="text-[9px] font-mono text-amber-405 uppercase tracking-widest font-extrabold block flex items-center gap-1.5">
                       <Flame className="w-3.5 h-3.5 text-amber-400 fill-amber-400/10" />
-                      Decreto Sagrado de Proteção & Alinhamento Semanal:
+                      {t("Decreto Sagrado de Proteção & Alinhamento Semanal:")}
                     </span>
                     <p className="text-[11px] text-slate-400 font-sans italic leading-relaxed">
                       "{guidance}"
@@ -1185,7 +1433,7 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
                 <div className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-950/30 border border-slate-850/30 text-[10px] text-slate-500">
                   <Info className="w-4 h-4 text-slate-600 shrink-0 mt-0.5" />
                   <p className="leading-normal font-sans">
-                    Lembre-se que o Tarot é um espelho dinâmico. Essa consulta foi consagrada para reestruturar seu dia/semana. Suas decisões livres e orações de blindagem formam a linha do tempo do seu amanhã com soberania.
+                    {t("Lembre-se que o Tarot é um espelho dinâmico. Essa consulta foi consagrada para reestruturar seu dia/semana. Suas decisões livres e orações de blindagem formam a linha do tempo do seu amanhã com soberania.")}
                   </p>
                 </div>
 
@@ -1197,7 +1445,7 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-850 border border-slate-850 text-[10px] font-semibold font-mono text-slate-400 transition hover:text-slate-205 cursor-pointer"
                     >
                       <RefreshCw className="w-3 h-3" />
-                      Visualizar Nova Tiragem
+                      {t("Visualizar Nova Tiragem")}
                     </button>
                   </div>
                 )}
@@ -1215,27 +1463,27 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
           <div className="bg-slate-900/40 p-6 rounded-3xl border border-slate-805 space-y-4 text-left">
             <h3 className="text-xs font-bold text-slate-100 uppercase tracking-widest flex items-center gap-2 pb-2.5 border-b border-slate-850/60 font-sans">
               <BookOpen className="w-4 h-4 text-amber-400 shrink-0" />
-              Como o Tarot funciona?
+              {t("Como o Tarot funciona?")}
             </h3>
 
             <div className="space-y-4 text-xs font-sans text-slate-400 leading-relaxed">
               <p>
-                {userName ? <>Olá, <span className="text-amber-400 font-bold">{userName}</span>. </> : <>Olá. </>}Lembre-se de que o Tarot é uma ferramenta de autoconhecimento que deve ser usada com responsabilidade, quando você precisar se conectar mais profundamente com as forças que regem o universo.
+                {userName ? <>{t("Olá")}, <span className="text-amber-400 font-bold">{userName}</span>. </> : <>{t("Olá")}. </>}{t("Lembre-se de que o Tarot é uma ferramenta de autoconhecimento que deve ser usada com responsabilidade, quando você precisar se conectar mais profundamente com as forças que regem o universo.")}
               </p>
 
               <p>
-                Fazer uma consulta trará revelações que poderão influenciar a linha do tempo de sua vida, portanto, reflita sobre o que lhe foi transmitido de forma intuitiva mas ao mesmo tempo consciente. A carta escolhida é a que possui mais afinidade com o seu momento ou pergunta e traz a orientação mais apropriada. Mesmo que você não receba a resposta que gostaria, não é recomendado repetir a consulta no mesmo instante. Releia o conteúdo da carta e reflita sobre a mensagem que lhe foi transmitida, pois é a que traz o melhor conselho para você agora.
+                {t("Fazer uma consulta trará revelações que poderão influenciar a linha do tempo de sua vida, portanto, reflita sobre o que lhe foi transmitido de forma intuitiva mas ao mesmo tempo consciente. A carta escolhida é a que possui mais afinidade com o seu momento ou pergunta e traz a orientação mais apropriada. Mesmo que você não receba a resposta que gostaria, não é recomendado repetir a consulta no mesmo instante. Releia o conteúdo da carta e reflita sobre a mensagem que lhe foi transmitida, pois é a que traz o melhor conselho para você agora.")}
               </p>
 
               <p>
-                Saiba que o Tarot é um espelho da nossa alma e reflete todo o espectro da experiência humana através de arquétipos. É uma das conexões mais antigas entre os seres humanos e as divindades, tendo o papel de nos aproximar de algo superior. Seu estudo representa uma viagem de descoberta interior, onde passamos a conhecer melhor a nós mesmos e o atual momento o qual estamos inseridos. É um oráculo que caminha lado a lado com a astrologia e a alquimia, onde em suas cartas há uma correspondência alquímica, um signo astrológico e um número para cada arquétipo. As cartas podem ser consideradas uma jornada que nos ajuda a obter uma melhor compreensão do passado, presente e futuro.
+                {t("Saiba que o Tarot é um espelho da nossa alma e reflete todo o espectro da experiência humana através de arquétipos. É uma das conexões mais antigas entre os seres humanos e as divindades, tendo o papel de nos aproximar de algo superior. Seu estudo representa uma viagem de descoberta interior, onde passamos a conhecer melhor a nós mesmos e o atual momento o qual estamos inseridos. É um oráculo que caminha lado a lado com a astrologia e a alquimia, onde em suas cartas há uma correspondência alquímica, um signo astrológico e um número para cada arquétipo. As cartas podem ser consideradas uma jornada que nos ajuda a obter uma melhor compreensão do passado, presente e futuro.")}
               </p>
             </div>
 
             <div className="pt-2 flex items-center gap-2 justify-between">
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                <span className="text-[9px] font-mono text-amber-400 uppercase tracking-wider font-bold">Sabedoria Astrológica Sagrada</span>
+                <span className="text-[9px] font-mono text-amber-400 uppercase tracking-wider font-bold">{t("Sabedoria Astrológica Sagrada")}</span>
               </div>
               <span className="text-[10px] font-mono text-slate-550">Orbia 2026</span>
             </div>
@@ -1243,17 +1491,17 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
 
           {/* Sintonizadores Auxiliares Card */}
           <div className="p-5 rounded-3xl bg-slate-950/40 border border-slate-850 space-y-3">
-            <h4 className="text-[10px] font-mono text-slate-450 uppercase font-black tracking-wider text-left">Conselho Alquímico do Dia</h4>
+            <h4 className="text-[10px] font-mono text-slate-450 uppercase font-black tracking-wider text-left">{t("Conselho Alquímico do Dia")}</h4>
             <div className="space-y-2 text-left">
               <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
-                "Não apresse os eventos sagrados do amanhã. A energia da Lua lembra que as ilusões e a inveja de terceiros se dissipam na névoa quando nos fechamos em orações e tomamos banho de sálvia ou arruda."
+                "{t("Não apresse os eventos sagrados do amanhã. A energia da Lua lembra que as ilusões e a inveja de terceiros se dissipam na névoa quando nos fechamos em orações e tomamos banho de sálvia ou arruda.")}"
               </p>
               <div className="flex items-center gap-1.5 pt-1">
                 <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-505/15 text-[8px] font-mono rounded text-amber-400 text-[8.5px] font-bold">
-                  Sálvia & Prata
+                  {t("Sálvia & Prata")}
                 </span>
                 <span className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-505/15 text-[8px] font-mono rounded text-emerald-400 text-[8.5px] font-bold">
-                  Defumação Activa
+                  {t("Defumação Activa")}
                 </span>
               </div>
             </div>

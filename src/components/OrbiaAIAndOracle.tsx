@@ -4,6 +4,99 @@ import { Send } from 'lucide-react';
 import { ChatMessage, DailyOracleResponse } from '../types';
 import { translateUiText, Language } from '../lib/translations';
 
+const LOCAL_ORACLE_TRANSLATIONS: Record<Language, Record<string, string>> = {
+  pt: {
+    "Orbia: Conselheira Pessoal Live": "Orbia: Conselheira Pessoal Live",
+    "Inteligência Astrológica treinada com seu mapa.": "Inteligência Astrológica treinada com seu mapa.",
+    "Você": "Você",
+    "Pergunte sobre amor, emprego, mapa...": "Pergunte sobre amor, emprego, mapa...",
+    "Oráculo do Dia": "Oráculo do Dia",
+    "Limite de uma resposta profunda por dia.": "Limite de uma resposta profunda por dia.",
+    "Consumido de hoje": "Consumido de hoje",
+    "Disponível": "Disponível",
+    "Sintonize sua mente. Qual dúvida crucial pesa em sua energia hoje? Faça uma pergunta livre para receber reflexão astrológica profunda.": "Sintonize sua mente. Qual dúvida crucial pesa em sua energia hoje? Faça uma pergunta livre para receber reflexão astrológica profunda.",
+    "e.g. Devo focar em mudar de carreira este Semestre?": "e.g. Devo focar em mudar de carreira este Semestre?",
+    "Consultando Sabedorias...": "Consultando Sabedorias...",
+    "Evocar Conselho do Oráculo": "Evocar Conselho do Oráculo",
+    "Reflexão Metafísica": "Reflexão Metafísica",
+    "Incentivo de Sintonia": "Incentivo de Sintonia",
+    "Conselho Ativo:": "Conselho Ativo:",
+    "Fechar Oráculo de Hoje": "Fechar Oráculo de Hoje"
+  },
+  en: {
+    "Orbia: Conselheira Pessoal Live": "Orbia: Personal Live Advisor",
+    "Inteligência Astrológica treinada com seu mapa.": "Astrological Intelligence trained with your chart.",
+    "Você": "You",
+    "Pergunte sobre amor, emprego, mapa...": "Ask about love, job, chart...",
+    "Oráculo do Dia": "Daily Oracle",
+    "Limite de uma resposta profunda por dia.": "Limit of one deep answer per day.",
+    "Consumido de hoje": "Used today",
+    "Disponível": "Available",
+    "Sintonize sua mente. Qual dúvida crucial pesa em sua energia hoje? Faça uma pergunta livre para receber reflexão astrológica profunda.": "Attune your mind. What crucial doubt weighs on your energy today? Ask a question to receive deep astrological reflection.",
+    "e.g. Devo focar em mudar de carreira este Semestre?": "e.g. Should I focus on changing careers this semester?",
+    "Consultando Sabedorias...": "Consulting Wisdom...",
+    "Evocar Conselho do Oráculo": "Evoke Oracle's Counsel",
+    "Reflexão Metafísica": "Metaphysical Reflection",
+    "Incentivo de Sintonia": "Alignment Encouragement",
+    "Conselho Ativo:": "Active Counsel:",
+    "Fechar Oráculo de Hoje": "Close Today's Oracle"
+  },
+  es: {
+    "Orbia: Conselheira Pessoal Live": "Orbia: Consejera Personal en Vivo",
+    "Inteligência Astrológica treinada com seu mapa.": "Inteligencia Astrológica entrenada con tu carta.",
+    "Você": "Tú",
+    "Pergunte sobre amor, emprego, mapa...": "Pregunta sobre amor, empleo, carta...",
+    "Oráculo do Dia": "Oráculo del Día",
+    "Limite de uma resposta profunda por dia.": "Límite de una resposta profunda por día.",
+    "Consumido de hoje": "Consumido hoy",
+    "Disponível": "Disponible",
+    "Sintonize sua mente. Qual dúvida crucial pesa em sua energia hoje? Faça uma pergunta livre para receber reflexão astrológica profunda.": "Sintoniza tu mente. ¿Qué duda crucial pesa sobre tu energía hoy? Haz una pregunta libre para recibir una profunda reflexión astrológica.",
+    "e.g. Devo focar em mudar de carreira este Semestre?": "p. ej. ¿Debería enfocarme en cambiar de carrera este semestre?",
+    "Consultando Sabedorias...": "Consultando Sabidurías...",
+    "Evocar Conselho do Oráculo": "Evocar Consejo del Oráculo",
+    "Reflexão Metafísica": "Reflexión Metafísica",
+    "Incentivo de Sintonia": "Incentivo de Sintonía",
+    "Conselho Ativo:": "Consejo Activo:",
+    "Fechar Oráculo de Hoje": "Cerrar Oráculo de Hoy"
+  },
+  de: {
+    "Orbia: Conselheira Pessoal Live": "Orbia: Persönliche Live-Beraterin",
+    "Inteligência Astrológica treinada com seu mapa.": "Astrologische Intelligenz trainiert mit Ihrem Horoskop.",
+    "Você": "Du",
+    "Pergunte sobre amor, emprego, mapa...": "Fragen Sie nach Liebe, Beruf, Horoskop...",
+    "Oráculo do Dia": "Tagesorakel",
+    "Limite de uma resposta profunda por dia.": "Limit von einer tiefgehenden Antwort pro Tag.",
+    "Consumido de hoje": "Heute aufgebraucht",
+    "Disponível": "Verfügbar",
+    "Sintonize sua mente. Qual dúvida crucial pesa em sua energia hoje? Faça uma pergunta livre para receber reflexão astrológica profunda.": "Stimmen Sie Ihren Geist ein. Welcher entscheidende Zweifel lastet heute auf Ihrer Energie? Stellen Sie eine freie Frage, um eine tiefgehende astrologische Reflexion zu erhalten.",
+    "e.g. Devo focar em mudar de carreira este Semestre?": "z. B. Sollte ich mich in diesem Semester auf einen Karrierewechsel konzentrieren?",
+    "Consultando Sabedorias...": "Weisheiten werden konsultiert...",
+    "Evocar Conselho do Oráculo": "Orakelrat beschwören",
+    "Reflexão Metafísica": "Metaphysische Reflexion",
+    "Incentivo de Sintonia": "Einstimmungsanreiz",
+    "Conselho Ativo:": "Aktiver Rat:",
+    "Fechar Oráculo de Hoje": "Heutiges Orakel schließen"
+  },
+  fr: {
+    "Orbia: Conselheira Pessoal Live": "Orbia : Conseillère Personnelle en Direct",
+    "Inteligência Astrológica treinada com seu mapa.": "Intelligence Astrologique entraînée avec votre carte du ciel.",
+    "Você": "Vous",
+    "Pergunte sobre amor, emprego, mapa...": "Posez des questions sur l'amour, l'emploi, la carte...",
+    "Oráculo do Dia": "Oracle du Jour",
+    "Limite de uma resposta profunda por dia.": "Limite d'une réponse profonde par jour.",
+    "Consumido de hoje": "Utilisé aujourd'hui",
+    "Disponível": "Disponible",
+    "Sintonize sua mente. Qual dúvida crucial pesa em sua energia hoje? Faça uma pergunta livre para receber reflexão astrológica profunda.": "Accordez votre esprit. Quel doute crucial pèse sur votre énergie aujourd'hui ? Posez une question libre pour recevoir une réflexion astrologique profonde.",
+    "e.g. Devo focar em mudar de carreira este Semestre?": "ex. Dois-je me concentrer sur un changement de carrière ce semestre ?",
+    "Consultando Sabedorias...": "Consultation des Sagesses...",
+    "Evocar Conselho do Oráculo": "Évoquer le Conseil de l'Oracle",
+    "Reflexão Metafísica": "Réflexion Métaphysique",
+    "Incentivo de Sintonia": "Encouragement d'Harmonisation",
+    "Conselho Ativo:": "Conseil Actif :",
+    "Fechar Oráculo de Hoje": "Fermer l'Oracle d'Aujourd'hui"
+  }
+};
+
 interface OrbiaAIAndOracleProps {
   chatMessages: ChatMessage[];
   currentChatInput: string;
@@ -39,9 +132,14 @@ export default function OrbiaAIAndOracle({
   const { t: i18nT } = useTranslation();
   const t = (text: string) => {
     if (!text) return "";
+    const activeLang: Language = (lang as Language) || 'pt';
+    const localDict = LOCAL_ORACLE_TRANSLATIONS[activeLang];
+    if (localDict && localDict[text]) {
+      return localDict[text];
+    }
     const res = i18nT(text);
     if (res === text || !res) {
-      return translateUiText(text, (lang as Language) || 'pt');
+      return translateUiText(text, activeLang);
     }
     return res;
   };

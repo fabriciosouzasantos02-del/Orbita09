@@ -11,14 +11,67 @@ interface DashboardTabProps {
   lang: Language;
 }
 
+const LOCAL_DASHBOARD_TRANSLATIONS: Record<Language, Record<string, string>> = {
+  pt: {
+    "Sol em": "Sol em",
+    "Trânsito de Hoje": "Trânsito de Hoje",
+    "Maré Cósmica Semanal": "Maré Cósmica Semanal",
+    "Esta semana as energias estão em fase de semeadura. Plutão estabiliza transições e Netuno convida você a decifrar os segredos de seus sonhos noturnos.": "Esta semana as energias estão em fase de semeadura. Plutão estabiliza transições e Netuno convida você a decifrar os segredos de seus sonhos noturnos.",
+    '"O universo não fala por palavras externas, mas pelo compasso calmo do seu coração quando silencia."': '"O universo não fala por palavras externas, mas pelo compasso calmo do seu coração quando silencia."',
+    "de iluminação": "de iluminação",
+    "Período ideal para limpar velhos pesos mentais e nutrir ideias novas de forma mística.": "Período ideal para limpar velhos pesos mentais e nutrir ideias novas de forma mística."
+  },
+  en: {
+    "Sol em": "Sun in",
+    "Trânsito de Hoje": "Today's Transit",
+    "Maré Cósmica Semanal": "Weekly Cosmic Tide",
+    "Esta semana as energias estão em fase de semeadura. Plutão estabiliza transições e Netuno convida você a decifrar os segredos de seus sonhos noturnos.": "This week the energies are in a seeding phase. Pluto stabilizes transitions and Neptune invites you to decipher the secrets of your nightly dreams.",
+    '"O universo não fala por palavras externas, mas pelo compasso calmo do seu coração quando silencia."': '"The universe does not speak through external words, but through the calm beat of your heart when it falls silent."',
+    "de iluminação": "illumination",
+    "Período ideal para limpar velhos pesos mentais e nutrir ideias novas de forma mística.": "Ideal period to clear old mental burdens and nurture new ideas in a mystical way."
+  },
+  es: {
+    "Sol em": "Sol en",
+    "Trânsito de Hoje": "Tránsito de Hoy",
+    "Maré Cósmica Semanal": "Marea Cósmica Semanal",
+    "Esta semana as energias estão em fase de semeadura. Plutão estabiliza transições e Netuno convida você a decifrar os segredos de seus sonhos noturnos.": "Esta semana las energías están en fase de siembra. Plutón estabiliza las transiciones y Neptuno te invita a descifrar los secretos de tus sueños nocturnos.",
+    '"O universo não fala por palavras externas, mas pelo compasso calmo do seu coração quando silencia."': '"El universo no habla a través de palabras externas, sino a través del latido calmado de tu corazón cuando guarda silencio."',
+    "de iluminação": "de iluminación",
+    "Período ideal para limpar velhos pesos mentais e nutrir ideias novas de forma mística.": "Período ideal para limpiar viejos pesos mentales y nutrir nuevas ideas de forma mística."
+  },
+  de: {
+    "Sol em": "Sonne im",
+    "Trânsito de Hoje": "Heutiger Transit",
+    "Maré Cósmica Semanal": "Wöchentliche Kosmische Flut",
+    "Esta semana as energias estão em fase de semeadura. Plutão estabiliza transições e Netuno convida você a decifrar os segredos de seus sonhos noturnos.": "Diese Woche befinden sich die Energien in einer Aussaatphase. Pluto stabilisiert Übergänge und Neptun lädt dich ein, die Geheimnisse deiner nächtlichen Träume zu entschlüsseln.",
+    '"O universo não fala por palavras externas, mas pelo compasso calmo do seu coração quando silencia."': '"Das Universum spricht nicht durch äußere Worte, sondern durch den ruhigen Schlag deines Herzens, wenn es still wird."',
+    "de iluminação": "Beleuchtung",
+    "Período ideal para limpar velhos pesos mentais e nutrir ideias novas de forma mística.": "Ideale Zeit, um alten mentalen Ballast abzuwerfen und neue Ideen auf mystische Weise zu nähren."
+  },
+  fr: {
+    "Sol em": "Soleil en",
+    "Trânsito de Hoje": "Transit d'Aujourd'hui",
+    "Maré Cósmica Semanal": "Marée Cosmique Hebdomadaire",
+    "Esta semana as energias estão em fase de semeadura. Plutão estabiliza transições e Netuno convida você a decifrar os segredos de seus sonhos noturnos.": "Cette semaine, les énergies sont dans une phase d'ensemencement. Pluton stabilise les transitions et Neptune vous invite à déchiffrer les secrets de vos rêves nocturnes.",
+    '"O universo não fala por palavras externas, mas pelo compasso calmo do seu coração quando silencia."': '"L\'univers ne s\'exprime pas par des mots extérieurs, mais par le battement calme de votre cœur lorsqu\'il fait silence."',
+    "de iluminação": "d'illumination",
+    "Período ideal para limpar velhos pesos mentais e nutrir ideias novas de forma mística.": "Période idéale pour libérer les anciens fardeaux mentaux et nourrir de nouvelles idées de manière mystique."
+  }
+};
+
 export default function DashboardTab({ natalChart, lang }: DashboardTabProps) {
-  const [moonPhaseInfo, setMoonPhaseInfo] = useState({ name: "Lua Nova", symbol: "🌑", percent: 0 });
+  const [moonPhaseInfo, setMoonPhaseInfo] = useState(() => {
+    const defaultName = lang === "en" ? "New Moon" : lang === "es" ? "Luna Nueva" : lang === "de" ? "Neumond" : lang === "fr" ? "Nouvelle Lune" : "Lua Nova";
+    return { name: defaultName, symbol: "🌑", percent: 0 };
+  });
   const [activeHoroscope, setActiveHoroscope] = useState<'daily' | 'weekly'>('daily');
   const t = translations[lang];
   const { t: tI18nRaw } = useTranslation();
 
   const tI18n = (text: string) => {
     if (!text) return "";
+    const localVal = LOCAL_DASHBOARD_TRANSLATIONS[lang || 'pt']?.[text];
+    if (localVal) return localVal;
     const res = tI18nRaw(text);
     if (res === text || !res) {
       return translateUiText(text, lang || 'pt');
@@ -39,28 +92,28 @@ export default function DashboardTab({ natalChart, lang }: DashboardTabProps) {
     let symbol = "🌕";
 
     if (percent < 0.03 || percent > 0.97) {
-      name = lang === "pt" ? "Lua Nova" : lang === "es" ? "Luna Nueva" : lang === "de" ? "Neumond" : "New Moon";
+      name = lang === "pt" ? "Lua Nova" : lang === "es" ? "Luna Nueva" : lang === "de" ? "Neumond" : lang === "fr" ? "Nouvelle Lune" : "New Moon";
       symbol = "🌑";
     } else if (percent < 0.22) {
-      name = lang === "pt" ? "Lua Crescente Minguante" : lang === "de" ? "Zunehmender Sichelmond" : "Waxing Crescent";
+      name = lang === "pt" ? "Lua Crescente Minguante" : lang === "es" ? "Luna Creciente Menguante" : lang === "de" ? "Zunehmender Sichelmond" : lang === "fr" ? "Croissant de Lune" : "Waxing Crescent";
       symbol = "🌒";
     } else if (percent < 0.28) {
-      name = lang === "pt" ? "Quarto Crescente" : lang === "de" ? "Erstes Viertel" : "First Quarter";
+      name = lang === "pt" ? "Quarto Crescente" : lang === "es" ? "Cuarto Creciente" : lang === "de" ? "Erstes Viertel" : lang === "fr" ? "Premier Quartier" : "First Quarter";
       symbol = "🌓";
     } else if (percent < 0.47) {
-      name = lang === "pt" ? "Lua Gibosa Crescente" : lang === "de" ? "Zunehmender Dreiviertelmond" : "Waxing Gibbous";
+      name = lang === "pt" ? "Lua Gibosa Crescente" : lang === "es" ? "Luna Gibosa Creciente" : lang === "de" ? "Zunehmender Dreiviertelmond" : lang === "fr" ? "Lune Gibbeuse Croissante" : "Waxing Gibbous";
       symbol = "🌔";
     } else if (percent < 0.53) {
-      name = lang === "pt" ? "Lua Cheia" : lang === "de" ? "Vollmond" : "Full Moon";
+      name = lang === "pt" ? "Lua Cheia" : lang === "es" ? "Luna Llena" : lang === "de" ? "Vollmond" : lang === "fr" ? "Pleine Lune" : "Full Moon";
       symbol = "🌕";
     } else if (percent < 0.72) {
-      name = lang === "pt" ? "Lua Gibosa Minguante" : lang === "de" ? "Abnehmender Dreiviertelmond" : "Waning Gibbous";
+      name = lang === "pt" ? "Lua Gibosa Minguante" : lang === "es" ? "Luna Gibosa Menguante" : lang === "de" ? "Abnehmender Dreiviertelmond" : lang === "fr" ? "Lune Gibbeuse Décroissante" : "Waning Gibbous";
       symbol = "🌖";
     } else if (percent < 0.78) {
-      name = lang === "pt" ? "Quarto Minguante" : lang === "de" ? "Letztes Viertel" : "Last Quarter";
+      name = lang === "pt" ? "Quarto Minguante" : lang === "es" ? "Cuarto Menguante" : lang === "de" ? "Letztes Viertel" : lang === "fr" ? "Dernier Quartier" : "Last Quarter";
       symbol = "🌗";
     } else {
-      name = lang === "pt" ? "Lua Minguante" : lang === "de" ? "Abnehmender Sichelmond" : "Waning Crescent";
+      name = lang === "pt" ? "Lua Minguante" : lang === "es" ? "Luna Menguante" : lang === "de" ? "Abnehmender Sichelmond" : lang === "fr" ? "Lune Décroissante" : "Waning Crescent";
       symbol = "🌘";
     }
 
@@ -121,8 +174,8 @@ export default function DashboardTab({ natalChart, lang }: DashboardTabProps) {
             <Sun className="w-6 h-6 text-indigo-600 animate-spin-slow" />
             <span>{t.welcome}!</span>
           </h2>
-          <p className="text-neutral-500 text-xs">
-            {t.subtitle} — Sol em <strong>{sunSign}</strong>
+          <p className="text-neutral-505 text-xs">
+            {t.subtitle} — {tI18n("Sol em")} <strong>{translateUiText(sunSign, lang)}</strong>
           </p>
         </div>
         

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import i18n from './lib/i18n';
+import { useTranslation } from 'react-i18next';
 import { 
   UserProfile, 
   AstrologyMap, 
@@ -671,6 +672,7 @@ const localLangDict: Record<string, Record<string, string>> = {
 
 export default function App() {
   const { idioma, mudarIdioma, t: tContext } = useIdioma();
+  const { t: i18nT } = useTranslation();
 
   // Session / Authentication state
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
@@ -917,9 +919,9 @@ export default function App() {
 
           await saveProfileToDatabase(emailLower, targetUser as any);
           if (forceTrialUsed) {
-            triggerGlobalNotification("Período de Teste Concluído", "Este dispositivo já utilizou o período gratuito. Ative uma assinatura para continuar.", "alert");
+            triggerGlobalNotification(t("Período de Teste Concluído"), t("Este dispositivo já utilizou o período gratuito. Ative uma assinatura para continuar."), "alert");
           } else {
-            triggerGlobalNotification("Bem-vindo de Volta", `Olá, ${targetUser.name || "Buscador"}! Conexão cósmica restaurada.`, "success");
+            triggerGlobalNotification(t("Bem-vindo de Volta"), `${t("Olá")}, ${targetUser.name || t("Buscador")}! ${t("Conexão cósmica restaurada.")}`, "success");
           }
         } else {
           // New Google account flow
@@ -971,9 +973,9 @@ export default function App() {
 
           await saveProfileToDatabase(emailLower, targetUser as any);
           if (blockTrial) {
-            triggerGlobalNotification("Aviso de Período de Teste", "Este dispositivo já utilizou o período gratuito anteriormente.", "alert");
+            triggerGlobalNotification(t("Aviso de Período de Teste"), t("Este dispositivo já utilizou o período gratuito anteriormente."), "alert");
           } else {
-            triggerGlobalNotification("Portal Órbita", "Sua Conta Google foi conectada e seu mapa astral foi criado com sucesso!", "success");
+            triggerGlobalNotification(t("Portal Órbita"), t("Sua Conta Google foi conectada e seu mapa astral foi criado com sucesso!"), "success");
           }
         }
 
@@ -993,7 +995,7 @@ export default function App() {
                  err.message?.includes('cancelled-popup-request') || err.code?.includes('cancelled-popup-request') || String(err).includes('cancelled-popup-request')) {
         setPopupClosedError(true);
       } else {
-        triggerGlobalNotification("Erro de Autenticação", err.message || "Não foi possível conectar com o Google.", "alert");
+        triggerGlobalNotification(t("Erro de Autenticação"), err.message || t("Não foi possível conectar com o Google."), "alert");
       }
     } finally {
       setTimeout(() => {
@@ -1053,9 +1055,9 @@ export default function App() {
 
           await saveProfileToDatabase(emailLower, targetUser as any);
           if (forceTrialUsed) {
-            triggerGlobalNotification("Período de Teste Concluído", "Este dispositivo já utilizou o período gratuito. Ative uma assinatura para continuar.", "alert");
+            triggerGlobalNotification(t("Período de Teste Concluído"), t("Este dispositivo já utilizou o período gratuito. Ative uma assinatura para continuar."), "alert");
           } else {
-            triggerGlobalNotification("Bem-vindo de Volta", `Olá, ${existingProfile.name || "Buscador"}! Conexão via Facebook ativa.`, "success");
+            triggerGlobalNotification(t("Bem-vindo de Volta"), `${t("Olá")}, ${existingProfile.name || t("Buscador")}! ${t("Conexão via Facebook ativa.")}`, "success");
           }
         } else {
           const blockTrial = !checkStatus.isAllowed;
@@ -1099,9 +1101,9 @@ export default function App() {
 
           await saveProfileToDatabase(emailLower, targetUser as any);
           if (blockTrial) {
-            triggerGlobalNotification("Aviso de Período de Teste", "Este dispositivo já utilizou o período gratuito anteriormente.", "alert");
+            triggerGlobalNotification(t("Aviso de Período de Teste"), t("Este dispositivo já utilizou o período gratuito anteriormente."), "alert");
           } else {
-            triggerGlobalNotification("Portal Órbita", "Sintonizado via Facebook! Complete seus dados celestes para gerar seu mapa.", "success");
+            triggerGlobalNotification(t("Portal Órbita"), t("Sintonizado via Facebook! Complete seus dados celestes para gerar seu mapa."), "success");
           }
         }
 
@@ -1140,7 +1142,7 @@ export default function App() {
         setLoggedEmail(emailLower);
         setUser(targetUser);
         setIsLoggedIn(true);
-        triggerGlobalNotification("Portal Órbita", "Conexão estabelecida via Facebook!", "success");
+        triggerGlobalNotification(t("Portal Órbita"), t("Conexão estabelecida via Facebook!"), "success");
       }
     } catch (err: any) {
       console.error(err);
@@ -1150,7 +1152,7 @@ export default function App() {
                  err.message?.includes('cancelled-popup-request') || err.code?.includes('cancelled-popup-request') || String(err).includes('cancelled-popup-request')) {
         setPopupClosedError(true);
       } else {
-        triggerGlobalNotification("Erro de Autenticação", err.message || "Não foi possível fazer login com Facebook.", "alert");
+        triggerGlobalNotification(t("Erro de Autenticação"), err.message || t("Não foi possível fazer login com Facebook."), "alert");
       }
     }
   };
@@ -1158,17 +1160,17 @@ export default function App() {
   const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!forgotEmail) {
-      triggerGlobalNotification("Erro de Solicitação", "Por favor, digite seu e-mail.", "alert");
+      triggerGlobalNotification(t("Erro de Solicitação"), t("Por favor, digite seu e-mail."), "alert");
       return;
     }
     setIsSendingReset(true);
     try {
       await sendPasswordResetFirebase(forgotEmail);
-      triggerGlobalNotification("E-mail Enviado", "Instruções de recuperação de senha enviadas para seu e-mail.", "success");
+      triggerGlobalNotification(t("E-mail Enviado"), t("Instruções de recuperação de senha enviadas para seu e-mail."), "success");
       setAuthTab('login');
     } catch (err: any) {
       console.error(err);
-      triggerGlobalNotification("Falha no Envio", err.message || "Erro ao solicitar recuperação de senha.", "alert");
+      triggerGlobalNotification(t("Falha no Envio"), err.message || t("Erro ao solicitar recuperação de senha."), "alert");
     } finally {
       setIsSendingReset(false);
     }
@@ -1180,7 +1182,7 @@ export default function App() {
     manualAuthActionRef.current = true;
     try {
       if (!authEmail || !authPassword) {
-        triggerGlobalNotification("Erro de Cadastro", "Por favor, preencha o E-mail e a Senha de acesso.", "alert");
+        triggerGlobalNotification(t("Erro de Cadastro"), t("Por favor, preencha o E-mail e a Senha de acesso."), "alert");
         return;
       }
       const mailLower = authEmail.trim().toLowerCase();
@@ -1199,16 +1201,16 @@ export default function App() {
 
         if (isEmailInUse) {
           triggerGlobalNotification(
-            "Conta Existente", 
-            "Este e-mail já possui uma conta cadastrada. Redirecionando para a tela de login...", 
+            t("Conta Existente"), 
+            t("Este e-mail já possui uma conta cadastrada. Redirecionando para a tela de login..."), 
             "info"
           );
           setAuthTab('login');
           return;
         }
 
-        const errorMsg = fbErr.message || "Erro no cadastro. Verifique a senha (mínimo 6 caracteres).";
-        triggerGlobalNotification("Erro de Cadastro", errorMsg, "alert");
+        const errorMsg = fbErr.message || t("Erro no cadastro. Verifique a senha (mínimo 6 caracteres).");
+        triggerGlobalNotification(t("Erro de Cadastro"), errorMsg, "alert");
         if (fbErr.message?.includes('operation-not-allowed') || fbErr.code?.includes('operation-not-allowed') || String(fbErr).includes('operation-not-allowed')) {
           setOperationNotAllowedError(true);
         }
@@ -1310,7 +1312,7 @@ export default function App() {
       setExtraMaps([]);
       setIsLoggedIn(true);
 
-      triggerGlobalNotification("Portal Órbita", "Conta criada com sucesso! Enviamos um link de confirmação para o seu e-mail.", "success");
+      triggerGlobalNotification(t("Portal Órbita"), t("Conta criada com sucesso! Enviamos um link de confirmação para o seu e-mail."), "success");
 
       await migrateLocalDataToCloud(mailLower, firebaseUser?.uid || "", newUserProfile);
     } finally {
@@ -1325,7 +1327,7 @@ export default function App() {
     manualAuthActionRef.current = true;
     try {
       if (!authEmail || !authPassword) {
-        triggerGlobalNotification("Erro de Login", "Por favor, digite seu E-mail e Senha de acesso.", "alert");
+        triggerGlobalNotification(t("Erro de Login"), t("Por favor, digite seu E-mail e Senha de acesso."), "alert");
         return;
       }
       const mailLower = authEmail.trim().toLowerCase();
@@ -1337,8 +1339,8 @@ export default function App() {
         console.log("[Auth] Firebase native login transacted successfully.", firebaseUser?.uid);
       } catch (fbErr: any) {
         console.error("[Auth] Firebase authentication failed:", fbErr);
-        const errorMsg = fbErr.message || "E-mail ou senha incorretos. Tente novamente ou cadastre-se.";
-        triggerGlobalNotification("Erro de Login", errorMsg, "alert");
+        const errorMsg = fbErr.message || t("E-mail ou senha incorretos. Tente novamente ou cadastre-se.");
+        triggerGlobalNotification(t("Erro de Login"), errorMsg, "alert");
         if (fbErr.message?.includes('operation-not-allowed') || fbErr.code?.includes('operation-not-allowed') || String(fbErr).includes('operation-not-allowed')) {
           setOperationNotAllowedError(true);
         }
@@ -1490,7 +1492,7 @@ export default function App() {
 
       if (!targetUser.isEmailVerified) {
         // Prompt user to verify using Firebase native email verifier overlay
-        triggerGlobalNotification("Portal Órbita", "Sessão iniciada, mas o link de e-mail ainda não foi confirmado.", "alert");
+        triggerGlobalNotification(t("Portal Órbita"), t("Sessão iniciada, mas o link de e-mail ainda não foi confirmado."), "alert");
       }
 
       await migrateLocalDataToCloud(mailLower, firebaseUser?.uid || targetUser.userId || "", targetUser);
@@ -1536,7 +1538,7 @@ export default function App() {
           isUnknownTime: false,
           latitude: extraDetails.latitude,
           longitude: extraDetails.longitude,
-          lang: lang || 'pt'
+          lang: currentLang || 'pt'
         })
       });
       const data = await response.json();
@@ -2452,8 +2454,8 @@ export default function App() {
         setActiveTab('mapa');
         
         triggerGlobalNotification(
-          "Mapa Sincronizado", 
-          "Seu mapa astral local foi arquivado com sucesso no seu perfil na nuvem!", 
+          t("Mapa Sincronizado"), 
+          t("Seu mapa astral local foi arquivado com sucesso no seu perfil na nuvem!"), 
           "success"
         );
       } else if (targetUser.birthDate || (cloudCharts && cloudCharts.length > 0)) {
@@ -2479,8 +2481,8 @@ export default function App() {
   const handleManualSaveMap = async () => {
     if (!isLoggedIn || !loggedEmail) {
       triggerGlobalNotification(
-        "Autenticação Necessária", 
-        "Crie uma conta ou faça login para salvar seu mapa com segurança na Nuvem Órbita!", 
+        t("Autenticação Necessária"), 
+        t("Crie uma conta ou faça login para salvar seu mapa com segurança na Nuvem Órbita!"), 
         "alert"
       );
       setMapSubTab('criar_meu_mapa');
@@ -2490,8 +2492,8 @@ export default function App() {
 
     if (!mapData || !numerology) {
       triggerGlobalNotification(
-        "Sem Dados do Mapa", 
-        "Por favor, insira seus dados de nascimento para gerar um mapa antes de salvar.", 
+        t("Sem Dados do Mapa"), 
+        t("Por favor, insira seus dados de nascimento para gerar um mapa antes de salvar."), 
         "alert"
       );
       return;
@@ -2528,16 +2530,16 @@ export default function App() {
       localStorage.setItem("orbi_numerology_data", JSON.stringify(numerology));
 
       triggerGlobalNotification(
-        "Sincronização Completa", 
-        "Seu mapa natal e numerologia foram salvos com sucesso na nuvem do Firestore!", 
+        t("Sincronização Completa"), 
+        t("Seu mapa natal e numerologia foram salvos com sucesso na nuvem do Firestore!"), 
         "success"
       );
     } catch (saveError: any) {
       console.error("[Manual Save] Error:", saveError);
       const errMsg = saveError?.message || String(saveError);
       triggerGlobalNotification(
-        "Erro ao Salvar", 
-        `Erro Firestore: ${errMsg}`, 
+        t("Erro ao Salvar"), 
+        `${t("Erro Firestore:")} ${errMsg}`, 
         "alert"
       );
     } finally {
@@ -3298,24 +3300,46 @@ export default function App() {
         }
       });
       triggerGlobalNotification(
-        "Cache Limpo",
-        "Seu cache de performance foi limpo e otimizado com segurança.",
+        t("Cache Limpo"),
+        t("Seu cache de performance foi limpo e otimizado com segurança."),
         "success"
       );
     } catch (e) {
       console.error("Cache clear error:", e);
-      triggerGlobalNotification("Erro de Limpeza", "Falha ao limpar o cache temporário.", "error");
+      triggerGlobalNotification(t("Erro de Limpeza"), t("Falha ao limpar o cache temporário."), "error");
     }
   };
 
   // Signs profiles list & dynamic horoscope data
-  const signsZodiacList = SIGNS_ZODIAC_LIST;
+  const signsZodiacList = React.useMemo(() => {
+    return SIGNS_ZODIAC_LIST.map(item => ({
+      ...item,
+      name: i18nT(item.name),
+      element: i18nT(item.element),
+      regente: i18nT(item.regente),
+      traits: i18nT(item.traits),
+      horoscopo: i18nT(item.horoscopo)
+    }));
+  }, [i18nT]);
 
   // Blog articles content lists
-  const blogArticlesList = BLOG_ARTICLES_LIST;
+  const blogArticlesList = React.useMemo(() => {
+    return BLOG_ARTICLES_LIST.map(item => ({
+      ...item,
+      title: i18nT(item.title),
+      summary: i18nT(item.summary),
+      content: i18nT(item.content)
+    }));
+  }, [i18nT]);
 
   // FAQ contents
-  const faqList = FAQ_LIST;
+  const faqList = React.useMemo(() => {
+    return FAQ_LIST.map(item => ({
+      ...item,
+      q: i18nT(item.q),
+      a: i18nT(item.a)
+    }));
+  }, [i18nT]);
 
   // Biorritmo Calculations
   const calculateBiorhythm = (birthDateStr: string, targetDateStr: string) => {
@@ -3744,23 +3768,23 @@ export default function App() {
                     onSubmit={async (e) => {
                       e.preventDefault();
                       if (!termsConsent) {
-                        triggerGlobalNotification("Ativação Obrigatória", "Você precisa concordar em conformidade com os Termos e a Política de privacidade para continuar.", "alert");
+                        triggerGlobalNotification(t("Ativação Obrigatória"), t("Você precisa concordar em conformidade com os Termos e a Política de privacidade para continuar."), "alert");
                         return;
                       }
                       if (!createMainName.trim()) {
-                        triggerGlobalNotification("Dados Incompletos", "Por favor, digite o seu nome completo.", "alert");
+                        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, digite o seu nome completo."), "alert");
                         return;
                       }
                       if (!createMainCity) {
-                        triggerGlobalNotification("Dados Incompletos", "Por favor, digite em qual cidade você nasceu.", "alert");
+                        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, digite em qual cidade você nasceu."), "alert");
                         return;
                       }
                       if (!createMainDate) {
-                        triggerGlobalNotification("Dados Incompletos", "Por favor, selecione sua data de nascimento.", "alert");
+                        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, selecione sua data de nascimento."), "alert");
                         return;
                       }
                       if (!timeIsUnknown && !createMainTime) {
-                        triggerGlobalNotification("Dados Incompletos", "Por favor, preencha o seu horário de nascimento ou marque que não sabe o horário.", "alert");
+                        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, preencha o seu horário de nascimento ou marque que não sabe o horário."), "alert");
                         return;
                       }
                       await handleRegisterAccountSubmit(e);
@@ -4896,21 +4920,21 @@ export default function App() {
                           console.warn("[Auth] Failed to sync verified user profile state:", err);
                         }
 
-                        triggerGlobalNotification("Sintonizado!", "E-mail confirmado com sucesso! Bem-vindo ao Portal Órbita.", "success");
+                        triggerGlobalNotification(t("Sintonizado!"), t("E-mail confirmado com sucesso! Bem-vindo ao Portal Órbita."), "success");
                       } else {
-                        triggerGlobalNotification("Ainda não verificado", "Não detectamos seu clique no link de e-mail ainda. Verifique sua caixa de entrada e spam, e tente novamente.", "alert");
+                        triggerGlobalNotification(t("Ainda não verificado"), t("Não detectamos seu clique no link de e-mail ainda. Verifique sua caixa de entrada e spam, e tente novamente."), "alert");
                       }
                     }
                   } catch (err: any) {
                     console.error(err);
-                    triggerGlobalNotification("Erro de Sincronização", err.message || "Tente novamente mais tarde.", "alert");
+                    triggerGlobalNotification(t("Erro de Sincronização"), err.message || t("Tente novamente mais tarde."), "alert");
                   } finally {
                     setIsVerifyingNative(false);
                   }
                 }}
                 className="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-450 hover:to-amber-550 text-slate-950 text-xs font-black uppercase tracking-wider rounded-2xl transition cursor-pointer flex items-center justify-center gap-2 font-sans"
               >
-                {isVerifyingNative ? "Verificando Sincronização..." : "Já cliquei no link / Concluir Verificação 🪐"}
+                {isVerifyingNative ? t("Verificando Sincronização...") : t("Já cliquei no link / Concluir Verificação 🪐")}
               </button>
 
               <button 
@@ -4920,10 +4944,10 @@ export default function App() {
                   setIsResendingNative(true);
                   try {
                     await sendNativeEmailVerification();
-                    triggerGlobalNotification("E-mail Enviado", "Um novo link oficial de ativação foi enviado para seu e-mail.", "success");
+                    triggerGlobalNotification(t("E-mail Enviado"), t("Um novo link oficial de ativação foi enviado para seu e-mail."), "success");
                   } catch (err: any) {
                     console.error(err);
-                    triggerGlobalNotification("Erro ao Enviar", err.message || "Não foi possível enviar.", "alert");
+                    triggerGlobalNotification(t("Erro ao Enviar"), err.message || t("Não foi possível enviar."), "alert");
                   } finally {
                     setIsResendingNative(false);
                   }
@@ -4955,11 +4979,11 @@ export default function App() {
                   } catch (err) {
                     console.warn("[Auth] Failed to sync verified user profile state:", err);
                   }
-                  triggerGlobalNotification("Sintonizado em Modo Demonstração!", "E-mail confirmado via bypass de teste. Bem-vindo ao Portal Órbita.", "success");
+                  triggerGlobalNotification(t("Sintonizado em Modo Demonstração!"), t("E-mail confirmado via bypass de teste. Bem-vindo ao Portal Órbita."), "success");
                 }}
                 className="w-full py-2.5 text-[10px] bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 text-amber-400 font-bold uppercase tracking-wider rounded-2xl transition cursor-pointer flex items-center justify-center gap-2 font-mono"
               >
-                ⚡ Ignorar Confirmação (Apenas para Apresentações/Mock)
+                ⚡ {t("Ignorar Confirmação (Apenas para Apresentações/Mock)")}
               </button>
             </div>
 
@@ -4976,14 +5000,14 @@ export default function App() {
                   setVerificationInputCode("");
                   setLastSimulatedCode("");
                   await logoutWithFirebase().catch(console.error);
-                  triggerGlobalNotification("Sessão Encerrada", "Você retornou ao portal.", "success");
+                  triggerGlobalNotification(t("Sessão Encerrada"), t("Você retornou ao portal."), "success");
                   setTimeout(() => {
                     manualAuthActionRef.current = false;
                   }, 2000);
                 }}
                 className="text-[11px] font-medium text-slate-500 hover:text-red-400 transition cursor-pointer"
               >
-                Voltar ao Início / Trocar de Conta
+                {t("Voltar ao Início / Trocar de Conta")}
               </button>
             </div>
 
@@ -5067,7 +5091,7 @@ export default function App() {
             birthDate={user?.birthDate} 
             onRewardPoints={(amount) => {
               setScorePoints(prev => prev + amount);
-              pushRealNotification(`Você reivindicou com sucesso seu bônus diário do Sussurro Lunar (+${amount} pontos)! 💎`);
+              pushRealNotification(`${t("Você reivindicou com sucesso seu bônus diário do Sussurro Lunar")} (+${amount} ${t("pontos")})! 💎`);
             }}
           />
           
@@ -5979,14 +6003,14 @@ export default function App() {
                                     setAuthTab('register_credentials');
                                     setActiveTab('configuracoes');
                                     triggerGlobalNotification(
-                                      "Registre-se",
-                                      "Crie sua conta para sincronizar e salvar este mapa para sempre na nuvem!",
+                                      t("Registre-se"),
+                                      t("Crie sua conta para sincronizar e salvar este mapa para sempre na nuvem!"),
                                       "info"
                                     );
                                   }}
                                   className="w-full md:w-auto px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold text-xs font-mono transition-all duration-300 cursor-pointer"
                                 >
-                                  Criar Conta e Salvar
+                                  {t("Criar Conta e Salvar")}
                                 </button>
                               )}
                               
@@ -6340,8 +6364,8 @@ export default function App() {
                                  }
 
                                  triggerGlobalNotification(
-                                    "Mapa Extra Cadastrado",
-                                    `O Mapa Astral de ${extraName} foi calculado e adicionado com sucesso!`,
+                                    t("Mapa Extra Cadastrado"),
+                                    `${t("O Mapa Astral de")} ${extraName} ${t("foi calculado e adicionado com sucesso!")}`,
                                     "success"
                                   );
 
@@ -7198,7 +7222,7 @@ export default function App() {
                         setNumerology(null);
                         setExtraMaps([]);
                         setIsLoggedIn(false);
-                        triggerGlobalNotification("Portal Sair", "Sessão encerrada com sucesso.", "alert");
+                        triggerGlobalNotification(t("Portal Sair"), t("Sessão encerrada com sucesso."), "alert");
                         setTimeout(() => {
                           manualAuthActionRef.current = false;
                         }, 2000);
@@ -7295,12 +7319,12 @@ export default function App() {
                                           if (isLoggedIn && loggedEmail) {
                                             try {
                                               await saveProfileToDatabase(loggedEmail, nextUser);
-                                              triggerGlobalNotification("Avatar Celestial", `Sua essência foi sintonizada com o arquétipo do ${av.name}!`, "success");
+                                              triggerGlobalNotification(t("Avatar Celestial"), `${t("Sua essência foi sintonizada com o arquétipo do")} ${t(av.name)}!`, "success");
                                             } catch (err) {
                                               console.error("Erro ao salvar avatar no Firestore:", err);
                                             }
                                           } else {
-                                            triggerGlobalNotification("Avatar Sintonizado", `Arquétipo ${av.name} ativado temporariamente no seu navegador!`, "info");
+                                            triggerGlobalNotification(t("Avatar Sintonizado"), `${t("Arquétipo")} ${t(av.name)} ${t("ativado temporariamente no seu navegador!")}`, "info");
                                           }
                                         }}
                                         className={`relative aspect-square rounded-2xl overflow-hidden border transition-all cursor-pointer group flex items-center justify-center p-2 ${

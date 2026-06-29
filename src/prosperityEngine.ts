@@ -1,4 +1,4 @@
-import { getZodiacSignInfo } from './astroMath';
+import { getZodiacSignInfo } from './components/astroMath';
 import i18next from 'i18next';
 
 export interface ProsperityMapData {

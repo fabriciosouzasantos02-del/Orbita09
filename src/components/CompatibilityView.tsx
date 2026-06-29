@@ -35,6 +35,449 @@ import {
   Info
 } from 'lucide-react';
 
+const LOCALIZED_SIGNS: Record<string, Record<string, string>> = {
+  "Câncer": { pt: "Câncer", en: "Cancer", es: "Cáncer", de: "Krebs", fr: "Cancer" },
+  "Escorpião": { pt: "Escorpião", en: "Scorpio", es: "Escorpio", de: "Skorpion", fr: "Scorpion" },
+  "Peixes": { pt: "Peixes", en: "Pisces", es: "Piscis", de: "Fische", fr: "Poissons" },
+  "Touro": { pt: "Touro", en: "Taurus", es: "Tauro", de: "Stier", fr: "Taureau" },
+  "Leão": { pt: "Leão", en: "Leo", es: "Leo", de: "Löwe", fr: "Lion" },
+  "Capricórnio": { pt: "Capricórnio", en: "Capricorn", es: "Capricornio", de: "Steinbock", fr: "Capricorne" },
+  "Gêmeos": { pt: "Gêmeos", en: "Gemini", es: "Géminis", de: "Zwillinge", fr: "Gémeaux" },
+  "Virgem": { pt: "Virgem", en: "Virgo", es: "Virgo", de: "Jungfrau", fr: "Vierge" },
+  "Libra": { pt: "Libra", en: "Libra", es: "Libra", de: "Waage", fr: "Balance" },
+  "Sagitário": { pt: "Sagitário", en: "Sagittarius", es: "Sagitario", de: "Schütze", fr: "Sagitaire" },
+  "Áries": { pt: "Áries", en: "Aries", es: "Aries", de: "Widder", fr: "Bélier" },
+  "Aquário": { pt: "Aquário", en: "Aquarius", es: "Acuario", de: "Wassermann", fr: "Verseau" }
+};
+
+const getTranslatedSign = (sign: string, lang: string): string => {
+  return LOCALIZED_SIGNS[sign]?.[lang] || sign;
+};
+
+const LIKES_TRANSLATIONS: Record<string, Record<string, { description: string; weakness: string; strength: string; bestDay: string }>> = {
+  like_1: {
+    pt: {
+      description: "Sente uma conexão magnética de almas desde o primeiro instante no mapa solar.",
+      weakness: "Vulnerabilidade emocional profunda de carinho",
+      strength: "Cuidado íntimo, intuição sinérgica ativa",
+      bestDay: "Segundas de Lua Cheia"
+    },
+    en: {
+      description: "Feels a magnetic soul connection from the first moment in the solar chart.",
+      weakness: "Deep emotional vulnerability of affection",
+      strength: "Intimate care, active synergistic intuition",
+      bestDay: "Mondays of Full Moon"
+    },
+    es: {
+      description: "Siente una conexión magnética de almas desde el primer instante en el mapa solar.",
+      weakness: "Vulnerabilidad emocional profunda de cariño",
+      strength: "Cuidado íntimo, intuición sinérgica activa",
+      bestDay: "Lunes de Luna Llena"
+    },
+    de: {
+      description: "Spürt vom ersten Moment an im Sonnenhoroskop eine magnetische Seelenverbindung.",
+      weakness: "Tiefgehende emotionale Verletzlichkeit durch Zuneigung",
+      strength: "Intime Fürsorge, aktive synergetische Intuition",
+      bestDay: "Montage des Vollmonds"
+    },
+    fr: {
+      description: "Ressent une connexion d'âme magnétique dès le premier instant dans la carte solaire.",
+      weakness: "Profonde vulnérabilité émotionnelle d'affection",
+      strength: "Soin intime, intuition synergique active",
+      bestDay: "Lundis de Pleine Lune"
+    }
+  },
+  like_2: {
+    pt: {
+      description: "As posições de Vênus indicam forte atração cósmica e conversas profundas transformadoras.",
+      weakness: "Excesso de mistério inicial receptivo",
+      strength: "Lealdade absoluta, paixão intelectual",
+      bestDay: "Terças regidas por Marte celeste"
+    },
+    en: {
+      description: "Venus positions indicate strong cosmic attraction and deep transformative conversations.",
+      weakness: "Excess of initial receptive mystery",
+      strength: "Absolute loyalty, intellectual passion",
+      bestDay: "Tuesdays ruled by celestial Mars"
+    },
+    es: {
+      description: "Las posiciones de Venus indican una fuerte atracción cósmica y profundas conversaciones transformadoras.",
+      weakness: "Exceso de misterio inicial receptivo",
+      strength: "Lealtad absoluta, pasión intelectual",
+      bestDay: "Martes regidos por el Marte celeste"
+    },
+    de: {
+      description: "Die Venuspositionen deuten auf eine starke kosmische Anziehungskraft und tiefe, transformative Gespräche hin.",
+      weakness: "Übermaß an anfänglichem empfänglichem Geheimnis",
+      strength: "Absolute Loyalität, intellektuelle Leidenschaft",
+      bestDay: "Dienstage regiert vom himmlischen Mars"
+    },
+    fr: {
+      description: "Les positions de Vénus indiquent une forte attraction cosmique et de profondes conversations transformatrices.",
+      weakness: "Excès de mystère initial réceptif",
+      strength: "Loyauté absolue, passion intellectuelle",
+      bestDay: "Mardis régis par Mars céleste"
+    }
+  },
+  like_3: {
+    pt: {
+      description: "Sua Lua dita um sincronismo que entra em harmonia absoluta com a sensibilidade transcendental de Peixes.",
+      weakness: "Devaneios frequentes e excesso de idealização",
+      strength: "Empatia universal pura, inspiração astrológica",
+      bestDay: "Quintas de Júpiter"
+    },
+    en: {
+      description: "Your Moon dictates a synchronicity that enters absolute harmony with the transcendental sensitivity of Pisces.",
+      weakness: "Frequent daydreams and excess of idealization",
+      strength: "Pure universal empathy, astrological inspiration",
+      bestDay: "Thursdays of Jupiter"
+    },
+    es: {
+      description: "Tu Luna dicta un sincronismo que entra en armonía absoluta con la sensibilidad trascendental de Piscis.",
+      weakness: "Ensueños frecuentes y exceso de idealización",
+      strength: "Empatía universal pura, inspiración astrológica",
+      bestDay: "Jueves de Júpiter"
+    },
+    de: {
+      description: "Dein Mond diktiert eine Synchronizität, die in absoluter Harmonie mit der transzendentalen Empfindsamkeit der Fische steht.",
+      weakness: "Häufige Tagträume und übermäßige Idealisierung",
+      strength: "Reines universelles Mitgefühl, astrologische Inspiration",
+      bestDay: "Donnerstage des Jupiters"
+    },
+    fr: {
+      description: "Votre Lune dicte un synchronisme qui entre en harmonie absolue avec la sensibilité transcendantale des Poissons.",
+      weakness: "Rêveries fréquentes et excès d'idéalisation",
+      strength: "Pure empathie universelle, inspiration astrologique",
+      bestDay: "Jeudis de Jupiter"
+    }
+  },
+  like_4: {
+    pt: {
+      description: "Estabilidade extraordinária de metas materiais e propósitos refinados em parcerias duradouras.",
+      weakness: "Teimosia em rotinas consolidadas",
+      strength: "Pé no chão de realidade, sensualidade estável e calma",
+      bestDay: "Sextas de Vênus soberana"
+    },
+    en: {
+      description: "Extraordinary stability of material goals and refined purposes in long-lasting partnerships.",
+      weakness: "Stubbornness in consolidated routines",
+      strength: "Grounded in reality, stable and calm sensuality",
+      bestDay: "Fridays of sovereign Venus"
+    },
+    es: {
+      description: "Estabilidad extraordinaria de metas materiales y propósitos refinados en asociaciones duraderas.",
+      weakness: "Obstinación en rutinas consolidadas",
+      strength: "Pies en la tierra, sensualidad estable y tranquila",
+      bestDay: "Viernes de Venus soberana"
+    },
+    de: {
+      description: "Außergewöhnliche Stabilität materieller Ziele und verfeinerter Absichten in langlebigen Partnerschaften.",
+      weakness: "Eigensinnigkeit in gefestigten Routinen",
+      strength: "Bodenständig in der Realität, stabile und ruhige Sinnlichkeit",
+      bestDay: "Freitage der souveränen Venus"
+    },
+    fr: {
+      description: "Stabilité extraordinaire des objectifs matériels et des buts raffinés dans des partenariats durables.",
+      weakness: "Obstination dans des routines consolidées",
+      strength: "Pieds sur terre, sensualité stable et calme",
+      bestDay: "Vendredis de Vénus souveraine"
+    }
+  },
+  like_5: {
+    pt: {
+      description: "Uma explosão maravilhosa de criatividade calorosa, brilho compartilhado e risadas sinceras.",
+      weakness: "Gosta de ser o centro absoluto das atenções",
+      strength: "Alegria radiante solar, generosidade calorosa de espírito",
+      bestDay: "Domingos de Sol central"
+    },
+    en: {
+      description: "A wonderful explosion of warm creativity, shared brilliance, and sincere laughter.",
+      weakness: "Likes to be the absolute center of attention",
+      strength: "Radiant solar joy, warm generosity of spirit",
+      bestDay: "Sundays of central Sun"
+    },
+    es: {
+      description: "Una maravillosa explosión de creatividad cálida, brillo compartido y risas sinceras.",
+      weakness: "Le gusta ser el centro absoluto de atención",
+      strength: "Alegría solar radiante, cálida generosidad de espíritu",
+      bestDay: "Domingos de Sol central"
+    },
+    de: {
+      description: "Eine wunderbare Explosion herzlicher Kreativität, gemeinsamen Glanzes und aufrichtigen Lachens.",
+      weakness: "Steht gerne im absoluten Mittelpunkt der Aufmerksamkeit",
+      strength: "Strahlende Sonnenfreude, herzliche Großzügigkeit des Geistes",
+      bestDay: "Sonntage der zentralen Sonne"
+    },
+    fr: {
+      description: "Une merveilleuse explosion de créativité chaleureuse, d'éclat partagé et de rires sincères.",
+      weakness: "Aime être le centre absolu de l'attention",
+      strength: "Joie solaire radiante, générosité chaleureuse d'esprit",
+      bestDay: "Dimanches de Soleil central"
+    }
+  },
+  like_6: {
+    pt: {
+      description: "Forte magnetismo profissional e alinhamento admirável de ambições materiais concretas.",
+      weakness: "Rigidez extrema ou excesso de foco no dever",
+      strength: "Disciplina estrutural exemplar, sabedoria madura secular",
+      bestDay: "Sábados de Saturno"
+    },
+    en: {
+      description: "Strong professional magnetism and admirable alignment of concrete material ambitions.",
+      weakness: "Extreme rigidity or excessive focus on duty",
+      strength: "Exemplary structural discipline, mature secular wisdom",
+      bestDay: "Saturdays of Saturn"
+    },
+    es: {
+      description: "Fuerte magnetismo profesional y admirable alineación de ambiciones materiales concretas.",
+      weakness: "Rigidez extrema o enfoque excesivo en el deber",
+      strength: "Disciplina estructural ejemplar, sabiduría madura secular",
+      bestDay: "Sábados de Saturno"
+    },
+    de: {
+      description: "Starker beruflicher Magnetismus und bewundernswerte Ausrichtung konkreter materieller Ambitionen.",
+      weakness: "Extreme Starrheit oder übermäßiger Fokus auf Pflichten",
+      strength: "Beispielhafte strukturelle Disziplin, reife weltliche Weisheit",
+      bestDay: "Samstage des Saturns"
+    },
+    fr: {
+      description: "Fort magnétisme professionnel et alignement admirable des ambitions matérielles concrètes.",
+      weakness: "Rigidité extrême ou concentration excessive sur le devoir",
+      strength: "Discipline structurelle exemplaire, sagesse mûre séculaire",
+      bestDay: "Samedis de Saturne"
+    }
+  },
+  like_7: {
+    pt: {
+      description: "Estimulação magnética de mente ágil, debates intelectuais provocativos e roteiros de viagens inusitadas.",
+      weakness: "Inconstância em focos mundanos de longo prazo",
+      strength: "Comunicação verbal brilhante, adaptabilidade rápida",
+      bestDay: "Quartas de Mercúrio veloz"
+    },
+    en: {
+      description: "Magnetic stimulation of agile mind, provocative intellectual debates, and unusual travel itineraries.",
+      weakness: "Inconstancy in long-term mundane focuses",
+      strength: "Brilliant verbal communication, rapid adaptability",
+      bestDay: "Wednesdays of swift Mercury"
+    },
+    es: {
+      description: "Estimulación magnética de mente ágil, debates intelectuales provocadores e itinerarios de viaje inusuales.",
+      weakness: "Inconstancia en los enfoques mundanos a largo plazo",
+      strength: "Brillante comunicación verbal, rápida adaptabilidad",
+      bestDay: "Miércoles de Mercurio veloz"
+    },
+    de: {
+      description: "Magnetische Stimulation des agilen Geistes, provokative intellektuelle Debatten und ungewöhnliche Reiserouten.",
+      weakness: "Unbeständigkeit in langfristigen weltlichen Belangen",
+      strength: "Brillante verbale Kommunikation, schnelle Anpassungsfähigkeit",
+      bestDay: "Mittwoche des schnellen Merkurs"
+    },
+    fr: {
+      description: "Stimulation magnétique d'un esprit agile, débats intellectuels provocateurs et itinéraires de voyage insolites.",
+      weakness: "Inconstance dans les objectifs mondains à long terme",
+      strength: "Brillante communication verbale, adaptabilité rapide",
+      bestDay: "Mercredis de Mercure rapide"
+    }
+  },
+  like_8: {
+    pt: {
+      description: "Equilíbrio prático e organization precisa no cotidiano. Otimização mútua de hábitos saudáveis.",
+      weakness: "Autoexigência minuciosa exagerada de padrões",
+      strength: "Foco analítico refinado, prestatividade sincera cotidiana",
+      bestDay: "Quartas de Mercúrio terrestre"
+    },
+    en: {
+      description: "Practical balance and precise organization in daily life. Mutual optimization of healthy habits.",
+      weakness: "Exaggerated meticulous self-demand of standards",
+      strength: "Refined analytical focus, sincere daily helpfulness",
+      bestDay: "Wednesdays of Earth Mercury"
+    },
+    es: {
+      description: "Equilibrio práctico y organización precisa en el día a día. Optimización mutua de hábitos saludables.",
+      weakness: "Autoexigencia meticulosa exagerada de estándares",
+      strength: "Enfoque analítico refinado, amabilidad diaria sincera",
+      bestDay: "Miércoles de Mercurio terrestre"
+    },
+    de: {
+      description: "Praktisches Gleichgewicht und präzise Organisation im Alltag. Gegenseitige Optimierung gesunder Gewohnheiten.",
+      weakness: "Übertriebene akribische Selbstanforderung an Standards",
+      strength: "Verfeinerter analytischer Fokus, aufrichtige tägliche Hilfsbereitschaft",
+      bestDay: "Mittwoche des Erdmerkurs"
+    },
+    fr: {
+      description: "Équilibre pratique et organisation précise au quotidien. Optimisation mutuelle d'habitudes saines.",
+      weakness: "Exigence personnelle méticuleuse exagérée",
+      strength: "Foyer analytique raffiné, serviabilité quotidienne sincère",
+      bestDay: "Mercredis de Mercure terrestre"
+    }
+  }
+};
+
+const VISITORS_TRANSLATIONS: Record<string, Record<string, { time: string; astroAura: string; purpose: string }>> = {
+  visitor_1: {
+    pt: {
+      time: "Há 10 minutos",
+      astroAura: "Vênus exaltado em conjunção harmônica",
+      purpose: "Visitou para analisar compatibilidade afetiva no elemento Ar."
+    },
+    en: {
+      time: "10 minutes ago",
+      astroAura: "Exalted Venus in harmonic conjunction",
+      purpose: "Visited to analyze affective compatibility in the Air element."
+    },
+    es: {
+      time: "Hace 10 minutos",
+      astroAura: "Venus exaltado en conjunción armónica",
+      purpose: "Visitó para analizar la compatibilidad afectiva en el elemento Aire."
+    },
+    de: {
+      time: "Vor 10 Minuten",
+      astroAura: "Erhöhte Venus in harmonischer Konjunktion",
+      purpose: "Besucht, um die emotionale Kompatibilität im Luftelement zu analysieren."
+    },
+    fr: {
+      time: "Il y a 10 minutes",
+      astroAura: "Vénus exaltée en conjonction harmonique",
+      purpose: "A visité pour analyser la compatibilité affective dans l'élément Air."
+    }
+  },
+  visitor_2: {
+    pt: {
+      time: "Há 1 hora",
+      astroAura: "Mercúrio em trígono perfeito solar",
+      purpose: "Analisou sua afinidade intelectual e padrão de comunicação."
+    },
+    en: {
+      time: "1 hour ago",
+      astroAura: "Mercury in perfect solar trine",
+      purpose: "Analyzed your intellectual affinity and communication pattern."
+    },
+    es: {
+      time: "Hace 1 hora",
+      astroAura: "Mercurio en trígono solar perfecto",
+      purpose: "Analizó tu afinidad intelectual y patrón de comunicación."
+    },
+    de: {
+      time: "Vor 1 Stunde",
+      astroAura: "Merkur im perfekten Solartrigon",
+      purpose: "Analysierte Ihre intellektuelle Affinität und Ihr Kommunikationsmuster."
+    },
+    fr: {
+      time: "Il y a 1 heure",
+      astroAura: "Mercure en trigone solaire parfait",
+      purpose: "A analysé votre affinité intellectuelle et votre modèle de communication."
+    }
+  },
+  visitor_3: {
+    pt: {
+      time: "Há 4 horas",
+      astroAura: "Júpiter em oposição estimulante",
+      purpose: "Atraída pela sua assinatura de aventura e exploração filosófica."
+    },
+    en: {
+      time: "4 hours ago",
+      astroAura: "Jupiter in stimulating opposition",
+      purpose: "Attracted by your adventure signature and philosophical exploration."
+    },
+    es: {
+      time: "Hace 4 horas",
+      astroAura: "Júpiter en oposición estimulante",
+      purpose: "Atraída por tu sello de aventura y exploración filosófica."
+    },
+    de: {
+      time: "Vor 4 Stunden",
+      astroAura: "Jupiter in stimulierender Opposition",
+      purpose: "Angezogen von Ihrer Abenteuersignatur und philosophischen Erkundung."
+    },
+    fr: {
+      time: "Il y a 4 heures",
+      astroAura: "Jupiter en opposition stimulante",
+      purpose: "Attirée par votre signature d'aventure et d'exploration philosophique."
+    }
+  },
+  visitor_4: {
+    pt: {
+      time: "Ontem",
+      astroAura: "Marte ativando sua casa 5 amorosa",
+      purpose: "Química magnética instantânea despertada em análise solar."
+    },
+    en: {
+      time: "Yesterday",
+      astroAura: "Mars activating your loving 5th house",
+      purpose: "Instant magnetic chemistry awakened in solar analysis."
+    },
+    es: {
+      time: "Ayer",
+      astroAura: "Marte activando tu quinta casa amorosa",
+      purpose: "Química magnética instantánea despertada en el análisis solar."
+    },
+    de: {
+      time: "Gestern",
+      astroAura: "Mars aktiviert dein liebevolles 5. Haus",
+      purpose: "Sofortige magnetische Chemie im Sonnenhoroskop geweckt."
+    },
+    fr: {
+      time: "Hier",
+      astroAura: "Mars activant votre 5ème maison amoureuse",
+      purpose: "Chimie magnétique instantanée éveillée dans l'analyse solaire."
+    }
+  },
+  visitor_5: {
+    pt: {
+      time: "Há 2 dias",
+      astroAura: "Lua em conjunção com seu Ascendente",
+      purpose: "Buscou conexão profunda de intuição e afeto familiar mútuo."
+    },
+    en: {
+      time: "2 days ago",
+      astroAura: "Moon in conjunction with your Ascendant",
+      purpose: "Sought deep connection of intuition and mutual family affection."
+    },
+    es: {
+      time: "Hace 2 días",
+      astroAura: "Luna en conjunción con tu Ascendente",
+      purpose: "Buscó una conexión profunda de intuición y afecto familiar mutuo."
+    },
+    de: {
+      time: "Vor 2 Tagen",
+      astroAura: "Mond in Konjunktion mit Ihrem Aszendenten",
+      purpose: "Suchte eine tiefe Verbindung von Intuition und gegenseitiger familiärer Zuneigung."
+    },
+    fr: {
+      time: "Il y a 2 jours",
+      astroAura: "Lune en conjonction avec votre Ascendant",
+      purpose: "A cherché une connexion profonde d'intuition et d'affection familiale mutuelle."
+    }
+  },
+  visitor_6: {
+    pt: {
+      time: "Há 3 dias",
+      astroAura: "Saturno influenciando estabilidade terrestre",
+      purpose: "Visitou visando avaliar sinergia profissional e objetivos de longo prazo."
+    },
+    en: {
+      time: "3 days ago",
+      astroAura: "Saturn influencing Earthly stability",
+      purpose: "Visited to evaluate professional synergy and long-term goals."
+    },
+    es: {
+      time: "Hace 3 días",
+      astroAura: "Saturno influenciando la estabilidad terrenal",
+      purpose: "Visitó para evaluar la sinergia profesional y los objetivos a largo plazo."
+    },
+    de: {
+      time: "Vor 3 Tagen",
+      astroAura: "Saturn beeinflusst die irdische Stabilität",
+      purpose: "Besucht, um berufliche Synergien und langfristige Ziele zu bewerten."
+    },
+    fr: {
+      time: "Il y a 3 jours",
+      astroAura: "Saturne influençant la stabilité terrestre",
+      purpose: "A visité pour évaluer la synergie professionnelle et les objectifs à long terme."
+    }
+  }
+};
+
 interface CompatibilityViewProps {
   user: UserProfile;
   lang?: string;
@@ -707,10 +1150,8 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
         </div>
       </div>
 
-
-
       <AnimatePresence mode="wait">
-        {false && (
+        {activeSubTab === 'curtidas' && (
           <motion.div
             key="curtidas-tab"
             initial={{ opacity: 0, y: 10 }}
@@ -724,22 +1165,22 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-850 pb-4">
                 <div>
                   <h4 className="text-[10px] font-bold font-mono text-pink-400 uppercase tracking-widest">
-                    Veja quem demonstrou interesse por você!
+                    {t("Veja quem demonstrou interesse por você!")}
                   </h4>
                   <h2 className="text-base font-bold text-white mt-1 uppercase font-mono">
-                    QUEM ME CURTIU
+                    {t("QUEM ME CURTIU")}
                   </h2>
                 </div>
                 
                 <div className="px-3.5 py-2 bg-gradient-to-r from-pink-500/10 to-indigo-500/10 border border-pink-500/20 rounded-2xl">
                   <span className="text-xs font-mono font-bold text-pink-400 block sm:inline">
-                     8 pessoas já curtiram o seu perfil
+                     {t("8 pessoas já curtiram o seu perfil")}
                   </span>
                 </div>
               </div>
 
               <p className="text-xs text-slate-350 leading-relaxed max-w-3xl">
-                Confira a lista completa de pessoas que se interessaram por você e curtiram o seu perfil. Analise as compatibilidades biológicas e os mapas astrológicos cruzados de cada um para descobrir quem compartilha o melhor ritmo de sua frequência.
+                {t("Confira a lista completa de pessoas que se interessaram por você e curtiram o seu perfil. Analise as compatibilidades biológicas e os mapas astrológicos cruzados de cada um para descobrir quem compartilha o melhor ritmo de sua frequência.")}
               </p>
             </div>
 
@@ -749,8 +1190,8 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
               {/* Left Column: 8 Card profiles listing */}
               <div className="lg:col-span-7 space-y-3">
                 <div className="flex justify-between items-center px-1">
-                  <span className="text-[10.5px] font-mono text-slate-400 uppercase font-semibold">Candidatas Sintonizadas ({LIKES_RECEIVED.length})</span>
-                  <span className="text-[9px] font-mono text-slate-600">Clique para expandir relatório astral</span>
+                  <span className="text-[10.5px] font-mono text-slate-400 uppercase font-semibold">{t("Candidatas Sintonizadas")} ({LIKES_RECEIVED.length})</span>
+                  <span className="text-[9px] font-mono text-slate-600">{t("Clique para expandir relatório astral")}</span>
                 </div>
 
                 <div className="grid grid-cols-1 gap-3">
@@ -766,7 +1207,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                         className={`p-4 rounded-2xl transition-all duration-300 flex items-center justify-between gap-4 flex-wrap cursor-pointer border ${
                           isSelected 
                             ? 'bg-slate-900 border-pink-500/55 shadow-md shadow-pink-500/5' 
-                            : 'bg-slate-900/50 border-slate-850 hover:bg-slate-900/80 hover:border-slate-800'
+                             : 'bg-slate-900/50 border-slate-850 hover:bg-slate-900/80 hover:border-slate-800'
                         }`}
                       >
                         <div className="flex items-center gap-4 min-w-0">
@@ -785,13 +1226,13 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <h4 className="text-xs font-bold text-slate-200">
-                                {isRevealed ? profile.name : "Perfil Oculto Sideral"}
+                                {isRevealed ? profile.name : t("Perfil Oculto Sideral")}
                               </h4>
-                              <span className="text-[10px] text-slate-405 font-medium">({profile.age} anos)</span>
+                              <span className="text-[10px] text-slate-405 font-medium">({profile.age} {t("anos")})</span>
                             </div>
 
                             <p className="text-[10px] font-mono text-slate-505 truncate mt-0.5">
-                              {profile.sign} • {profile.location}
+                              {getTranslatedSign(profile.sign, idiomaAtual)} • {profile.location}
                             </p>
                           </div>
                         </div>
@@ -799,8 +1240,8 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                         {/* Interactive match percent and custom actions */}
                         <div className="flex items-center gap-3">
                           <div className="text-right">
-                            <span className="text-[8px] font-mono text-slate-500 uppercase block">Compatibilidade</span>
-                            <span className="text-xs font-black font-mono text-pink-400">{profile.match}% Match</span>
+                            <span className="text-[8px] font-mono text-slate-500 uppercase block">{t("Compatibilidade")}</span>
+                            <span className="text-xs font-black font-mono text-pink-400">{profile.match}% {t("Match")}</span>
                           </div>
 
                           {/* Action button to like back */}
@@ -814,7 +1255,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                                 ? 'bg-emerald-500/15 border-emerald-500/25 text-emerald-400 hover:bg-emerald-500/10' 
                                 : 'bg-pink-500/10 border-pink-500/25 text-pink-400 hover:bg-pink-500/20 hover:scale-105 active:scale-95'
                             }`}
-                            title={hasLiked ? "Match Conectado!" : "Curtir de volta para conversar"}
+                            title={hasLiked ? t("Match Conectado!") : t("Curtir de volta para conversar")}
                           >
                             {hasLiked ? <Check className="w-4 h-4" /> : <Heart className="w-4 h-4 fill-pink-500/10" />}
                           </button>
@@ -852,16 +1293,16 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
 
                           <div>
                             <h3 className="text-sm font-bold text-white">
-                              {isRevealed ? profile.name : "Perfil Oculto de Luz"}
+                              {isRevealed ? profile.name : t("Perfil Oculto de Luz")}
                             </h3>
                             <p className="text-[10px] font-mono text-slate-450 mt-0.5">
-                              {profile.sign} • {profile.age} anos • {profile.location}
+                              {getTranslatedSign(profile.sign, idiomaAtual)} • {profile.age} {t("anos")} • {profile.location}
                             </p>
                           </div>
 
                           <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-pink-500/10 border border-pink-500/20 text-pink-400 font-mono text-[10px] rounded-full font-bold">
                             <Sparkles className="w-3.5 h-3.5" />
-                            {profile.match}% Afinação Sideral
+                            {profile.match}% {t("Afinação Sideral")}
                           </div>
                         </div>
 
@@ -869,7 +1310,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                         <div className="space-y-3 pt-1">
                           
                           <div className="space-y-1">
-                            <span className="text-[8px] font-mono text-slate-500 uppercase block">Análise de Atração Cósmica</span>
+                            <span className="text-[8px] font-mono text-slate-500 uppercase block">{t("Análise de Atração Cósmica")}</span>
                             <p className="text-xs text-slate-350 leading-relaxed font-sans">
                               {profile.description}
                             </p>
@@ -877,17 +1318,17 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
 
                           <div className="grid grid-cols-2 gap-3 pt-2 text-[10.5px]">
                             <div className="p-2.5 bg-slate-950 rounded-xl border border-slate-850/60 space-y-1">
-                              <span className="text-[8px] font-mono text-emerald-400 uppercase block font-bold">Pontos Fortes</span>
+                              <span className="text-[8px] font-mono text-emerald-400 uppercase block font-bold">{t("Pontos Fortes")}</span>
                               <p className="text-slate-400 leading-normal">{profile.strength}</p>
                             </div>
                             <div className="p-2.5 bg-slate-950 rounded-xl border border-slate-850/60 space-y-1">
-                              <span className="text-[8px] font-mono text-orange-400 uppercase block font-bold">Ajustes Mútuos</span>
+                              <span className="text-[8px] font-mono text-orange-400 uppercase block font-bold">{t("Ajustes Mútuos")}</span>
                               <p className="text-slate-400 leading-normal">{profile.weakness}</p>
                             </div>
                           </div>
 
                           <div className="p-3 bg-indigo-500/5 rounded-xl border border-indigo-500/10 flex justify-between items-center text-[10px] font-mono text-slate-350">
-                            <span>Sintonia estelar favorável:</span>
+                            <span>{t("Sintonia estelar favorável:")}</span>
                             <span className="font-bold text-indigo-400">{profile.bestDay}</span>
                           </div>
 
@@ -899,7 +1340,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                             onClick={() => handleToggleRevealLike(profile.id)}
                             className="w-full py-2 bg-slate-950 hover:bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-300 rounded-xl transition duration-300 flex items-center justify-center gap-1.5 cursor-pointer"
                           >
-                            <span>{isRevealed ? "Ocultar Dados Pessoais" : "Revelar Dados Completos"}</span>
+                            <span>{isRevealed ? t("Ocultar Dados Pessoais") : t("Revelar Dados Completos")}</span>
                           </button>
                           
                           <button
@@ -912,7 +1353,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                             }`}
                           >
                             <Heart className={`w-3.5 h-3.5 ${hasLiked ? 'fill-emerald-450 text-emerald-400' : 'fill-white'}`} />
-                            <span>{hasLiked ? "Sintonia Ativa!" : "Curtir de Volta e Conectar"}</span>
+                            <span>{hasLiked ? t("Sintonia Ativa!") : t("Curtir de Volta e Conectar")}</span>
                           </button>
                         </div>
 
@@ -921,7 +1362,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                   })() : (
                     <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-805 text-center text-slate-500 space-y-2">
                       <Heart className="w-8 h-8 text-slate-800 mx-auto animate-pulse" />
-                      <p className="text-xs font-mono">Selecione algum perfil ao lado para visualizar o relatório astral completo de Sinastria do interesse recebido.</p>
+                      <p className="text-xs font-mono">{t("Selecione algum perfil ao lado para visualizar o relatório astral completo de Sinastria do interesse recebido.")}</p>
                     </div>
                   )}
                 </div>
@@ -932,7 +1373,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
           </motion.div>
         )}
 
-        {false && (
+        {activeSubTab === 'visitantes' && (
           <motion.div
             key="visitantes-tab"
             initial={{ opacity: 0, y: 10 }}
@@ -945,22 +1386,22 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-850 pb-4">
                 <div>
                   <h4 className="text-[10px] font-bold font-mono text-cyan-400 uppercase tracking-widest">
-                    Veja as pessoas que visualizaram o seu perfil.
+                    {t("Veja as pessoas que visualizaram o seu perfil.")}
                   </h4>
                   <h2 className="text-base font-bold text-white mt-1 uppercase font-mono">
-                    VISITAS RECENTES
+                    {t("VISITAS RECENTES")}
                   </h2>
                 </div>
                 
                 <div className="px-3.5 py-2 bg-gradient-to-r from-cyan-500/10 to-indigo-500/10 border border-cyan-500/20 rounded-2xl">
                   <span className="text-xs font-mono font-bold text-cyan-400 block sm:inline">
-                     Seu perfil já foi visualizado 6 vezes.
+                     {t("Seu perfil já foi visualizado 6 vezes.")}
                   </span>
                 </div>
               </div>
 
               <p className="text-xs text-slate-350 leading-relaxed max-w-3xl">
-                Veja quem visitou seu perfil e saiba quem são as pessoas que se interessaram por você! Sintonize suas posições planetárias rítmicas e descubra o magnetismo que uniu esses acessos.
+                {t("Veja quem visitou seu perfil e saiba quem são as pessoas que se interessaram por você! Sintonize suas posições planetárias rítmicas e descubra o magnetismo que uniu esses acessos.")}
               </p>
             </div>
 
@@ -970,8 +1411,8 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
               {/* Left Side: 6 Visitors cards */}
               <div className="lg:col-span-7 space-y-3">
                 <div className="flex justify-between items-center px-1">
-                  <span className="text-[10.5px] font-mono text-slate-400 uppercase font-semibold">Visualizações Recentes ({VISITORS.length})</span>
-                  <span className="text-[9px] font-mono text-slate-600">Explore o horário e intenção astrológica</span>
+                  <span className="text-[10.5px] font-mono text-slate-400 uppercase font-semibold">{t("Visualizações Recentes")} ({VISITORS.length})</span>
+                  <span className="text-[9px] font-mono text-slate-600">{t("Explore o horário e intenção astrológica")}</span>
                 </div>
 
                 <div className="grid grid-cols-1 gap-3">
@@ -1004,12 +1445,12 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                               <h4 className="text-xs font-bold text-slate-200">
                                 {visitor.name}
                               </h4>
-                              <span className="text-[10px] text-slate-450">({visitor.age} anos)</span>
-                              <span className={`w-1.5 h-1.5 rounded-full ${visitor.status === 'online' ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} title={visitor.status} />
+                              <span className="text-[10px] text-slate-450">({visitor.age} {t("anos")})</span>
+                              <span className={`w-1.5 h-1.5 rounded-full ${visitor.status === 'online' ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} title={t(visitor.status)} />
                             </div>
 
                             <p className="text-[10px] font-mono text-slate-505 truncate mt-0.5">
-                              {visitor.sign} • {visitor.location}
+                              {getTranslatedSign(visitor.sign, idiomaAtual)} • {visitor.location}
                             </p>
                           </div>
                         </div>
@@ -1054,7 +1495,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                               <span className={`w-2 h-2 rounded-full ${visitor.status === 'online' ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} />
                             </div>
                             <p className="text-[10px] font-mono text-slate-450 mt-0.5">
-                              {visitor.sign} • {visitor.age} anos • {visitor.location}
+                              {getTranslatedSign(visitor.sign, idiomaAtual)} • {visitor.age} {t("anos")} • {visitor.location}
                             </p>
                           </div>
 
@@ -1144,7 +1585,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                 </div>
                 
                 <span className="px-3.5 py-1.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-mono font-bold rounded-full">
-                  Pessoas
+                  {t("Pessoas")}
                 </span>
               </div>
               <p className="text-xs text-slate-405 leading-relaxed">
@@ -1161,7 +1602,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                 <div className="flex items-center justify-between border-b border-slate-850 pb-3">
                   <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
                     <Filter className="w-3.5 h-3.5 text-amber-500" />
-                    Parâmetros de Busca
+                    {t("Parâmetros de Busca")}
                   </h3>
                   <button
                     onClick={() => {
@@ -1178,20 +1619,20 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                     }}
                     className="text-[9px] font-mono text-slate-500 hover:text-amber-400 underline cursor-pointer"
                   >
-                    Resetar Filtros
+                    {t("Resetar Filtros")}
                   </button>
                 </div>
 
                 <div className="space-y-4">
                   {/* Name field */}
                   <div className="space-y-1.5">
-                    <label className="block text-[9.5px] font-mono text-slate-400 uppercase">Escreva o nome</label>
+                    <label className="block text-[9.5px] font-mono text-slate-400 uppercase">{t("Escreva o nome")}</label>
                     <div className="relative">
                       <input
                         type="text"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Pesquise por nome..."
+                        placeholder={t("Pesquise por nome...")}
                         className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-200 focus:outline-none focus:border-amber-500/55"
                       />
                       <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-500" />
@@ -1208,7 +1649,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                       className="w-4 h-4 rounded bg-slate-950 border-slate-800 text-amber-500 focus:ring-0 focus:ring-offset-0 cursor-pointer"
                     />
                     <label htmlFor="only-with-photo-checkbox" className="text-xs text-slate-350 font-medium select-none cursor-pointer">
-                      Apenas perfis com foto
+                      {t("Apenas perfis com foto")}
                     </label>
                   </div>
 
@@ -1221,9 +1662,9 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                     >
                       <span className="flex items-center gap-1.5">
                         <SlidersHorizontal className="w-3.5 h-3.5 text-amber-500" />
-                        + busca avançada
+                        + {t("busca avançada")}
                       </span>
-                      <span className="text-[10px] text-slate-500">{showAdvanced ? "Ocultar" : "Mostrar"}</span>
+                      <span className="text-[10px] text-slate-500">{showAdvanced ? t("Ocultar") : t("Mostrar")}</span>
                     </button>
                   </div>
 
@@ -1232,112 +1673,112 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                     <div className="grid grid-cols-2 gap-3 pt-2 text-[10px]">
                       {/* Sol */}
                       <div className="space-y-1">
-                        <label className="text-[8px] font-mono text-slate-500 uppercase block font-bold">Sol:</label>
+                        <label className="text-[8px] font-mono text-slate-500 uppercase block font-bold">{t("Sol:")}</label>
                         <select
                           value={filterSol}
                           onChange={(e) => setFilterSol(e.target.value)}
                           className="w-full px-2 py-1.5 rounded-lg bg-slate-950 border border-slate-850 text-slate-300 focus:outline-none focus:border-amber-500/50 text-[10px]"
                         >
                           {['Qualquer', 'Áries', 'Touro', 'Gêmeos', 'Câncer', 'Leão', 'Virgem', 'Libra', 'Escorpião', 'Sagitário', 'Capricórnio', 'Aquário', 'Peixes'].map(s => (
-                            <option key={s} value={s}>{s}</option>
+                            <option key={s} value={s}>{s === 'Qualquer' ? t('Qualquer') : getTranslatedSign(s, idiomaAtual)}</option>
                           ))}
                         </select>
                       </div>
 
                       {/* Ascendente */}
                       <div className="space-y-1">
-                        <label className="text-[8px] font-mono text-slate-500 uppercase block font-bold">Ascendente:</label>
+                        <label className="text-[8px] font-mono text-slate-500 uppercase block font-bold">{t("Ascendente:")}</label>
                         <select
                           value={filterAsc}
                           onChange={(e) => setFilterAsc(e.target.value)}
                           className="w-full px-2 py-1.5 rounded-lg bg-slate-950 border border-slate-850 text-slate-300 focus:outline-none focus:border-amber-500/50 text-[10px]"
                         >
                           {['Qualquer', 'Áries', 'Touro', 'Gêmeos', 'Câncer', 'Leão', 'Virgem', 'Libra', 'Escorpião', 'Sagitário', 'Capricórnio', 'Aquário', 'Peixes'].map(s => (
-                            <option key={s} value={s}>{s}</option>
+                            <option key={s} value={s}>{s === 'Qualquer' ? t('Qualquer') : getTranslatedSign(s, idiomaAtual)}</option>
                           ))}
                         </select>
                       </div>
 
                       {/* Lua */}
                       <div className="space-y-1">
-                        <label className="text-[8px] font-mono text-slate-500 uppercase block font-bold">Lua:</label>
+                        <label className="text-[8px] font-mono text-slate-500 uppercase block font-bold">{t("Lua:")}</label>
                         <select
                           value={filterLua}
                           onChange={(e) => setFilterLua(e.target.value)}
                           className="w-full px-2 py-1.5 rounded-lg bg-slate-950 border border-slate-850 text-slate-300 focus:outline-none focus:border-amber-500/50 text-[10px]"
                         >
                           {['Qualquer', 'Áries', 'Touro', 'Gêmeos', 'Câncer', 'Leão', 'Virgem', 'Libra', 'Escorpião', 'Sagitário', 'Capricórnio', 'Aquário', 'Peixes'].map(s => (
-                            <option key={s} value={s}>{s}</option>
+                            <option key={s} value={s}>{s === 'Qualquer' ? t('Qualquer') : getTranslatedSign(s, idiomaAtual)}</option>
                           ))}
                         </select>
                       </div>
 
                       {/* Marte */}
                       <div className="space-y-1">
-                        <label className="text-[8px] font-mono text-slate-500 uppercase block font-bold">Marte:</label>
+                        <label className="text-[8px] font-mono text-slate-500 uppercase block font-bold">{t("Marte:")}</label>
                         <select
                           value={filterMarte}
                           onChange={(e) => setFilterMarte(e.target.value)}
                           className="w-full px-2 py-1.5 rounded-lg bg-slate-950 border border-slate-850 text-slate-300 focus:outline-none focus:border-amber-500/50 text-[10px]"
                         >
                           {['Qualquer', 'Áries', 'Touro', 'Gêmeos', 'Câncer', 'Leão', 'Virgem', 'Libra', 'Escorpião', 'Sagitário', 'Capricórnio', 'Aquário', 'Peixes'].map(s => (
-                            <option key={s} value={s}>{s}</option>
+                            <option key={s} value={s}>{s === 'Qualquer' ? t('Qualquer') : getTranslatedSign(s, idiomaAtual)}</option>
                           ))}
                         </select>
                       </div>
 
                       {/* Vênus */}
                       <div className="space-y-1">
-                        <label className="text-[8px] font-mono text-slate-500 uppercase block font-bold">Vênus:</label>
+                        <label className="text-[8px] font-mono text-slate-500 uppercase block font-bold">{t("Vênus:")}</label>
                         <select
                           value={filterVenus}
                           onChange={(e) => setFilterVenus(e.target.value)}
                           className="w-full px-2 py-1.5 rounded-lg bg-slate-950 border border-slate-850 text-slate-300 focus:outline-none focus:border-amber-500/50 text-[10px]"
                         >
                           {['Qualquer', 'Áries', 'Touro', 'Gêmeos', 'Câncer', 'Leão', 'Virgem', 'Libra', 'Escorpião', 'Sagitário', 'Capricórnio', 'Aquário', 'Peixes'].map(s => (
-                            <option key={s} value={s}>{s}</option>
+                            <option key={s} value={s}>{s === 'Qualquer' ? t('Qualquer') : getTranslatedSign(s, idiomaAtual)}</option>
                           ))}
                         </select>
                       </div>
 
                       {/* Mercúrio */}
                       <div className="space-y-1">
-                        <label className="text-[8px] font-mono text-slate-500 uppercase block font-bold">Mercúrio:</label>
+                        <label className="text-[8px] font-mono text-slate-500 uppercase block font-bold">{t("Mercúrio:")}</label>
                         <select
                           value={filterMercurio}
                           onChange={(e) => setFilterMercurio(e.target.value)}
                           className="w-full px-2 py-1.5 rounded-lg bg-slate-950 border border-slate-850 text-slate-300 focus:outline-none focus:border-amber-500/50 text-[10px]"
                         >
                           {['Qualquer', 'Áries', 'Touro', 'Gêmeos', 'Câncer', 'Leão', 'Virgem', 'Libra', 'Escorpião', 'Sagitário', 'Capricórnio', 'Aquário', 'Peixes'].map(s => (
-                            <option key={s} value={s}>{s}</option>
+                            <option key={s} value={s}>{s === 'Qualquer' ? t('Qualquer') : getTranslatedSign(s, idiomaAtual)}</option>
                           ))}
                         </select>
                       </div>
 
                       {/* Júpiter */}
                       <div className="space-y-1">
-                        <label className="text-[8px] font-mono text-slate-500 uppercase block font-bold">Júpiter:</label>
+                        <label className="text-[8px] font-mono text-slate-500 uppercase block font-bold">{t("Júpiter:")}</label>
                         <select
                           value={filterJupiter}
                           onChange={(e) => setFilterJupiter(e.target.value)}
                           className="w-full px-2 py-1.5 rounded-lg bg-slate-950 border border-slate-850 text-slate-300 focus:outline-none focus:border-amber-500/55 text-[10px]"
                         >
                           {['Qualquer', 'Áries', 'Touro', 'Gêmeos', 'Câncer', 'Leão', 'Virgem', 'Libra', 'Escorpião', 'Sagitário', 'Capricórnio', 'Aquário', 'Peixes'].map(s => (
-                            <option key={s} value={s}>{s}</option>
+                            <option key={s} value={s}>{s === 'Qualquer' ? t('Qualquer') : getTranslatedSign(s, idiomaAtual)}</option>
                           ))}
                         </select>
                       </div>
 
                       {/* Saturno */}
                       <div className="space-y-1">
-                        <label className="text-[8px] font-mono text-slate-500 uppercase block font-bold">Saturno:</label>
+                        <label className="text-[8px] font-mono text-slate-500 uppercase block font-bold">{t("Saturno:")}</label>
                         <select
                           value={filterSaturno}
                           onChange={(e) => setFilterSaturno(e.target.value)}
                           className="w-full px-2 py-1.5 rounded-lg bg-slate-950 border border-slate-850 text-slate-300 focus:outline-none focus:border-amber-500/55 text-[10px]"
                         >
                           {['Qualquer', 'Áries', 'Touro', 'Gêmeos', 'Câncer', 'Leão', 'Virgem', 'Libra', 'Escorpião', 'Sagitário', 'Capricórnio', 'Aquário', 'Peixes'].map(s => (
-                            <option key={s} value={s}>{s}</option>
+                            <option key={s} value={s}>{s === 'Qualquer' ? t('Qualquer') : getTranslatedSign(s, idiomaAtual)}</option>
                           ))}
                         </select>
                       </div>
@@ -1352,13 +1793,13 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
               {/* Right Column: Search results showing 11 requested profiles exactly */}
               <div className="lg:col-span-8 space-y-3">
                 <div className="flex justify-between items-center px-1">
-                  <span className="text-[10.5px] font-mono text-slate-400 uppercase font-semibold">Pessoas Encontradas ({filteredPeople.length})</span>
-                  <span className="text-[9px] font-mono text-slate-600">Mostrando perfis cadastrados no alinhamento</span>
+                  <span className="text-[10.5px] font-mono text-slate-400 uppercase font-semibold">{t("Pessoas Encontradas")} ({filteredPeople.length})</span>
+                  <span className="text-[9px] font-mono text-slate-600">{t("Mostrando perfis cadastrados no alinhamento")}</span>
                 </div>
 
                 {filteredPeople.length === 0 ? (
                   <div className="p-12 text-center bg-slate-900/50 border border-slate-850 rounded-3xl text-slate-500 font-mono text-xs">
-                    Nenhuma pessoa de sintonia encontrada com esses filtros. Tente reduzir ou ajustar as regras de busca.
+                    {t("Nenhuma pessoa de sintonia encontrada com esses filtros. Tente reduzir ou ajustar as regras de busca.")}
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1378,7 +1819,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                           <div className="flex items-start gap-3 min-w-0">
                             {/* Avatar representation explicitly stating "Avatar de ..." as required by user list */}
                             <div className="relative shrink-0">
-                              <div className={`w-12 h-12 rounded-full bg-gradient-to-tr ${person.avatarColor} text-slate-950 flex shadow-inner items-center justify-center font-extrabold uppercase`} title={`Avatar de ${person.name}`}>
+                              <div className={`w-12 h-12 rounded-full bg-gradient-to-tr ${person.avatarColor} text-slate-950 flex shadow-inner items-center justify-center font-extrabold uppercase`} title={t("Avatar de {{name}}").replace("{{name}}", person.name)}>
                                 <span className="text-xs font-sans">
                                   {person.name.split(' ').filter(n => n.length > 2).slice(0, 2).map(n => n[0]).join('') || '?'}
                                 </span>
@@ -1394,14 +1835,14 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                               </h4>
                               
                               <p className="text-[10px] text-slate-450 font-mono">
-                                {person.chart.sol} • {person.location}
+                                {getTranslatedSign(person.chart.sol, idiomaAtual)} • {person.location}
                               </p>
 
                               {/* REQUIRED LABEL: online/offline status explicitly shown! */}
                               <div className="flex items-center gap-1.5 pt-0.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-slate-650" />
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-655" />
                                 <span className="text-[9px] font-mono font-semibold text-slate-500 uppercase tracking-wider">
-                                  {person.status}
+                                  {t(person.status)}
                                 </span>
                               </div>
                             </div>
@@ -1410,25 +1851,25 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                           {/* Astrological placements tags summary inside the card */}
                           <div className="grid grid-cols-3 gap-1 pt-2 border-t border-slate-850 text-[9.5px] font-mono text-slate-450">
                             <div>
-                              <span className="text-[8px] text-slate-600 block uppercase">Sol</span>
-                              <span className="text-amber-300 font-semibold">{person.chart.sol}</span>
+                              <span className="text-[8px] text-slate-600 block uppercase">{t("Sol")}</span>
+                              <span className="text-amber-300 font-semibold">{getTranslatedSign(person.chart.sol, idiomaAtual)}</span>
                             </div>
                             <div>
-                              <span className="text-[8px] text-slate-600 block uppercase">Asc</span>
-                              <span className="text-indigo-300 font-semibold">{person.chart.ascendente}</span>
+                              <span className="text-[8px] text-slate-600 block uppercase">{t("Asc")}</span>
+                              <span className="text-indigo-300 font-semibold">{getTranslatedSign(person.chart.ascendente, idiomaAtual)}</span>
                             </div>
                             <div>
-                              <span className="text-[8px] text-slate-600 block uppercase font-mono">Lua</span>
-                              <span className="text-teal-300 font-semibold">{person.chart.lua}</span>
+                              <span className="text-[8px] text-slate-600 block uppercase font-mono">{t("Lua")}</span>
+                              <span className="text-teal-300 font-semibold">{getTranslatedSign(person.chart.lua, idiomaAtual)}</span>
                             </div>
                           </div>
 
                           <div className="flex justify-between items-center pt-1.5">
                             <span className="text-[9px] font-mono text-amber-500/90 font-bold bg-amber-500/5 px-2 py-0.5 border border-amber-500/10 rounded-lg">
-                              {person.match}% Match
+                              {person.match}% {t("Match")}
                             </span>
                             <span className="text-[9.5px] font-mono text-slate-550 hover:text-amber-500 flex items-center gap-1">
-                              Análise completa <ArrowRight className="w-3 h-3" />
+                              {t("Análise completa")} <ArrowRight className="w-3 h-3" />
                             </span>
                           </div>
 

@@ -3,6 +3,49 @@ import { Sparkles, Lock, ShieldCheck, CheckCircle2, RefreshCw } from 'lucide-rea
 import { motion, AnimatePresence } from 'motion/react';
 import { getTranslation, Language } from '../lib/translations';
 
+const LOCAL_PREMIUM_TRANSLATIONS: Record<Language, Record<string, string>> = {
+  pt: {
+    "plan_monthly_name": "Mensal",
+    "9,99 EUR / mês": "9,99 EUR / mês",
+    "plan_monthly_desc": "Acesso completo e ilimitado a todas as ferramentas astrológicas.",
+    "plan_annual_name": "Anual (Economize 33%)",
+    "79,99 EUR / ano": "79,99 EUR / ano",
+    "plan_annual_desc": "Melhor valor. Acesso ilimitado o ano todo (apenas 6,66 EUR/mês)."
+  },
+  en: {
+    "plan_monthly_name": "Monthly",
+    "9,99 EUR / mês": "9.99 EUR / month",
+    "plan_monthly_desc": "Complete and unlimited access to all astrological tools.",
+    "plan_annual_name": "Annual (Save 33%)",
+    "79,99 EUR / ano": "79.99 EUR / year",
+    "plan_annual_desc": "Best value. Unlimited access all year round (just 6.66 EUR/month)."
+  },
+  es: {
+    "plan_monthly_name": "Mensual",
+    "9,99 EUR / mês": "9,99 EUR / mes",
+    "plan_monthly_desc": "Acceso completo e ilimitado a todas las herramientas astrológicas.",
+    "plan_annual_name": "Anual (Ahorra un 33%)",
+    "79,99 EUR / ano": "79,99 EUR / año",
+    "plan_annual_desc": "El mejor valor. Acceso ilimitado todo el año (solo 6,66 EUR/mes)."
+  },
+  de: {
+    "plan_monthly_name": "Monatlich",
+    "9,99 EUR / mês": "9,99 EUR / Monat",
+    "plan_monthly_desc": "Vollständiger und unbegrenzter Zugriff auf alle astrologischen Werkzeuge.",
+    "plan_annual_name": "Jährlich (Sparen Sie 33%)",
+    "79,99 EUR / ano": "79,99 EUR / Jahr",
+    "plan_annual_desc": "Bestes Preis-Leistungs-Verhältnis. Unbegrenzter Zugriff das ganze Jahr über (nur 6,66 EUR/Monat)."
+  },
+  fr: {
+    "plan_monthly_name": "Mensuel",
+    "9,99 EUR / mês": "9,99 EUR / mois",
+    "plan_monthly_desc": "Accès complet et illimité à tous les outils astrologiques.",
+    "plan_annual_name": "Annuel (Économisez 33%)",
+    "79,99 EUR / ano": "79,99 EUR / an",
+    "plan_annual_desc": "Meilleur rapport qualité-prix. Accès illimité toute l'année (seulement 6,66 EUR/mois)."
+  }
+};
+
 interface PremiumConversionScreenProps {
   currentLang: Language;
   onUpgradeComplete: (isPremium: boolean) => void;
@@ -19,20 +62,26 @@ export const PremiumConversionScreen: React.FC<PremiumConversionScreenProps> = (
   const [step, setStep] = useState<'checkout' | 'success'>('checkout');
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual'>('monthly');
 
-  const t = (key: string, fallback?: string) => getTranslation(currentLang, key, fallback);
+  const t = (key: string, fallback?: string) => {
+    const localDict = LOCAL_PREMIUM_TRANSLATIONS[currentLang];
+    if (localDict && localDict[key]) {
+      return localDict[key];
+    }
+    return getTranslation(currentLang, key, fallback);
+  };
 
   const plansList = [
     { 
       id: 'monthly' as const, 
       name: t('plan_monthly_name', 'Mensal'), 
-      price: '9,99 EUR / mês', 
+      price: t('9,99 EUR / mês', '9,99 EUR / mês'), 
       stripePrice: '9,99 EUR', 
       desc: t('plan_monthly_desc', 'Acesso completo e ilimitado a todas as ferramentas astrológicas.') 
     },
     { 
       id: 'annual' as const, 
       name: t('plan_annual_name', 'Anual (Economize 33%)'), 
-      price: '79,99 EUR / ano', 
+      price: t('79,99 EUR / ano', '79,99 EUR / ano'), 
       stripePrice: '79,99 EUR', 
       desc: t('plan_annual_desc', 'Melhor valor. Acesso ilimitado o ano todo (apenas 6,66 EUR/mês).') 
     }

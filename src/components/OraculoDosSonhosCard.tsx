@@ -70,6 +70,9 @@ interface OracleUI {
   noArchivedDownload: string;
   close: string;
   dreamsCount: (n: number) => string;
+  loadingTitle: string;
+  loadingDesc: string;
+  placeholderText: string;
 }
 
 // UI string dictionary for OraculoDosSonhosCard
@@ -116,6 +119,9 @@ const ORACLE_UI: Record<string, OracleUI> = {
     noArchivedDownload: "Nenhum sonho arquivado para download.",
     close: "Fechar",
     dreamsCount: (n: number) => `📁 Cofre de Sonhos (${n})`,
+    loadingTitle: "Consultando o Reino de Netuno...",
+    loadingDesc: "Orbia está interpretando as mensagens cifradas enviadas do seu inconsciente, conectando aos arquétipos do seu Mapa Astral. Aguarde um instante...",
+    placeholderText: "Exemplo: Sonhei que estava correndo em uma floresta escura e encontrei uma cobra dourada perto de um rio fiquei com medo vim um homem que me socorrer eu caí em uma rio fundo a cor da água era Rosa eu começava a andar sobre as águas...",
   },
   en: {
     oracleTitle: "🔮 Dream Oracle",
@@ -150,7 +156,7 @@ const ORACLE_UI: Record<string, OracleUI> = {
     numberSymbols: "🔢 Revealed Number Symbols",
     numberPrefix: "Number",
     animalArchetypes: "🦁 Animal Archetypes in the Dream",
-    colorSymbolism: "🎨 Strict Color Symbolism",
+    colorSymbolism: "🎨 Cosmic Color Symbolism",
     universeMessage: "🌌 Universe Message",
     waitingDream: "Awaiting Your Dream",
     waitingDesc: "Type the events of your dream in the field beside and click Reveal Meaning to consult the Celestial Oracle.",
@@ -159,6 +165,9 @@ const ORACLE_UI: Record<string, OracleUI> = {
     noArchivedDownload: "No archived dreams available for download.",
     close: "Close",
     dreamsCount: (n: number) => `📁 Dream Vault (${n})`,
+    loadingTitle: "Consulting the Realm of Neptune...",
+    loadingDesc: "Orbia is interpreting the ciphered messages sent by your subconscious, connecting them to the archetypes of your Birth Chart. Please wait a moment...",
+    placeholderText: "Example: I dreamed I was running in a dark forest and found a golden snake near a river, I felt afraid, then a man came to rescue me, I fell into a deep river, the water color was Pink, and I started walking on water...",
   },
   de: {
     oracleTitle: "🔮 Traumorakel",
@@ -202,6 +211,9 @@ const ORACLE_UI: Record<string, OracleUI> = {
     noArchivedDownload: "Keine archivierten Träume zum Herunterladen verfügbar.",
     close: "Schließen",
     dreamsCount: (n: number) => `📁 Traumtresor (${n})`,
+    loadingTitle: "Konsultiere das Reich von Neptun...",
+    loadingDesc: "Orbia interpretiert die verschlüsselten Botschaften Ihres Unterbewusstseins und verbindet sie mit den Archetypen Ihres Geburtshoroskops. Bitte warten Sie einen Moment...",
+    placeholderText: "Beispiel: Ich habe geträumt, ich liefe durch einen dunklen Wald und fand eine goldene Schlange an einem Fluss. Ich hatte Angst, dann kam ein Mann, um mich zu retten. Ich fiel in einen tiefen Fluss, die Wasserfarbe war Rosa und ich fing an, auf dem Wasser zu gehen...",
   },
   es: {
     oracleTitle: "🔮 Oráculo de los Sueños",
@@ -209,7 +221,7 @@ const ORACLE_UI: Record<string, OracleUI> = {
     tellDream: "Cuéntanos tu sueño en detalle",
     describeHint: "Describe todo lo que sucedió en el sueño: personas, animales, lugares, emociones, objetos, colores, números y eventos importantes.",
     revealBtn: "Revelar Significado",
-    decipheringBtn: "Descifrando Dimensión Astral...",
+    decipheringBtn: "Descifrando Dimensão Astral...",
     dreamVault: "📁 Cofre de Sueños",
     downloadDream: "📥 Descargar Sueño",
     searchPlaceholder: "Buscar sueños...",
@@ -245,6 +257,9 @@ const ORACLE_UI: Record<string, OracleUI> = {
     noArchivedDownload: "No hay sueños archivados para descargar.",
     close: "Cerrar",
     dreamsCount: (n: number) => `📁 Cofre de Sueños (${n})`,
+    loadingTitle: "Consultando el Reino de Neptuno...",
+    loadingDesc: "Orbia está interpretando los mensajes cifrados enviados desde tu subconsciente, conectándolos con los arquetipos de tu Carta Astral. Espera un momento...",
+    placeholderText: "Ejemplo: Soñé que corría por un bosque oscuro y encontraba una serpiente dorada cerca de un río, sentí miedo, luego vino un hombre a rescatarme, me caí en un río profundo, el color de agua era Rosa y yo empezaba a caminar sobre las aguas...",
   },
   fr: {
     oracleTitle: "🔮 Oracle des Rêves",
@@ -288,6 +303,9 @@ const ORACLE_UI: Record<string, OracleUI> = {
     noArchivedDownload: "Aucun rêve archivé disponible pour le téléchargement.",
     close: "Fermer",
     dreamsCount: (n: number) => `📁 Coffre des Rêves (${n})`,
+    loadingTitle: "Consultation du Royaume de Neptune...",
+    loadingDesc: "Orbia interprète les messages chiffrés envoyés par votre subconscient, les connectant aux archétypes de votre Carte du Ciel. Veuillez patienter un instant...",
+    placeholderText: "Exemple : J'ai rêvé que je courais dans une forêt sombre et que je trouvais un serpent doré près d'une rivière, j'ai eu peur, puis un homme est venu me secourir, je suis tombé dans une rivière profonde, la couleur de l'eau était Rose et je commençais à marcher sur les eaux...",
   },
 };
 
@@ -341,7 +359,8 @@ export default function OraculoDosSonhosCard({
         pt: "Interpretação e Análise Consciencial de Sonhos",
         en: "Dream Interpretation & Consciousness Analysis",
         es: "Interpretación de Sueños y Análisis de la Conciencia",
-        de: "Traumdeutung und Bewusstseinsanalyse"
+        de: "Traumdeutung und Bewusstseinsanalyse",
+        fr: "Interprétation des Rêves & Analyse de la Conscience"
       };
       doc.text(subtitleMap[language] || subtitleMap.pt, marginX, 26);
 
@@ -352,8 +371,8 @@ export default function OraculoDosSonhosCard({
       doc.setFont("Helvetica", "normal");
       doc.setFontSize(9);
       
-      const dateLabel = language === "pt" ? "DATA" : language === "es" ? "FECHA" : language === "de" ? "DATUM" : "DATE";
-      const timeLabel = language === "pt" ? "HORÁRIO" : language === "es" ? "HORA" : language === "de" ? "UHRZEIT" : "TIME";
+      const dateLabel = language === "pt" ? "DATA" : language === "es" ? "FECHA" : language === "de" ? "DATUM" : language === "fr" ? "DATE" : "DATE";
+      const timeLabel = language === "pt" ? "HORÁRIO" : language === "es" ? "HORA" : language === "de" ? "UHRZEIT" : language === "fr" ? "HEURE" : "TIME";
       doc.text(`${dateLabel}: ${dream.date}  |  ${timeLabel}: ${dream.time || "N/A"}`, marginX, currentY);
       
       doc.setDrawColor(244, 63, 94); // rose-500 border line below metadata
@@ -366,7 +385,7 @@ export default function OraculoDosSonhosCard({
       doc.setTextColor(244, 63, 94); // rose-500
       doc.setFont("Helvetica", "bold");
       doc.setFontSize(14);
-      doc.text(dream.title || (language === "pt" ? "Relato de Sonho" : "Dream Log"), marginX, currentY);
+      doc.text(dream.title || (language === "pt" ? "Relato de Sonho" : language === "es" ? "Registro de Sueño" : language === "de" ? "Traumaufzeichnung" : language === "fr" ? "Registre de Rêve" : "Dream Log"), marginX, currentY);
 
       currentY += 8;
 
@@ -378,7 +397,8 @@ export default function OraculoDosSonhosCard({
         pt: "RELAÇÃO DOS FATOS (SUBCONSCIENTE):",
         en: "RELATION OF THE FACTS (SUBSCIOUS):",
         es: "RELACIÓN DE LOS HECHOS (SUBCONSCIENTE):",
-        de: "DARSTELLUNG DER FAKTEN (UNTERBEWUSSTSEIN):"
+        de: "DARSTELLUNG DER FAKTEN (UNTERBEWUSSTSEIN):",
+        fr: "RELATION DES FAITS (SUBCONSCIENT) :"
       };
       doc.text(descHeadingMap[language] || descHeadingMap.pt, marginX, currentY);
 
@@ -408,7 +428,8 @@ export default function OraculoDosSonhosCard({
           pt: "SIGNIFICADO PRIMÁRIO & ANÁLISE:",
           en: "PRIMARY MEANING & ANALYSIS:",
           es: "SIGNIFICADO PRIMARIO Y ANÁLISIS:",
-          de: "PRIMÄRE BEDEUTUNG & ANALYSE:"
+          de: "PRIMÄRE BEDEUTUNG & ANALYSE:",
+          fr: "SIGNIFICATION PRIMAIRE & ANALYSE :"
         };
         doc.text(meaningHeadingMap[language] || meaningHeadingMap.pt, marginX, currentY);
 
@@ -452,7 +473,8 @@ export default function OraculoDosSonhosCard({
             pt: "CONSELHO DO ORÁCULO CELESTE",
             en: "CELESTIAL ORACLE ADVICE",
             es: "CONSEJO DEL ORÁCULO CELESTIAL",
-            de: "RATSCHLAG DES HIMMLISCHEN ORAKELS"
+            de: "RATSCHLAG DES HIMMLISCHEN ORAKELS",
+            fr: "CONSEIL DE L'ORACLE CÉLESTE"
           };
           doc.text(adviceTitleMap[language] || adviceTitleMap.pt, marginX, currentY);
 
@@ -466,9 +488,9 @@ export default function OraculoDosSonhosCard({
         }
 
         // Three areas of life detailed
-        const loveTitle = language === "pt" ? "Área Amorosa" : language === "es" ? "Área de Amor" : "Love Area";
-        const financeTitle = language === "pt" ? "Área Financeira" : language === "es" ? "Área Financiera" : "Finance Area";
-        const careerTitle = language === "pt" ? "Área Profissional" : language === "es" ? "Área Profesional" : "Career Area";
+        const loveTitle = language === "pt" ? "Área Amorosa" : language === "es" ? "Área de Amor" : language === "de" ? "Liebesbereich" : language === "fr" ? "Zone Amoureuse" : "Love Area";
+        const financeTitle = language === "pt" ? "Área Financeira" : language === "es" ? "Área Financiera" : language === "de" ? "Finanzbereich" : language === "fr" ? "Zone Financière" : "Finance Area";
+        const careerTitle = language === "pt" ? "Área Profissional" : language === "es" ? "Área Profesional" : language === "de" ? "Berufsbereich" : language === "fr" ? "Zone Professionnelle" : "Career Area";
 
         const areas = [
           { t: loveTitle, b: interp.loveArea },
@@ -489,7 +511,8 @@ export default function OraculoDosSonhosCard({
             pt: "INFLUÊNCIA NAS ÁREAS DA VIDA:",
             en: "INFLUENCE ON LIFE AREAS:",
             es: "INFLUENCIA EN ÁREAS DE LA VIDA:",
-            de: "EINFLUSS AUF LEBENSBEREICHE:"
+            de: "EINFLUSS AUF LEBENSBEREICHE:",
+            fr: "INFLUENCE SUR LES ZONES DE VIE :"
           };
           doc.text(lifeAreasHeadingMap[language] || lifeAreasHeadingMap.pt, marginX, currentY);
           currentY += 6;
@@ -526,8 +549,8 @@ export default function OraculoDosSonhosCard({
             currentY = 20;
           }
 
-          const luckyNumbersLabel = language === "pt" ? "Números Recomendados:" : "Lucky Numbers:";
-          const favorableColorsLabel = language === "pt" ? "Cores de Energia:" : "Energy Colors:";
+          const luckyNumbersLabel = language === "pt" ? "Números Recomendados:" : language === "es" ? "Números Recomendados:" : language === "de" ? "Empfohlene Zahlen:" : language === "fr" ? "Numéros Recommandés :" : "Lucky Numbers:";
+          const favorableColorsLabel = language === "pt" ? "Cores de Energia:" : language === "es" ? "Colores de Energía:" : language === "de" ? "Energiefarben:" : language === "fr" ? "Couleurs d'Énergie :" : "Energy Colors:";
 
           doc.setTextColor(15, 23, 42);
           doc.setFont("Helvetica", "bold");
@@ -554,9 +577,9 @@ export default function OraculoDosSonhosCard({
 
         // Sincronias Oráculares (Attention, Opportunity, Protection) if they exist
         const warningElements = [
-          { label: language === "pt" ? "⚠️ ATENÇÃO:" : "⚠️ ATTENTION:", content: interp.attention },
-          { label: language === "pt" ? "🍀 OPORTUNIDADES:" : "🍀 OPPORTUNITIES:", content: interp.opportunities },
-          { label: language === "pt" ? "🛡️ PROTEÇÃO e LIVRAMENTO:" : "🛡️ PROTECTION & SANCTUARY:", content: interp.protection }
+          { label: language === "pt" ? "⚠️ ATENÇÃO:" : language === "es" ? "⚠️ ATENCIÓN:" : language === "de" ? "⚠️ ACHTUNG:" : language === "fr" ? "⚠️ ATTENTION :" : "⚠️ ATTENTION:", content: interp.attention },
+          { label: language === "pt" ? "🍀 OPORTUNIDADES:" : language === "es" ? "🍀 OPORTUNIDADES:" : language === "de" ? "🍀 CHANCEN:" : language === "fr" ? "🍀 OPPORTUNITÉS :" : "🍀 OPPORTUNITIES:", content: interp.opportunities },
+          { label: language === "pt" ? "🛡️ PROTEÇÃO e LIVRAMENTO:" : language === "es" ? "🛡️ PROTECCIÓN Y LIBERACIÓN:" : language === "de" ? "🛡️ SCHUTZ & ERLÖSUNG:" : language === "fr" ? "🛡️ PROTECTION ET LIBÉRATION :" : "🛡️ PROTECTION & SANCTUARY:", content: interp.protection }
         ].filter(w => !!w.content);
 
         if (warningElements.length > 0) {
@@ -601,7 +624,8 @@ export default function OraculoDosSonhosCard({
             pt: "SINTONIA CÓSMICA & MENSAGEM DO UNIVERSO",
             en: "COSMIC HARMONY & UNIVERSE MESSAGE",
             es: "SINTONÍA CÓSMICA Y MENSAJE DEL UNIVERSO",
-            de: "KOSMISCHE HARMONIE & BOTSCHAFT DES UNIVERSUMS"
+            de: "KOSMISCHE HARMONIE & BOTSCHAFT DES UNIVERSUMS",
+            fr: "HARMONIE COSMIQUE & MESSAGE DE L'UNIVERS"
           };
           doc.text(universeTitleMap[language] || universeTitleMap.pt, marginX + 4, currentY);
 
@@ -624,7 +648,8 @@ export default function OraculoDosSonhosCard({
           pt: "Gerado pelo Astra Orbi - Seu portal de inteligência mística e autoconhecimento cósmico.",
           en: "Generated by Astra Orbi - Your mystical intelligence portal & cosmic self-knowledge.",
           es: "Generado por Astra Orbi - Tu portal de inteligencia mística y autoconocimiento cósmico.",
-          de: "Generiert von Astra Orbi - Ihr mystisches Intelligenzportal & kosmisches Selbsterkenntnis."
+          de: "Generiert von Astra Orbi - Ihr mystisches Intelligenzportal & kosmisches Selbsterkenntnis.",
+          fr: "Généré par Astra Orbi - Votre portail d'intelligence mystique et d'autoconnaissance cosmique."
         };
         doc.text(footerMap[language] || footerMap.pt, marginX, 287);
         doc.text(`${i}/` + pageCount, 190, 287);
@@ -678,7 +703,7 @@ export default function OraculoDosSonhosCard({
               <textarea 
                 rows={6}
                 required
-                placeholder="Exemplo: Sonhei que estava correndo em uma floresta escura e encontrei uma cobra dourada perto de um rio fiquei com medo vim um homem que me socorrer eu caí em uma rio fundo a cor da água era Rosa eu começava a andar sobre as águas..."
+                placeholder={ui.placeholderText}
                 value={newDreamDesc}
                 onChange={(e) => setNewDreamDesc(e.target.value)}
                 className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-850 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-hidden focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/20 transition-all font-sans leading-relaxed resize-none"
@@ -793,10 +818,10 @@ export default function OraculoDosSonhosCard({
             </div>
             
             <h4 className="text-sm font-extrabold font-mono tracking-widest text-slate-100 uppercase animate-pulse">
-              Consultando o Reino de Netuno...
+              {ui.loadingTitle}
             </h4>
             <p className="text-xs text-slate-500 mt-2.5 max-w-xs mx-auto leading-relaxed font-sans">
-              Orbia está interpretando as mensagens cifradas enviadas do seu inconsciente, conectando aos arquétipos do seu Mapa Astral. Aguarde um instante...
+              {ui.loadingDesc}
             </p>
           </div>
         ) : selectedDreamDisplay ? (
