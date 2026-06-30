@@ -1,11 +1,13 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { translationDict, uiTranslations, getInitialLanguage } from './translations';
+import { staticTranslations as rootTranslations } from '../translations';
 
 const resources: any = {
   pt: {
     translation: {
       ...translationDict.pt,
+      ...rootTranslations.pt,
       // uiTranslations usa chaves em PT -> tradução em outro idioma.
       // Para PT, o valor deve ser a própria chave PT (o texto original),
       // então populamos corretamente usando as chaves como valores.
@@ -17,24 +19,28 @@ const resources: any = {
   en: {
     translation: {
       ...translationDict.en,
+      ...rootTranslations.en,
       ...uiTranslations.en
     }
   },
   es: {
     translation: {
       ...translationDict.es,
+      ...rootTranslations.es,
       ...uiTranslations.es
     }
   },
   de: {
     translation: {
       ...translationDict.de,
+      ...rootTranslations.de,
       ...uiTranslations.de
     }
   },
   fr: {
     translation: {
       ...translationDict.fr,
+      ...rootTranslations.fr,
       ...uiTranslations.fr
     }
   }

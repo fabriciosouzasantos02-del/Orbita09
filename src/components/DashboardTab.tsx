@@ -5,6 +5,7 @@ import { Language, translations } from "../translations";
 import { NatalChartData } from "../types";
 import { useTranslation } from "react-i18next";
 import { translateUiText } from "../lib/translations";
+import { useIdioma } from "../context/IdiomaContext";
 
 interface DashboardTabProps {
   natalChart: NatalChartData;
@@ -60,21 +61,24 @@ const LOCAL_DASHBOARD_TRANSLATIONS: Record<Language, Record<string, string>> = {
 };
 
 export default function DashboardTab({ natalChart, lang }: DashboardTabProps) {
+  const { idioma } = useIdioma();
+  const activeLang = idioma || lang || "pt";
+
   const [moonPhaseInfo, setMoonPhaseInfo] = useState(() => {
-    const defaultName = lang === "en" ? "New Moon" : lang === "es" ? "Luna Nueva" : lang === "de" ? "Neumond" : lang === "fr" ? "Nouvelle Lune" : "Lua Nova";
+    const defaultName = activeLang === "en" ? "New Moon" : activeLang === "es" ? "Luna Nueva" : activeLang === "de" ? "Neumond" : activeLang === "fr" ? "Nouvelle Lune" : "Lua Nova";
     return { name: defaultName, symbol: "🌑", percent: 0 };
   });
   const [activeHoroscope, setActiveHoroscope] = useState<'daily' | 'weekly'>('daily');
-  const t = translations[lang];
+  const t = translations[activeLang];
   const { t: tI18nRaw } = useTranslation();
 
   const tI18n = (text: string) => {
     if (!text) return "";
-    const localVal = LOCAL_DASHBOARD_TRANSLATIONS[lang || 'pt']?.[text];
+    const localVal = LOCAL_DASHBOARD_TRANSLATIONS[activeLang || 'pt']?.[text];
     if (localVal) return localVal;
     const res = tI18nRaw(text);
     if (res === text || !res) {
-      return translateUiText(text, lang || 'pt');
+      return translateUiText(text, activeLang || 'pt');
     }
     return res;
   };
@@ -92,33 +96,33 @@ export default function DashboardTab({ natalChart, lang }: DashboardTabProps) {
     let symbol = "🌕";
 
     if (percent < 0.03 || percent > 0.97) {
-      name = lang === "pt" ? "Lua Nova" : lang === "es" ? "Luna Nueva" : lang === "de" ? "Neumond" : lang === "fr" ? "Nouvelle Lune" : "New Moon";
+      name = activeLang === "pt" ? "Lua Nova" : activeLang === "es" ? "Luna Nueva" : activeLang === "de" ? "Neumond" : activeLang === "fr" ? "Nouvelle Lune" : "New Moon";
       symbol = "🌑";
     } else if (percent < 0.22) {
-      name = lang === "pt" ? "Lua Crescente Minguante" : lang === "es" ? "Luna Creciente Menguante" : lang === "de" ? "Zunehmender Sichelmond" : lang === "fr" ? "Croissant de Lune" : "Waxing Crescent";
+      name = activeLang === "pt" ? "Lua Crescente Minguante" : activeLang === "es" ? "Luna Creciente Menguante" : activeLang === "de" ? "Zunehmender Sichelmond" : activeLang === "fr" ? "Croissant de Lune" : "Waxing Crescent";
       symbol = "🌒";
     } else if (percent < 0.28) {
-      name = lang === "pt" ? "Quarto Crescente" : lang === "es" ? "Cuarto Creciente" : lang === "de" ? "Erstes Viertel" : lang === "fr" ? "Premier Quartier" : "First Quarter";
+      name = activeLang === "pt" ? "Quarto Crescente" : activeLang === "es" ? "Cuarto Creciente" : activeLang === "de" ? "Erstes Viertel" : activeLang === "fr" ? "Premier Quartier" : "First Quarter";
       symbol = "🌓";
     } else if (percent < 0.47) {
-      name = lang === "pt" ? "Lua Gibosa Crescente" : lang === "es" ? "Luna Gibosa Creciente" : lang === "de" ? "Zunehmender Dreiviertelmond" : lang === "fr" ? "Lune Gibbeuse Croissante" : "Waxing Gibbous";
+      name = activeLang === "pt" ? "Lua Gibosa Crescente" : activeLang === "es" ? "Luna Gibosa Creciente" : activeLang === "de" ? "Zunehmender Dreiviertelmond" : activeLang === "fr" ? "Lune Gibbeuse Croissante" : "Waxing Gibbous";
       symbol = "🌔";
     } else if (percent < 0.53) {
-      name = lang === "pt" ? "Lua Cheia" : lang === "es" ? "Luna Llena" : lang === "de" ? "Vollmond" : lang === "fr" ? "Pleine Lune" : "Full Moon";
+      name = activeLang === "pt" ? "Lua Cheia" : activeLang === "es" ? "Luna Llena" : activeLang === "de" ? "Vollmond" : activeLang === "fr" ? "Pleine Lune" : "Full Moon";
       symbol = "🌕";
     } else if (percent < 0.72) {
-      name = lang === "pt" ? "Lua Gibosa Minguante" : lang === "es" ? "Luna Gibosa Menguante" : lang === "de" ? "Abnehmender Dreiviertelmond" : lang === "fr" ? "Lune Gibbeuse Décroissante" : "Waning Gibbous";
+      name = activeLang === "pt" ? "Lua Gibosa Minguante" : activeLang === "es" ? "Luna Gibosa Menguante" : activeLang === "de" ? "Abnehmender Dreiviertelmond" : activeLang === "fr" ? "Lune Gibbeuse Décroissante" : "Waning Gibbous";
       symbol = "🌖";
     } else if (percent < 0.78) {
-      name = lang === "pt" ? "Quarto Minguante" : lang === "es" ? "Cuarto Menguante" : lang === "de" ? "Letztes Viertel" : lang === "fr" ? "Dernier Quartier" : "Last Quarter";
+      name = activeLang === "pt" ? "Quarto Minguante" : activeLang === "es" ? "Cuarto Menguante" : activeLang === "de" ? "Letztes Viertel" : activeLang === "fr" ? "Dernier Quartier" : "Last Quarter";
       symbol = "🌗";
     } else {
-      name = lang === "pt" ? "Lua Minguante" : lang === "es" ? "Luna Menguante" : lang === "de" ? "Abnehmender Sichelmond" : lang === "fr" ? "Lune Décroissante" : "Waning Crescent";
+      name = activeLang === "pt" ? "Lua Minguante" : activeLang === "es" ? "Luna Menguante" : activeLang === "de" ? "Abnehmender Sichelmond" : activeLang === "fr" ? "Lune Décroissante" : "Waning Crescent";
       symbol = "🌘";
     }
 
     setMoonPhaseInfo({ name, symbol, percent: Math.round(percent * 100) });
-  }, [lang]);
+  }, [activeLang]);
 
   // Derived Horoscope message based on Sun sign
   const sunSign = natalChart.planets.find(p => p.name === "Sol")?.sign || "Áries";
@@ -162,7 +166,7 @@ export default function DashboardTab({ natalChart, lang }: DashboardTabProps) {
   };
 
   const currentHoroscope = dailyHoroscopes[sunSign] || dailyHoroscopes.default;
-  const horoscopeText = currentHoroscope[lang] || currentHoroscope['en'] || currentHoroscope['pt'];
+  const horoscopeText = currentHoroscope[activeLang] || currentHoroscope['en'] || currentHoroscope['pt'];
 
   return (
     <div className="space-y-6">
@@ -175,7 +179,7 @@ export default function DashboardTab({ natalChart, lang }: DashboardTabProps) {
             <span>{t.welcome}!</span>
           </h2>
           <p className="text-neutral-505 text-xs">
-            {t.subtitle} — {tI18n("Sol em")} <strong>{translateUiText(sunSign, lang)}</strong>
+            {t.subtitle} — {tI18n("Sol em")} <strong>{translateUiText(sunSign, activeLang)}</strong>
           </p>
         </div>
         
@@ -226,7 +230,7 @@ export default function DashboardTab({ natalChart, lang }: DashboardTabProps) {
             </h3>
             <p className="text-neutral-600 text-xs sm:text-sm">
               {activeHoroscope === 'daily' 
-                ? currentHoroscope[lang]
+                ? currentHoroscope[activeLang]
                 : tI18n("Esta semana as energias estão em fase de semeadura. Plutão estabiliza transições e Netuno convida você a decifrar os segredos de seus sonhos noturnos.")
               }
             </p>

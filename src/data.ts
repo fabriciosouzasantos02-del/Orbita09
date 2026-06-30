@@ -1,3 +1,6 @@
+import i18n from './lib/i18n';
+import { translateUiText, Language } from './lib/translations';
+
 export interface AppPreset {
   id: string;
   name: string;
@@ -7,7 +10,7 @@ export interface AppPreset {
   defaultCode: string;
 }
 
-export const PRESETS: AppPreset[] = [
+const _PRESETS: AppPreset[] = [
   {
     id: "calculator",
     name: "Calculadora de Precisão",
@@ -454,7 +457,7 @@ export const PRESETS: AppPreset[] = [
   }
 ];
 
-export const SIGNS_ZODIAC_LIST = [
+const _SIGNS_ZODIAC_LIST = [
   { name: "Áries", symbol: "♈", element: "Fogo", regente: "Marte", traits: "Iniciativa, pioneirismo, vigor, impaciência.", horoscopo: "Hoje é um dia promissor para assumir novos compromissos, porém tenha paciência com respostas burocráticas retardadas.", cosmicImg: "https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?auto=format&fit=crop&w=400&q=80" },
   { name: "Touro", symbol: "♉", element: "Terra", regente: "Vênus", traits: "Estabilidade, persistência, sensualidade, teimosia.", horoscopo: "A quadratura lunar sugere revisar gastos apressados. Foque em estabilizar seu solo financeiro.", cosmicImg: "https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?auto=format&fit=crop&w=400&q=80" },
   { name: "Gêmeos", symbol: "♊", element: "Ar", regente: "Mercúrio", traits: "Comunicação, versatilidade, curiosidade, dispersão.", horoscopo: "Trocar ideias e debater trará excelentes alianças hoje. Cuidado para não dispersar de suas obrigações primordiais.", cosmicImg: "https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&w=400&q=80" },
@@ -462,14 +465,14 @@ export const SIGNS_ZODIAC_LIST = [
   { name: "Leão", symbol: "♌", element: "Fogo", regente: "Sol", traits: "Criatividade, magnetismo, generosidade, orgulho.", horoscopo: "Seu poder pessoal de liderança brilha. Use de empatia nos círculos de negócios para somar forças.", cosmicImg: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=400&q=80" },
   { name: "Virgem", symbol: "♍", element: "Terra", regente: "Mercúrio", traits: "Método, aperfeiçoamento, lógica, autocrítica excessiva.", horoscopo: "Organize seus arquivos e cuide de sua rotina de bem estar. Seu corpo pede repouso ativo hoje.", cosmicImg: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=400&q=80" },
   { name: "Libra", symbol: "♎", element: "Ar", regente: "Vênus", traits: "Equilíbrio, conciliação, estética, indecisão.", horoscopo: "Uma decisão importante na vida afetiva demanda equilíbrio sincero e transparência de palavras.", cosmicImg: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80" },
-  { name: "Escorpião", symbol: "♏", element: "Água", regente: "Plutão", traits: "Profundidade, transformação, garra, controle.", horoscopo: "Energia investigativa poderosa. Suas visões desmascaram mentiras de imediato. Siga sua clarividência.", cosmicImg: "https://images.unsplash.com/photo-1543722530-d2c3201371e7?auto=format&fit=crop&w=400&q=80" },
+  { name: "Escorpião", symbol: "♏", element: "Água", regente: "Plutão", traits: "Profundidade, transformation, garra, controle.", horoscopo: "Energia investigativa poderosa. Suas visões desmascaram mentiras de imediato. Siga sua clarividência.", cosmicImg: "https://images.unsplash.com/photo-1543722530-d2c3201371e7?auto=format&fit=crop&w=400&q=80" },
   { name: "Sagitário", symbol: "♐", element: "Fogo", regente: "Júpiter", traits: "Aventura, expansão, sabedoria, autoindulgência.", horoscopo: "Novas possibilidades de viagem ou novos saberes de retórica surgem para inspirar sua mente ávida.", cosmicImg: "https://images.unsplash.com/photo-1516339901601-2e1d62dc0c45?auto=format&fit=crop&w=400&q=80" },
   { name: "Capricórnio", symbol: "♑", element: "Terra", regente: "Saturno", traits: "Estrutura, dever, resiliência, rigidez.", horoscopo: "Foque em planos pragmáticos de longo prazo. A estabilidade decorre de sua dedicação sistemática.", cosmicImg: "https://images.unsplash.com/photo-1504333631150-c8ab2da93b03?auto=format&fit=crop&w=400&q=80" },
   { name: "Aquário", symbol: "♒", element: "Ar", regente: "Urano", traits: "Independência, originalidade, visionário, intelectual.", horoscopo: "Sua audácia vanguardista flui forte em 2026. Recuse dogmas limitadores e busque criar sua própria órbita.", cosmicImg: "https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?auto=format&fit=crop&w=400&q=80" },
-  { name: "Peixes", symbol: "♓", element: "Água", regente: "Netuno", traits: "Intuição, sensibilidade poética, compaixão, escapismo.", horoscopo: "Seus sonhos estão extraordinariamente falantes hoje. Mantenha papel e caneta ao lado da cama.", cosmicImg: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=400&q=80" }
+  { name: "Peixes", symbol: "♓", element: "Água", regente: "Netuno", traits: "Intuição, sensibilidade poética, compaixão, escapismo.", horoscopo: "Seu sonhos estão extraordinariamente falantes hoje. Mantenha papel e caneta ao lado da cama.", cosmicImg: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=400&q=80" }
 ];
 
-export const BLOG_ARTICLES_LIST = [
+const _BLOG_ARTICLES_LIST = [
   {
     id: 1,
     title: "O que a Astrologia REALMENTE pode e não pode fazer",
@@ -496,10 +499,122 @@ export const BLOG_ARTICLES_LIST = [
   }
 ];
 
-export const FAQ_LIST = [
+const _FAQ_LIST = [
   { q: "O que é o sistema Placidus usado para gerar o Mapa?", a: "O sistema Placidus é o método de divisão matemática de casas astrológicas mais testado e difundido na astrologia ocidental desde o século XVII. Ele leva em conta a latitude exata de nascimento para projetar as 12 cúspides no firmamento celeste no instante de seu sopro vital primário." },
   { q: "Quantas consultas ao Oráculo do Dia posso submeter?", a: "Para conservar sua reverência mística e valor terapêutico percebido, o aplicativo limita as respostas profundas do Oráculo do Dia a exatamente uma consulta por dia por usuário." },
   { q: "Meus sonhos analisados no 'Cofre dos Sonhos' são confidenciais?", a: "Sim, absolutamente garantido de forma premium. Todos os seus registros oníricos e interpretações automatizadas por IA ficam criptografados internamente protegendo sua integridade íntima." },
   { q: "Posso criar e calcular o mapa de outras pessoas importantes?", a: "Perfeitamente. Na aba 'Mapa Estelar' sob a categoria 'Mapas Extras', você poderá salvar e consultar o mapa de até 2 outras pessoas queridas com facilidade sem desfigurar seus dados originais de nascimento." }
 ];
+
+function translateZodiacItem(item: any, lang: Language) {
+  if (!item) return item;
+  return {
+    ...item,
+    name: translateUiText(item.name, lang),
+    element: translateUiText(item.element, lang),
+    regente: translateUiText(item.regente, lang),
+    traits: translateUiText(item.traits, lang),
+    horoscopo: translateUiText(item.horoscopo, lang)
+  };
+}
+
+function translateBlogItem(item: any, lang: Language) {
+  if (!item) return item;
+  return {
+    ...item,
+    title: translateUiText(item.title, lang),
+    summary: translateUiText(item.summary, lang),
+    content: translateUiText(item.content, lang)
+  };
+}
+
+function translateFaqItem(item: any, lang: Language) {
+  if (!item) return item;
+  return {
+    ...item,
+    q: translateUiText(item.q, lang),
+    a: translateUiText(item.a, lang)
+  };
+}
+
+function translatePresetItem(item: any, lang: Language) {
+  if (!item) return item;
+  let code = item.defaultCode;
+  
+  if (lang !== 'pt') {
+    if (item.id === "calculator") {
+      code = code
+        .replace(/Histórico/g, translateUiText("Histórico", lang))
+        .replace(/Calculadora resetada/g, translateUiText("Calculadora resetada", lang))
+        .replace(/Número clicado:/g, translateUiText("Número clicado:", lang))
+        .replace(/Operador clicado:/g, translateUiText("Operador clicado:", lang));
+    } else if (item.id === "todolist") {
+      code = code
+        .replace(/Fazer Hoje/g, translateUiText("Fazer Hoje", lang))
+        .replace(/Carregando\.\.\./g, translateUiText("Carregando...", lang))
+        .replace(/Planeje uma nova tarefa\.\.\./g, translateUiText("Planeje uma nova tarefa...", lang))
+        .replace(/Nenhuma tarefa encontrada neste filtro\./g, translateUiText("Nenhuma tarefa encontrada neste filtro.", lang))
+        .replace(/excluir/g, translateUiText("excluir", lang))
+        .replace(/Filtrar: Pendentes/g, translateUiText("Filtrar: Pendentes", lang))
+        .replace(/Filtrar: Concluídas/g, translateUiText("Filtrar: Concluídas", lang))
+        .replace(/Filtrar: Todos/g, translateUiText("Filtrar: Todos", lang))
+        .replace(/concluídas/g, translateUiText("concluídas", lang))
+        .replace(/restantes/g, translateUiText("restantes", lang));
+    } else if (item.id === "pomodoro") {
+      code = code
+        .replace(/POMODORO ESTUDO/g, translateUiText("POMODORO ESTUDO", lang))
+        .replace(/FOCO ABSOLUTO/g, translateUiText("FOCO ABSOLUTO", lang))
+        .replace(/Iniciar/g, translateUiText("Iniciar", lang))
+        .replace(/Resetar/g, translateUiText("Resetar", lang))
+        .replace(/HORA DO DESCANSO/g, translateUiText("HORA DO DESCANSO", lang))
+        .replace(/Foco iniciado!/g, translateUiText("Foco iniciado!", lang))
+        .replace(/Hora de descansar um pouco\./g, translateUiText("Hora de descansar um pouco.", lang))
+        .replace(/Pausar/g, translateUiText("Pausar", lang))
+        .replace(/Retomar/g, translateUiText("Retomar", lang));
+    } else if (item.id === "sandbox") {
+      code = code
+        .replace(/Visite Meu Portfólio Principal/g, translateUiText("Visite Meu Portfólio Principal", lang))
+        .replace(/Conecte-se comigo no LinkedIn/g, translateUiText("Conecte-se comigo no LinkedIn", lang))
+        .replace(/Siga meus Projetos no GitHub/g, translateUiText("Siga meus Projetos no GitHub", lang))
+        .replace(/Membros/g, translateUiText("Membros", lang))
+        .replace(/inscritos/g, translateUiText("inscritos", lang));
+    }
+  }
+
+  return {
+    ...item,
+    name: translateUiText(item.name, lang),
+    category: translateUiText(item.category, lang),
+    description: translateUiText(item.description, lang),
+    defaultCode: code
+  };
+}
+
+function createArrayProxy<T>(rawArray: T[], translateFn: (item: T, lang: Language) => T): T[] {
+  return new Proxy(rawArray, {
+    get(target, prop, receiver) {
+      const value = Reflect.get(target, prop, receiver);
+      
+      if (typeof prop === 'string' && !isNaN(Number(prop))) {
+        const lang = (i18n.language || 'pt') as Language;
+        return translateFn(value, lang);
+      }
+      
+      if (typeof value === 'function') {
+        return function(this: any, ...args: any[]) {
+          const lang = (i18n.language || 'pt') as Language;
+          const mappedArray = target.map(item => translateFn(item, lang));
+          return (mappedArray as any)[prop](...args);
+        };
+      }
+      
+      return value;
+    }
+  });
+}
+
+export const PRESETS = createArrayProxy(_PRESETS, translatePresetItem);
+export const SIGNS_ZODIAC_LIST = createArrayProxy(_SIGNS_ZODIAC_LIST, translateZodiacItem);
+export const BLOG_ARTICLES_LIST = createArrayProxy(_BLOG_ARTICLES_LIST, translateBlogItem);
+export const FAQ_LIST = createArrayProxy(_FAQ_LIST, translateFaqItem);
 

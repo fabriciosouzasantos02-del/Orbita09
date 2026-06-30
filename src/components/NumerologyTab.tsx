@@ -4,6 +4,7 @@ import { Language, translations } from "../translations";
 import { NumerologyData } from "../types";
 import { useTranslation } from "react-i18next";
 import { translateUiText } from "../lib/translations";
+import { useIdioma } from "../context/IdiomaContext";
 
 interface NumerologyTabProps {
   numerologyData: NumerologyData;
@@ -29,12 +30,13 @@ const localTabTranslations: Record<Language, Record<string, string>> = {
 };
 
 export default function NumerologyTab({ numerologyData, lang }: NumerologyTabProps) {
-  const t = translations[lang];
+  const { idioma } = useIdioma();
+  const activeLang = idioma || lang || 'pt';
+  const t = translations[activeLang];
   const { t: tI18nRaw } = useTranslation();
 
   const tI18n = (text: string) => {
     if (!text) return "";
-    const activeLang = lang || 'pt';
     if (localTabTranslations[activeLang]?.[text]) {
       return localTabTranslations[activeLang][text];
     }

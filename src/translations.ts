@@ -1,6 +1,8 @@
+import i18next from "i18next";
+
 export type Language = 'pt' | 'en' | 'de' | 'es' | 'fr';
 
-export const translations = {
+export const staticTranslations = {
   pt: {
     title: "Órbita Next",
     subtitle: "Sua Jornada Cósmica e Astrológica Pessoal",
@@ -582,3 +584,24 @@ export const translations = {
     astroModelEngine: "Moteur cosmique interne : Précision mathématique hors ligne.",
   }
 };
+
+export const translations = new Proxy({}, {
+  get(target, langKey: string) {
+    if (typeof langKey !== 'string') return undefined;
+    return new Proxy({}, {
+      get(innerTarget, key: string) {
+        if (typeof key !== 'string') return undefined;
+        // 1. Try to get translation via i18next
+        if (i18next && i18next.isInitialized) {
+          const res = i18next.t(key, { lng: langKey });
+          if (res && res !== key) {
+            return res;
+          }
+        }
+        // 2. Fall back to static translations
+        const dict = (staticTranslations as any)[langKey] || staticTranslations.pt;
+        return dict[key] !== undefined ? dict[key] : key;
+      }
+    });
+  }
+}) as any;

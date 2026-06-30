@@ -77,25 +77,26 @@ interface ProfileSettingsTabProps {
 }
 
 export default function ProfileSettingsTab({ userProfile, lang, setLang, onLogout }: ProfileSettingsTabProps) {
-  const { mudarIdioma } = useIdioma();
+  const { mudarIdioma, idioma } = useIdioma();
+  const activeLang = idioma || lang || 'pt';
   const [name, setName] = useState(userProfile.name);
   const [birthCity, setBirthCity] = useState(userProfile.birthDetails.birthCity);
   const [birthTime, setBirthTime] = useState(userProfile.birthDetails.birthTime);
   const [birthDate, setBirthDate] = useState(userProfile.birthDetails.birthDate);
   const [success, setSuccess] = useState(false);
 
-  const t = translations[lang];
+  const t = translations[activeLang];
   const { t: tI18nRaw } = useTranslation();
 
   const tI18n = (text: string) => {
     if (!text) return "";
-    const localDict = LOCAL_SETTINGS_TRANSLATIONS[lang];
+    const localDict = LOCAL_SETTINGS_TRANSLATIONS[activeLang];
     if (localDict && localDict[text]) {
       return localDict[text];
     }
     const res = tI18nRaw(text);
     if (res === text || !res) {
-      return translateUiText(text, lang || 'pt');
+      return translateUiText(text, activeLang || 'pt');
     }
     return res;
   };
@@ -230,7 +231,7 @@ export default function ProfileSettingsTab({ userProfile, lang, setLang, onLogou
                       mudarIdioma(l as any);
                     }}
                     className={`py-1.5 border rounded-lg uppercase font-bold text-center transition cursor-pointer ${
-                      lang === l 
+                      activeLang === l 
                         ? "bg-neutral-900 text-white border-neutral-900" 
                         : "bg-white text-neutral-500 border-neutral-200 hover:bg-neutral-50"
                     }`}

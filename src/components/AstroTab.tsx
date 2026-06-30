@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { Language, translations } from "../translations";
 import { NatalChartData, UserProfile } from "../types";
 import { useTranslation } from "react-i18next";
+import { useIdioma } from "../context/IdiomaContext";
 
 interface AstroTabProps {
   userProfile: UserProfile;
@@ -12,10 +13,13 @@ interface AstroTabProps {
 }
 
 export default function AstroTab({ userProfile, natalChart, lang }: AstroTabProps) {
+  const { idioma } = useIdioma();
+  const activeLang = idioma || lang || "pt";
+
   const [report, setReport] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [errorWord, setErrorWord] = useState<string>("");
-  const t = translations[lang];
+  const t = translations[activeLang];
   const { t: tI18n } = useTranslation();
 
   const handleGenerateReport = async () => {
@@ -31,7 +35,7 @@ export default function AstroTab({ userProfile, natalChart, lang }: AstroTabProp
           birthTime: userProfile.birthDetails.birthTime,
           birthCity: userProfile.birthDetails.birthCity,
           chart: natalChart,
-          lang,
+          lang: activeLang,
         }),
       });
       const data = await response.json();

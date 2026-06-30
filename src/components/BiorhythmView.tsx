@@ -20,6 +20,7 @@ import {
   AlertCircle 
 } from 'lucide-react';
 import { translateUiText, Language } from '../lib/translations';
+import { useIdioma } from '../context/IdiomaContext';
 
 interface BiorhythmViewProps {
   userName?: string;
@@ -39,12 +40,14 @@ const CYCLES = {
 };
 
 export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang }: BiorhythmViewProps) {
+  const { idioma } = useIdioma();
+  const activeL = (idioma || lang || 'pt') as Language;
   const { t: i18nT } = useTranslation();
   const t = (text: string) => {
     if (!text) return "";
     const res = i18nT(text);
     if (res === text || !res) {
-      return translateUiText(text, (lang as Language) || 'pt');
+      return translateUiText(text, activeL);
     }
     return res;
   };
@@ -153,19 +156,19 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
   // Format full date line
   const formattedTodayLabel = useMemo(() => {
     try {
-      return new Intl.DateTimeFormat(lang || 'pt', { dateStyle: 'full' }).format(targetDateObj);
+      return new Intl.DateTimeFormat(activeL || 'pt', { dateStyle: 'full' }).format(targetDateObj);
     } catch {
       const wDay = getWeekdayName(targetDateObj);
       const day = targetDateObj.getDate();
       const month = getMonthName(targetDateObj);
       const year = targetDateObj.getFullYear();
-      if (lang === 'en') return `${wDay}, ${month} ${day}, ${year}`;
-      if (lang === 'de') return `${wDay}, ${day}. ${month} ${year}`;
-      if (lang === 'fr') return `${wDay} ${day} ${month} ${year}`;
-      if (lang === 'es') return `${wDay}, ${day} de ${month} de ${year}`;
+      if (activeL === 'en') return `${wDay}, ${month} ${day}, ${year}`;
+      if (activeL === 'de') return `${wDay}, ${day}. ${month} ${year}`;
+      if (activeL === 'fr') return `${wDay} ${day} ${month} ${year}`;
+      if (activeL === 'es') return `${wDay}, ${day} de ${month} de ${year}`;
       return `${wDay}, ${day} de ${month} de ${year}`;
     }
-  }, [targetDateObj, lang]);
+  }, [targetDateObj, activeL]);
 
   // Chart coordinate calculation for the 15 days window (SVG width 600, height 200)
   // X: 0 to 600 map from index 0 to 14
@@ -209,12 +212,12 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
     const startStr = `${String(start.getDate()).padStart(2, '0')}/${String(start.getMonth() + 1).padStart(2, '0')}`;
     const endStr = `${String(end.getDate()).padStart(2, '0')}/${String(end.getMonth() + 1).padStart(2, '0')}`;
     
-    if (lang === 'de') return `vom ${startStr} bis ${endStr}`;
-    if (lang === 'en') return `from ${startStr} to ${endStr}`;
-    if (lang === 'es') return `del ${startStr} al ${endStr}`;
-    if (lang === 'fr') return `du ${startStr} au ${endStr}`;
+    if (activeL === 'de') return `vom ${startStr} bis ${endStr}`;
+    if (activeL === 'en') return `from ${startStr} to ${endStr}`;
+    if (activeL === 'es') return `del ${startStr} al ${endStr}`;
+    if (activeL === 'fr') return `du ${startStr} au ${endStr}`;
     return `de ${startStr} a ${endStr}`;
-  }, [rawDaysRange, lang]);
+  }, [rawDaysRange, activeL]);
 
   return (
     <div id="biorhythm-root-panel" className="space-y-6 text-left">

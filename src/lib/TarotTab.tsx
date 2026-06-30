@@ -5,19 +5,22 @@ import { performTarotReading } from "../tarot";
 import { Language, translations } from "../translations";
 import { TarotCard } from "../types";
 import { useTranslation } from "react-i18next";
+import { useIdioma } from "../context/IdiomaContext";
 
 interface TarotTabProps {
   lang: Language;
 }
 
 export default function TarotTab({ lang }: TarotTabProps) {
+  const { idioma } = useIdioma();
+  const activeLang = idioma || lang || "pt";
   const [question, setQuestion] = useState("");
   const [reading, setReading] = useState<{ card: TarotCard; isReversed: boolean; position: 'passado' | 'presente' | 'futuro' }[] | null>(null);
   const [interpretation, setInterpretation] = useState("");
   const [loadingAI, setLoadingAI] = useState(false);
   const [isShuffling, setIsShuffling] = useState(false);
 
-  const t = translations[lang];
+  const t = translations[activeLang];
   const { t: tI18n } = useTranslation();
 
   const handleDrawCards = () => {
@@ -42,7 +45,7 @@ export default function TarotTab({ lang }: TarotTabProps) {
         body: JSON.stringify({
           question,
           cards: reading,
-          lang,
+          lang: activeLang,
         }),
       });
       const data = await response.json();

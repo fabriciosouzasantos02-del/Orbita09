@@ -1,5 +1,6 @@
 import { performAstroCalculation, AstroPlacement, AstroAspectDetails } from './astroMath';
 import { generateBespokeCategory } from './compatibilityTemplates';
+import { translateUiText } from '../lib/translations';
 import i18next from 'i18next';
 
 export interface CategoryDetails {
@@ -809,12 +810,9 @@ export function computeDetailedCompatibility(
   };
 
   const fallbackTexts = {
-    pt: { naoFornecida: "Não fornecida", naoFornecido: "Não fornecido" },
-    en: { naoFornecida: "Not provided", naoFornecido: "Not provided" },
-    es: { naoFornecida: "No proporcionada", naoFornecido: "No proporcionado" },
-    de: { naoFornecida: "Nicht angegeben", naoFornecido: "Nicht angegeben" },
-    fr: { naoFornecida: "Non fournie", naoFornecido: "Non fourni" }
-  }[lang] || { naoFornecida: "Não fornecida", naoFornecido: "Não fornecido" };
+    naoFornecida: translateUiText("Não fornecida", lang),
+    naoFornecido: translateUiText("Não fornecido", lang)
+  };
 
   return {
     partnerName: name2,

@@ -26,6 +26,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { translateUiText, Language } from '../lib/translations';
 import { LUNAR_PHASES_TRANSLATIONS, SIGN_MEDICAL_TRANSLATED, LOCAL_UI_TRANSLATIONS } from '../lib/lunarTranslations';
+import { useIdioma } from '../context/IdiomaContext';
 
 // Simple analytical Sun longitude
 function calculateSunLongitude(T: number): number {
@@ -323,8 +324,9 @@ export default function LunarCycle({
   userAscendant = 'Sagitário',
   lang
 }: LunarCycleProps) {
+  const { idioma } = useIdioma();
   const { t: i18nT } = useTranslation();
-  const activeL = (lang as Language) || 'pt';
+  const activeL = (idioma || lang || 'pt') as Language;
   const t = (text: string) => {
     if (!text) return "";
     const res = i18nT(text);
@@ -828,7 +830,7 @@ export default function LunarCycle({
 
                   <div className="flex justify-between items-center pt-1.5 flex-wrap gap-2.5 border-t border-slate-900/80">
                     <span className="text-[10px] font-mono text-indigo-400 font-bold block uppercase tracking-wide">
-                      ⊙ {selectedDate.toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : lang === 'de' ? 'de-DE' : lang === 'fr' ? 'fr-FR' : 'pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })} {t("às")} {selectedDate.toTimeString().split(' ')[0].substring(0, 5)} {isLiveSync && `(${t("Relógio Sincro")})`}
+                      ⊙ {selectedDate.toLocaleDateString(activeL === 'en' ? 'en-US' : activeL === 'es' ? 'es-ES' : activeL === 'de' ? 'de-DE' : activeL === 'fr' ? 'fr-FR' : 'pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })} {t("às")} {selectedDate.toTimeString().split(' ')[0].substring(0, 5)} {isLiveSync && `(${t("Relógio Sincro")})`}
                     </span>
                     
                     {!isLiveSync && (
@@ -865,8 +867,8 @@ export default function LunarCycle({
                     <div className="text-right">
                       <span className="text-[9px] font-mono text-[#E5C158] block uppercase font-bold">{t("Duração Real")}</span>
                       <span className="text-[10px] font-mono text-slate-400">
-                        {limits.startD.toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : lang === 'de' ? 'de-DE' : lang === 'fr' ? 'fr-FR' : 'pt-BR', { day: '2-digit', month: 'numeric' })} a {' '}
-                        {limits.endD.toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : lang === 'de' ? 'de-DE' : lang === 'fr' ? 'fr-FR' : 'pt-BR', { day: '2-digit', month: 'numeric' })}
+                        {limits.startD.toLocaleDateString(activeL === 'en' ? 'en-US' : activeL === 'es' ? 'es-ES' : activeL === 'de' ? 'de-DE' : activeL === 'fr' ? 'fr-FR' : 'pt-BR', { day: '2-digit', month: 'numeric' })} a {' '}
+                        {limits.endD.toLocaleDateString(activeL === 'en' ? 'en-US' : activeL === 'es' ? 'es-ES' : activeL === 'de' ? 'de-DE' : activeL === 'fr' ? 'fr-FR' : 'pt-BR', { day: '2-digit', month: 'numeric' })}
                       </span>
                     </div>
                   </div>

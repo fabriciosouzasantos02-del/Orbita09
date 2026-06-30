@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Activity, Award, Calendar, Sparkles, ShieldCheck, BookOpen, 
@@ -15,6 +15,7 @@ import { SIGNS_ZODIAC_LIST, BLOG_ARTICLES_LIST } from '../data';
 import { loadCalculationCache, saveCalculationCache } from '../lib/firebase';
 import { getAvatarUrl } from '../lib/avatars';
 import { translateUiText, Language } from '../lib/translations';
+import { useIdioma } from '../context/IdiomaContext';
 
 function getLifePathNumber(birthDate: string): number {
   if (!birthDate) return 8; // default fallback
@@ -676,10 +677,11 @@ export default function UserDashboardPortal({
   onUpdateCurrentUser,
   lang
 }: UserDashboardPortalProps) {
+  const { idioma } = useIdioma();
+  const activeLang = idioma || lang || 'pt';
   const { t: i18nT } = useTranslation();
   const t = (text: string) => {
     if (!text) return "";
-    const activeLang = lang || 'pt';
     if (activeLang !== 'pt') {
       const dict = localPortalTranslations[activeLang] || localPortalTranslations['en'];
       if (dict?.[text]) {
@@ -692,7 +694,7 @@ export default function UserDashboardPortal({
     }
     return res;
   };
-  const travelerFallback = lang === 'de' ? 'Reisender' : lang === 'en' ? 'Traveler' : lang === 'es' ? 'Viajero' : 'Viajante';
+  const travelerFallback = t("Viajante");
   const userFirstName = user?.name ? user.name.split(' ')[0] : travelerFallback;
   const zodiacSign = getZodiacSign(user?.birthDate);
   const lifePathNumber = getLifePathNumber(user?.birthDate);
@@ -725,11 +727,43 @@ export default function UserDashboardPortal({
   const [universoSintonizado, setUniversoSintonizado] = useState<boolean>(false);
 
   // Weekly Missions State
-  const [weeklyMissions, setWeeklyMissions] = useState([
-    { id: "w1", title: "Esta semana tente resolver uma pendência antiga", description: "Identifique uma pendência material ou burocrática acumulada e tome uma ação para resolvê-la, liberando fluxo de Saturno.", isCompleted: false, points: 150 },
-    { id: "w2", title: "Esta semana fortaleça um relacionamento importante", description: "Envie uma mensagem genuína de carinho ou faça um gesto de consideração a alguém do seu círculo íntimo.", isCompleted: false, points: 120 },
-    { id: "w3", title: "Esta semana dedique tempo ao aprendizado", description: "Invista pelo menos 1 hora em um livro, curso ou áudio de meditação voltado ao seu desenvolvimento pessoal.", isCompleted: false, points: 100 }
-  ]);
+  const [weeklyMissions, setWeeklyMissions] = useState(() => {
+    const activeLang = lang || 'pt';
+    const isEn = activeLang === 'en';
+    const isEs = activeLang === 'es';
+    const isDe = activeLang === 'de';
+    const isFr = activeLang === 'fr';
+    return [
+      { id: "w1", title: isEn ? "This week try to resolve an old pending matter" : isEs ? "Esta semana intente resolver un asunto pendiente antiguo" : isDe ? "Versuchen Sie diese Woche, eine alte Angelegenheit zu klären" : isFr ? "Cette semaine essayez de résoudre une affaire en suspens ancienne" : "Esta semana tente resolver uma pendência antiga", description: isEn ? "Identify an accumulated material or bureaucratic pending issue and take action to resolve it, releasing Saturn's flow." : isEs ? "Identifique un asunto pendiente material o burocrático acumulado y tome medidas para resolverlo, liberando el flujo de Saturno." : isDe ? "Identifizieren Sie eine aufgelaufene materieller oder bürokratische Angelegenheit und ergreifen Sie Maßnahmen zu deren Klärung, um den Fluss Saturns freizusetzen." : isFr ? "Identifiez une question en suspens matérielle ou bureaucratique accumulée et agissez pour la résoudre, libérant ainsi le flux de Saturne." : "Identifique uma pendência material ou burocrática acumulada e tome uma ação para resolvê-la, liberando fluxo de Saturno.", isCompleted: false, points: 150 },
+      { id: "w2", title: isEn ? "This week strengthen an important relationship" : isEs ? "Esta semana fortalezca una relación importante" : isDe ? "Stärken Sie diese Woche eine wichtige Beziehung" : isFr ? "Cette semaine renforcez une relation importante" : "Esta semana fortaleça um relacionamento importante", description: isEn ? "Send a genuine message of affection or make a gesture of consideration to someone in your inner circle." : isEs ? "Envíe un mensaje genuino de afecto o tenga un gesto de consideración hacia alguien de su círculo íntimo." : isDe ? "Senden Sie eine aufrichtige Botschaft der Zuneigung oder zeigen Sie jemandem aus Ihrem engsten Kreis eine Geste der Aufmerksamkeit." : isFr ? "Envoyez un message sincère d'affection ou faites un geste de considération envers quelqu'un de votre entourage proche." : "Envie uma mensagem genuína de carinho ou faça um gesto de consideração a alguém do seu círculo íntimo.", isCompleted: false, points: 120 },
+      { id: "w3", title: isEn ? "This week dedicate time to learning" : isEs ? "Esta semana dedique tempo ao aprendizado" : isDe ? "Widmen Sie diese Woche Zeit dem Lernen" : isFr ? "Cette semaine consacrez du temps à l'apprentissage" : "Esta semana dedique tempo ao aprendizado", description: isEn ? "Invest at least 1 hour in a book, course or meditation audio focused on your personal development." : isEs ? "Invierta al menos 1 hora en un libro, curso o audio de meditación enfocado en su desarrollo personal." : isDe ? "Investieren Sie mindestens 1 Stunde in ein Buch, einen Kurs oder ein Meditationsaudio, das auf Ihre persönliche Entwicklung ausgerichtet ist." : isFr ? "Investissez au moins 1 heure dans un livre, un cours ou un enregistrement de méditation axé sur votre développement personnel." : "Invista pelo menos 1 hora em um livro, curso ou áudio de meditação voltado ao seu desenvolvimento pessoal.", isCompleted: false, points: 100 }
+    ];
+  });
+
+  // Keep weeklyMissions translated when language prop changes
+  useEffect(() => {
+    const activeLang = lang || 'pt';
+    const isEn = activeLang === 'en';
+    const isEs = activeLang === 'es';
+    const isDe = activeLang === 'de';
+    const isFr = activeLang === 'fr';
+    const templates = [
+      { id: "w1", title: isEn ? "This week try to resolve an old pending matter" : isEs ? "Esta semana intente resolver un asunto pendiente antiguo" : isDe ? "Versuchen Sie diese Woche, eine alte Angelegenheit zu klären" : isFr ? "Cette semaine essayez de résoudre une affaire en suspens ancienne" : "Esta semana tente resolver uma pendência antiga", description: isEn ? "Identify an accumulated material or bureaucratic pending issue and take action to resolve it, releasing Saturn's flow." : isEs ? "Identifique un asunto pendiente material o burocrático acumulado y tome medidas para resolverlo, liberando el flujo de Saturno." : isDe ? "Identifizieren Sie eine aufgelaufene materieller oder bürokratische Angelegenheit und ergreifen Sie Maßnahmen zu deren Klärung, um den Fluss Saturns freizusetzen." : isFr ? "Identifiez une question en suspens matérielle ou bureaucratique accumulée et agissez pour la résoudre, libérant ainsi le flux de Saturne." : "Identifique uma pendência material ou burocrática acumulada e tome uma ação para resolvê-la, liberando fluxo de Saturno.", isCompleted: false, points: 150 },
+      { id: "w2", title: isEn ? "This week strengthen an important relationship" : isEs ? "Esta semana fortalezca una relación importante" : isDe ? "Stärken Sie diese Woche eine wichtige Beziehung" : isFr ? "Cette semaine renforcez une relation importante" : "Esta semana fortaleça um relacionamento importante", description: isEn ? "Send a genuine message of affection or make a gesture of consideration to someone in your inner circle." : isEs ? "Envíe un mensaje genuino de afecto o tenga un gesto de consideración hacia alguien de su círculo íntimo." : isDe ? "Senden Sie eine aufrichtige Botschaft der Zuneigung oder zeigen Sie jemandem aus Ihrem engsten Kreis eine Geste der Aufmerksamkeit." : isFr ? "Envoyez un message sincère d'affection ou faites un geste de considération envers quelqu'un de votre entourage proche." : "Envie uma mensagem genuína de carinho ou faça um gesto de consideração a alguém do seu círculo íntimo.", isCompleted: false, points: 120 },
+      { id: "w3", title: isEn ? "This week dedicate time to learning" : isEs ? "Esta semana dedique tempo ao aprendizado" : isDe ? "Widmen Sie diese Woche Zeit dem Lernen" : isFr ? "Cette semana consacrez du temps à l'apprentissage" : "Esta semana dedique tempo ao aprendizado", description: isEn ? "Invest at least 1 hour in a book, course or meditation audio focused on your personal development." : isEs ? "Invierta al menos 1 hora en un libro, curso o audio de meditación enfocado en su desarrollo personal." : isDe ? "Investieren Sie mindestens 1 Stunde in ein Buch, einen Kurs oder ein Meditationsaudio, das auf Ihre persönliche Entwicklung ausgerichtet ist." : isFr ? "Investissez au moins 1 heure dans un livre, un cours ou un enregistrement de méditation axé sur votre développement personnel." : "Invista pelo menos 1 hora em um livro, curso ou áudio de meditação voltado ao seu desenvolvimento pessoal.", isCompleted: false, points: 100 }
+    ];
+    setWeeklyMissions(prev => prev.map(m => {
+      const tpl = templates.find(t => t.id === m.id);
+      if (tpl) {
+        return {
+          ...m,
+          title: tpl.title,
+          description: tpl.description
+        };
+      }
+      return m;
+    }));
+  }, [activeLang]);
 
   // Osiris Intelligent AI System States
   const [osirisDashboard, setOsirisDashboard] = useState<any>(null);
@@ -750,23 +784,34 @@ export default function UserDashboardPortal({
   const blogResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
     const query = searchQuery.toLowerCase();
-    return BLOG_ARTICLES_LIST.filter(art => 
+    return BLOG_ARTICLES_LIST.map(art => ({
+      ...art,
+      title: t(art.title),
+      summary: t(art.summary),
+      content: t(art.content)
+    })).filter(art => 
       art.title.toLowerCase().includes(query) || 
       art.summary.toLowerCase().includes(query) || 
       art.content.toLowerCase().includes(query)
     );
-  }, [searchQuery]);
+  }, [searchQuery, activeLang]);
 
   const planetResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
     const query = searchQuery.toLowerCase();
-    return SIGNS_ZODIAC_LIST.filter(sign => 
+    return SIGNS_ZODIAC_LIST.map(sign => ({
+      ...sign,
+      name: t(sign.name),
+      regente: t(sign.regente),
+      traits: t(sign.traits),
+      horoscopo: t(sign.horoscopo)
+    })).filter(sign => 
       sign.name.toLowerCase().includes(query) || 
       sign.regente.toLowerCase().includes(query) || 
       sign.traits.toLowerCase().includes(query) || 
       sign.horoscopo.toLowerCase().includes(query)
     );
-  }, [searchQuery]);
+  }, [searchQuery, activeLang]);
 
   const navigationDestinations = useMemo(() => {
     return [
@@ -808,7 +853,7 @@ export default function UserDashboardPortal({
     const fetchMissions = async () => {
       try {
         if (email) {
-          const cachedMissions = await loadCalculationCache(email, `daily_missions_${todayStr}_${lang}`);
+          const cachedMissions = await loadCalculationCache(email, `daily_missions_${todayStr}_${activeLang}`);
           if (cachedMissions && Array.isArray(cachedMissions)) {
             const updated = cachedMissions.map((m: any) => {
               const matched = dailyMissions.find(curr => curr.id === m.id);
@@ -825,7 +870,7 @@ export default function UserDashboardPortal({
         const res = await fetch("/api/astrology/daily-missions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userProfile: user, lang: lang })
+          body: JSON.stringify({ userProfile: user, lang: activeLang })
         });
         if (res.ok) {
           const data = await res.json();
@@ -840,7 +885,7 @@ export default function UserDashboardPortal({
             });
             setDailyMissions(updated);
             if (email) {
-              await saveCalculationCache(email, `daily_missions_${todayStr}_${lang}`, data.missions);
+              await saveCalculationCache(email, `daily_missions_${todayStr}_${activeLang}`, data.missions);
             }
           }
         }
@@ -854,7 +899,7 @@ export default function UserDashboardPortal({
       setOsirisLoading(true);
       try {
         if (email) {
-          const cachedDashboard = await loadCalculationCache(email, `daily_osiris_dashboard_${todayStr}_${lang}`);
+          const cachedDashboard = await loadCalculationCache(email, `daily_osiris_dashboard_${todayStr}_${activeLang}`);
           if (cachedDashboard) {
             setOsirisDashboard(cachedDashboard);
             setOsirisLoading(false);
@@ -863,7 +908,7 @@ export default function UserDashboardPortal({
         }
 
         const defaultBiorhythm = { physical: 78, emotional: 82, intellectual: 65 };
-        const defaultWeather = { temperature: 24, condition: lang === 'de' ? "Teilweise bewölkt" : lang === 'en' ? "Partly Cloudy" : lang === 'es' ? "Parcialmente Nublado" : "Parcialmente Nublado" };
+        const defaultWeather = { temperature: 24, condition: activeLang === 'de' ? "Teilweise bewölkt" : activeLang === 'en' ? "Partly Cloudy" : activeLang === 'es' ? "Parcialmente Nublado" : "Parcialmente Nublado" };
         const locationStr = user?.birthCity || "São Paulo, SP";
 
         const res = await fetch("/api/osiris/dashboard", {
@@ -875,14 +920,14 @@ export default function UserDashboardPortal({
             biorhythm: defaultBiorhythm,
             location: locationStr,
             lastDream: dreamsHistory && dreamsHistory.length > 0 ? dreamsHistory[0] : null,
-            lang: lang
+            lang: activeLang
           })
         });
         if (res.ok) {
           const data = await res.json();
           setOsirisDashboard(data);
           if (email) {
-            await saveCalculationCache(email, `daily_osiris_dashboard_${todayStr}_${lang}`, data);
+            await saveCalculationCache(email, `daily_osiris_dashboard_${todayStr}_${activeLang}`, data);
           }
         }
       } catch (err) {
@@ -894,7 +939,7 @@ export default function UserDashboardPortal({
 
     fetchMissions();
     fetchOsirisDashboard();
-  }, [user, lang]);
+  }, [user, activeLang]);
 
   const handleSendOsirisMessage = async () => {
     if (!osirisChatInput.trim() || osirisChatSending) return;
@@ -905,7 +950,7 @@ export default function UserDashboardPortal({
 
     try {
       const defaultBiorhythm = { physical: 78, emotional: 82, intellectual: 65 };
-      const defaultWeather = { temperature: 24, condition: lang === 'de' ? "Teilweise bewölkt" : lang === 'en' ? "Partly Cloudy" : lang === 'es' ? "Parcialmente Nublado" : "Parcialmente Nublado" };
+      const defaultWeather = { temperature: 24, condition: activeLang === 'de' ? "Teilweise bewölkt" : activeLang === 'en' ? "Partly Cloudy" : activeLang === 'es' ? "Parcialmente Nublado" : "Parcialmente Nublado" };
       const locationStr = user?.birthCity || "São Paulo, SP";
 
       const res = await fetch("/api/osiris/chat", {
@@ -921,7 +966,7 @@ export default function UserDashboardPortal({
           biorhythm: defaultBiorhythm,
           location: locationStr,
           dreams: dreamsHistory,
-          lang
+          lang: activeLang
         })
       });
 
@@ -1194,7 +1239,7 @@ export default function UserDashboardPortal({
       de: ["Erholung", "Produktivität", "Treffen", "Warnungen", "Finanzen", "Soziales"],
       es: ["Descanso", "Productividad", "Encuentros", "Avisos", "Financiero", "Social"],
     };
-    const labels = calLabels[lang || 'pt'] || calLabels['pt'];
+    const labels = calLabels[activeLang] || calLabels['pt'];
     const syms = ["🌙", "🎯", "💖", "⚡", "💸", "💬"];
     if (activeCalendarFilter === 'todos') {
       return { sym: syms[day % 6], label: labels[day % 6] };
@@ -1215,19 +1260,19 @@ export default function UserDashboardPortal({
       }
     });
 
-    const neutralInfluences = lang === 'de' ? 'Allgemeine neutrale Einflüsse' : lang === 'en' ? 'General Neutral Influences' : lang === 'es' ? 'Influencias Generales Neutras' : 'Influências Gerais Neutras';
-    const guidanceEven = lang === 'de'
+    const neutralInfluences = activeLang === 'de' ? 'Allgemeine neutrale Einflüsse' : activeLang === 'en' ? 'General Neutral Influences' : activeLang === 'es' ? 'Influencias Generales Neutras' : 'Influências Gerais Neutras';
+    const guidanceEven = activeLang === 'de'
       ? "Ein Tag, der von der reflektiven Energie des Mondes dominiert wird. Ideal, um alte Geschäftsideen zu strukturieren oder den Finanzfluss mit saturnischem Urteil zu überprüfen. Müdigkeit ist heilig — respektiere natürliche Pausen."
-      : lang === 'en'
+      : activeLang === 'en'
       ? "A day dominated by the Moon's reflective energy. Perfect for structuring old business ideas or reviewing the flow of finances with Saturnian discernment. Tiredness is sacred — respect natural pauses."
-      : lang === 'es'
+      : activeLang === 'es'
       ? "Un día dominado por la energía reflexiva de la Luna. Perfecto para estructurar ideas antiguas de negocios o revisar el flujo de las finanzas con criterio saturnino. El cansancio es sagrado, respeta las pausas naturales."
       : "Dia dominado pela energia reflexiva da Lua. Perfeito para estruturar ideias antigas de negócios ou revisar o fluxo das finanças com critério saturnino. O cansaço é sagrado, respeite as pausas naturais.";
-    const guidanceOdd = lang === 'de'
+    const guidanceOdd = activeLang === 'de'
       ? "Ein Tag, der vom Sonnenimpuls des Luftelements geprägt ist. Ausgezeichnet, um Geschäftsvorschläge mündlich zu äußern, Ideen mit Partnern ungezwungen zu diskutieren oder über onirologische Spiritualität zu lesen."
-      : lang === 'en'
+      : activeLang === 'en'
       ? "A day marked by the solar impulse of the Air element. Excellent for verbally expressing business proposals, discussing ideas casually with partners or reading about oneiric spirituality."
-      : lang === 'es'
+      : activeLang === 'es'
       ? "Un día marcado por el impulso solar del elemento Aire. Excelente para expressar verbalmente propuestas comerciales, debatir ideas de forma distendida con socios o leer sobre espiritualidad onírica."
       : "Dia marcado pelo impulso solar do elemento Ar. Excelente para expressar verbalmente propostas comerciais, debater ideias de forma descontraída com parceiros ou ler sobre espiritualidade onírica.";
     const tips: Record<string, string[]> = {
@@ -1252,7 +1297,7 @@ export default function UserDashboardPortal({
         "Haz estiramientos respiratorios intensificados de 5 minutos al despertar."
       ],
     };
-    const langTips = tips[lang || 'pt'] || tips['pt'];
+    const langTips = tips[activeLang] || tips['pt'];
 
     return {
       favorable: matchedFavorableTypes.length > 0 ? matchedFavorableTypes.join(', ') : neutralInfluences,
@@ -1271,10 +1316,10 @@ export default function UserDashboardPortal({
         <div className="text-left space-y-1 z-10 max-w-xl">
           <span className="text-[10px] font-mono font-bold text-amber-500 uppercase tracking-widest flex items-center gap-1.5 animate-pulse">
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            {lang === 'de' ? 'Aktives synchronisiertes Portal' : lang === 'en' ? 'Active Synchronized Portal' : lang === 'es' ? 'Portal Activo Sincronizado' : 'Portal Ativo Sincronizado'}
+            {activeLang === 'de' ? 'Aktives synchronisiertes Portal' : activeLang === 'en' ? 'Active Synchronized Portal' : activeLang === 'es' ? 'Portal Activo Sincronizado' : 'Portal Ativo Sincronizado'}
           </span>
           <h2 className="text-base sm:text-lg font-black text-slate-100 tracking-tight leading-snug">
-            {lang === 'de' ? 'Beschleunige deine Ziele, navigiere durch die aktiven Portale' : lang === 'en' ? 'Accelerate Your Goals, Navigate the Active Portals' : lang === 'es' ? 'Acelera tus Objetivos, Navega por los Portales Activos' : 'Acelere Seus Objetivos, Navegue pelos Portais Ativos'}
+            {activeLang === 'de' ? 'Beschleunige deine Ziele, navigiere durch die aktiven Portale' : activeLang === 'en' ? 'Accelerate Your Goals, Navigate the Active Portals' : activeLang === 'es' ? 'Acelera tus Objetivos, Navega por los Portales Activos' : 'Acelere Seus Objetivos, Navegue pelos Portais Ativos'}
           </h2>
         </div>
 
@@ -1290,13 +1335,13 @@ export default function UserDashboardPortal({
             </div>
             <div className="space-y-0.5 min-w-0">
               <span className="text-[10px] sm:text-[11px] font-extrabold text-amber-400 tracking-wide uppercase flex items-center gap-1 flex-wrap font-sans">
-                🪐 {lang === 'de' ? 'Sieh was das Universum dir zeigen möchte' : lang === 'en' ? 'See what the universe wants to show you' : lang === 'es' ? 'Ve lo que el universo quiere mostrarte' : 'Veja o que o universo quer te mostrando'}
+                🪐 {activeLang === 'de' ? 'Sieh was das Universum dir zeigen möchte' : activeLang === 'en' ? 'See what the universe wants to show you' : activeLang === 'es' ? 'Ve lo que el universo quiere mostrarte' : 'Veja o que o universo quer te mostrando'}
               </span>
-              <p className="text-[9px] text-slate-400 font-medium">{lang === 'de' ? 'Monatspanel und kosmische Orientierungen.' : lang === 'en' ? 'Monthly panel and cosmic guidance.' : lang === 'es' ? 'Panel del mes y orientaciones cósmicas.' : 'Painel do mês e orientações cósmicas.'}</p>
+              <p className="text-[9px] text-slate-400 font-medium">{activeLang === 'de' ? 'Monatspanel und kosmische Orientierungen.' : activeLang === 'en' ? 'Monthly panel and cosmic guidance.' : activeLang === 'es' ? 'Panel del mes y orientaciones cósmicas.' : 'Painel do mês e orientações cósmicas.'}</p>
             </div>
           </div>
           <span className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-wider self-end sm:self-center shrink-0 transition shadow-md hover:shadow-amber-500/10 hover:scale-102">
-            {lang === 'de' ? 'Alles sehen →' : lang === 'en' ? 'See all →' : lang === 'es' ? 'Ver todo →' : 'Ver tudo →'}
+            {activeLang === 'de' ? 'Alles sehen →' : activeLang === 'en' ? 'See all →' : activeLang === 'es' ? 'Ver todo →' : 'Ver tudo →'}
           </span>
         </button>
       </div>
@@ -1357,7 +1402,7 @@ export default function UserDashboardPortal({
           <div className="p-4 bg-slate-950/60 rounded-3xl border border-slate-850/80 space-y-4">
             <div className="flex justify-between items-center border-b border-slate-900 pb-2">
               <span className="text-[10px] font-mono font-black text-slate-500 uppercase tracking-wider block">
-                {lang === 'de' ? 'Kosmische Navigation' : lang === 'en' ? 'Cosmic Navigation' : lang === 'es' ? 'Navegación Cósmica' : 'Navegação Cósmica'}
+                {activeLang === 'de' ? 'Kosmische Navigation' : activeLang === 'en' ? 'Cosmic Navigation' : activeLang === 'es' ? 'Navegación Cósmica' : 'Navegação Cósmica'}
               </span>
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
             </div>
@@ -1676,13 +1721,13 @@ export default function UserDashboardPortal({
                     ].map((metric, i) => (
                       <div key={i} className="p-3 bg-slate-950/60 rounded-2xl border border-slate-850 space-y-1.5">
                         <div className="flex justify-between items-center text-[10px] font-mono text-slate-400 uppercase font-bold">
-                          <span>{metric.label}</span>
+                          <span>{t(metric.label)}</span>
                           <span className="text-slate-205">{metric.val}%</span>
                         </div>
                         <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden">
                           <div className={`h-full bg-gradient-to-r ${metric.grad}`} style={{ width: `${metric.val}%` }} />
                         </div>
-                        <p className="text-[9px] text-slate-500 leading-normal italic">{metric.desc}</p>
+                        <p className="text-[9px] text-slate-500 leading-normal italic">{t(metric.desc)}</p>
                       </div>
                     ))}
                   </div>
@@ -2433,7 +2478,7 @@ export default function UserDashboardPortal({
               <SocialNetworkView 
                 currentUser={user} 
                 onUpdateCurrentUser={onUpdateCurrentUser || (() => {})} 
-                lang={lang}
+                lang={activeLang}
               />
             </div>
           )}
@@ -2530,14 +2575,14 @@ export default function UserDashboardPortal({
             const totalDreams = dreamsHistory.length;
             const latestDream = totalDreams > 0 ? dreamsHistory[0] : null;
 
-            const dreamTitle = latestDream?.interpretation?.title || (lang === 'de' ? "Kein Traum synchronisiert" : lang === 'en' ? "No dream synced" : lang === 'es' ? "Ningún sueño sintonizado" : "Nenhum sonho sintonizado");
+            const dreamTitle = latestDream?.interpretation?.title || (activeLang === 'de' ? "Kein Traum synchronisiert" : activeLang === 'en' ? "No dream synced" : activeLang === 'es' ? "Ningún sueño sintonizado" : "Nenhum sonho sintonizado");
             const dreamSymbol = latestDream?.interpretation?.detectedAnimals?.[0]?.animal 
                                 || latestDream?.interpretation?.detectedColors?.[0]?.color 
-                                || (totalDreams > 0 ? "" + latestDream?.interpretation?.dreamEnergyType : (lang === 'de' ? "Keine Symbole" : lang === 'en' ? "No symbols" : lang === 'es' ? "Sin símbolos" : "Sem símbolos"));
-            const dreamEmotion = latestDream?.interpretation?.predominantEmotion?.emotion || (lang === 'de' ? "Neutral" : lang === 'en' ? "Neutral" : lang === 'es' ? "Neutro" : "Neutro");
+                                || (totalDreams > 0 ? "" + latestDream?.interpretation?.dreamEnergyType : (activeLang === 'de' ? "Keine Symbole" : activeLang === 'en' ? "No symbols" : activeLang === 'es' ? "Sin símbolos" : "Sem símbolos"));
+            const dreamEmotion = latestDream?.interpretation?.predominantEmotion?.emotion || (activeLang === 'de' ? "Neutral" : activeLang === 'en' ? "Neutral" : activeLang === 'es' ? "Neutro" : "Neutro");
             const dreamTendency = latestDream?.interpretation?.dreamEnergyType 
                                   ? `${latestDream?.interpretation?.dreamEnergyType} (${latestDream?.interpretation?.dreamEnergyIndex} Hz)`
-                                  : (lang === 'de' ? "Keine beobachtet" : lang === 'en' ? "None observed" : lang === 'es' ? "Ninguna observada" : "Nenhuma observada");
+                                  : (activeLang === 'de' ? "Keine beobachtet" : activeLang === 'en' ? "None observed" : activeLang === 'es' ? "Ninguna observada" : "Nenhuma observada");
 
             // Chart generation based on real historical dream entries
             const graphDreams = [...dreamsHistory].slice(0, 6).reverse();
@@ -2573,21 +2618,21 @@ export default function UserDashboardPortal({
                     <div>
                       <h3 className="text-xs font-bold font-mono text-slate-205 uppercase tracking-widest flex items-center gap-1.5">
                         <Moon className="w-4 h-4 text-pink-400 animate-pulse" />
-                        {lang === 'de' ? 'Metriken & Statistiken des Traumzentrums' : lang === 'en' ? 'Dream Center Metrics & Statistics' : lang === 'es' ? 'Métricas & Estadísticas del Centro de Sueños' : 'Métricas & Estatísticas do Centro de Sonhos'}
+                        {activeLang === 'de' ? 'Metriken & Statistiken des Traumzentrums' : activeLang === 'en' ? 'Dream Center Metrics & Statistics' : activeLang === 'es' ? 'Métricas & Estadísticas del Centro de Sueños' : 'Métricas & Estatísticas do Centro de Sonhos'}
                       </h3>
-                      <p className="text-[10px] text-slate-500 mt-0.5">{lang === 'de' ? 'Analytische Intelligenz basierend auf den im Traumtresor archivierten Aufzeichnungen.' : lang === 'en' ? 'Analytical intelligence based on records archived in the Dream Vault.' : lang === 'es' ? 'Visión analítica de inteligencia basada en los registros archivados en el Cofre de Sueños.' : 'Visão analítica de inteligência baseada nos registros arquivados no Cofre dos Sonhos.'}</p>
+                      <p className="text-[10px] text-slate-500 mt-0.5">{activeLang === 'de' ? 'Analytische Intelligenz basierend auf den im Traumtresor archivierten Aufzeichnungen.' : activeLang === 'en' ? 'Analytical intelligence based on records archived in the Dream Vault.' : activeLang === 'es' ? 'Visión analítica de inteligencia basada en los registros archivados en el Cofre de Sueños.' : 'Visão analítica de inteligência baseada nos registros arquivados no Cofre dos Sonhos.'}</p>
                     </div>
                     <span className="px-2 py-0.5 bg-pink-500/10 border border-pink-500/20 text-[9px] font-mono font-bold text-pink-450 rounded-lg shrink-0">
-                      {lang === 'de' ? `Traumreport (${totalDreams} ${totalDreams === 1 ? 'Traum' : 'Träume'})` : lang === 'en' ? `Dream Report (${totalDreams} ${totalDreams === 1 ? 'Dream' : 'Dreams'})` : lang === 'es' ? `Reporte Onírico (${totalDreams} ${totalDreams === 1 ? 'Sueño' : 'Sueños'})` : `Relatório Onírico (${totalDreams} ${totalDreams === 1 ? 'Sonho' : 'Sonhos'})`}
+                      {activeLang === 'de' ? `Traumreport (${totalDreams} ${totalDreams === 1 ? 'Traum' : 'Träume'})` : activeLang === 'en' ? `Dream Report (${totalDreams} ${totalDreams === 1 ? 'Dream' : 'Dreams'})` : activeLang === 'es' ? `Reporte Onírico (${totalDreams} ${totalDreams === 1 ? 'Sueño' : 'Sueños'})` : `Relatório Onírico (${totalDreams} ${totalDreams === 1 ? 'Sonho' : 'Sonhos'})`}
                     </span>
                   </div>
 
                   {totalDreams === 0 ? (
                     <div className="p-8 text-center bg-slate-950/40 rounded-2xl border border-dashed border-slate-800 space-y-3">
                       <Moon className="w-10 h-10 text-pink-500/40 mx-auto animate-pulse" />
-                      <h4 className="text-xs font-bold font-mono text-slate-350 uppercase">Sem histórico onírico cadastrado</h4>
+                      <h4 className="text-xs font-bold font-mono text-slate-350 uppercase">{t("Sem histórico onírico cadastrado")}</h4>
                       <p className="text-[10.5px] text-slate-400 max-w-sm mx-auto leading-relaxed font-sans">
-                        Sua mente subconsciente ainda aguarda a primeira sintonização. Vá até a aba superior <strong>Planeta</strong>, use a ferramenta <strong>Oráculo dos Sonhos</strong>, conte o que você andou sonhando e, à medida que a IA for interpretando seus sonhos, suas estatísticas e seu gráfico de evolução serão desenhados aqui automaticamente!
+                        {t("Sua mente subconsciente ainda aguarda a primeira sintonização. Vá até a aba superior")} <strong>{t("Planeta")}</strong>, {t("use a ferramenta")} <strong>{t("Oráculo dos Sonhos")}</strong>, {t("conte o que você andou sonhando e, à medida que a IA for interpretando seus sonhos, suas estatísticas e seu gráfico de evolução serão desenhados aqui automaticamente!")}
                       </p>
                     </div>
                   ) : (
@@ -2600,7 +2645,7 @@ export default function UserDashboardPortal({
                           <span className="text-[11px] font-bold text-slate-200 mt-1 block truncate" title={dreamTitle}>
                             {dreamTitle}
                           </span>
-                          <span className="text-[8px] font-mono text-slate-600">{lang === 'de' ? `Synchronisiert am ${latestDream?.date}` : lang === 'en' ? `Synced on ${latestDream?.date}` : lang === 'es' ? `Sintonizado el ${latestDream?.date}` : `Sintonizado em ${latestDream?.date}`}</span>
+                          <span className="text-[8px] font-mono text-slate-600">{activeLang === 'de' ? `Synchronisiert am ${latestDream?.date}` : activeLang === 'en' ? `Synced on ${latestDream?.date}` : activeLang === 'es' ? `Sintonizado el ${latestDream?.date}` : `Sintonizado em ${latestDream?.date}`}</span>
                         </div>
 
                         <div className="p-3 bg-slate-950 rounded-xl border border-slate-850 flex flex-col justify-between h-[90px]">
@@ -2632,7 +2677,7 @@ export default function UserDashboardPortal({
                       <div className="p-4 bg-slate-950 rounded-2xl border border-slate-850 text-left space-y-3 animate-in fade-in duration-500">
                         <div className="flex justify-between items-center border-b border-slate-900 pb-1.5 flex-wrap gap-2 leading-none">
                           <span className="text-[9px] font-mono text-slate-500 block uppercase font-bold">
-                            {lang === 'de' ? 'Traumenergetische Variation (Ihre letzten Synchronisierungen)' : lang === 'en' ? 'Oneiric Energy Variation (Your Recent Syncs)' : lang === 'es' ? 'Variación Energética Onírica (Sus Sintonizaciones Recientes)' : 'Variação Energética Onírica (Suas Sintonizações Recentes)'}
+                            {activeLang === 'de' ? 'Traumenergetische Variation (Ihre letzten Synchronisierungen)' : activeLang === 'en' ? 'Oneiric Energy Variation (Your Recent Syncs)' : activeLang === 'es' ? 'Variación Energética Onírica (Sus Sintonizaciones Recientes)' : 'Variação Energética Onírica (Suas Sintonizações Recentes)'}
                           </span>
                           <div className="flex items-center gap-3 text-[8.5px] font-mono">
                             <div className="flex items-center gap-1">
@@ -3038,13 +3083,13 @@ export default function UserDashboardPortal({
                 <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div className="space-y-1">
                     <span className="px-2.5 py-0.5 rounded-full text-[9px] uppercase font-mono font-semibold tracking-wider text-rose-400 bg-rose-500/10 border border-rose-500/20">
-                      Integração Android
+                      {t("Integração Android")}
                     </span>
                     <h2 className="text-xl font-sans font-bold tracking-tight text-slate-100">
-                      Instalar o Portal Órbita no Celular
+                      {t("Instalar o Portal Órbita no Celular")}
                     </h2>
                     <p className="text-xs text-slate-400">
-                      Baixe o APK premium oficial ou sintonize o aplicativo instantâneo via PWA.
+                      {t("Baixe o APK premium oficial ou sintonize o aplicativo instantâneo via PWA.")}
                     </p>
                   </div>
                   <Smartphone className="w-10 h-10 text-rose-500 shrink-0 hidden md:block" />
@@ -3060,23 +3105,23 @@ export default function UserDashboardPortal({
                       <div className="w-8 h-8 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
                         <Download className="w-4 h-4" />
                       </div>
-                      <h4 className="text-sm font-black text-slate-100">Método 1: APK Android Nativo</h4>
+                      <h4 className="text-sm font-black text-slate-100">{t("Método 1: APK Android Nativo")}</h4>
                     </div>
                     <p className="text-xs text-slate-350 leading-relaxed">
-                      Este é o instalador direto para o seu dispositivo Android. Ele carrega as funções astrológicas e sincroniza sua mandala em tempo de execução nativa.
+                      {t("Este é o instalador direto para o seu dispositivo Android. Ele carrega as funções astrológicas e sincroniza sua mandala em tempo de execução nativa.")}
                     </p>
                     <div className="bg-slate-950/60 p-3 rounded-2xl border border-slate-850 text-[10px] text-slate-400 space-y-1.5 leading-relaxed">
                       <div className="flex justify-between items-center text-slate-400 border-b border-slate-850 pb-1">
-                        <span>Arquivo:</span>
+                        <span>{t("Arquivo:")}</span>
                         <span className="font-mono text-slate-100">Portal_Orbita_v1.0.apk</span>
                       </div>
                       <div className="flex justify-between items-center text-slate-400 border-b border-slate-850 pb-1">
-                        <span>Tamanho:</span>
+                        <span>{t("Tamanho:")}</span>
                         <span className="font-mono text-slate-100">3.8 MB</span>
                       </div>
                       <div className="flex justify-between items-center text-slate-400">
-                        <span>Segurança:</span>
-                        <span className="text-emerald-400 font-bold font-mono">Verificado por SHA256</span>
+                        <span>{t("Segurança:")}</span>
+                        <span className="text-emerald-400 font-bold font-mono">{t("Verificado por SHA256")}</span>
                       </div>
                     </div>
                   </div>
@@ -3098,10 +3143,10 @@ export default function UserDashboardPortal({
                       className="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-2 shadow-md hover:shadow-rose-600/15"
                     >
                       <Download className="w-3.5 h-3.5" />
-                      {lang === 'de' ? 'APK-Datei herunterladen' : lang === 'en' ? 'Download APK File' : lang === 'es' ? 'Descargar Archivo APK' : 'Baixar Arquivo APK'}
+                      {activeLang === 'de' ? 'APK-Datei herunterladen' : activeLang === 'en' ? 'Download APK File' : activeLang === 'es' ? 'Descargar Archivo APK' : 'Baixar Arquivo APK'}
                     </button>
                     <p className="text-[10px] text-slate-500 text-center leading-normal">
-                      Compatível com Android 8.0 ou superior. Requer liberação de instalação manual.
+                      {t("Compatível com Android 8.0 ou superior. Requer liberação de instalação manual.")}
                     </p>
                   </div>
                 </div>
@@ -3113,17 +3158,17 @@ export default function UserDashboardPortal({
                       <div className="w-8 h-8 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
                         <Smartphone className="w-4 h-4" />
                       </div>
-                      <h4 className="text-sm font-black text-slate-100">Método 2: Aplicativo Instantâneo (PWA)</h4>
+                      <h4 className="text-sm font-black text-slate-100">{t("Método 2: Aplicativo Instantâneo (PWA)")}</h4>
                     </div>
                     <p className="text-xs text-slate-350 leading-relaxed">
-                      A tecnologia PWA permite adicionar o aplicativo direto na tela de início sem precisar instalar arquivos separados. É compatível com Android e iOS (iPhone).
+                      {t("A tecnologia PWA permite adicionar o aplicativo direto na tela de início sem precisar instalar arquivos separados. É compatível com Android e iOS (iPhone).")}
                     </p>
                     
                     <div className="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-850 space-y-2 text-[10px] text-slate-400 text-left leading-relaxed">
-                      <div className="font-bold text-slate-200 uppercase tracking-widest text-[9px] font-mono mb-1 text-amber-400">Como Instalar no Celular:</div>
+                      <div className="font-bold text-slate-200 uppercase tracking-widest text-[9px] font-mono mb-1 text-amber-400">{t("Como Instalar no Celular:")}</div>
                       <div className="space-y-1.5 font-sans">
-                        <p><strong>No Android / Chrome:</strong> Clique no botão de instalar abaixo ou nos 3 pontinhos (<span className="font-mono">⋮</span>) no canto superior e selecione <strong>"Instalar aplicativo"</strong> ou <strong>"Adicionar à tela inicial"</strong>.</p>
-                        <p><strong>No iPhone / Safari:</strong> Toque no ícone de compartilhamento (<span className="text-xs text-sky-400 font-bold">↑</span>) no Safari e selecione <strong>"Adicionar à Tela de Início"</strong>.</p>
+                        <p><strong>{t("No Android / Chrome:")}</strong> {t("Clique no botão de instalar abaixo ou nos 3 pontinhos")} (<span className="font-mono">⋮</span>) {t("no canto superior e selecione")} <strong>{t("\"Instalar aplicativo\"")}</strong> {t("ou")} <strong>{t("\"Adicionar à tela inicial\"")}</strong>.</p>
+                        <p><strong>{t("No iPhone / Safari:")}</strong> {t("Toque no ícone de compartilhamento")} (<span className="text-xs text-sky-400 font-bold">↑</span>) {t("no Safari e selecione")} <strong>{t("\"Adicionar à Tela de Início\"")}</strong>.</p>
                       </div>
                     </div>
                   </div>
@@ -3137,10 +3182,10 @@ export default function UserDashboardPortal({
                       className="w-full py-2.5 bg-amber-500 hover:bg-amber-450 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-2 shadow-md hover:shadow-amber-500/10"
                     >
                       <Sparkles className="w-3.5 h-3.5" />
-                      Ativar Instrução PWA
+                      {t("Ativar Instrução PWA")}
                     </button>
                     <p className="text-[10px] text-slate-500 text-center leading-normal">
-                      Não consome memória de armazenamento físico adicional. Atualiza em tempo real.
+                      {t("Não consome memória de armazenamento físico adicional. Atualiza em tempo real.")}
                     </p>
                   </div>
                 </div>
@@ -3151,7 +3196,7 @@ export default function UserDashboardPortal({
                     <div className="w-8 h-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
                       <Share2 className="w-4 h-4" />
                     </div>
-                    <h4 className="text-sm font-black text-slate-100">Sincronizar Celular Via QR Code / Compartilhar</h4>
+                    <h4 className="text-sm font-black text-slate-100">{t("Sincronizar Celular Via QR Code / Compartilhar")}</h4>
                   </div>
                   
                   <div className="flex flex-col sm:flex-row items-center gap-6 bg-slate-950/60 p-4 rounded-3xl border border-slate-850">
@@ -3188,13 +3233,13 @@ export default function UserDashboardPortal({
                         <rect x="14" y="58" width="6" height="6" fill="currentColor" />
                       </svg>
                       <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xs rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-200">
-                        <span className="text-[9px] font-mono text-amber-400 font-bold uppercase tracking-wider text-center p-2">{lang === 'de' ? 'Mit deiner Kamera synchronisieren 🪐' : lang === 'en' ? 'Tune in with your camera 🪐' : lang === 'es' ? 'Sintoniza con tu cámara 🪐' : 'Sintonize com sua câmera 🪐'}</span>
+                        <span className="text-[9px] font-mono text-amber-400 font-bold uppercase tracking-wider text-center p-2">{activeLang === 'de' ? 'Mit deiner Kamera synchronisieren 🪐' : activeLang === 'en' ? 'Tune in with your camera 🪐' : activeLang === 'es' ? 'Sintoniza con tu cámara 🪐' : 'Sintonize com sua câmera 🪐'}</span>
                       </div>
                     </div>
                     
                     <div className="space-y-3 flex-1 font-sans">
                       <p className="text-xs text-slate-350 leading-relaxed">
-                        Aponte a câmera do seu celular para este código para abrir o Portal Órbita instantaneamente no seu celular ou acionar a instalação direta sem digitar endereços.
+                        {t("Aponte a câmera do seu celular para este código para abrir o Portal Órbita instantaneamente no seu celular ou acionar a instalação direta sem digitar endereços.")}
                       </p>
                       
                       <div className="flex flex-col sm:flex-row gap-2">
@@ -3207,7 +3252,7 @@ export default function UserDashboardPortal({
                           className="px-4 py-2 bg-slate-900 hover:bg-slate-850 hover:text-indigo-400 border border-slate-800 rounded-xl text-[10.5px] font-bold text-slate-300 tracking-wide transition cursor-pointer flex items-center justify-center gap-1.5 flex-1"
                         >
                           <Copy className="w-3.5 h-3.5" />
-                          Copiar Link do App
+                          {t("Copiar Link do App")}
                         </button>
                         
                         <button
@@ -3216,7 +3261,7 @@ export default function UserDashboardPortal({
                             if (navigator.share) {
                               navigator.share({
                                 title: 'Portal Órbita - Astrologia Premium',
-                                text: 'Venha desvendar seu mapa de nascimento, biorritmo, tarô e conselhos da IA Orbia no Portal Órbita!',
+                                text: t('Venha desvendar seu mapa de nascimento, biorritmo, tarô e conselhos da IA Orbia no Portal Órbita!'),
                                 url: window.location.href,
                               }).catch(console.warn);
                             } else {
@@ -3227,7 +3272,7 @@ export default function UserDashboardPortal({
                           className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-slate-950 font-black rounded-xl text-[10.5px] font-sans uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1.5 flex-1"
                         >
                           <Share2 className="w-3.5 h-3.5" />
-                          Enviar via WhatsApp
+                          {t("Enviar via WhatsApp")}
                         </button>
                       </div>
                     </div>
@@ -3238,9 +3283,9 @@ export default function UserDashboardPortal({
 
               {/* SECURITY ASSURANCE BANNER AND TECHNICAL SPECIFICATIONS AND TUTORIAL */}
               <div className="p-4 bg-slate-950 rounded-2xl border border-slate-850 space-y-3 font-sans">
-                <h5 className="text-[10px] font-mono text-slate-400 uppercase tracking-widest font-bold">🛡️ Informações Úteis de Instalação e Distribuição Independente</h5>
+                <h5 className="text-[10px] font-mono text-slate-400 uppercase tracking-widest font-bold">🛡️ {t("Informações Úteis de Instalação e Distribuição Independente")}</h5>
                 <p className="text-[10.5px] text-slate-500 leading-relaxed">
-                  Sendo uma plataforma de sabedoria avançada e criptografia astro-quântica, o APK do <strong>Portal Órbita</strong> é distribuído de forma independente e segura fora das lojas oficiais corporativas. Isso garante absoluta privacidade dos seus dados e integridade de suas consultas com os arcanos do Tarot e a IA Orbia. Ao ativar o APK, lembre-se de habilitar e autorizar o parâmetro "Instalação de Fontes Desconhecidas" nas configurações de segurança do seu dispositivo. É totalmente seguro e livre de vírus.
+                  {t("Sendo uma plataforma de sabedoria avançada e criptografia astro-quântica, o APK do <strong>Portal Órbita</strong> é distribuído de forma independente e segura fora das lojas oficiais corporativas. Isso garante absoluta privacidade dos seus dados e integridade de suas consultas com os arcanos do Tarot e a IA Orbia. Ao ativar o APK, lembre-se de habilitar e autorizar o parâmetro \"Instalação de Fontes Desconhecidas\" nas configurações de segurança do seu dispositivo. É totalmente seguro e livre de vírus.")}
                 </p>
               </div>
 

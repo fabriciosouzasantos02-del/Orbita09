@@ -88,7 +88,7 @@ import {
 import { generatePersonalizedProsperityMap } from './components/prosperityEngine';
 import { generateDailyPrediction } from './components/dailyPredictionsEngine';
 import { PremiumConversionScreen } from './components/PremiumConversionScreen';
-import { getTranslation, getInitialLanguage, translateUiText, Language } from './lib/translations';
+import { getTranslation, translateUiText, Language } from './lib/translations';
 import { useIdioma } from './context/IdiomaContext';
 
 // High-end Elite Celestial Logo Component
@@ -332,10 +332,12 @@ function getZodiacSignForMissions(dateString: string): string {
   return "Peixes";
 }
 
-function generateDailyMissions(user: any): DailyMission[] {
+function generateDailyMissions(user: any, activeLang?: Language): DailyMission[] {
+  const currentL = activeLang || 'pt';
   const name = user?.name ? user.name.split(" ")[0] : "Viajante";
   const birthDate = user?.birthDate || "2000-01-01";
-  const zodiac = getZodiacSignForMissions(birthDate);
+  const zodiacPT = getZodiacSignForMissions(birthDate);
+  const zodiac = translateUiText(zodiacPT, currentL);
 
   const today = new Date();
   const day = today.getDate();
@@ -348,22 +350,22 @@ function generateDailyMissions(user: any): DailyMission[] {
     [
       {
         id: "dm1",
-        title: `Consagração de ${zodiac} para ${name}`,
-        description: `Dedique 3 minutos respirando conscientemente para ativar o equilíbrio cósmico para sua essência de ${zodiac}.`,
+        title: translateUiText("Consagração de {zodiac} para {name}", currentL).replace("{zodiac}", zodiac).replace("{name}", name),
+        description: translateUiText("Dedique 3 minutos respirando conscientemente para ativar o equilíbrio cósmico para sua essência de {zodiac}.", currentL).replace("{zodiac}", zodiac),
         isCompleted: false,
         points: 40
       },
       {
         id: "dm2",
-        title: "Harmonização de Mercúrio",
-        description: "Escreva algo que te aflige e depois risque no papel, transmutando restrições mentais.",
+        title: translateUiText("Harmonização de Mercúrio", currentL),
+        description: translateUiText("Escreva algo que te aflige e depois risque no papel, transmutando restrições mentais.", currentL),
         isCompleted: false,
         points: 50
       },
       {
         id: "dm3",
-        title: "Toque de Gratidão Vital",
-        description: "Fortaleça conexões e envie uma mensagem curta com um elogio sincero para alguém importante em sua jornada.",
+        title: translateUiText("Toque de Gratidão Vital", currentL),
+        description: translateUiText("Fortaleça conexões e envie uma mensagem curta com um elogio sincero para alguém importante em sua jornada.", currentL),
         isCompleted: false,
         points: 30
       }
@@ -371,22 +373,22 @@ function generateDailyMissions(user: any): DailyMission[] {
     [
       {
         id: "dm1",
-        title: `Alinhamento de ${zodiac} para ${name}`,
-        description: `Escreva no Oráculo dos Sonhos tudo que se lembrar da noite anterior, decifrando avisos do seu guia onírico.`,
+        title: translateUiText("Alinhamento de {zodiac} para {name}", currentL).replace("{zodiac}", zodiac).replace("{name}", name),
+        description: translateUiText("Escreva no Oráculo dos Sonhos tudo que se lembrar da noite anterior, decifrando avisos do seu guia onírico.", currentL),
         isCompleted: false,
         points: 50
       },
       {
         id: "dm2",
-        title: "Selo de Desapego de Saturno",
-        description: "Organize sua área de estudos ou e-mails importantes hoje para desbloquear estagnações kármicas.",
+        title: translateUiText("Selo de Desapego de Saturno", currentL),
+        description: translateUiText("Organize sua área de estudos ou e-mails importantes hoje para desbloquear estagnações kármicas.", currentL),
         isCompleted: false,
         points: 30
       },
       {
         id: "dm3",
-        title: "Cura Líquida Purificadora",
-        description: "Mentalize paz e tome um copo cheio de água fresca, promovendo purificação de cansaço acumulado.",
+        title: translateUiText("Cura Líquida Purificadora", currentL),
+        description: translateUiText("Mentalize paz e tome um copo cheio de água fresca, promovendo purificação de cansaço acumulado.", currentL),
         isCompleted: false,
         points: 40
       }
@@ -394,22 +396,22 @@ function generateDailyMissions(user: any): DailyMission[] {
     [
       {
         id: "dm1",
-        title: `Foco de Vênus para ${name}`,
-        description: `Olhe-se no espelho por 1 minuto sintonizando a resiliência e auto-aceitação para seu signo solar de ${zodiac}.`,
+        title: translateUiText("Foco de Vênus para {name}", currentL).replace("{name}", name),
+        description: translateUiText("Olhe-se no espelho por 1 minuto sintonizando a resiliência e auto-aceitação para seu signo solar de {zodiac}.", currentL).replace("{zodiac}", zodiac),
         isCompleted: false,
         points: 45
       },
       {
         id: "dm2",
-        title: "Doação Elemental Prática",
-        description: "Considere doar ou arrumar duas coisas materiais sem uso em seu ambiente para fluxo cósmico.",
+        title: translateUiText("Doação Elemental Prática", currentL),
+        description: translateUiText("Considere doar ou arrumar duas coisas materiais sem uso em seu ambiente para fluxo cósmico.", currentL),
         isCompleted: false,
         points: 50
       },
       {
         id: "dm3",
-        title: "Oração Vibracional Cósmica",
-        description: "Mentalize e envie ondas silenciosas de pura compaixão por três pessoas que cruzarem sua mente hoje.",
+        title: translateUiText("Oração Vibracional Cósmica", currentL),
+        description: translateUiText("Mentalize e envie ondas silenciosas de pura compaixão por três pessoas que cruzarem sua mente hoje.", currentL),
         isCompleted: false,
         points: 30
       }
@@ -417,22 +419,22 @@ function generateDailyMissions(user: any): DailyMission[] {
     [
       {
         id: "dm1",
-        title: `Vigor de Marte para ${name}`,
-        description: `Alongue os membros do corpo por 5 minutos respirando profundamente, liberando bloqueios articulares.`,
+        title: translateUiText("Vigor de Marte para {name}", currentL).replace("{name}", name),
+        description: translateUiText("Alongue os membros do corpo por 5 minutos respirando profundamente, liberando bloqueios articulares.", currentL),
         isCompleted: false,
         points: 40
       },
       {
         id: "dm2",
-        title: "Ritual Solar da Gratidão",
-        description: "Agradeça mentalmente por três bênçãos invisíveis que estão florescendo na sua jornada diária.",
+        title: translateUiText("Ritual Solar da Gratidão", currentL),
+        description: translateUiText("Agradeça mentalmente por três bênçãos invisíveis que estão florescendo na sua jornada diária.", currentL),
         isCompleted: false,
         points: 40
       },
       {
         id: "dm3",
-        title: `Clareza Onírica de ${zodiac}`,
-        description: "Abandone o celular por 1 hora antes de deitar ou repousar para equilibrar sua frequência teta.",
+        title: translateUiText("Clareza Onírica de {zodiac}", currentL).replace("{zodiac}", zodiac),
+        description: translateUiText("Abandone o celular por 1 hora antes de deitar ou repousar para equilibrar sua frequência teta.", currentL),
         isCompleted: false,
         points: 50
       }
@@ -2127,7 +2129,7 @@ export default function App() {
 
       // 3. Fallback to generating new ones if not found anywhere else
       if (!savedLocal) {
-        const generated = generateDailyMissions(user);
+        const generated = generateDailyMissions(user, currentLang);
         if (active) {
           setDailyMissions(generated);
           localStorage.setItem(cacheKey, JSON.stringify(generated));
@@ -2167,11 +2169,73 @@ export default function App() {
     }
   }, [dailyMissions, isLoggedIn, loggedEmail, user?.email]);
 
-  const [weeklyMissions, setWeeklyMissions] = useState<DailyMission[]>([
-    { id: "w1", title: "Esta semana tente resolver uma pendência antiga", description: "Identifique um compromisso pendente há muito tempo e dê o primeiro passo para resolvê-lo, liberando fluxo de Saturno.", isCompleted: false, points: 120 },
-    { id: "w2", title: "Esta semana fortaleça um relacionamento importante", description: "Envie uma mensagem sincera de gratidão ou faça um convite de conversa leve a quem você quer bem.", isCompleted: false, points: 150 },
-    { id: "w3", title: "Esta semana dedique tempo ao aprendizado", description: "Reserve um tempo concentrado para estudar símbolos astrológicos ou técnicas de clareza mental e meditação.", isCompleted: false, points: 100 }
-  ]);
+  // Translate existing dailyMissions immediately when language changes
+  useEffect(() => {
+    if (dailyMissions && dailyMissions.length > 0) {
+      const regenerated = generateDailyMissions(user, currentLang);
+      setDailyMissions(prev => {
+        return regenerated.map(reg => {
+          const matched = prev.find(p => p.id === reg.id);
+          return {
+            ...reg,
+            isCompleted: matched ? matched.isCompleted : reg.isCompleted
+          };
+        });
+      });
+    }
+  }, [currentLang]);
+
+  const [weeklyMissions, setWeeklyMissions] = useState<DailyMission[]>(() => {
+    const isEn = currentLang === 'en';
+    const isEs = currentLang === 'es';
+    const isDe = currentLang === 'de';
+    const isFr = currentLang === 'fr';
+    return [
+      { id: "w1", title: isEn ? "This week try to resolve an old pending matter" : isEs ? "Esta semana intente resolver un asunto pendiente antiguo" : isDe ? "Versuchen Sie diese Woche, eine alte Angelegenheit zu klären" : isFr ? "Cette semaine essayez de résoudre une affaire en suspens ancienne" : "Esta semana tente resolver uma pendência antiga", description: isEn ? "Identify a long-standing commitment and take the first step to resolve it, releasing Saturn's flow." : isEs ? "Identifique un compromiso pendiente desde hace mucho tempo y dé el primer paso para resolverlo, liberando el flujo de Saturno." : isDe ? "Identifizieren Sie eine seit langem ausstehende Verpflichtung und machen Sie den ersten Schritt, um sie zu lösen, um den Fluss Saturns freizusetzen." : isFr ? "Identifiez un engagement de longue date et faites le premier pas pour le résoudre, libérant ainsi le flux de Saturne." : "Identifique um compromisso pendente há muito tempo e dê o primeiro passo para resolvê-lo, liberando fluxo de Saturno.", isCompleted: false, points: 120 },
+      { id: "w2", title: isEn ? "This week strengthen an important relationship" : isEs ? "Esta semana fortalezca una relación importante" : isDe ? "Stärken Sie diese Woche eine wichtige Beziehung" : isFr ? "Cette semaine renforcez une relation importante" : "Esta semana fortaleça um relacionamento importante", description: isEn ? "Send a sincere message of gratitude or make a light conversation invitation to someone you care about." : isEs ? "Envíe un mensaje sincero de gratitud o invite a una conversación ligera a alguien que aprecia." : isDe ? "Senden Sie eine aufrichtige Botschaft der Dankbarkeit oder laden Sie jemanden, den Sie schätzen, zu einem leichten Gespräch ein." : isFr ? "Envoyez un message sincère de gratitude ou invitez quelqu'un que vous appréciez à une conversation légère." : "Envie uma mensagem sincera de gratidão ou faça um convite de conversa leve a quem você quer bem.", isCompleted: false, points: 150 },
+      { id: "w3", title: isEn ? "This week dedicate time to learning" : isEs ? "Esta semana dedique tempo ao aprendizado" : isDe ? "Widmen Sie diese Woche Zeit dem Lernen" : isFr ? "Cette semaine consacrez du temps à l'apprentissage" : "Esta semana dedique tempo ao aprendizado", description: isEn ? "Set aside a focused time to study astrological symbols or techniques for mental clarity and meditation." : isEs ? "Reserve un tempo concentrado para estudar símbolos astrológicos ou técnicas de claridad mental y meditación." : isDe ? "Nehmen Sie sich eine konzentrierte Zeit, um astrologische Symbole oder Techniken zur mentalen Klarheit und Meditation zu studieren." : isFr ? "Réservez un temps concentré pour étudier les symboles astrologiques ou des techniques de clarté mentale et de méditation." : "Reserve um tempo concentrado para estudar símbolos astrológicos ou técnicas de clareza mental e meditação.", isCompleted: false, points: 100 }
+    ];
+  });
+
+  // Keep weeklyMissions translated on language switch
+  useEffect(() => {
+    const isEn = currentLang === 'en';
+    const isEs = currentLang === 'es';
+    const isDe = currentLang === 'de';
+    const isFr = currentLang === 'fr';
+    const templates = [
+      { id: "w1", title: isEn ? "This week try to resolve an old pending matter" : isEs ? "Esta semana intente resolver un asunto pendiente antiguo" : isDe ? "Versuchen Sie diese Woche, eine alte Angelegenheit zu klären" : isFr ? "Cette semaine essayez de résoudre une affaire en suspens ancienne" : "Esta semana tente resolver uma pendência antiga", description: isEn ? "Identify a long-standing commitment and take the first step to resolve it, releasing Saturn's flow." : isEs ? "Identifique un compromisso pendente desde há muito tempo e dê o primeiro passo para resolverlo, liberando o fluxo de Saturno." : isDe ? "Identifizieren Sie eine seit langem ausstehende Verpflichtung und machen Sie den ersten Schritt, um sie zu lösen, um den Fluss Saturns freizusetzen." : isFr ? "Identifiez un engagement de longue date et faites le premier pas pour le résoudre, libérant ainsi le flux de Saturne." : "Identifique um compromisso pendente há muito tempo e dê o primeiro passo para resolvê-lo, liberando fluxo de Saturno.", isCompleted: false, points: 120 },
+      { id: "w2", title: isEn ? "This week strengthen an important relationship" : isEs ? "Esta semana fortalezca una relación importante" : isDe ? "Stärken Sie diese Woche eine wichtige Beziehung" : isFr ? "Cette semaine renforcez une relation importante" : "Esta semana fortaleça um relacionamento importante", description: isEn ? "Send a sincere message of gratitude or make a light conversation invitation to someone you care about." : isEs ? "Envíe un mensaje sincero de gratitud o invite a una conversación ligera a alguien que aprecia." : isDe ? "Senden Sie eine aufrichtige Botschaft der Dankbarkeit oder laden Sie jemanden, den Sie schätzen, zu einem leichten Gespräch ein." : isFr ? "Envoyez un message sincère de gratitude ou invitez quelqu'un que vous appréciez à une conversation légère." : "Envie uma mensagem sincera de gratidão ou faça um convite de conversa leve a quem você quer bem.", isCompleted: false, points: 150 },
+      { id: "w3", title: isEn ? "This week dedicate time to learning" : isEs ? "Esta semana dedique tempo ao aprendizado" : isDe ? "Widmen Sie diese Woche Zeit dem Lernen" : isFr ? "Cette semaine consacrez du temps à l'apprentissage" : "Esta semana dedique tempo ao aprendizado", description: isEn ? "Set aside a focused time to study astrological symbols or techniques for mental clarity and meditation." : isEs ? "Reserve um tempo concentrado para estudar símbolos astrológicos ou técnicas de clareza mental e meditação." : isDe ? "Nehmen Sie sich eine konzentrierte Zeit, um astrologische Symbole oder Techniken zur mentalen Klarheit und Meditation zu studieren." : isFr ? "Réservez un temps concentré pour étudier les symboles astrologiques ou des techniques de clarté mentale et de méditation." : "Reserve um tempo concentrado para estudar símbolos astrológicos ou técnicas de clareza mental e meditação.", isCompleted: false, points: 100 }
+    ];
+    setWeeklyMissions(prev => prev.map(m => {
+      const tpl = templates.find(t => t.id === m.id);
+      if (tpl) {
+        return {
+          ...m,
+          title: tpl.title,
+          description: tpl.description
+        };
+      }
+      return m;
+    }));
+  }, [currentLang]);
+
+  // Automatically regenerate Astrology Map if active language changes
+  useEffect(() => {
+    if (mapData && mapData.lang !== currentLang && user && user.birthDate) {
+      triggerGenerateMainMap({
+        name: user.name,
+        birthDate: user.birthDate,
+        birthTime: user.birthTime,
+        birthCity: user.birthCity,
+        isUnknownTime: user.isUnknownTime,
+        latitude: user.latitude,
+        longitude: user.longitude,
+        currentChartId: user.currentChartId
+      }, currentLang);
+    }
+  }, [currentLang, user?.birthDate, mapData?.lang]);
   
   // Blog / FAQ / Landing views helper
   const [activeLandingSection, setActiveLandingSection] = useState<'home' | 'blog' | 'tarot' | 'faq'>('home');
@@ -2215,7 +2279,7 @@ export default function App() {
 
   // Local helper to get static translations for settings on the fly
   const tLocal = (key: string, replacement?: any): string => {
-    const activeL = lang || 'pt';
+    const activeL = currentLang || 'pt';
     const translated = translateUiText(key, activeL);
     if (translated && translated !== key) {
       let str = translated;
@@ -5488,13 +5552,13 @@ export default function App() {
                                       ].map((metric, i) => (
                                         <div key={i} className="p-3 bg-slate-950/60 rounded-2xl border border-slate-850 space-y-1.5">
                                           <div className="flex justify-between items-center text-[10px] font-mono text-slate-400 uppercase font-bold">
-                                            <span>{metric.label}</span>
+                                            <span>{t(metric.label)}</span>
                                             <span className="text-slate-200">{metric.val}%</span>
                                           </div>
                                           <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden">
                                             <div className={`h-full bg-gradient-to-r ${metric.grad}`} style={{ width: `${metric.val}%` }} />
                                           </div>
-                                          <p className="text-[9px] text-slate-500 leading-normal italic">{metric.desc}</p>
+                                          <p className="text-[9px] text-slate-500 leading-normal italic">{t(metric.desc)}</p>
                                         </div>
                                       ))}
                                     </div>
@@ -6434,21 +6498,23 @@ export default function App() {
 
                             {/* Right: Extra Maps List */}
                             <div className="md:col-span-7 bg-slate-900/20 p-5 rounded-3xl border border-slate-850 space-y-4">
-                              <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-divider">Lista de Mapas Extras Cadastrados ({extraMaps.length}/2)</h3>
+                              <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-divider">
+                                {translateUiText("Lista de Mapas Extras Cadastrados", currentLang)} ({extraMaps.length}/2)
+                              </h3>
                               
                               {isLoadingExtraMap && (
                                 <div className="space-y-3 py-10 flex flex-col items-center text-slate-500 bg-slate-950/60 rounded-2xl border border-slate-800">
                                   <RefreshCw className="w-8 h-8 animate-spin text-indigo-400" />
-                                  <p className="text-[10px] font-mono">Processando alinhamento estelar secundário...</p>
+                                  <p className="text-[10px] font-mono">{translateUiText("Processando alinhamento estelar secundário...", currentLang)}</p>
                                 </div>
                               )}
 
                               {!isLoadingExtraMap && extraMaps.length === 0 && (
                                 <div className="p-8 text-center text-slate-600 bg-slate-950/30 rounded-2xl border border-dashed border-slate-850">
                                   <Orbit className="w-10 h-10 text-slate-800 mx-auto opacity-40 mb-2" />
-                                  <p className="text-xs font-mono">Nenhum mapa extra cadastrado.</p>
+                                  <p className="text-xs font-mono">{translateUiText("Nenhum mapa extra cadastrado.", currentLang)}</p>
                                   <p className="text-[10px] text-slate-505 max-w-xs mx-auto mt-1 leading-relaxed">
-                                    Adicione até 2 perfis de amigos ou familiares para comparar as cartas astrológicas e sinastrias.
+                                    {translateUiText("Adicione até 2 perfis de amigos ou familiares para comparar as cartas astrológicas e sinastrias.", currentLang)}
                                   </p>
                                 </div>
                               )}
@@ -6615,8 +6681,8 @@ export default function App() {
                     <div className="flex gap-2 items-center text-[11px] font-mono text-indigo-305">
                       <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping" />
                       <span>
-                        {lang === 'de' ? 'Integration mit Geburt:' : lang === 'en' ? 'Integration with Birth:' : lang === 'es' ? 'Integración con Nacimiento:' : lang === 'fr' ? 'Intégration avec Naissance:' : 'Integração com Nascimento:'}{" "}
-                        {user?.birthDate ? user.birthDate : (lang === 'de' ? 'Ihre astrologischen Daten' : lang === 'en' ? 'your astrological dates' : lang === 'es' ? 'sus fechas astrológicas' : lang === 'fr' ? 'vos dates astrologiques' : 'suas datas astrológicas')}
+                        {idioma === 'de' ? 'Integration mit Geburt:' : idioma === 'en' ? 'Integration with Birth:' : idioma === 'es' ? 'Integración con Nacimiento:' : idioma === 'fr' ? 'Intégration avec Naissance:' : 'Integração com Nascimento:'}{" "}
+                        {user?.birthDate ? user.birthDate : (idioma === 'de' ? 'Ihre astrologischen Daten' : idioma === 'en' ? 'your astrological dates' : idioma === 'es' ? 'sus fechas astrológicas' : idioma === 'fr' ? 'vos dates astrologiques' : 'suas datas astrológicas')}
                       </span>
                     </div>
                   </div>
@@ -6901,13 +6967,13 @@ export default function App() {
                   <div className="absolute top-0 right-0 w-80 h-80 bg-rose-500/5 rounded-full blur-3xl" />
                   <div className="relative">
                     <span className="px-3 py-1 rounded-full text-[10px] uppercase font-mono font-semibold tracking-wider text-rose-400 bg-rose-500/10 border border-rose-500/20">
-                      Módulo Sistemas Ativos e Consultas
+                      {t("Módulo Sistemas Ativos e Consultas")}
                     </span>
                     <h1 className="text-2xl md:text-3xl font-sans font-bold tracking-tight text-slate-100 mt-2">
-                      Sistemas Astros Ativos
+                      {t("Sistemas Astros Ativos")}
                     </h1>
                     <p className="text-xs text-slate-400 max-w-xl mt-1">
-                      Comunique-se com a Conselheira Orbia, interprete sonhos com Gemini no Cofre dos Sonhos e consulte o Oráculo diário.
+                      {t("Comunique-se com a Conselheira Orbia, interprete sonhos com Gemini no Cofre dos Sonhos e consulte o Oráculo diário.")}
                     </p>
                   </div>
                 </div>
@@ -6917,14 +6983,14 @@ export default function App() {
                   <React.Suspense fallback={
                     <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 text-xs text-slate-500 animate-pulse space-y-3">
                       <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mx-auto" />
-                      <div>Injetando efemérides astronômicas em tempo real...</div>
+                      <div>{t("Injetando efemérides astronômicas em tempo real...")}</div>
                     </div>
                   }>
                     <TransitMap mapData={mapData} />
                   </React.Suspense>
                 ) : (
                   <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 text-xs text-slate-500 animate-pulse">
-                    Calculando trânsitos em tempo real e aspectos com seu mapa...
+                    {t("Calculando trânsitos em tempo real e aspectos com seu mapa...")}
                   </div>
                 )}
 

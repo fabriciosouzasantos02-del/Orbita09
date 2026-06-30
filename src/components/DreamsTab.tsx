@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Language, translations } from "../translations";
 import { DreamEntry } from "../types";
 import { useTranslation } from "react-i18next";
+import { useIdioma } from "../context/IdiomaContext";
 
 interface DreamsTabProps {
   lang: Language;
@@ -141,8 +142,11 @@ const LOCAL_DREAMS_TRANSLATIONS: Record<Language, Record<string, string>> = {
 };
 
 export default function DreamsTab({ lang }: DreamsTabProps) {
+  const { idioma } = useIdioma();
+  const activeLang = idioma || lang || "pt";
+
   const [dreams, setDreams] = useState<DreamEntry[]>(() => {
-    return DEFAULT_DREAMS_BY_LANG[lang] || DEFAULT_DREAMS_BY_LANG["pt"];
+    return DEFAULT_DREAMS_BY_LANG[activeLang] || DEFAULT_DREAMS_BY_LANG["pt"];
   });
 
   const [title, setTitle] = useState("");
@@ -151,13 +155,13 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
   const [symbols, setSymbols] = useState("");
   const [loadingAI, setLoadingAI] = useState<string | null>(null);
 
-  const t = translations[lang];
+  const t = translations[activeLang];
   const { t: tI18nRaw } = useTranslation();
 
   const tI18n = (text: string): string => {
     if (!text) return "";
-    if (lang === "pt") return text;
-    const localVal = LOCAL_DREAMS_TRANSLATIONS[lang]?.[text];
+    if (activeLang === "pt") return text;
+    const localVal = LOCAL_DREAMS_TRANSLATIONS[activeLang]?.[text];
     if (localVal) return localVal;
     const res = tI18nRaw(text);
     if (res === text || !res) {
