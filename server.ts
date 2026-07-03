@@ -14,6 +14,8 @@ import nodemailer from 'nodemailer';
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, doc, setDoc, addDoc, collection, getDocs, query, where } from "firebase/firestore";
 import fs from 'fs';
+import { mergedTranslations } from './src/i18n';
+import { translations, Language } from './translations';
 
 dotenv.config();
 
@@ -41,6 +43,64 @@ app.use(express.json({
   }
 }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// Centralized server translation function
+function translateServerMessage(key: string, lang: Language, replacements?: Record<string, string>): string {
+  let text = mergedTranslations[lang]?.[key];
+  if (!text) {
+    text = (translations[lang] as any)?.[key];
+  }
+  if (!text) {
+    text = mergedTranslations['pt']?.[key] || (translations['pt'] as any)?.[key];
+  }
+  if (!text) {
+    return key;
+  }
+  if (replacements) {
+    for (const [k, v] of Object.entries(replacements)) {
+      text = text.replace(new RegExp(`{${k}}`, 'g'), v);
+    }
+  }
+  return text;
+}
+
+// Global Language Middleware
+app.use((req: any, res, next) => {
+  let lang: any = req.headers['x-app-lang'] || req.headers['x-language'];
+  
+  if (!lang) {
+    lang = req.body?.lang || req.query?.lang;
+  }
+  
+  if (!lang && req.body?.userProfile?.lang) {
+    lang = req.body.userProfile.lang;
+  }
+  
+  if (!lang) {
+    const acceptLang = req.headers['accept-language'];
+    if (typeof acceptLang === 'string') {
+      const preferred = acceptLang.split(',')[0].split(';')[0].split('-')[0].trim().toLowerCase();
+      if (['pt', 'en', 'es', 'de', 'fr'].includes(preferred)) {
+        lang = preferred;
+      }
+    }
+  }
+  
+  let resolvedLang: Language = 'pt';
+  if (lang && typeof lang === 'string') {
+    const cleanLang = lang.trim().toLowerCase();
+    if (['pt', 'en', 'es', 'de', 'fr'].includes(cleanLang)) {
+      resolvedLang = cleanLang as Language;
+    }
+  }
+  
+  req.lang = resolvedLang;
+  req.t = (key: string, replacements?: Record<string, string>) => {
+    return translateServerMessage(key, resolvedLang, replacements);
+  };
+  
+  next();
+});
 
 // Initialize Google Gen AI
 const apiKey = process.env.GEMINI_API_KEY;
@@ -1082,7 +1142,7 @@ app.post("/api/astrology/generate", async (req, res) => {
   try {
     const { name, email, birthDate, birthTime, birthCity, isUnknownTime, latitude, longitude, lang } = req.body || {};
     if (!name) {
-      return res.status(400).json({ error: "Nome é obrigatório na sintonização astral." });
+      return res.status(400).json({ error: (req as any).t('api.astrology.name_required') });
     }
 
     let safeBirthDate = birthDate;
@@ -1310,7 +1370,7 @@ Responda APENAS com o JSON literal. Não inclua blocos de código adicionais for
   }
   } catch (outerError) {
     console.error("Critical error in /api/astrology/generate:", outerError);
-    return res.status(500).json({ error: "Erro interno no cálculo astrológico. Verifique os dados fornecidos." });
+    return res.status(500).json({ error: (req as any).t('api.astrology.internal_error') });
   }
 });
 
@@ -1318,7 +1378,7 @@ Responda APENAS com o JSON literal. Não inclua blocos de código adicionais for
 app.post("/api/dreams/interpret", async (req, res) => {
   const { title, description, lang } = req.body;
   if (!description) {
-    return res.status(400).json({ error: "Descrição do sonho é obrigatória." });
+    return res.status(400).json({ error: (req as any).t('api.dreams.content_required') });
   }
 
   const activeLang = (lang || "pt").toLowerCase();
@@ -1633,7 +1693,7 @@ app.post("/api/compatibility/evaluate", async (req, res) => {
   } = req.body;
 
   if (!name || !companionName) {
-    return res.status(400).json({ error: "Ambos os nomes são necessários." });
+    return res.status(400).json({ error: (req as any).t('api.compatibility.both_names_required') });
   }
 
   // Pre-calculate highly detailed parameters using compatibilityEngine
@@ -1747,7 +1807,7 @@ Return ONLY the raw literal JSON without any markdown code blocks or secondary t
 app.post("/api/oraculo/query", async (req, res) => {
   const { question, lang } = req.body;
   if (!question) {
-    return res.status(400).json({ error: "Pergunta do oráculo é obrigatória." });
+    return res.status(400).json({ error: (req as any).t('api.oraculo.question_required') });
   }
 
   const activeLang = (lang || "pt").toLowerCase();
@@ -2629,7 +2689,7 @@ app.post("/api/astrology/rare-notifications", async (req, res) => {
   }
   } catch (outerError) {
     console.error("Critical error in /api/astrology/rare-notifications:", outerError);
-    return res.status(500).json({ error: "Erro interno ao buscar notificações raras." });
+    return res.status(500).json({ error: (req as any).t('api.astrology.rare_notifications_error') });
   }
 });
 
@@ -2656,6 +2716,314 @@ function getZodiacFromBirthDate(dateStr: string): string {
     return "Peixes";
   } catch (e) {
     return "Sagitário";
+  }
+}
+
+// Astrological sign translation helper
+function translateAstroSign(sign: string, lang: string): string {
+  const activeLang = (lang || "pt").toLowerCase().split("-")[0];
+  const targetLang = ["pt", "en", "es", "de", "fr"].includes(activeLang) ? activeLang : "pt";
+  if (targetLang === "pt") return sign;
+
+  const dictionary: Record<string, Record<string, string>> = {
+    en: {
+      "Áries": "Aries", "Touro": "Taurus", "Gêmeos": "Gemini", "Câncer": "Cancer",
+      "Leão": "Leo", "Virgem": "Virgo", "Libra": "Libra", "Escorpião": "Scorpio",
+      "Sagitário": "Sagittarius", "Capricórnio": "Capricorn", "Aquário": "Aquarius", "Peixes": "Pisces"
+    },
+    es: {
+      "Áries": "Aries", "Touro": "Tauro", "Gêmeos": "Géminis", "Câncer": "Cáncer",
+      "Leão": "Leo", "Virgem": "Virgo", "Libra": "Libra", "Escorpião": "Escorpio",
+      "Sagitário": "Sagitario", "Capricórnio": "Capricornio", "Aquário": "Acuario", "Peixes": "Piscis"
+    },
+    de: {
+      "Áries": "Widder", "Touro": "Stier", "Gêmeos": "Zwillinge", "Câncer": "Krebs",
+      "Leão": "Löwe", "Virgem": "Jungfrau", "Libra": "Waage", "Escorpião": "Skorpion",
+      "Sagitário": "Schütze", "Capricórnio": "Steinbock", "Aquário": "Wassermann", "Peixes": "Fische"
+    },
+    fr: {
+      "Áries": "Bélier", "Touro": "Taureau", "Gêmeos": "Gémeaux", "Câncer": "Cancer",
+      "Leão": "Lion", "Virgem": "Vierge", "Libra": "Balance", "Escorpião": "Scorpion",
+      "Sagitário": "Sagittaire", "Capricórnio": "Capricorne", "Aquário": "Verseau", "Peixes": "Poissons"
+    }
+  };
+
+  const key = sign.trim();
+  return dictionary[targetLang]?.[key] || key;
+}
+
+// Localized Major Arcana translation database for offline reading fallback
+const MAJOR_ARCANA_LOCALIZED: Record<string, Record<number, { uprightMeaning: string, advice: string }>> = {
+  en: {
+    0: { uprightMeaning: "Beginnings, pure potential, blind faith, spontaneity, and unbridled adventure.", advice: "Embrace the unknown. It is time to take the leap of faith you analyze so much." },
+    1: { uprightMeaning: "Personal power, focused manifestation, brilliant initiative, and full resources.", advice: "You already have all the skills. Focus your concentration and channel your strength." },
+    2: { uprightMeaning: "Sharp intuition, peaceful mystery, active subconscious, and hidden wisdom.", advice: "Stop seeking answers in the outside world. Silence yourself and follow your silent insights." },
+    3: { uprightMeaning: "Maternal abundance, active fertility, flourishing creativity, and generosity.", advice: "Nurture your ideas. Let beauty flow freely through your actions today." },
+    4: { uprightMeaning: "Solid structure, practical order, active leadership, authority, and austere protection.", advice: "Create clear rules. A little order and pragmatic routine will bring peace." },
+    5: { uprightMeaning: "Wise traditions, elevated mentorship, education, spiritual wisdom, and dogmas.", advice: "Talk to a mentor or seek structured paths of knowledge." },
+    6: { uprightMeaning: "Heart choices, corresponding love, agreement, alignment, and chemistry.", advice: "Align your decisions with your authentic feelings before committing." },
+    7: { uprightMeaning: "Swift victory, focused control, indomitable determination, focus, and willpower.", advice: "Keep a firm grip on the reins and drive your progress with vigor and courage." },
+    8: { uprightMeaning: "Moral courage, quiet inner strength, self-control, and healing compassion.", advice: "Face challenges with gentleness and patience. Your greatest strength is resilience." },
+    9: { uprightMeaning: "Self-knowledge, comforting solitude, internal guide, and deep reflection.", advice: "Retreat for a moment to reflect. The answer you seek is within you." },
+    10: { uprightMeaning: "Sudden changes, inevitable cycles, destiny in motion, and a radical turn.", advice: "Accept the natural flow. What goes up must come down; adapt with serenity." },
+    11: { uprightMeaning: "Balance, clear truth, righteousness, cause and effect, and just responsibility.", advice: "Be totally honest with yourself and weigh all consequences of your choice." },
+    12: { uprightMeaning: "New perspective, voluntary pause, healthy sacrifice, and peaceful restlessness.", advice: "Look at things from another angle before acting. A pause will bring wisdom." },
+    13: { uprightMeaning: "End of cycles, radical transmutation, inevitable rebirth, and sincere detachment.", advice: "Let go of what no longer serves. Only with pruning the old can something new sprout." },
+    14: { uprightMeaning: "Personal alchemy, moderation, emotional balance, patience, and serene flow of things.", advice: "Avoid extremes today. Mix opposites in your life with patience and sacred gentleness." },
+    15: { uprightMeaning: "Dense attachments, carnal temptation, mental obsession, intense passion, and forces of the subconscious.", advice: "Beware of emotional traps or compulsions. Free yourself from self-imposed chains." },
+    16: { uprightMeaning: "Necessary disruption, liberating revelation, fall of old illusions, and strong reconstruction.", advice: "Let false structures fall. The fall is necessary for the true foundation to appear." },
+    17: { uprightMeaning: "Renewed hope, artistic inspiration, gentle healing, and absolute faith in the cosmic path.", advice: "Believe in the light that guides your path, even in the darkest nights. There is hope." },
+    18: { uprightMeaning: "Subtle illusion, vivid dreams, deep subconscious, and instinctive fears.", advice: "Pay attention to your dreams and intuitions. Not everything is what it seems right now." },
+    19: { uprightMeaning: "Full vitality, absolute clarity, shared joy, and deserved success.", advice: "Embrace your authenticity and shine freely. The moment is one of warmth and vitality." },
+    20: { uprightMeaning: "Inner awakening, soul's calling, redemption, healing of the past, and sincere verdict.", advice: "Seize this chance to be reborn from the past. Clear away old grievances." },
+    21: { uprightMeaning: "Glorious completion, universal harmony, soul integration, and ecstasy of realization.", advice: "Celebrate the harvest of your efforts. You have completed a cycle with wisdom." }
+  },
+  es: {
+    0: { uprightMeaning: "Inicios, potencial puro, fe ciega, espontaneidad y aventura sin amarras.", advice: "Abraza lo desconocido. Es hora de dar el salto de fe que tanto analizas." },
+    1: { uprightMeaning: "Poder personal, manifestación enfocada, iniciativa brillante y recursos plenos.", advice: "Ya tienes todas las habilidades. Ajusta tu concentración y canaliza tu fuerza." },
+    2: { uprightMeaning: "Intuición aguda, misterio pacífico, subconsciente activo y sabiduría oculta.", advice: "Deja de buscar respuestas en el mundo exterior. Silénciate y sigue tus intuiciones mudas." },
+    3: { uprightMeaning: "Abundancia maternal, fertilidad activa, creatividad floreciente y generosidad.", advice: "Nutre tus ideas. Deja que la belleza fluya libremente a través de tus actos hoy." },
+    4: { uprightMeaning: "Estructura sólida, orden práctico, liderazgo activo, autoridad y protección austera.", advice: "Crea reglas claras. Un poco de orden y rutina pragmática traerán paz." },
+    5: { uprightMeaning: "Tradiciones sabias, mentoría elevada, educación, sabiduría espiritual y dogmas.", advice: "Habla con un mentor o busca caminos estructurados de conocimiento." },
+    6: { uprightMeaning: "Elecciones del corazón, amor correspondido, concordancia, alineación y química.", advice: "Alinea tus decisiones con tus sentimientos auténticos antes de comprometerte." },
+    7: { uprightMeaning: "Victoria veloz, control enfocado, determinación indomable, enfoque y fuerza de voluntad.", advice: "Mantén el enfoque firmemente en las riendas y dirige tu progreso con vigor y coraje." },
+    8: { uprightMeaning: "Coraje moral, fuerza interior tranquila, autodominio y compasión curativa.", advice: "Enfrente los desafíos con suavidad y paciencia. Tu mayor fuerza es la resiliencia." },
+    9: { uprightMeaning: "Autoconocimiento, soledad reconfortante, guía interna y reflexión profunda.", advice: "Retírate por un momento a reflexionar. La respuesta que buscas está en tu interior." },
+    10: { uprightMeaning: "Cambios repentinos, ciclos inevitables, destino en movimento y viraje radical.", advice: "Acepta el flujo natural. Lo que sube también baja; adáptate con serenidad." },
+    11: { uprightMeaning: "Equilibrio, verdad limpia, rectitud, causa y efecto y responsabilidad justa.", advice: "Sé totalmente honesto contigo mismo y pesa todas las consecuencias de tu elección." },
+    12: { uprightMeaning: "Nueva perspectiva, pausa voluntaria, sacrificio saludable y desasosiego pacífico.", advice: "Mira las cosas desde otro ángulo antes de actuar. Una pausa traerá sabiduría." },
+    13: { uprightMeaning: "Fin de ciclos, transmutación radical, renacimiento inevitable y desapego sincero.", advice: "Deja ir lo que ya no sirve. Solo con la poda de lo viejo podrá brotar algo nuevo." },
+    14: { uprightMeaning: "Alquimia personal, moderación, equilibrio emocional, paciencia y flujo sereno de las cosas.", advice: "Evita los extremos hoy. Mezcla los opuestos en tu vida con paciencia y suavidad sagrada." },
+    15: { uprightMeaning: "Apegos densos, tentación carnal, obsesión mental, pasión intensa y fuerzas del subconsciente.", advice: "Cuidado con trampas emocionales o compulsiones. Libérate de cadenas autoimpuestas." },
+    16: { uprightMeaning: "Ruptura necesaria, revelación liberadora, caída de viejas ilusiones y reconstrucción fuerte.", advice: "Deja caer las estructuras falsas. La caída es necesaria para que aparezca la verdadera base." },
+    17: { uprightMeaning: "Esperanza renovada, inspiración artística, curación suave y fe absoluta en el rumbo cósmico.", advice: "Cree en la luz que guía tu camino, incluso en las noches más oscuras. Hay esperanza." },
+    18: { uprightMeaning: "Ilusión sutil, sueños vívidos, subconsciente profundo y temores instintivos.", advice: "Presta atención a tus sueños e intuiciones. No todo es lo que parece en este momento." },
+    19: { uprightMeaning: "Vitalidad plena, claridad absoluta, alegría compartida y éxito merecido.", advice: "Abraza tu autenticidad y brilla libremente. El momento es de calidez y vitalidad." },
+    20: { uprightMeaning: "Despertar interior, llamado del alma, redención, curación del pasado y veredicto sincero.", advice: "Aprovecha esta oportunidad para renacer del pasado. Limpia los viejos rencores." },
+    21: { uprightMeaning: "Conclusión gloriosa, armonía universal, integración de alma y éxtasis de realización.", advice: "Celebra la cosecha de tus esfuerzos. Has completado un ciclo con sabiduría." }
+  },
+  de: {
+    0: { uprightMeaning: "Anfänge, reines Potenzial, blinder Glaube, Spontaneität und ungezügeltes Abenteuer.", advice: "Lassen Sie sich auf das Unbekannte ein. Es ist Zeit, den Vertrauensvorschuss zu wagen, den Sie so sehr analysieren." },
+    1: { uprightMeaning: "Persönliche Macht, fokussierte Manifestation, brillante Initiative und volle Ressourcen.", advice: "Sie haben bereits alle Fähigkeiten. Konzentrieren Sie sich und kanalisieren Sie Ihre Kraft." },
+    2: { uprightMeaning: "Scharfe Intuition, friedliches Geheimnis, aktives Unterbewusstsein und verborgene Weisheit.", advice: "Suchen Sie nicht mehr nach Antworten in der Außenwelt. Schweigen Sie und folgen Sie Ihren stillen Einsichten." },
+    3: { uprightMeaning: "Mütterliche Fülle, aktive Fruchtbarkeit, blühende Kreativität und Großzügigkeit.", advice: "Pflegen Sie Ihre Ideen. Lassen Sie die Schönheit heute frei durch Ihr Handeln fließen." },
+    4: { uprightMeaning: "Solide Struktur, praktische Ordnung, aktive Führung, Autorität und strenger Schutz.", advice: "Schaffen Sie klare Regeln. Ein wenig Ordnung und pragmatische Routine bringen Frieden." },
+    5: { uprightMeaning: "Weise Traditionen, erhabene Mentorschaft, Bildung, spirituelle Weisheit und Dogmen.", advice: "Sprechen Sie mit einem Mentor oder suchen Sie nach strukturierten Wegen des Wissens." },
+    6: { uprightMeaning: "Entscheidungen des Herzens, entsprechende Liebe, Vereinbarung, Ausrichtung und Chemie.", advice: "Richten Sie Ihre Entscheidungen an Ihren authentischen Gefühlen aus, bevor Sie sich verpflichten." },
+    7: { uprightMeaning: "Schneller Sieg, fokussierte Kontrolle, unbändiger Entschluss, Fokus und Willenskraft.", advice: "Halten Sie die Zügel fest in der Hand und treiben Sie Ihren Fortschritt mit Tatkraft und Mut voran." },
+    8: { uprightMeaning: "Moralischer Mut, ruhige innere Stärke, Selbstbeherrschung und heilendes Mitgefühl.", advice: "Begegnen Sie Herausforderungen mit Sanftmut und Geduld. Ihre größte Stärke ist die Widerstandskraft." },
+    9: { uprightMeaning: "Selbsterkenntnis, tröstende Einsamkeit, innerer Führer und tiefe Reflexion.", advice: "Ziehen Sie sich für einen Moment zurück, um nachzudenken. Die Antwort, die Sie suchen, liegt in Ihnen." },
+    10: { uprightMeaning: "Plötzliche Veränderungen, unvermeidliche Zyklen, Schicksal in Bewegung und eine radikale Wendung.", advice: "Akzeptieren Sie den natürlichen Fluss. Was oben ist, muss auch unten sein; passen Sie sich mit Gelassenheit an." },
+    11: { uprightMeaning: "Gleichgewicht, klare Wahrheit, Rechtschaffenheit, Ursache und Wirkung sowie gerechte Verantwortung.", advice: "Seien Sie völlig ehrlich zu sich selbst und wägen Sie alle Konsequenzen Ihrer Wahl ab." },
+    12: { uprightMeaning: "Neue Perspektive, freiwillige Pause, gesundes Opfer und friedliche Unruhe.", advice: "Betrachten Sie die Dinge aus einem anderen Blickwinkel, bevor Sie handeln. Eine Pause bringt Weisheit." },
+    13: { uprightMeaning: "Ende der Zyklen, radikale Transmutation, unvermeidliche Wiedergeburt und aufrichtiges Loslassen.", advice: "Lassen Sie los, was nicht mehr dient. Nur durch das Beschneiden des Alten kann Neues entstehen." },
+    14: { uprightMeaning: "Persönliche Alchemie, Mäßigung, emotionales Gleichgewicht, Geduld und heiterer Fluss der Dinge.", advice: "Vermeiden Sie heute Extreme. Mischen Sie Gegensätze in Ihrem Leben mit Geduld und heiliger Sanftmut." },
+    15: { uprightMeaning: "Dichte Bindungen, fleischliche Versuchung, mentale Obsession, intensive Leidenschaft und Kräfte des Unterbewussten.", advice: "Hüten Sie sich vor emotionalen Fallen oder Zwängen. Befreien Sie sich von selbst auferlegten Ketten." },
+    16: { uprightMeaning: "Notwendiger Aufbruch, befreiende Offenbarung, Sturz alter Illusionen und starker Wiederaufbau.", advice: "Lassen Sie falsche Strukturen fallen. Der Sturz ist notwendig, damit das wahre Fundament zum Vorschein kommt." },
+    17: { uprightMeaning: "Erneuerte Hoffnung, künstlerische Inspiration, sanfte Heilung und absoluter Glaube an den kosmischen Weg.", advice: "Glauben Sie an das Licht, das Ihren Weg leitet, selbst in den dunkelsten Nächten. Es gibt Hoffnung." },
+    18: { uprightMeaning: "Subtile Illusion, lebhafte Träume, tiefes Unterbewusstsein und instinktive Ängste.", advice: "Achten Sie auf Ihre Träume und Intuitionen. Im Moment ist nicht alles so, wie es scheint." },
+    19: { uprightMeaning: "Volle Vitalität, absolute Klarheit, geteilte Freude und verdienter Erfolg.", advice: "Nehmen Sie Ihre Authentizität an und strahlen Sie frei. Der Moment ist geprägt von Wärme und Vitalität." },
+    20: { uprightMeaning: "Inneres Erwachen, Ruf der Seele, Erlösung, Heilung der Vergangenheit und aufrichtiges Urteil.", advice: "Nutzen Sie diese Chance, um aus der Vergangenheit neugeboren zu werden. Räumen Sie alte Missstände aus." },
+    21: { uprightMeaning: "Glorreicher Abschluss, universelle Harmonie, Seelenintegration und Ekstase der Verwirklichung.", advice: "Feiern Sie die Ernte Ihrer Bemühungen. Sie haben einen Zyklus mit Weisheit abgeschlossen." }
+  },
+  fr: {
+    0: { uprightMeaning: "Commencements, potentiel pur, foi aveugle, spontanéité et aventure débridée.", advice: "Embrassez l'inconnu. Il est temps de faire le saut de foi que vous analysez tant." },
+    1: { uprightMeaning: "Pouvoir personnel, manifestation ciblée, initiative brillante et pleines ressources.", advice: "Vous possédez déjà toutes les compétences. Concentrez votre attention et canalisez votre force." },
+    2: { uprightMeaning: "Intuition aiguisée, mystère paisible, subconscient actif et sagesse cachée.", advice: "Arrêtez de chercher des réponses dans le monde extérieur. Faites silence et suivez vos intuitions muettes." },
+    3: { uprightMeaning: "Abondance maternelle, fertilité active, créativité florissante et générosité.", advice: "Nourrissez vos idées. Laissez la beauté couler librement à travers vos actions aujourd'hui." },
+    4: { uprightMeaning: "Structure solide, ordre pratique, leadership actif, autorité et protection austère.", advice: "Créez des règles claires. Un peu d'ordre et de routine pragmatique apporteront la paix." },
+    5: { uprightMeaning: "Traditions sages, mentorat élevé, éducation, sagesse spirituelle et dogmes.", advice: "Parlez à un mentor ou cherchez des voies de connaissances structurées." },
+    6: { uprightMeaning: "Choix du cœur, amour partagé, accord, alignement et chimie.", advice: "Alignez vos décisions avec vos sentiments authentiques avant de vous engager." },
+    7: { uprightMeaning: "Victoire rapide, contrôle ciblé, détermination indomptable, concentration et volonté.", advice: "Gardez fermement les rênes et menez vos progrès avec vigueur et courage." },
+    8: { uprightMeaning: "Courage moral, force intérieure tranquille, maîtrise de soi et compassion guérisseuse.", advice: "Affrontez les défis avec douceur et patience. Votre plus grande force est la résilience." },
+    9: { uprightMeaning: "Connaissance de soi, solitude réconfortante, guide interne et réflexion profonde.", advice: "Retirez-vous un instant pour réfléchir. La réponse que vous cherchez est en vous." },
+    10: { uprightMeaning: "Changements soudains, cycles inévitables, destin en mouvement et virage radical.", advice: "Acceptez le flux naturel. Tout ce qui monte doit descendre ; adaptez-vous avec sérénité." },
+    11: { uprightMeaning: "Équilibre, vérité limpide, droiture, cause et effet et juste responsabilité.", advice: "Soyez totalement honnête avec vous-même et pesez toutes les conséquences de vos choix." },
+    12: { uprightMeaning: "Nouvelle perspective, pause volontaire, sacrifice sain et agitation paisible.", advice: "Regardez les choses sous un autre angle avant d'agir. Une pause apportera la sagesse." },
+    13: { uprightMeaning: "Fin de cycles, transmutation radicale, renaissance inévitable et détachement sincère.", advice: "Laissez partir ce qui ne sert plus. Ce n'est qu'en élaguant l'ancien que le nouveau peut surgir." },
+    14: { uprightMeaning: "Alchimie personnelle, modération, équilibre émotionnel, patience et flux serein des choses.", advice: "Évitez les extrêmes aujourd'hui. Mélangez les opposés avec patience et douceur sacrée." },
+    15: { uprightMeaning: "Attachements denses, tentation charnelle, obsession mentale, passion intense et forces du subconscient.", advice: "Méfiez-vous des pièges émotionnels ou des compulsions. Libérez-vous des chaînes auto-imposées." },
+    16: { uprightMeaning: "Rupture nécessaire, révélation libératrice, chute des vieilles illusions et reconstruction forte.", advice: "Laissez tomber les fausses structures. La chute est nécessaire pour que la vraie fondation apparaisse." },
+    17: { uprightMeaning: "Espoir renouvelé, inspiration artistique, guérison douce et foi absolue dans le chemin cosmique.", advice: "Croyez en la lumière qui guide votre chemin, même dans les nuits les plus sombres. Il y a de l'espoir." },
+    18: { uprightMeaning: "Illusion subtile, rêves vifs, subconscient profond et peurs instinctives.", advice: "Prêtez attention à vos rêves et à vos intuitions. Tout n'est pas ce qu'il paraît en ce moment." },
+    19: { uprightMeaning: "Pleine vitalité, clarté absolue, joie partagée et succès mérité.", advice: "Embrassez votre authenticité et brillez librement. Le moment est à la chaleur et à la vitalité." },
+    20: { uprightMeaning: "Éveil intérieur, appel de l'âme, rédemption, guérison du passé et verdict sincère.", advice: "Saisissez cette chance de renaître du passé. Effacez les vieux griefs." },
+    21: { uprightMeaning: "Fin glorieuse, harmonie universelle, intégration de l'âme et extase de la réalisation.", advice: "Célébrez la récolte de vos efforts. Vous avez terminé un cycle avec sagesse." }
+  }
+};
+
+// Translate card names based on selected locale
+function translateCardName(card: any, lang: string): string {
+  const cleanLang = (lang || "pt").toLowerCase().split("-")[0];
+  const targetLang = ["pt", "en", "es", "de", "fr"].includes(cleanLang) ? cleanLang : "pt";
+  if (targetLang === "pt") return card.cardName;
+
+  if (card.arcanaType === "major") {
+    const majorNames: Record<string, string[]> = {
+      pt: ["O Louco", "O Mago", "A Sacerdotisa", "A Imperatriz", "O Imperador", "O Hierofante", "Os Enamorados", "O Carro", "A Força", "O Eremita", "A Roda da Fortuna", "A Justiça", "O Enforcado", "A Morte", "A Temperança", "O Diabo", "A Torre", "A Estrela", "A Lua", "O Sol", "O Julgamento", "O Mundo"],
+      en: ["The Fool", "The Magician", "The High Priestess", "The Empress", "The Emperor", "The Hierophant", "The Lovers", "The Chariot", "Strength", "The Hermit", "The Wheel of Fortune", "Justice", "The Hanged Man", "Death", "Temperance", "The Devil", "The Tower", "The Star", "The Moon", "The Sun", "Judgement", "The World"],
+      es: ["El Loco", "El Mago", "La Sacerdotisa", "La Emperatriz", "El Emperador", "El Hierofante", "Los Enamorados", "El Carro", "La Fuerza", "El Ermitaño", "La Rueda de la Fortuna", "La Justicia", "El Colgado", "La Muerte", "La Templanza", "El Diablo", "La Torre", "La Estrella", "La Luna", "El Sol", "El Juicio", "El Mundo"],
+      de: ["Der Narr", "Der Magier", "Die Hohepriesterin", "Die Herrscherin", "Der Herrscher", "Der Hierophant", "Die Liebenden", "Der Wagen", "Die Kraft", "Der Eremit", "Das Rad des Schicksals", "Die Gerechtigkeit", "Der Gehängte", "Der Tod", "Die Mäßigkeit", "Der Teufel", "Der Turm", "Der Stern", "Der Mond", "Die Sonne", "Das Gericht", "Die Welt"],
+      fr: ["Le Fou", "Le Bateleur", "La Papesse", "L'Impératrice", "L'Empereur", "Le Pape", "L'Amoureux", "Le Chariot", "La Force", "L'Ermite", "La Roue de Fortune", "La Justice", "Le Pendu", "La Mort", "La Tempérance", "Le Diable", "La Maison Dieu", "L'Étoile", "La Lune", "Le Soleil", "Le Jugement", "Le Monde"]
+    };
+    const list = majorNames[targetLang] || majorNames["pt"];
+    const name = list[card.number] || card.cardName;
+    return `${name} (${card.number})`;
+  } else {
+    const ranks: Record<string, string[]> = {
+      pt: ["", "Ás", "Dois", "Três", "Quatro", "Cinco", "Seis", "Sete", "Oito", "Nove", "Dez", "Valete", "Cavaleiro", "Rainha", "Rei"],
+      en: ["", "Ace", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Page", "Knight", "Queen", "King"],
+      es: ["", "As", "Dos", "Tres", "Cuatro", "Cinco", "Seis", "Siete", "Ocho", "Nueve", "Diez", "Sota", "Caballero", "Reina", "Rey"],
+      de: ["", "As", "Zwei", "Drei", "Vier", "Fünf", "Sechs", "Sieben", "Acht", "Neun", "Zehn", "Bube", "Ritter", "Königin", "König"],
+      fr: ["", "As", "Deux", "Trois", "Quatre", "Cinq", "Six", "Sept", "Huit", "Neuf", "Dix", "Valet", "Chevalier", "Reine", "Roi"]
+    };
+    const suits: Record<string, Record<string, string>> = {
+      pt: { cups: "Copas", wands: "Paus", swords: "Espadas", pentacles: "Ouros" },
+      en: { cups: "Cups", wands: "Wands", swords: "Swords", pentacles: "Pentacles" },
+      es: { cups: "Copas", wands: "Bastos", swords: "Espadas", pentacles: "Oros" },
+      de: { cups: "Kelche", wands: "Stäbe", swords: "Schwerter", pentacles: "Münzen" },
+      fr: { cups: "Coupes", wands: "Bâtons", swords: "Épées", pentacles: "Deniers" }
+    };
+    const connectors: Record<string, string> = {
+      pt: "de", en: "of", es: "de", de: "der", fr: "de"
+    };
+    const suitKey = card.id.split("_").pop() || "cups";
+    const rankList = ranks[targetLang] || ranks["pt"];
+    const suitList = suits[targetLang] || suits["pt"];
+    const conn = connectors[targetLang] || "de";
+    const rankName = rankList[card.number] || "";
+    const suitName = suitList[suitKey] || "";
+    return `${rankName} ${conn} ${suitName}`;
+  }
+}
+
+// Complete card translation function
+function translateCard(card: any, lang: string): any {
+  if (!card) return card;
+  const cleanLang = (lang || "pt").toLowerCase().split("-")[0];
+  const targetLang = ["pt", "en", "es", "de", "fr"].includes(cleanLang) ? cleanLang : "pt";
+  if (targetLang === "pt") return card;
+
+  const translatedName = translateCardName(card, targetLang);
+  
+  if (card.arcanaType === "major") {
+    const localized = MAJOR_ARCANA_LOCALIZED[targetLang]?.[card.number];
+    return {
+      ...card,
+      cardName: translatedName,
+      nome: translatedName.split(" (")[0],
+      uprightMeaning: localized?.uprightMeaning || card.uprightMeaning,
+      significado: localized?.uprightMeaning || card.uprightMeaning,
+      advice: localized?.advice || card.advice
+    };
+  } else {
+    const suitKey = card.id.split("_").pop() || "cups";
+    const values: Record<string, Record<number, string>> = {
+      en: {
+        1: "Ace of [Suit] symbolizes clear potential for fruitful manifestation and rich new opportunities.",
+        2: "Two of [Suit] symbolizes productive partnerships, diplomatic choices, duality, and balance.",
+        3: "Three of [Suit] symbolizes successful collaboration, expansion of horizons, and active growth.",
+        4: "Four of [Suit] symbolizes domestic stability, firm boundaries, physical rest, or peaceful apathy.",
+        5: "Five of [Suit] symbolizes momentary challenges, temporary losses, readjustment, or small conflicts of coexistence.",
+        6: "Six of [Suit] symbolizes restored harmony, affectionate memories, sincere generosity, and peaceful paths.",
+        7: "Seven of [Suit] symbolizes multiple choices, strategic planning, self-defense, or arduous persistence.",
+        8: "Eight of [Suit] symbolizes diligent learning, rapid movement, overcoming constraints, or absolute focus.",
+        9: "Nine of [Suit] symbolizes full soul abundance, personal satisfaction, material culmination, and security.",
+        10: "Ten of [Suit] symbolizes secure material legacy, family happiness, full union, and rich completion of stages.",
+        11: "Page of [Suit] symbolizes promising messages, new studies, seeds of ideas, and active curiosity.",
+        12: "Knight of [Suit] symbolizes dynamic drive, determined action, unwavering focus, or patient diligence.",
+        13: "Queen of [Suit] symbolizes secure receptive mastery, affectionate empathy, welcoming charisma, and intelligence.",
+        14: "King of [Suit] symbolizes strong executive mastery, just authority, mature wisdom, and secure provision."
+      },
+      es: {
+        1: "As de [Suit] simboliza un potencial claro de manifestación fecunda y ricas oportunidades nuevas.",
+        2: "Dos de [Suit] simboliza alianzas productivas, elecciones diplomáticas, dualidad y ponderación.",
+        3: "Tres de [Suit] simboliza colaboración exitosa, expansión de horizontes y crecimiento activo.",
+        4: "Cuatro de [Suit] simboliza estabilidad doméstica, límites firmes, reposo físico o apatía pacífica.",
+        5: "Cinco de [Suit] simboliza desafíos momentáneos, pérdidas temporales, reajuste o pequeños conflictos de convivencia.",
+        6: "Seis de [Suit] simboliza armonía restaurada, recuerdos afectuosos, generosidad sincera y caminos tranquilos.",
+        7: "Siete de [Suit] simboliza múltiples elecciones, planificación estratégica, autodefensa o persistencia ardua.",
+        8: "Ocho de [Suit] simboliza aprendizaje de calidad, movimiento rápido, superación de amarras o enfoque absoluto.",
+        9: "Nueve de [Suit] simboliza abundancia plena de alma, satisfacción personal, culminación material y seguridad.",
+        10: "Diez de [Suit] simboliza legado material seguro, felicidad familiar, unión plena y conclusión de etapas ricas.",
+        11: "Sota de [Suit] simboliza mensajes prometedores, nuevos estudios, semillas de ideas y curiosidad activa.",
+        12: "Caballero de [Suit] simboliza impulso dinámico, acción decidida, enfoque inquebrantable o diligencia paciente.",
+        13: "Reina de [Suit] simboliza dominio receptivo seguro, empatía afectuosa, carisma acogedor e inteligencia.",
+        14: "Rey de [Suit] simboliza dominio ejecutivo fuerte, autoridad justa, sabiduría madura y provisión segura."
+      },
+      de: {
+        1: "As der [Suit] symbolisiert klares Potenzial für eine fruchtbare Manifestation und reiche neue Möglichkeiten.",
+        2: "Zwei der [Suit] symbolisiert produktive Partnerschaften, diplomatische Entscheidungen, Dualität und Ausgewogenheit.",
+        3: "Drei der [Suit] symbolisiert erfolgreiche Zusammenarbeit, Erweiterung des Horizonts und aktives Wachstum.",
+        4: "Vier der [Suit] symbolisiert häusliche Stabilität, feste Grenzen, körperliche Ruhe oder friedliche Apathie.",
+        5: "Fünf der [Suit] symbolisiert vorübergehende Herausforderungen, vorübergehende Verluste, Neujustierung oder kleine Konflikte des Zusammenlebens.",
+        6: "Sechs der [Suit] symbolisiert wiederhergestellte Harmonie, liebevolle Erinnerungen, aufrichtige Großzügigkeit und friedliche Wege.",
+        7: "Sieben der [Suit] symbolisiert multiple Entscheidungen, strategische Planung, Selbstverteidigung oder mühsame Beharrlichkeit.",
+        8: "Acht der [Suit] symbolisiert fleißiges Lernen, schnelle Bewegung, Überwindung von Zwängen oder absoluten Fokus.",
+        9: "Neun der [Suit] symbolisiert reichlich Seelenfülle, persönliche Zufriedenheit, materiellen Höhepunkt und Sicherheit.",
+        10: "Zehn der [Suit] symbolisiert sicheres materielles Erbe, familiäres Glück, volle Vereinigung und reichen Abschluss von Phasen.",
+        11: "Bube der [Suit] symbolisiert vielversprechende Botschaften, neue Studien, Keime von Ideen und aktive Neugier.",
+        12: "Ritter der [Suit] symbolisiert dynamischen Antrieb, entschlossenes Handeln, unerschütterlichen Fokus oder geduldigen Fleiß.",
+        13: "Königin der [Suit] symbolisiert sichere empfängliche Meisterschaft, liebevolles Mitgefühl, einladendes Charisma und Intelligenz.",
+        14: "König der [Suit] symbolisiert starke exekutive Meisterschaft, gerechte Autorität, reife Weisheit und sichere Vorsorge."
+      },
+      fr: {
+        1: "As de [Suit] symbolise un potentiel clair de manifestation fructueuse et de nouvelles opportunités riches.",
+        2: "Deux de [Suit] symbolise des partenariats productifs, des choix diplomatiques, la dualité et l'équilibre.",
+        3: "Trois de [Suit] symbolise une collaboration fructueuse, l'expansion des horizons et une croissance active.",
+        4: "Quatre de [Suit] symbolise la stabilité domestique, des limites fermes, le repos physique ou une apathie paisible.",
+        5: "Cinq de [Suit] symbolise des défis momentanés, des pertes temporaires, un réajustement ou de petits conflits de coexistence.",
+        6: "Six de [Suit] symbolise l'harmonie restaurée, des souvenirs affectueux, une générosité sincère et des chemins paisibles.",
+        7: "Sept de [Suit] symbolise des choix multiples, une planification stratégique, l'autodéfense ou une persévérance ardue.",
+        8: "Huit de [Suit] symbolise un apprentissage diligent, un mouvement rapide, le dépassement des contraintes ou une concentration absolue.",
+        9: "Neuf de [Suit] symbolise une abondance d'âme pleine, la satisfaction personnelle, l'aboutissement matériel et la sécurité.",
+        10: "Dix de [Suit] symbolise un héritage matériel sûr, le bonheur familial, une union pleine et l'achèvement riche d'étapes.",
+        11: "Valet de [Suit] symbolise des messages prometteurs, de nouvelles études, des graines d'idées et une curiosité active.",
+        12: "Chevalier de [Suit] symbolise un élan dynamique, une action déterminée, une concentration inébranlable ou une diligence patiente.",
+        13: "Reine de [Suit] symbolise une maîtrise réceptive sûre, une empathie affectueuse, un charisme accueillant et de l'intelligence.",
+        14: "Roi de [Suit] symbolise une solide maîtrise exécutive, une autorité juste, une sagesse mûre et une provision sûre."
+      }
+    };
+
+    const suitNames: Record<string, Record<string, string>> = {
+      en: { cups: "Cups", wands: "Wands", swords: "Swords", pentacles: "Pentacles" },
+      es: { cups: "Copas", wands: "Bastos", swords: "Espadas", pentacles: "Oros" },
+      de: { cups: "Kelche", wands: "Stäbe", swords: "Schwerter", pentacles: "Münzen" },
+      fr: { cups: "Coupes", wands: "Bâtons", swords: "Épées", pentacles: "Deniers" }
+    };
+
+    const suitThemes: Record<string, Record<string, string>> = {
+      en: { cups: "swift feelings, mystical alignment, subtle well-being, emotional harmony, and family care.", wands: "persistent action, professional vigor, burning enthusiasm, goal-oriented focus, and active progress.", swords: "logical evaluation, clear truths, new plans, intellectual battles, and overcoming ego pains.", pentacles: "solid material stability, abundant financial harvest, physical security, and persistent learning." },
+      es: { cups: "sentimientos rápidos, sintonización mística, bienestar sutil, armonía afectiva y cariño familiar.", wands: "acción persistente, vigor profesional, entusiasmo ardiente, enfoque orientado a objetivos y progreso activo.", swords: "evaluación lógica, verdades claras, nuevos planos, batallas intelectuales y superación de dolores del ego.", pentacles: "estabilidad material sólida, cosecha financiera abundante, seguridad física y aprendizaje persistente." },
+      de: { cups: "schnelle Gefühle, mystische Einstimmung, subtiles Wohlbefinden, emotionale Harmonie und familiäre Fürsorge.", wands: "hartnäckiges Handeln, professionelle Kraft, brennende Begeisterung, zielgerichteter Fokus und aktiver Fortschritt.", swords: "logische Auswertung, klare Wahrheiten, neue Pläne, intellektuelle Kämpfe und Überwindung von Ego-Schmerzen.", pentacles: "solide materielle Stabilität, reichliche finanzielle Ernte, physische Sicherheit und beharrliches Lernen." },
+      fr: { cups: "sentiments rapides, alignement mystique, bien-être subtil, harmonie affective et affection familiale.", wands: "action persistente, vigueur professionnelle, enthousiasme brûlant, concentration orientée vers les objectifs et progrès actif.", swords: "évaluation logique, vérités claires, nouveaux plans, batailles intellectuelles et dépassement des douleurs de l'ego.", pentacles: "stabilité matérielle solide, récolte financière abondante, sécurité physique et apprentissage persistant." }
+    };
+
+    const advices: Record<string, Record<string, string>> = {
+      en: { cups: "Follow your heart, listen to your subtle intuition, and celebrate real connections.", wands: "Be bold, take risks, and invest your full focus and energy in ideas.", swords: "Keep a cool head, use pure reason, and cut out toxic communications.", pentacles: "Practice pragmatic realism, control spending, and take care of your domestic well-being." },
+      es: { cups: "Sigue tu corazón, escucha tu intuición sutil y celebra las conexiones reales.", wands: "Sé audaz, asume riesgos e invierte todo tu enfoque y energía en las ideas.", swords: "Mantén la cabeza fría, usa la razón pura y corta las comunicaciones tóxicas.", pentacles: "Practica el realismo pragmático, controla los gastos y cuida tu bienestar doméstico." },
+      de: { cups: "Folgen Sie Ihrem Herzen, hören Sie auf Ihre subtile Intuition und feiern Sie echte Verbindungen.", wands: "Seien Sie mutig, gehen Sie Risiken ein und investieren Sie Ihren vollen Fokus und Ihre Energie in Ideen.", swords: "Behalten Sie einen kühlen Kopf, nutzen Sie die reine Vernunft und unterbinden Sie toxische Kommunikation.", pentacles: "Praktizieren Sie pragmatischen Realismus, kontrollieren Sie Ihre Ausgaben und kümmern Sie sich um Ihr häusliches Wohlbefinden." },
+      fr: { cups: "Suivez votre cœur, écoutez votre intuition subtile et célébrez les connexions réelles.", wands: "Soyez audacieux, prenez des risques et investissez tout votre intérêt et votre énergie dans les idées.", swords: "Gardez la tête froide, utilisez la raison pure et coupez les communications toxiques.", pentacles: "Pratiquez le réalisme pragmatique, contrôlez vos dépenses et prenez soin de votre bien-être domestique." }
+    };
+
+    const sName = suitNames[targetLang]?.[suitKey] || suitKey;
+    const sTheme = suitThemes[targetLang]?.[suitKey] || "";
+    const advTheme = advices[targetLang]?.[suitKey] || "";
+    
+    let baseMeaning = values[targetLang]?.[card.number] || "";
+    baseMeaning = baseMeaning.replace("[Suit]", sName);
+
+    const fullUprightMeaning = `${baseMeaning} This card unites ${sTheme}`;
+    const fullAdvice = `${translatedName.split(" de ")[0]} advises: ${advTheme}`;
+
+    return {
+      ...card,
+      cardName: translatedName,
+      nome: translatedName,
+      uprightMeaning: fullUprightMeaning,
+      significado: fullUprightMeaning,
+      advice: fullAdvice
+    };
   }
 }
 
@@ -2877,27 +3245,80 @@ app.post("/api/osiris/chat", async (req, res) => {
   const { messages, userProfile, requestTopic, weather, biorhythm, location, dreams, lang } = req.body || {};
   
   if (!messages || messages.length === 0) {
-    return res.status(400).json({ error: "Mensagens são necessárias." });
+    return res.status(400).json({ error: (req as any).t('api.osiris.messages_required') });
   }
 
   const lastUserMessage = messages[messages.length - 1].text;
   const birthDate = userProfile?.birthDate || "";
   const solSign = birthDate ? getZodiacFromBirthDate(birthDate) : "Sagitário";
   const userName = userProfile?.name || "Buscador";
-  const activeLang = lang || "pt";
+  const activeLang = (lang || "pt").toLowerCase();
 
   const getOsirisFallback = (msg: string) => {
-    let text = `Olá, meu caro amigo ${userName}. Sinto a luz cintilante do seu Sol em ${solSign} guiando suas perguntas. `;
-    if (msg.toLowerCase().includes("clima") || msg.toLowerCase().includes("tempo") || msg.toLowerCase().includes("chov")) {
-      text += `Como o seu guia diário, recordo que o clima externo afeta diretamente suas marés internas. Mantenha os seus canais de energia desimpedidos. `;
+    const translatedSign = translateAstroSign(solSign, activeLang);
+    const fallbacks: Record<string, string> = {
+      pt: `Olá, meu caro amigo ${userName}. Sinto a luz cintilante do seu Sol em ${translatedSign} guiando suas perguntas. `,
+      en: `Hello, my dear friend ${userName}. I feel the shimmering light of your Sun in ${translatedSign} guiding your questions. `,
+      es: `Hola, mi querido amigo ${userName}. Siento la luz brillante de tu Sol en ${translatedSign} guiando tus preguntas. `,
+      de: `Hallo, mein lieber Freund ${userName}. Ich spüre das schimmernde Licht Ihrer Sonne in ${translatedSign}, das Ihre Fragen leitet. `,
+      fr: `Bonjour, mon cher ami ${userName}. Je ressens la lumière scintillante de votre Soleil en ${translatedSign} guider vos questions. `
+    };
+
+    let text = fallbacks[activeLang] || fallbacks["pt"];
+
+    const lowerMsg = msg.toLowerCase();
+    
+    if (lowerMsg.includes("clima") || lowerMsg.includes("tempo") || lowerMsg.includes("chov") ||
+        lowerMsg.includes("weather") || lowerMsg.includes("rain") || lowerMsg.includes("cloud") ||
+        lowerMsg.includes("clima") || lowerMsg.includes("tiempo") || lowerMsg.includes("lluv") ||
+        lowerMsg.includes("wetter") || lowerMsg.includes("regen") || lowerMsg.includes("météo") || lowerMsg.includes("pluie")) {
+      const weatherAdd: Record<string, string> = {
+        pt: `Como o seu guia diário, recordo que o clima externo afeta diretamente suas marés internas. Mantenha os seus canais de energia desimpedidos. `,
+        en: `As your daily guide, I remind you that the external weather directly affects your internal tides. Keep your energy channels clear. `,
+        es: `Como tu guía diario, te recuerdo que el clima externo afecta directamente a tus mareas internas. Mantén tus canales de energía despejados. `,
+        de: `Als Ihr täglicher Begleiter erinnere ich Sie daran, dass das äußere Wetter Ihre inneren Gezeiten direkt beeinflusst. Halten Sie Ihre Energiekanäle frei. `,
+        fr: `En tant que guide quotidien, je vous rappelle que la météo extérieure affecte directement vos marées internes. Gardez vos canaux d'énergie dégagés. `
+      };
+      text += weatherAdd[activeLang] || weatherAdd["pt"];
     }
-    if (msg.toLowerCase().includes("biorritmo") || msg.toLowerCase().includes("energia") || msg.toLowerCase().includes("disposição")) {
-      text += `Em sintonia com seu biorritmo de hoje, recomendo focar na resiliência mental e fazer pequenas meditações de centramento solar ao longo do dia para transmutar kármicas antigas. `;
+
+    if (lowerMsg.includes("biorritmo") || lowerMsg.includes("energia") || lowerMsg.includes("disposição") ||
+        lowerMsg.includes("biorhythm") || lowerMsg.includes("vitality") || lowerMsg.includes("energy") ||
+        lowerMsg.includes("biorritmo") || lowerMsg.includes("disposición") ||
+        lowerMsg.includes("biorhythmus") || lowerMsg.includes("biorhythme") || lowerMsg.includes("vitalité")) {
+      const bioAdd: Record<string, string> = {
+        pt: `Em sintonia com seu biorritmo de hoje, recomendo focar na resiliência mental e fazer pequenas meditações de centramento solar ao longo do dia para transmutar kármicas antigas. `,
+        en: `In sync with your biorhythm today, I recommend focusing on mental resilience and doing small solar centering meditations throughout the day to transmute ancient karmics. `,
+        es: `En sintonía con tu biorritmo de hoy, te recomiendo concentrarte en la resiliência mental y hacer pequeñas meditaciones de centrado solar a lo largo del día para transmutar karmas antiguos. `,
+        de: `In Abstimmung mit Ihrem heutigen Biorhythmus empfehle ich Ihnen, sich auf mentale Widerstandskraft zu konzentrieren und über den Tag verteilt kleine solare Zentrierungsmeditationen durchzuführen, um alte Karmas umzuwandeln. `,
+        fr: `En phase avec votre biorythme d'aujourd'hui, je vous recommande de vous concentrer sur la résilience mentale et de faire de petites méditations de centrage solaire tout au long de la journée pour transmuter les karmas anciens. `
+      };
+      text += bioAdd[activeLang] || bioAdd["pt"];
     }
-    if (msg.toLowerCase().includes("sonho") || msg.toLowerCase().includes("sonhei") || msg.toLowerCase().includes("pesadelo")) {
-      text += `Os reinos oníricos são canais de revelação direta do seu subconsciente sábio. Cada elemento representa um sinal que desatamos juntos. `;
+
+    if (lowerMsg.includes("sonho") || lowerMsg.includes("sonhei") || lowerMsg.includes("pesadelo") ||
+        lowerMsg.includes("dream") || lowerMsg.includes("nightmare") ||
+        lowerMsg.includes("sueño") || lowerMsg.includes("soñé") || lowerMsg.includes("pesadilla") ||
+        lowerMsg.includes("traum") || lowerMsg.includes("träum") || lowerMsg.includes("rêve") || lowerMsg.includes("cauchemar")) {
+      const dreamAdd: Record<string, string> = {
+        pt: `Os reinos oníricos são canais de revelação direta do seu subconsciente sábio. Cada elemento representa um sinal que desatamos juntos. `,
+        en: `The dream realms are channels of direct revelation from your wise subconscious. Each element represents a sign that we untie together. `,
+        es: `Los reinos oníricos son canales de revelación directa de tu sabio subconsciente. Cada elemento representa una señal que desatamos juntos. `,
+        de: `Die Traumwelten sind Kanäle der direkten Offenbarung aus Ihrem weisen Unterbewusstsein. Jedes Element stellt ein Zeichen dar, das wir gemeinsam entwirren. `,
+        fr: `Les royaumes des rêves sont des canaux de révélation directe de votre sage subconscient. Chaque élément représente un signe que nous dénouons ensemble. `
+      };
+      text += dreamAdd[activeLang] || dreamAdd["pt"];
     }
-    text += `Eu, OSÍRIS, sigo ao seu lado nesta linda jornada estelar. Me pergunte e desvelaremos tudo que está favorável em seu caminho hoje.`;
+
+    const endAdd: Record<string, string> = {
+      pt: `Eu, OSÍRIS, sigo ao seu lado nesta linda jornada estelar. Me pergunte e desvelaremos tudo que está favorável em seu caminho hoje.`,
+      en: `I, OSIRIS, continue by your side in this beautiful stellar journey. Ask me, and we will unveil everything that is favorable in your path today.`,
+      es: `Yo, OSIRIS, sigo a tu lado en esta hermosa jornada estelar. Pregúntame y desvelaremos todo lo que te favorece hoy.`,
+      de: `Ich, OSIRIS, begleite Sie weiterhin auf dieser wunderschönen Sternenreise. Fragen Sie mich, und wir werden heute alles enthüllen, was auf Ihrem Weg günstig ist.`,
+      fr: `Moi, OSIRIS, je continue à vos côtés dans ce beau voyage stellaire. Demandez-moi, et nous dévoilerons tout ce qui vous est favorable aujourd'hui.`
+    };
+    text += endAdd[activeLang] || endAdd["pt"];
+    
     return text;
   };
 
@@ -2944,7 +3365,6 @@ DIRETRIZES DE COMUNICAÇÃO DE ELITE (TRATAMENTO COM AMOR E INFECTUOSO CARINHO):
   }
 });
 
-// NEW API: Osiris Dashboard - "Prioridade do Dia", contextual notification & Simulated offline push
 app.post("/api/osiris/dashboard", async (req, res) => {
   const { userProfile, weather, biorhythm, location, lastDream, lang } = req.body || {};
   const birthDate = userProfile?.birthDate || "1998-03-12";
@@ -2957,7 +3377,8 @@ app.post("/api/osiris/dashboard", async (req, res) => {
   const year = today.getFullYear();
   const todayStr = `${year}-${month}-${day}`;
 
-  const cacheKey = `osiris_dashboard:${name}:${birthDate}:${userProfile?.birthTime || ''}:${userProfile?.birthCity || ''}:${todayStr}:${weather?.temperature || '22'}:${lang || 'pt'}`;
+  const activeLang = (lang || "pt").toLowerCase();
+  const cacheKey = `osiris_dashboard:${name}:${birthDate}:${userProfile?.birthTime || ''}:${userProfile?.birthCity || ''}:${todayStr}:${weather?.temperature || '22'}:${activeLang}`;
   const cached = getCachedResponse(cacheKey);
   if (cached) {
     return res.json(cached);
@@ -2965,8 +3386,7 @@ app.post("/api/osiris/dashboard", async (req, res) => {
 
   // Categories list requested in Felert.txt
   const categoriesList = [
-    "Amor", "Dinheiro", "Trabalho", "Saúde", "Espiritualidade", "Filhos", "Família", "Animais de estimação", 
-    "Missão Queimar karma", "Darma ativo benefícios", "Atenção Alerta cuidado", "Festa", "Atividade física", 
+    "Amor", "Dinheiro", "Trabalho", "Saúde", "Espiritualidade", "Missão Queimar karma", "Darma ativo benefícios", "Atenção Alerta cuidado", "Festa", "Atividade física", 
     "Passeio", "Sorte", "Compras", "Viagem", "Casa", "Estudos", "Projetos", "Diversão", "Amigos", "Visita", 
     "Eventos", "Convites", "Explora novos ares"
   ];
@@ -2975,70 +3395,309 @@ app.post("/api/osiris/dashboard", async (req, res) => {
   const categoryIndex = (day + month * 4) % categoriesList.length;
   const selectedCategory = categoriesList[categoryIndex];
 
+  const translatedCategoryMap: Record<string, Record<string, string>> = {
+    en: {
+      "Amor": "Love", "Dinheiro": "Money", "Trabalho": "Work", "Saúde": "Health", "Espiritualidade": "Spirituality", "Filhos": "Children", "Família": "Family", "Animais de estimação": "Pets", 
+      "Missão Queimar karma": "Karma Burn Mission", "Darma ativo benefícios": "Active Dharma Benefits", "Atenção Alerta cuidado": "Warning & Attention", "Festa": "Party", "Atividade física": "Physical Activity", 
+      "Passeio": "Outing", "Sorte": "Luck", "Compras": "Shopping", "Viagem": "Travel", "Casa": "Home", "Estudos": "Studies", "Projetos": "Projects", "Diversão": "Entertainment", "Amigos": "Friends", "Visita": "Visit", 
+      "Eventos": "Events", "Convites": "Invitations", "Explora novos ares": "Explore New Horizons"
+    },
+    es: {
+      "Amor": "Amor", "Dinheiro": "Dinero", "Trabalho": "Trabajo", "Saúde": "Salud", "Espiritualidade": "Espiritualidad", "Filhos": "Hijos", "Família": "Familia", "Animais de estimação": "Mascotas", 
+      "Missão Queimar karma": "Misión Quemar Karma", "Darma ativo benefícios": "Dharma Activo Beneficios", "Atenção Alerta cuidado": "Atención y Cuidado", "Festa": "Fiesta", "Atividade física": "Actividad Física", 
+      "Passeio": "Paseo", "Sorte": "Suerte", "Compras": "Compras", "Viagem": "Viaje", "Casa": "Casa", "Estudos": "Estudios", "Projetos": "Proyectos", "Diversão": "Diversión", "Amigos": "Amigos", "Visita": "Visita", 
+      "Eventos": "Eventos", "Convites": "Invitaciones", "Explora novos ares": "Explorar Nuevos Horizontes"
+    },
+    de: {
+      "Amor": "Liebe", "Dinheiro": "Geld", "Trabalho": "Arbeit", "Saúde": "Gesundheit", "Espiritualidade": "Spiritualität", "Filhos": "Kinder", "Família": "Familie", "Animais de estimação": "Haustiere", 
+      "Missão Queimar karma": "Karma-Brenn-Mission", "Darma ativo benefícios": "Aktive Dharma-Vorteile", "Atenção Alerta cuidado": "Warnung & Aufmerksamkeit", "Festa": "Fest", "Atividade física": "Körperliche Aktivität", 
+      "Passeio": "Ausflug", "Sorte": "Glück", "Compras": "Einkaufen", "Viagem": "Reise", "Casa": "Zuhause", "Estudos": "Studium", "Projetos": "Projekte", "Diversão": "Unterhaltung", "Amigos": "Freunde", "Visita": "Besuch", 
+      "Eventos": "Veranstaltungen", "Convites": "Einladungen", "Explora novos ares": "Neue Horizonte erkunden"
+    },
+    fr: {
+      "Amor": "Amour", "Dinheiro": "Argent", "Trabalho": "Travail", "Saúde": "Santé", "Espiritualidade": "Spiritualité", "Filhos": "Enfants", "Família": "Famille", "Animais de estimação": "Animaux de compagnie", 
+      "Missão Queimar karma": "Mission Brûler le Karma", "Darma ativo benefícios": "Bénéfices du Dharma Actif", "Atenção Alerta cuidado": "Attention et Prudence", "Festa": "Fête", "Atividade física": "Activité Physique", 
+      "Passeio": "Sortie", "Sorte": "Chance", "Compras": "Achats", "Viagem": "Voyage", "Casa": "Maison", "Estudos": "Études", "Projetos": "Projets", "Diversão": "Divertissement", "Amigos": "Amis", "Visita": "Visite", 
+      "Eventos": "Événements", "Convites": "Invitations", "Explora novos ares": "Explorer de Nouveaux Horizons"
+    }
+  };
+
+  const currentCategoryDisplay = translatedCategoryMap[activeLang]?.[selectedCategory] || selectedCategory;
+
   const getDynamicFallbackDashboard = () => {
-    // Generate beautiful specific mock for selectedCategory if Gemini fails of is null
-    const fallbacksConfig: Record<string, { title: string, description: string, advice: string }> = {
-      "Amor": {
-        title: "Magnetismo do Chakra Cardíaco",
-        description: `Hoje sua aura transborda resiliência e ressonância afetiva refinada para ${name}. Aspectos amenos de Vênus com seu sol em ${zodiac} auxiliam na dissolução de melindres.`,
-        advice: "Aproveite a suavidade cósmica para iniciar aproximações sinceras ou perdoar antigos desacertos."
+    const translatedZodiac = translateAstroSign(zodiac, activeLang);
+    
+    const fallbacksConfig: Record<string, Record<string, { title: string, description: string, advice: string }>> = {
+      pt: {
+        "Amor": {
+          title: "Magnetismo do Chakra Cardíaco",
+          description: `Hoje sua aura transborda resiliência e ressonância afetiva refinada para ${name}. Aspectos amenos de Vênus com seu sol em ${translatedZodiac} auxiliam na dissolução de melindres.`,
+          advice: "Aproveite a suavidade cósmica para iniciar aproximações sinceras ou perdoar antigos desacertos."
+        },
+        "Dinheiro": {
+          title: "Colheita e Precaução Material",
+          description: "Mercúrio evoca prudência imediata. O fluxo econômico é governado por sua disciplina invisível.",
+          advice: "Evite compras de teor puramente impulsivo ou assinaturas redundantes durante esta lunação."
+        },
+        "Trabalho": {
+          title: "Organização e Pragmática Solar",
+          description: `Momentos perfeitos para arrematar pendências críticas, ${name}. Sua mente se sobressai na estruturação pragmática de prazos.`,
+          advice: "Foque na conclusão de tarefas pesadas que exigem refinamento lógico e isolamento tático."
+        },
+        "Saúde": {
+          title: "Acolhimento da Frequência Biológica",
+          description: `Seu ritmo biológico vital de hoje pede atenções. A temperatura externa de ${weather?.temperature || "22"}°C ressoa com a sua imunidade.`,
+          advice: "Introduza uma pausa regenerativa estratégica de 10 minutos. Hidrate suas células e esvazie pensamentos."
+        },
+        "Espiritualidade": {
+          title: "Portal Sagrado e Meditação Alquímica",
+          description: `Conexão pura do Sol com seu signo de ${translatedZodiac} ativa canais de vidência mística e clareza subconsciente profunda.`,
+          advice: "Sente-se sob quietude esta noite. Acenda um incenso ou concentre a intuição na respiração."
+        },
+        "Missão Queimar karma": {
+          title: "Combustão Solar de Atitudes Antigas",
+          description: "Hoje o Cosmos exige reparação. Libertar-se de velhas feridas geradas por silêncios ou discussões kármicas.",
+          advice: "Responda de forma nobre a quem te aflige ou arrume bagunças herdadas do passado."
+        },
+        "Darma ativo benefícios": {
+          title: "Partilha Divina e Recompensas",
+          description: "Sua colheita de bondade gerou mérito. O universo ativa um portal de abundância intangível que se reflete hoje.",
+          advice: "Partilhe carinho sincero para atrair ainda mais abundâncias em sua trajetória de autoconhecimento."
+        },
+        "Atenção Alerta cuidado": {
+          title: "Escudo Psíquico e Silêncio Tático",
+          description: "Aspectos tensos com Marte convocam cautela suprema em círculos sociais densos. Proteja seus pensamentos.",
+          advice: "Não tome discussões alheias para si e evite desgaste de energia desnecessário com palavras de teor agressivo."
+        }
       },
-      "Dinheiro": {
-        title: "Colheita e Precaução Material",
-        description: "Mercúrio evoca prudência imediata. O fluxo econômico é governado por sua disciplina invisível.",
-        advice: "Evite compras de teor puramente impulsivo ou assinaturas redundantes durante esta lunação."
+      en: {
+        "Amor": {
+          title: "Heart Chakra Magnetism",
+          description: `Today your aura overflows with resilience and refined affective resonance for ${name}. Soft aspects of Venus with your sun in ${translatedZodiac} help dissolve misunderstandings.`,
+          advice: "Take advantage of this cosmic softness to initiate sincere connections or forgive past disagreements."
+        },
+        "Dinheiro": {
+          title: "Harvest and Material Precaution",
+          description: "Mercury evokes immediate prudence. Economic flow is governed by your invisible discipline.",
+          advice: "Avoid purely impulsive purchases or redundant subscriptions during this lunation."
+        },
+        "Trabalho": {
+          title: "Organization and Solar Pragmatics",
+          description: `Perfect moments to finish critical pending items, ${name}. Your mind excels at the pragmatic structuring of deadlines.`,
+          advice: "Focus on completing heavy tasks that require logical refinement and tactical isolation."
+        },
+        "Saúde": {
+          title: "Biological Frequency Welcoming",
+          description: `Your vital biological rhythm today requests attention. The external temperature of ${weather?.temperature || "22"}°C resonates with your immunity.`,
+          advice: "Introduce a strategic 10-minute regenerative pause. Hydrate your cells and empty your thoughts."
+        },
+        "Espiritualidade": {
+          title: "Sacred Portal and Alchemical Meditation",
+          description: `Pure connection of the Sun with your sign of ${translatedZodiac} activates channels of mystical clairvoyance and deep subconscious clarity.`,
+          advice: "Sit in quietness tonight. Light some incense or focus your intuition on breathing."
+        },
+        "Missão Queimar karma": {
+          title: "Solar Combustion of Old Attitudes",
+          description: "Today the Cosmos demands reparation. Freeing yourself from old wounds generated by silences or karmic discussions.",
+          advice: "Respond nobly to those who afflict you or tidy up messes inherited from the past."
+        },
+        "Darma ativo benefícios": {
+          title: "Divine Sharing and Rewards",
+          description: "Your harvest of kindness has generated merit. The universe activates a portal of intangible abundance that is reflected today.",
+          advice: "Share sincere affection to attract even more abundance in your journey of self-knowledge."
+        },
+        "Atenção Alerta cuidado": {
+          title: "Psychic Shield and Tactical Silence",
+          description: "Tense aspects with Mars call for supreme caution in dense social circles. Protect your thoughts.",
+          advice: "Do not take other people's arguments to heart and avoid unnecessary energy drain with aggressive words."
+        }
       },
-      "Trabalho": {
-        title: "Organização e Pragmática Solar",
-        description: `Momentos perfeitos para arrematar pendências críticas, ${name}. Sua mente se sobressai na estruturação pragmática de prazos.`,
-        advice: "Foque na conclusão de tarefas pesadas que exigem refinamento lógico e isolamento tático."
+      es: {
+        "Amor": {
+          title: "Magnetismo del Chakra Cardíaco",
+          description: `Hoy tu aura desborda resiliencia y resonancia afectiva refinada para ${name}. Los aspectos suaves de Venus con tu sol en ${translatedZodiac} ayudan a disolver malentendidos.`,
+          advice: "Aprovecha la suavidad cósmica para iniciar acercamientos sinceros o perdonar antiguos desacuerdos."
+        },
+        "Dinheiro": {
+          title: "Cosecha y Precaución Material",
+          description: "Mercurio evoca prudencia inmediata. El flujo económico está regido por tu disciplina invisible.",
+          advice: "Evita compras puramente impulsivas o suscripciones redundantes durante esta lunación."
+        },
+        "Trabalho": {
+          title: "Organización y Pragmática Solar",
+          description: `Momentos perfectos para terminar pendientes críticos, ${name}. Tu mente sobresale en la estructuración pragmática de plazos.`,
+          advice: "Concéntrate en completar tareas pesadas que requieran refinamiento lógico y aislamiento táctico."
+        },
+        "Saúde": {
+          title: "Acogida de la Frecuencia Biológica",
+          description: `Tu ritmo biológico vital de hoy pide atención. La temperatura externa de ${weather?.temperature || "22"}°C resuena con tu inmunidad.`,
+          advice: "Introduce una pausa regenerativa estratégica de 10 minutos. Hidrata tus células y vacía tus pensamientos."
+        },
+        "Espiritualidade": {
+          title: "Portal Sagrado y Meditación Alquímica",
+          description: `La conexión pura del Sol con tu signo de ${translatedZodiac} activa canales de clarividencia mística y profunda claridad subconsciente.`,
+          advice: "Siéntate en silencio esta noche. Enciende un incienso o concentra la intuición en la respiración."
+        },
+        "Missão Queimar karma": {
+          title: "Combustión Solar de Viejas Actitudes",
+          description: "Hoy el Cosmos exige reparación. Liberarte de viejas heridas generadas por silencios o discusiones kármicas.",
+          advice: "Responde de forma nobre a quien te aflige o arregla desórdenes heredados del pasado."
+        },
+        "Darma ativo benefícios": {
+          title: "Compartir Divino y Recompensas",
+          description: "Tu cosecha de bondad ha generado mérito. El universo activa un portal de abundancia intangible que se refleja hoy.",
+          advice: "Comparte cariño sincero para atraer aún más abundancia en tu camino de autoconocimiento."
+        },
+        "Atenção Alerta cuidado": {
+          title: "Escudo Psíquico y Silencio Táctico",
+          description: "Aspectos tensos con Marte exigen extrema precaución en círculos sociales densos. Protege tus pensamientos.",
+          advice: "No te involucres en discusiones ajenas y evita el desgaste innecesario de energía con palabras de tono agresivo."
+        }
       },
-      "Saúde": {
-        title: "Acolhimento da Frequência Biológica",
-        description: `Seu ritmo biológico vital de hoje pede atenções. A temperatura externa de ${weather?.temperature || "22"}°C ressoa com a sua imunidade.`,
-        advice: "Introduza uma pausa regenerativa estratégica de 10 minutos. Hidrate suas células e esvazie pensamentos."
+      de: {
+        "Amor": {
+          title: "Herzchakra-Magnetismus",
+          description: `Heute quillt Ihre Aura über vor Widerstandskraft und verfeinerter emotionaler Resonanz für ${name}. Milde Venusaspekte zu Ihrer Sonne in ${translatedZodiac} helfen, Missverständnisse aufzulösen.`,
+          advice: "Nutzen Sie diese kosmische Sanftheit, um aufrichtige Annäherungen zu initiieren oder alte Meinungsverschiedenheiten zu verzeihen."
+        },
+        "Dinheiro": {
+          title: "Ernte und materielle Vorsorge",
+          description: "Merkur mahnt zur sofortigen Vorsicht. Der wirtschaftliche Fluss wird von Ihrer unsichtbaren Disziplin geregelt.",
+          advice: "Vermeiden Sie während dieser Lunation rein impulsive Käufe oder redundante Abonnements."
+        },
+        "Trabalho": {
+          title: "Organisation und solare Pragmatik",
+          description: `Perfekte Momente, um kritische anstehende Aufgaben zu erledigen, ${name}. Ihr Geist zeichnet sich durch die pragmatische Strukturierung von Terminen aus.`,
+          advice: "Konzentrieren Sie sich auf den Abschluss schwerer Aufgaben, die logische Verfeinerung und taktische Isolation erfordern."
+        },
+        "Saúde": {
+          title: "Aufnahme der biologischen Frequenz",
+          description: `Ihr lebenswichtiger biologischer Rhythmus bittet heute um Aufmerksamkeit. Die Außentemperatur von ${weather?.temperature || "22"}°C steht im Einklang mit Ihrer Immunität.`,
+          advice: "Legen Sie eine strategische 10-minütige regenerative Pause ein. Hydratisieren Sie Ihre Zellen und leeren Sie Ihre Gedanken."
+        },
+        "Espiritualidade": {
+          title: "Heiliges Portal und alchemistische Meditation",
+          description: `Die reine Verbindung der Sonne mit Ihrem Zeichen ${translatedZodiac} aktiviert Kanäle mystischer Hellsichtigkeit und tiefer unterbewusster Klarheit.`,
+          advice: "Sitzen Sie heute Abend in Stille. Zünden Sie ein Weihrauchstäbchen an oder konzentrieren Sie Ihre Intuition auf die Atmung."
+        },
+        "Missão Queimar karma": {
+          title: "Solare Verbrennung alter Einstellungen",
+          description: "Heute fordert der Koosmos Wiedergutmachung. Befreien Sie sich von alten Wunden, die durch Schweigen oder karmische Diskussionen entstanden sind.",
+          advice: "Reagieren Sie edel auf diejenigen, die Sie bedrängen, oder räumen Sie im vergangenen Chaos auf."
+        },
+        "Darma ativo benefícios": {
+          title: "Göttliches Teilen und Belohnungen",
+          description: "Ihre Ernte der Güte hat Verdienste hervorgebracht. Das Universum aktiviert heute ein Portal des immateriellen Überflusses.",
+          advice: "Teilen Sie aufrichtige Zuneigung, um noch mehr Fülle auf Ihrem Weg der Selbsterkenntnis anzuziehen."
+        },
+        "Atenção Alerta cuidado": {
+          title: "Psychischer Schild und taktisches Schweigen",
+          description: "Spannungsgeladene Aspekte mit dem Mars mahnen in dichten sozialen Kreisen zu höchster Vorsicht. Schützen Sie Ihre Gedanken.",
+          advice: "Mischen Sie sich nicht in fremde Diskussionen ein und vermeiden Sie unnötigen Energieverlust durch aggressive Worte."
+        }
       },
-      "Espiritualidade": {
-        title: "Portal Sagrado e Meditação Alquímica",
-        description: `Conexão pura do Sol com seu signo de ${zodiac} ativa canais de vidência mística e clareza subconsciente profunda.`,
-        advice: "Sente-se sob quietude esta noite. Acenda um incenso ou concentre a intuição na respiração."
-      },
-      "Missão Queimar karma": {
-        title: "Combustão Solar de Atitudes Antigas",
-        description: "Hoje o Cosmos exige reparação. Libertar-se de velhas feridas geradas por silêncios ou discussões kármicas.",
-        advice: "Responda de forma nobre a quem te aflige ou arrume bagunças herdadas do passado."
-      },
-      "Darma ativo benefícios": {
-        title: "Partilha Divina e Recompensas",
-        description: "Sua colheita de bondade gerou mérito. O universo ativa um portal de abundância intangível que se reflete hoje.",
-        advice: "Partilhe carinho sincero para atrair ainda mais abundâncias em sua trajetória de autoconhecimento."
-      },
-      "Atenção Alerta cuidado": {
-        title: "Escudo Psíquico e Silêncio Tático",
-        description: "Aspectos tensos com Marte convocam cautela suprema em círculos sociais densos. Proteja seus pensamentos.",
-        advice: "Não tome discussões alheias para si e evite desgaste de energia desnecessário com palavras de teor agressivo."
+      fr: {
+        "Amor": {
+          title: "Magnétisme du Chakra du Cœur",
+          description: `Aujourd'hui, votre aura déborde de résilience et de résonance affective raffinée pour ${name}. Les aspects doux de Vénus avec votre soleil en ${translatedZodiac} aident à dissoudre les malentendus.`,
+          advice: "Profitez de cette douceur cosmique pour initier des rapprochements sincères ou pardonner les désaccords passés."
+        },
+        "Dinheiro": {
+          title: "Récolte et Prudence Matérielle",
+          description: "Mercure évoque une prudence immédiate. Le flux économique est régi par votre discipline invisible.",
+          advice: "Évitez les achats purement impulsifs ou les abonnements redondants pendant cette lunation."
+        },
+        "Trabalho": {
+          title: "Organisation et Pragmatique Solaire",
+          description: `Des moments parfaits pour finaliser les dossiers critiques, ${name}. Votre esprit excelle dans la structuration pragmatique des délais.`,
+          advice: "Concentrez-vous sur l'achèvement de tâches lourdes qui nécessitent un raffinement logique et un isolement tactique."
+        },
+        "Saúde": {
+          title: "Accueil de la Fréquence Biologique",
+          description: `Votre rythme biologique vital d'aujourd'hui demande de l'attention. La température extérieure de ${weather?.temperature || "22"}°C résonne avec votre immunité.`,
+          advice: "Introduisez une pause régénératrice stratégique de 10 minutes. Hydratez vos cellules et videz vos pensées."
+        },
+        "Espiritualidade": {
+          title: "Portail Sacré et Méditation Alquimique",
+          description: `La connexion pure du Soleil avec votre signe du ${translatedZodiac} active les canaux de clairvoyance mystique et de profonde clarté subconsciente.`,
+          advice: "Installez-vous dans le calme ce soir. Allumez un encens ou concentrez votre intuition sur votre respiration."
+        },
+        "Missão Queimar karma": {
+          title: "Combustion Solaire des Anciennes Attitudes",
+          description: "Aujourd'hui, le Cosmos exige réparation. Se libérer des vieilles blessures générées par les silences ou les discussions karmiques.",
+          advice: "Répondez noblement à ceux qui vous affligent ou rangez les désordres hérités du passé."
+        },
+        "Darma ativo benefícios": {
+          title: "Partage Divin et Récompenses",
+          description: "Votre récolte de bonté a généré du mérite. L'univers active aujourd'hui un portail d'abondance intangible.",
+          advice: "Partagez une affection sincère pour attirer encore plus d'abondance dans votre cheminement de connaissance de soi."
+        },
+        "Atenção Alerta cuidado": {
+          title: "Bouclier Psychique et Silence Tactique",
+          description: "Des aspects tendus avec Mars appellent à une prudence suprême dans les cercles sociaux denses. Protégez vos pensées.",
+          advice: "Ne prenez pas à cœur les disputes des autres et évitez de gaspiller votre énergie avec des mots agressifs."
+        }
       }
     };
 
-    const activeFallback = fallbacksConfig[selectedCategory] || {
+    const activeFallbackConfig = fallbacksConfig[activeLang] || fallbacksConfig["pt"];
+    const activeFallback = activeFallbackConfig[selectedCategory] || {
+      pt: {
+        title: `Orientação Alinhada: ${selectedCategory}`,
+        description: `Sua energia cósmica diária está sintonizada na categoria ${selectedCategory}. O alinhamento de ${translatedZodiac} com a fase lunar do momento propicia colheitas expressivas nesta área da vida de ${name}.`,
+        advice: "Flua com perseverança, respeite o seu biorritmo celular e faça do hoje um catalisador de milênios de evolução."
+      },
+      en: {
+        title: `Aligned Guidance: ${currentCategoryDisplay}`,
+        description: `Your daily cosmic energy is tuned to the category ${currentCategoryDisplay}. The alignment of ${translatedZodiac} with the current lunar phase promotes expressive harvests in this area of ${name}'s life.`,
+        advice: "Flow with perseverance, respect your cellular biorhythm, and make today a catalyst for millennia of evolution."
+      },
+      es: {
+        title: `Orientación Alineada: ${currentCategoryDisplay}`,
+        description: `Tu energía cósmica diaria está sintonizada en la categoría ${currentCategoryDisplay}. La alineación de ${translatedZodiac} con la fase lunar del momento propicia cosechas expresivas en esta área de la vida de ${name}.`,
+        advice: "Fluye con perseverancia, respeta tu biorritmo celular y haz de hoy un catalizador de milenios de evolución."
+      },
+      de: {
+        title: `Ausgerichtete Führung: ${currentCategoryDisplay}`,
+        description: `Ihre tägliche kosmische Energie ist auf die Kategorie ${currentCategoryDisplay} abgestimmt. Die Ausrichtung von ${translatedZodiac} an der aktuellen Mondphase begünstigt reiche Ernten in diesem Lebensbereich von ${name}.`,
+        advice: "Fließen Sie mit Beharrlichkeit, respektieren Sie Ihren zellulären Biorhythmus und machen Sie das Heute zu einem Katalysator für Jahrtausende der Evolution."
+      },
+      fr: {
+        title: `Guidance Alignée : ${currentCategoryDisplay}`,
+        description: `Votre énergie cosmique quotidienne est synchronisée sur la catégorie ${currentCategoryDisplay}. L'alignement de ${translatedZodiac} avec la phase lunaire du moment favorise des récoltes expressives dans ce domaine de la vie de ${name}.`,
+        advice: "Fluez avec persévérance, respectez votre biorythme cellulaire et faites d'aujourd'hui un catalyseur pour des millénaires d'évolution."
+      }
+    }[activeLang] || {
       title: `Orientação Alinhada: ${selectedCategory}`,
-      description: `Sua energia cósmica diária está sintonizada na categoria ${selectedCategory}. O alinhamento de ${zodiac} com a fase lunar do momento propicia colheitas expressivas nesta área da vida de ${name}.`,
+      description: `Sua energia cósmica diária está sintonizada na categoria ${selectedCategory}. O alinhamento de ${translatedZodiac} com a fase lunar do momento propicia colheitas expressivas nesta área da vida de ${name}.`,
       advice: "Flua com perseverança, respeite o seu biorritmo celular e faça do hoje um catalisador de milênios de evolução."
     };
 
-    return {
-      prioridadeDia: {
-        category: selectedCategory,
-        title: activeFallback.title,
-        description: activeFallback.description,
-        advice: activeFallback.advice,
-        rating: 4.8
-      },
-      contextMessage: {
+    const contextMap: Record<string, { sentence: string, prompt: string }> = {
+      pt: {
         sentence: `Olá ${name}, percebo que o clima em ${location || "sua área"} no momento está ${weather?.condition || "influenciando"} sua vibração pessoal.`,
         prompt: `${name}, posso mostrar tudo que está favorável para você hoje. Basta me perguntar.`
       },
-      offlineNotifications: [
+      en: {
+        sentence: `Hello ${name}, I notice that the weather in ${location || "your area"} at the moment is ${weather?.condition || "influencing"} your personal vibration.`,
+        prompt: `${name}, I can show you everything that is favorable for you today. Just ask me.`
+      },
+      es: {
+        sentence: `Hola ${name}, percibo que el clima en ${location || "tu zona"} en este momento está ${weather?.condition || "influyendo"} en tu vibración personal.`,
+        prompt: `${name}, puedo mostrarte todo lo que te favorece hoy. Solo pregúntame.`
+      },
+      de: {
+        sentence: `Hallo ${name}, ich stelle fest, dass das Wetter in ${location || "Ihrer Gegend"} im Moment Ihre persönliche Schwingung ${weather?.condition || "beeinflusst"}.`,
+        prompt: `${name}, ich kann Ihnen alles zeigen, was heute günstig für Sie ist. Fragen Sie mich einfach.`
+      },
+      fr: {
+        sentence: `Bonjour ${name}, je remarque que la météo à ${location || "votre région"} en ce moment est en train d'${weather?.condition || "influencer"} votre vibration personnelle.`,
+        prompt: `${name}, je peux vous montrer tout ce qui vous est favorable aujourd'hui. Demandez-moi.`
+      }
+    };
+
+    const notificationsMap: Record<string, Array<{ id: string, title: string, message: string, time: string, type: string }>> = {
+      pt: [
         {
           id: `notif_u1_${day}`,
           title: "🚨 Alerta do Osíris: Aspecto Crítico",
@@ -3049,7 +3708,7 @@ app.post("/api/osiris/dashboard", async (req, res) => {
         {
           id: `notif_u2_${day}`,
           title: "🌙 Movimento Lunar e Renovação de Intenções",
-          message: `A Lua atual ingressa em sintonia fértil com seu signo solar ${zodiac}. Período majestoso para iniciar ações silenciosas de dharma.`,
+          message: `A Lua atual ingressa em sintonia fértil com seu signo solar ${translatedZodiac}. Período majestoso para iniciar ações silenciosas de dharma.`,
           time: "Há 5 horas",
           type: "lune"
         },
@@ -3060,7 +3719,111 @@ app.post("/api/osiris/dashboard", async (req, res) => {
           time: "Há 9 horas",
           type: "mission"
         }
+      ],
+      en: [
+        {
+          id: `notif_u1_${day}`,
+          title: "🚨 Osiris Alert: Critical Aspect",
+          message: `A subtle celestial transit makes an important square with your ascendant today. Practice retreat and avoid ego conflicts.`,
+          time: "2 hours ago",
+          type: "transit"
+        },
+        {
+          id: `notif_u2_${day}`,
+          title: "🌙 Lunar Movement & Renewal of Intentions",
+          message: `The current Moon enters fertile harmony with your solar sign ${translatedZodiac}. A majestic period to initiate silent dharma actions.`,
+          time: "5 hours ago",
+          type: "lune"
+        },
+        {
+          id: `notif_u3_${day}`,
+          title: "✨ Active Karmic Mission of Today",
+          message: `Osiris detected that completing your spiritual mission today will help dissolve accumulated anxiety blocks. Complete it to earn points!`,
+          time: "9 hours ago",
+          type: "mission"
+        }
+      ],
+      es: [
+        {
+          id: `notif_u1_${day}`,
+          title: "🚨 Alerta de Osiris: Aspecto Crítico",
+          message: `Un tránsito celestial sutil forma una cuadratura importante con tu ascendente hoy. Practica el retiro y evita conflictos de ego.`,
+          time: "Hace 2 horas",
+          type: "transit"
+        },
+        {
+          id: `notif_u2_${day}`,
+          title: "🌙 Movimiento Lunar y Renovación de Intenciones",
+          message: `La Luna actual entra en sintonía fértil con tu signo solar ${translatedZodiac}. Período majestuoso para iniciar acciones silenciosas de dharma.`,
+          time: "Hace 5 horas",
+          type: "lune"
+        },
+        {
+          id: `notif_u3_${day}`,
+          title: "✨ Misión Kármica Activa de Hoy",
+          message: `Osiris detectó que completar tu misión espiritual hoy ayudará a disolver los bloqueos de ansiedad acumulada. ¡Complétala para ganar puntos!`,
+          time: "Hace 9 horas",
+          type: "mission"
+        }
+      ],
+      de: [
+        {
+          id: `notif_u1_${day}`,
+          title: "🚨 Osiris-Warnung: Kritischer Aspekt",
+          message: `Ein subtiler himmlischer Transit bildet heute ein wichtiges Quadrat mit Ihrem Aszendenten. Üben Sie Rückzug und vermeiden Sie Ego-Konflikte.`,
+          time: "Vor 2 Stunden",
+          type: "transit"
+        },
+        {
+          id: `notif_u2_${day}`,
+          title: "🌙 Mondbewegung & Erneuerung der Absichten",
+          message: `Der aktuelle Mond tritt in fruchtbare Harmonie mit Ihrem Sonnenzeichen ${translatedZodiac}. Ein majestätischer Zeitraum, um stille Dharma-Aktionen einzuleiten.`,
+          time: "Vor 5 Stunden",
+          type: "lune"
+        },
+        {
+          id: `notif_u3_${day}`,
+          title: "✨ Aktive karmische Mission von heute",
+          message: `Osiris hat festgestellt, dass der Abschluss Ihrer heutigen spirituellen Mission dazu beiträgt, aufgestaute Angstblockaden aufzulösen. Schließen Sie sie ab, um Punkte zu sammeln!`,
+          time: "Vor 9 Stunden",
+          type: "mission"
+        }
+      ],
+      fr: [
+        {
+          id: `notif_u1_${day}`,
+          title: "🚨 Alerte d'Osiris : Aspect Critique",
+          message: `Un transit céleste subtil forme un carré important avec votre ascendant aujourd'hui. Pratiquez le retrait et évitez les conflits d'ego.`,
+          time: "Il y a 2 heures",
+          type: "transit"
+        },
+        {
+          id: `notif_u2_${day}`,
+          title: "🌙 Mouvement Lunaire & Renouvellement des Intentions",
+          message: `La Lune actuelle entre en harmonie fertile avec votre signe solaire ${translatedZodiac}. Période majestueuse pour initier des actions silencieuses de dharma.`,
+          time: "Il y a 5 heures",
+          type: "lune"
+        },
+        {
+          id: `notif_u3_${day}`,
+          title: "✨ Mission Karmique Active d'Aujourd'hui",
+          message: `Osiris a détecté que terminer votre mission spirituelle aujourd'hui aidera à dissoudre les blocages d'anxiété accumulée. Terminez-la pour gagner des points !`,
+          time: "Il y a 9 heures",
+          type: "mission"
+        }
       ]
+    };
+
+    return {
+      prioridadeDia: {
+        category: currentCategoryDisplay,
+        title: activeFallback.title,
+        description: activeFallback.description,
+        advice: activeFallback.advice,
+        rating: 4.8
+      },
+      contextMessage: contextMap[activeLang] || contextMap["pt"],
+      offlineNotifications: notificationsMap[activeLang] || notificationsMap["pt"]
     };
   };
 
@@ -3149,22 +3912,59 @@ app.post("/api/conselheira/chat", async (req, res) => {
   }
 
   const lastUserMessage = messages[messages.length - 1].text;
-  const activeLang = lang || "pt";
+  const activeLang = (lang || "pt").toLowerCase();
 
   const getFallbackResponse = (msg: string) => {
     const userName = userProfile?.name || "Buscador";
     const birthDate = userProfile?.birthDate || "";
-    const solSign = birthDate ? getAscendedAstrologicalSign(birthDate, 0) : "Aquário";
-    const moonSign = birthDate ? getAscendedAstrologicalSign(birthDate, 5) : "Aquário";
-    const ascSign = birthDate ? getAscendedAstrologicalSign(birthDate, 8) : "Sagitário";
+    const solSignRaw = birthDate ? getAscendedAstrologicalSign(birthDate, 0) : "Aquário";
+    const moonSignRaw = birthDate ? getAscendedAstrologicalSign(birthDate, 5) : "Aquário";
+    const ascSignRaw = birthDate ? getAscendedAstrologicalSign(birthDate, 8) : "Sagitário";
 
-    if (msg.toLowerCase().includes("emprego") || msg.toLowerCase().includes("trabalho") || msg.toLowerCase().includes("carreira")) {
-      return `Olá, ${userName}. Analisando seus dados sob a ótica astrológica de seu Sol em ${solSign} e Ascendente em ${ascSign}, sua Numerologia aponta que você floresce em profissões que unam ampla autonomia, propósito sincero e liberdade de expressão. Aceitar regras excessivamente rígidas pode sufocar seu potencial nato. Faça planos estratégicos de transição prática para expandir sua vocação.`;
+    const solSign = translateAstroSign(solSignRaw, activeLang);
+    const moonSign = translateAstroSign(moonSignRaw, activeLang);
+    const ascSign = translateAstroSign(ascSignRaw, activeLang);
+
+    const lowerMsg = msg.toLowerCase();
+
+    if (lowerMsg.includes("emprego") || lowerMsg.includes("trabalho") || lowerMsg.includes("carreira") ||
+        lowerMsg.includes("job") || lowerMsg.includes("work") || lowerMsg.includes("career") ||
+        lowerMsg.includes("empleo") || lowerMsg.includes("trabajo") || lowerMsg.includes("profes") ||
+        lowerMsg.includes("arbeit") || lowerMsg.includes("beruf") || lowerMsg.includes("karriere") ||
+        lowerMsg.includes("emploi") || lowerMsg.includes("travail") || lowerMsg.includes("carrière")) {
+      const jobMap: Record<string, string> = {
+        pt: `Olá, ${userName}. Analisando seus dados sob a ótica astrológica de seu Sol em ${solSign} e Ascendente em ${ascSign}, sua Numerologia aponta que você floresce em profissões que unam ampla autonomia, propósito sincero e liberdade de expressão. Aceitar regras excessivamente rígidas pode sufocar seu potencial nato. Faça planos estratégicos de transição prática para expandir sua vocação.`,
+        en: `Hello, ${userName}. Analyzing your data from the astrological perspective of your Sun in ${solSign} and Ascendant in ${ascSign}, your Numerology points out that you flourish in professions that combine wide autonomy, sincere purpose, and freedom of expression. Accepting excessively rigid rules can stifle your native potential. Make strategic plans for a practical transition to expand your vocation.`,
+        es: `Hola, ${userName}. Analizando tus datos bajo la perspectiva astrológica de tu Sol en ${solSign} y Ascendente en ${ascSign}, tu Numerología señala que floreces en profesiones que combinan amplia autonomía, propósito sincero y libertad de expresión. Aceptar reglas excesivamente rígidas puede sofocar tu potencial innato. Realiza planes estratégicos de transición práctica para expandir tu vocación.`,
+        de: `Hallo, ${userName}. Wenn wir Ihre Daten aus der astrologischen Perspektive Ihrer Sonne in ${solSign} und Ihres Aszendenten in ${ascSign} analysieren, zeigt Ihre Numerologie, dass Sie in Berufen aufblühen, die große Autonomie, aufrichtigen Zweck und Meinungsfreiheit vereinen. Das Akzeptieren übermäßig strenger Regeln kann Ihr angeborenes Potenzial ersticken. Erstellen Sie strategische Pläne für einen praktischen Übergang, um Ihre Berufung auszuweiten.`,
+        fr: `Bonjour, ${userName}. En analysant vos données sous l'angle astrologique de votre Soleil en ${solSign} et de votre Ascendant en ${ascSign}, votre Numérologie indique que vous vous épanouissez dans des professions qui allient grande autonomie, but sincère et liberté d'expression. Accepter des règles excessivement rigides peut étouffer votre potentiel inné. Établissez des plans de transition stratégiques et pratiques pour élargir votre vocation.`
+      };
+      return jobMap[activeLang] || jobMap["pt"];
     }
-    if (msg.toLowerCase().includes("relacionamento") || msg.toLowerCase().includes("amor") || msg.toLowerCase().includes("namor")) {
-      return `Com seu Sol em ${solSign} e Lua em ${moonSign}, a harmonia nas conexões íntimas e a sintonia emocional são cruciais para você, ${userName}. Sentir possessividade ou falta de sintonia profunda costuma abalar severamente os seus canais energéticos. Busque companhias que valorizem o diálogo franco e o apoio mútuo sincero Sem amarras.`;
+
+    if (lowerMsg.includes("relacionamento") || lowerMsg.includes("amor") || lowerMsg.includes("namor") ||
+        lowerMsg.includes("relationship") || lowerMsg.includes("love") || lowerMsg.includes("dating") ||
+        lowerMsg.includes("relación") || lowerMsg.includes("pareja") || lowerMsg.includes("novio") ||
+        lowerMsg.includes("beziehung") || lowerMsg.includes("liebe") ||
+        lowerMsg.includes("relation") || lowerMsg.includes("amour") || lowerMsg.includes("couple")) {
+      const loveMap: Record<string, string> = {
+        pt: `Com seu Sol em ${solSign} e Lua em ${moonSign}, a harmonia nas conexões íntimas e a sintonia emocional são cruciais para você, ${userName}. Sentir possessividade ou falta de sintonia profunda costuma abalar severamente os seus canais energéticos. Busque companhias que valorizem o diálogo franco e o apoio mútuo sincero Sem amarras.`,
+        en: `With your Sun in ${solSign} and Moon in ${moonSign}, harmony in intimate connections and emotional tuning are crucial for you, ${userName}. Feeling possessiveness or a lack of deep tuning usually severely shakes your energy channels. Seek companions who value open dialogue and sincere mutual support without strings attached.`,
+        es: `Con tu Sol en ${solSign} e Luna en ${moonSign}, la armonía en las conexiones íntimas y la sintonía emocional son cruciales para ti, ${userName}. Sentir posesividad o falta de sintonía profunda suele sacudir severamente tus canales energéticos. Busca compañeros que valoren el diálogo abierto y el apoyo mutuo sincero sin ataduras.`,
+        de: `Mit Ihrer Sonne in ${solSign} und Ihrem Mond in ${moonSign} ist Harmonie in intimen Beziehungen und emotionale Einstimmung entscheidend für Sie, ${userName}. Besitzgier oder mangelnde tiefe Einstimmung erschüttert normalerweise Ihre Energiekanäle schwer. Suchen Sie nach Gefährten, die einen offenen Dialog und aufrichtige gegenseitige Unterstützung ohne Verpflichtungen schätzen.`,
+        fr: `Avec votre Soleil en ${solSign} et votre Lune en ${moonSign}, l'harmonie dans les relations intimes et la connexion émotionnelle sont cruciales pour vous, ${userName}. Ressentir de la possessivité ou un manque de connexion profonde a tendance à ébranler gravement vos canaux énergétiques. Recherchez des compagnons qui apprécient le dialogue ouvert et le soutien mutuel sincère, sans attaches.`
+      };
+      return loveMap[activeLang] || loveMap["pt"];
     }
-    return `Olá, ${userName}. Sinto sua vibração pessoal integrando a força do Sol em ${solSign} com seu Ascendente em ${ascSign}. Atualmente, as configurações celestes convidam você a recalibrar suas rotinas práticas e a confiar nos insights profundos que emergem de seu subconsciente. Qual desafio ou aspecto de sua vida você gostaria de decodificar com Orbia hoje?`;
+
+    const defaultMap: Record<string, string> = {
+      pt: `Olá, ${userName}. Sinto sua vibração pessoal integrando a força do Sol em ${solSign} com seu Ascendente em ${ascSign}. Atualmente, as configurações celestes convidam você a recalibrar suas rotinas práticas e a confiar nos insights profundos que emergem de seu subconsciente. Qual desafio ou aspecto de sua vida você gostaria de decodificar com Orbia hoje?`,
+      en: `Hello, ${userName}. I feel your personal vibration integrating the force of the Sun in ${solSign} with your Ascendant in ${ascSign}. Currently, the celestial configurations invite you to recalibrate your practical routines and trust the deep insights emerging from your subconscious. What challenge or aspect of your life would you like to decode with Orbia today?`,
+      es: `Hola, ${userName}. Siento tu vibración personal integrando la fuerza del Sol en ${solSign} con tu Ascendente en ${ascSign}. Actualmente, las configuraciones celestes te invitan a recalibrar tus rutinas prácticas y a confiar en las profundas ideas que surgen de tu subconsciente. ¿Qué desafío o aspecto de tu vida te gustaría decodificar con Orbia hoy?`,
+      de: `Hallo, ${userName}. Ich spüre Ihre persönliche Schwingung, die die Kraft der Sonne in ${solSign} mit Ihrem Aszendenten in ${ascSign} verbindet. Derzeit laden die himmlischen Konstellationen Sie ein, Ihre praktischen Abläufe neu zu kalibrieren und auf die tiefen Einsichten zu vertrauen, die aus Ihrem Unterbewusstsein aufsteigen. Welchen Lebensbereich oder welche Herausforderung möchten Sie heute mit Orbia entschlüsseln?`,
+      fr: `Bonjour, ${userName}. Je ressens votre vibration personnelle intégrant la force du Soleil en ${solSign} avec votre Ascendant en ${ascSign}. Actuellement, les configurations célestes vous invitent à recalibrer vos routines pratiques et à faire confiance aux intuitions profondes qui émergent de votre subconscient. Quel défi ou aspect de votre vie aimeriez-vous décoder avec Orbia aujourd'hui ?`
+    };
+    return defaultMap[activeLang] || defaultMap["pt"];
   };
 
   if (!aiClient) {
@@ -3383,10 +4183,13 @@ app.post("/api/tarot/draw", async (req, res) => {
       shuffledDeck[j] = temp;
     }
   }
-  const selectedCard = shuffledDeck[0];
 
   const { lang } = req.body || {};
   const activeLang = (lang || "pt").toLowerCase();
+  
+  const rawCard = shuffledDeck[0];
+  const selectedCard = translateCard(rawCard, activeLang);
+
   const langNames: Record<string, string> = {
     pt: "Português",
     en: "English (Inglês)",
@@ -3396,7 +4199,21 @@ app.post("/api/tarot/draw", async (req, res) => {
   };
   const targetLangName = langNames[activeLang] || "Português";
 
-  const currentDate = new Date().toLocaleDateString("pt-BR");
+  const currentDate = new Date().toLocaleDateString(
+    activeLang === 'en' ? "en-US" : 
+    activeLang === 'es' ? "es-ES" : 
+    activeLang === 'de' ? "de-DE" : 
+    activeLang === 'fr' ? "fr-FR" : 
+    "pt-BR"
+  );
+
+  const fallbackWeeklyMap: Record<string, string> = {
+    pt: "Esta semana trará um foco essencial em reestruturação mental e emocional. A energia desta carta estimula você a quebrar paradigmas limitadores (Urano em Quadratura a Saturno) e focar em projetos pessoais ousados.",
+    en: "This week will bring an essential focus on mental and emotional restructuring. The energy of this card encourages you to break limiting paradigms (Urano Square Saturn) and focus on bold personal projects.",
+    es: "Esta semana traerá un enfoque esencial en la reestructuración mental y emocional. La energía de esta carta te anima a romper paradigmas limitantes (Urano en cuadratura con Saturno) y enfocarte en proyectos personales audaces.",
+    de: "Diese Woche bringt eine wesentliche Konzentration auf die mentale und emotionale Umstrukturierung. Die Energie dieser Karte ermutigt Sie, einschränkende Paradigmen zu durchbrechen (Urano-Quadrat-Saturn) und sich auf mutige persönliche Projekte zu konzentrieren.",
+    fr: "Cette semaine apportera un accent essentiel sur la restructuration mentale et émotionnelle. L'énergie de cette carte vous encourage à briser les paradigmes limitants (Urano Carré Saturne) et à vous concentrer sur des projets personnels audacieux."
+  };
 
   const result: any = {
     cardName: selectedCard.cardName,
@@ -3405,7 +4222,7 @@ app.post("/api/tarot/draw", async (req, res) => {
     imageUrl: selectedCard.imageUrl,
     uprightMeaning: selectedCard.uprightMeaning,
     advice: selectedCard.advice,
-    weeklyForecast: "Esta semana trará um foco essencial em reestruturação mental e emocional. A energia desta carta estimula você a quebrar paradigmas limitadores (Urano em Quadratura a Saturno) e focar em projetos pessoais ousados.",
+    weeklyForecast: fallbackWeeklyMap[activeLang] || fallbackWeeklyMap["pt"],
     drawingDate: currentDate
   };
 
@@ -3446,7 +4263,8 @@ Gere um JSON exato com as seguintes chaves de texto ricas e conselhos poéticos 
 
 app.post("/api/tarot/draw-full", async (req, res) => {
   try {
-    const { count } = req.body;
+    const { count, lang } = req.body || {};
+    const activeLang = (lang || "pt").toLowerCase();
     const numCards = Math.max(1, Math.min(10, count || 1));
 
     // Fisher-Yates multi-round dispersion shuffle
@@ -3460,11 +4278,12 @@ app.post("/api/tarot/draw-full", async (req, res) => {
       }
     }
     const selected = shuffledDeck.slice(0, numCards);
+    const translatedSelected = selected.map(c => translateCard(c, activeLang));
 
-    res.json({ cards: selected });
+    res.json({ cards: translatedSelected });
   } catch (err) {
     console.log("Erro ao sortear cartas do baralho:", err);
-    res.status(500).json({ error: "Erro interno ao sortear cartas de tarot." });
+    res.status(500).json({ error: (req as any).t('api.tarot.internal_error') });
   }
 });// Helper to generate deeply realistic, individualized tarot readings offline when the external API key is throttled
 function generateOfflineTarotReading(type: string, cards: any[], question: string, userName: string, lang?: string): { reading: string; guidance: string } {
@@ -3856,7 +4675,7 @@ app.get("/api/admin/users", (req, res) => {
 app.post("/api/admin/users/create", (req, res) => {
   const { name, email, plan, birthDate } = req.body;
   if (!name || !email) {
-    return res.status(400).json({ error: "Nome e Email são obrigatórios." });
+    return res.status(400).json({ error: (req as any).t('api.auth.name_email_required') });
   }
   const newUser = {
     id: String(mockUsers.length + 1),
@@ -3876,7 +4695,7 @@ app.post("/api/admin/users/update", (req, res) => {
   const { id, name, email, plan, status } = req.body;
   const userIndex = mockUsers.findIndex(u => u.id === id);
   if (userIndex === -1) {
-    return res.status(404).json({ error: "Usuário não encontrado." });
+    return res.status(404).json({ error: (req as any).t('api.admin.user_not_found') });
   }
   mockUsers[userIndex] = {
     ...mockUsers[userIndex],
@@ -3895,7 +4714,7 @@ app.delete("/api/admin/users/delete", (req, res) => {
   if (mockUsers.length === initialLen) {
     return res.status(404).json({ error: "Usuário não encontrado." });
   }
-  res.json({ success: true, message: "Usuário deletado." });
+  res.json({ success: true, message: (req as any).t('api.admin.user_deleted') });
 });
 
 // 2. Subscription Plans Management Endpoints
@@ -3907,7 +4726,7 @@ app.post("/api/admin/plans/update", (req, res) => {
   const { id, name, price, description, features } = req.body;
   const planIndex = mockPlans.findIndex(p => p.id === id);
   if (planIndex === -1) {
-    return res.status(404).json({ error: "Plano não encontrado." });
+    return res.status(404).json({ error: (req as any).t('api.admin.plan_not_found') });
   }
   mockPlans[planIndex] = {
     ...mockPlans[planIndex],
@@ -3927,7 +4746,7 @@ app.get("/api/admin/content", (req, res) => {
 app.post("/api/admin/content/create", (req, res) => {
   const { title, type, author, status } = req.body;
   if (!title || !type) {
-    return res.status(400).json({ error: "Título e Tipo de conteúdo são obrigatórios." });
+    return res.status(400).json({ error: (req as any).t('api.admin.content_title_type_required') });
   }
   const newContent = {
     id: "c" + (mockContents.length + 1),
@@ -3945,7 +4764,7 @@ app.post("/api/admin/content/update", (req, res) => {
   const { id, title, type, author, status } = req.body;
   const contentIndex = mockContents.findIndex(c => c.id === id);
   if (contentIndex === -1) {
-    return res.status(404).json({ error: "Conteúdo não encontrado." });
+    return res.status(404).json({ error: (req as any).t('api.admin.content_not_found') });
   }
   mockContents[contentIndex] = {
     ...mockContents[contentIndex],
@@ -3964,7 +4783,7 @@ app.delete("/api/admin/content/delete", (req, res) => {
   if (mockContents.length === initialLen) {
     return res.status(404).json({ error: "Conteúdo não encontrado." });
   }
-  res.json({ success: true, message: "Conteúdo excluído." });
+  res.json({ success: true, message: (req as any).t('api.admin.content_deleted') });
 });
 
 // 4. Statistics Endpoint
@@ -3994,7 +4813,7 @@ app.get("/api/admin/notifications/history", (req, res) => {
 app.post("/api/admin/notifications/send", (req, res) => {
   const { type, title, message } = req.body;
   if (!type || !title || !message) {
-    return res.status(400).json({ error: "Tipo, Título e Mensagem são obrigatórios." });
+    return res.status(400).json({ error: (req as any).t('api.admin.notification_fields_required') });
   }
 
   const newLog = {
@@ -4034,7 +4853,7 @@ app.post("/api/admin/notifications/read", (req, res) => {
 app.post("/api/payments/subscribe", (req, res) => {
   const { name, email, planId, cardNumber, cvv } = req.body;
   if (!name || !email || !planId) {
-    return res.status(400).json({ error: "Nome, Email e ID do plano são necessários para prosseguir." });
+    return res.status(400).json({ error: (req as any).t('api.payment.details_required') });
   }
 
   const selectedPlan = mockPlans.find(p => p.id === planId) || mockPlans[2]; // fallback to premium
@@ -4067,8 +4886,8 @@ app.post("/api/payments/subscribe", (req, res) => {
   const notificationMsg = {
     id: "n" + (mockNotificationsLog.length + 1),
     type: "alert",
-    title: "Assinatura Sincronizada",
-    message: `Parabéns ${name}! Seu plano [${selectedPlan.name}] no valor de ${selectedPlan.price} foi aprovado com a Transação ID ${transactionId}.`,
+    title: (req as any).t('api.payment.active_premium_sync'),
+    message: (req as any).t('api.payment.activation_congrats', { name, planName: selectedPlan.name, price: selectedPlan.price, transactionId }),
     timestamp,
     read: false
   };
@@ -4076,7 +4895,7 @@ app.post("/api/payments/subscribe", (req, res) => {
 
   res.json({
     success: true,
-    message: "Assinatura processada com sucesso!",
+    message: (req as any).t('api.payment.subscription_success'),
     transactionId,
     amount: selectedPlan.price,
     planName: selectedPlan.name,
@@ -4090,18 +4909,18 @@ app.post("/api/auth/send-verification-code", async (req, res) => {
   try {
     const { email, code } = req.body;
     if (!email || !code) {
-      return res.status(400).json({ error: "E-mail e código de verificação são obrigatórios." });
+      return res.status(400).json({ error: (req as any).t('api.auth.email_code_required') });
     }
 
     console.log(`[Email Dispatch Simplified] Código gerado para ${email}: ${code}`);
     return res.json({
       success: true,
       simulated: true,
-      message: "Ative sua conta preferencialmente usando o sistema de verificação de e-mail oficial do Firebase. Código do simulador estelar: " + code
+      message: (req as any).t('api.auth.simulation_notice', { code })
     });
   } catch (err: any) {
     console.error("[Email Dispatch] Erro ao enviar e-mail:", err);
-    return res.status(500).json({ error: err.message || "Erro interno ao processar e-mail de confirmação." });
+    return res.status(500).json({ error: err.message || (req as any).t('api.auth.email_verification_error') });
   }
 });
 
@@ -4325,7 +5144,7 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
   try {
     const { email, planId, planName, lang } = req.body;
     if (!email || !planId) {
-      return res.status(400).json({ error: "Email e ID do Plano são obrigatórios para gerar o Stripe Checkout." });
+      return res.status(400).json({ error: (req as any).t('api.stripe.email_plan_required') });
     }
 
     const origin = req.get('origin') || process.env.APP_URL || 'http://localhost:3000';
@@ -4368,7 +5187,7 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
         id: mockSessionId,
         url: simulatedUrl,
         simulated: true,
-        message: "Stripe em Modo Simulado Ativo (Sua chave STRIPE_SECRET_KEY não foi configurada)"
+        message: (req as any).t('api.stripe.simulator_active')
       });
     }
 
@@ -4412,7 +5231,7 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
     });
   } catch (err: any) {
     console.error("[Stripe] Erro ao criar Checkout Session:", err);
-    return res.status(500).json({ error: err.message || "Erro interno ao conectar ao Stripe." });
+    return res.status(500).json({ error: err.message || (req as any).t('api.stripe.connection_error') });
   }
 });
 
@@ -4420,7 +5239,7 @@ app.get("/api/stripe/verify-session", async (req, res) => {
   try {
     const { session_id } = req.query;
     if (!session_id || typeof session_id !== 'string') {
-      return res.status(400).json({ error: "O parâmetro session_id é obrigatório." });
+      return res.status(400).json({ error: (req as any).t('api.stripe.session_id_required') });
     }
 
     // Verify Simulated Session
@@ -4436,14 +5255,14 @@ app.get("/api/stripe/verify-session", async (req, res) => {
         simulated: true,
         email: email,
         planId: planId,
-        message: "Verificação sintonizada com sucesso (Modo Simulado)."
+        message: (req as any).t('api.stripe.verification_success')
       });
     }
 
     const stripe = getStripeClient();
     if (!stripe) {
       return res.status(400).json({ 
-        error: "Stripe não configurado no backend. Não é possível verificar transações reais." 
+        error: (req as any).t('api.stripe.not_configured') 
       });
     }
 
@@ -4453,7 +5272,7 @@ app.get("/api/stripe/verify-session", async (req, res) => {
     if (!isPaid) {
       return res.json({
         success: false,
-        message: "O pagamento desta transação ainda não consta como concluído."
+        message: (req as any).t('api.stripe.not_paid')
       });
     }
 
@@ -4483,7 +5302,7 @@ app.get("/api/stripe/verify-session", async (req, res) => {
     });
   } catch (err: any) {
     console.error("[Stripe] Erro ao verificar checkout session:", err);
-    return res.status(500).json({ error: err.message || "Erro interno ao validar sessões de pagamento." });
+    return res.status(500).json({ error: err.message || (req as any).t('api.stripe.validation_error') });
   }
 });
 

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { translateUiText, Language } from '../lib/translations';
+import { Language } from '../lib/translations';
 import { AstrologyMap, AstroAstroPosition, UserProfile } from '../types';
 import CircularChart from './CircularChart';
 import { 
@@ -177,11 +177,7 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
     if (LOCAL_UI_TRANSLATIONS[currentLang]?.[text]) {
       return LOCAL_UI_TRANSLATIONS[currentLang][text];
     }
-    const res = i18nT(text);
-    if (res === text || !res) {
-      return translateUiText(text, (i18n.language as Language) || 'pt');
-    }
-    return res;
+    return i18nT(text);
   };
   const [activeSubTab, setActiveSubTab] = useState<'geral' | 'astros' | 'casas' | 'aspectos' | 'extras'>('geral');
   const [selectedAstro, setSelectedAstro] = useState<AstroAstroPosition | null>(() => mapData?.astros?.[0] || null);

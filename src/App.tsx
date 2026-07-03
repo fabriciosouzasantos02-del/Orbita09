@@ -88,7 +88,7 @@ import {
 import { generatePersonalizedProsperityMap } from './components/prosperityEngine';
 import { generateDailyPrediction } from './components/dailyPredictionsEngine';
 import { PremiumConversionScreen } from './components/PremiumConversionScreen';
-import { getTranslation, translateUiText, Language } from './lib/translations';
+import { Language } from './lib/translations';
 import { useIdioma } from './context/IdiomaContext';
 
 // High-end Elite Celestial Logo Component
@@ -337,7 +337,12 @@ function generateDailyMissions(user: any, activeLang?: Language): DailyMission[]
   const name = user?.name ? user.name.split(" ")[0] : "Viajante";
   const birthDate = user?.birthDate || "2000-01-01";
   const zodiacPT = getZodiacSignForMissions(birthDate);
-  const zodiac = translateUiText(zodiacPT, currentL);
+  
+  const tM = (text: string): string => {
+    return i18n.t(text, { lng: currentL }) as string;
+  };
+
+  const zodiac = tM(zodiacPT);
 
   const today = new Date();
   const day = today.getDate();
@@ -350,22 +355,22 @@ function generateDailyMissions(user: any, activeLang?: Language): DailyMission[]
     [
       {
         id: "dm1",
-        title: translateUiText("Consagração de {zodiac} para {name}", currentL).replace("{zodiac}", zodiac).replace("{name}", name),
-        description: translateUiText("Dedique 3 minutos respirando conscientemente para ativar o equilíbrio cósmico para sua essência de {zodiac}.", currentL).replace("{zodiac}", zodiac),
+        title: tM("Consagração de {zodiac} para {name}").replace("{zodiac}", zodiac).replace("{name}", name),
+        description: tM("Dedique 3 minutos respirando conscientemente para ativar o equilíbrio cósmico para sua essência de {zodiac}.").replace("{zodiac}", zodiac),
         isCompleted: false,
         points: 40
       },
       {
         id: "dm2",
-        title: translateUiText("Harmonização de Mercúrio", currentL),
-        description: translateUiText("Escreva algo que te aflige e depois risque no papel, transmutando restrições mentais.", currentL),
+        title: tM("Harmonização de Mercúrio"),
+        description: tM("Escreva algo que te aflige e depois risque no papel, transmutando restrições mentais."),
         isCompleted: false,
         points: 50
       },
       {
         id: "dm3",
-        title: translateUiText("Toque de Gratidão Vital", currentL),
-        description: translateUiText("Fortaleça conexões e envie uma mensagem curta com um elogio sincero para alguém importante em sua jornada.", currentL),
+        title: tM("Toque de Gratidão Vital"),
+        description: tM("Fortaleça conexões e envie uma mensagem curta com um elogio sincero para alguém importante em sua jornada."),
         isCompleted: false,
         points: 30
       }
@@ -373,22 +378,22 @@ function generateDailyMissions(user: any, activeLang?: Language): DailyMission[]
     [
       {
         id: "dm1",
-        title: translateUiText("Alinhamento de {zodiac} para {name}", currentL).replace("{zodiac}", zodiac).replace("{name}", name),
-        description: translateUiText("Escreva no Oráculo dos Sonhos tudo que se lembrar da noite anterior, decifrando avisos do seu guia onírico.", currentL),
+        title: tM("Alinhamento de {zodiac} para {name}").replace("{zodiac}", zodiac).replace("{name}", name),
+        description: tM("Escreva no Oráculo dos Sonhos tudo que se lembrar da noite anterior, decifrando avisos do seu guia onírico."),
         isCompleted: false,
         points: 50
       },
       {
         id: "dm2",
-        title: translateUiText("Selo de Desapego de Saturno", currentL),
-        description: translateUiText("Organize sua área de estudos ou e-mails importantes hoje para desbloquear estagnações kármicas.", currentL),
+        title: tM("Selo de Desapego de Saturno"),
+        description: tM("Organize sua área de estudos ou e-mails importantes hoje para desbloquear estagnações kármicas."),
         isCompleted: false,
         points: 30
       },
       {
         id: "dm3",
-        title: translateUiText("Cura Líquida Purificadora", currentL),
-        description: translateUiText("Mentalize paz e tome um copo cheio de água fresca, promovendo purificação de cansaço acumulado.", currentL),
+        title: tM("Cura Líquida Purificadora"),
+        description: tM("Mentalize paz e tome um copo cheio de água fresca, promovendo purificação de cansaço acumulado."),
         isCompleted: false,
         points: 40
       }
@@ -396,22 +401,22 @@ function generateDailyMissions(user: any, activeLang?: Language): DailyMission[]
     [
       {
         id: "dm1",
-        title: translateUiText("Foco de Vênus para {name}", currentL).replace("{name}", name),
-        description: translateUiText("Olhe-se no espelho por 1 minuto sintonizando a resiliência e auto-aceitação para seu signo solar de {zodiac}.", currentL).replace("{zodiac}", zodiac),
+        title: tM("Foco de Vênus para {name}").replace("{name}", name),
+        description: tM("Olhe-se no espelho por 1 minuto sintonizando a resiliência e auto-aceitação para seu signo solar de {zodiac}.").replace("{zodiac}", zodiac),
         isCompleted: false,
         points: 45
       },
       {
         id: "dm2",
-        title: translateUiText("Doação Elemental Prática", currentL),
-        description: translateUiText("Considere doar ou arrumar duas coisas materiais sem uso em seu ambiente para fluxo cósmico.", currentL),
+        title: tM("Doação Elemental Prática"),
+        description: tM("Considere doar ou arrumar duas coisas materiais sem uso em seu ambiente para fluxo cósmico."),
         isCompleted: false,
         points: 50
       },
       {
         id: "dm3",
-        title: translateUiText("Oração Vibracional Cósmica", currentL),
-        description: translateUiText("Mentalize e envie ondas silenciosas de pura compaixão por três pessoas que cruzarem sua mente hoje.", currentL),
+        title: tM("Oração Vibracional Cósmica"),
+        description: tM("Mentalize e envie ondas silenciosas de pura compaixão por três pessoas que cruzarem sua mente hoje."),
         isCompleted: false,
         points: 30
       }
@@ -419,22 +424,22 @@ function generateDailyMissions(user: any, activeLang?: Language): DailyMission[]
     [
       {
         id: "dm1",
-        title: translateUiText("Vigor de Marte para {name}", currentL).replace("{name}", name),
-        description: translateUiText("Alongue os membros do corpo por 5 minutos respirando profundamente, liberando bloqueios articulares.", currentL),
+        title: tM("Vigor de Marte para {name}").replace("{name}", name),
+        description: tM("Alongue os membros do corpo por 5 minutos respirando profundamente, liberando bloqueios articulares."),
         isCompleted: false,
         points: 40
       },
       {
         id: "dm2",
-        title: translateUiText("Ritual Solar da Gratidão", currentL),
-        description: translateUiText("Agradeça mentalmente por três bênçãos invisíveis que estão florescendo na sua jornada diária.", currentL),
+        title: tM("Ritual Solar da Gratidão"),
+        description: tM("Agradeça mentalmente por três bênçãos invisíveis que estão florescendo na sua jornada diária."),
         isCompleted: false,
         points: 40
       },
       {
         id: "dm3",
-        title: translateUiText("Clareza Onírica de {zodiac}", currentL).replace("{zodiac}", zodiac),
-        description: translateUiText("Abandone o celular por 1 hora antes de deitar ou repousar para equilibrar sua frequência teta.", currentL),
+        title: tM("Clareza Onírica de {zodiac}").replace("{zodiac}", zodiac),
+        description: tM("Abandone o celular por 1 hora antes de deitar ou repousar para equilibrar sua frequência teta."),
         isCompleted: false,
         points: 50
       }
@@ -692,7 +697,7 @@ export default function App() {
 
   // Central Page Translation Helper
   const t = (text: string): string => {
-    return translateUiText(text, currentLang || 'pt');
+    return i18nT(text);
   };
 
   const [user, _setUser] = useState<UserProfile>(() => {
@@ -2280,7 +2285,7 @@ export default function App() {
   // Local helper to get static translations for settings on the fly
   const tLocal = (key: string, replacement?: any): string => {
     const activeL = currentLang || 'pt';
-    const translated = translateUiText(key, activeL);
+    const translated = i18nT(key);
     if (translated && translated !== key) {
       let str = translated;
       if (replacement !== undefined) {
@@ -6499,22 +6504,22 @@ export default function App() {
                             {/* Right: Extra Maps List */}
                             <div className="md:col-span-7 bg-slate-900/20 p-5 rounded-3xl border border-slate-850 space-y-4">
                               <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-divider">
-                                {translateUiText("Lista de Mapas Extras Cadastrados", currentLang)} ({extraMaps.length}/2)
+                                {t("Lista de Mapas Extras Cadastrados")} ({extraMaps.length}/2)
                               </h3>
                               
                               {isLoadingExtraMap && (
                                 <div className="space-y-3 py-10 flex flex-col items-center text-slate-500 bg-slate-950/60 rounded-2xl border border-slate-800">
                                   <RefreshCw className="w-8 h-8 animate-spin text-indigo-400" />
-                                  <p className="text-[10px] font-mono">{translateUiText("Processando alinhamento estelar secundário...", currentLang)}</p>
+                                  <p className="text-[10px] font-mono">{t("Processando alinhamento estelar secundário...")}</p>
                                 </div>
                               )}
 
                               {!isLoadingExtraMap && extraMaps.length === 0 && (
                                 <div className="p-8 text-center text-slate-600 bg-slate-950/30 rounded-2xl border border-dashed border-slate-850">
                                   <Orbit className="w-10 h-10 text-slate-800 mx-auto opacity-40 mb-2" />
-                                  <p className="text-xs font-mono">{translateUiText("Nenhum mapa extra cadastrado.", currentLang)}</p>
+                                  <p className="text-xs font-mono">{t("Nenhum mapa extra cadastrado.")}</p>
                                   <p className="text-[10px] text-slate-505 max-w-xs mx-auto mt-1 leading-relaxed">
-                                    {translateUiText("Adicione até 2 perfis de amigos ou familiares para comparar as cartas astrológicas e sinastrias.", currentLang)}
+                                    {t("Adicione até 2 perfis de amigos ou familiares para comparar as cartas astrológicas e sinastrias.")}
                                   </p>
                                 </div>
                               )}
@@ -7474,7 +7479,7 @@ export default function App() {
               }`}
             >
               <Orbit className="w-5 h-5" />
-              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{getTranslation(lang, 'menu_map', 'Mapa Estelar')}</span>
+              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{t('menu_map')}</span>
             </button>
 
             {/* Constelações Tab activator */}
@@ -7487,7 +7492,7 @@ export default function App() {
               }`}
             >
               <Compass className="w-5 h-5" />
-              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{getTranslation(lang, 'menu_stars', 'Constelações')}</span>
+              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{t('menu_stars')}</span>
             </button>
 
             {/* Planetas Tab activator */}
@@ -7500,7 +7505,7 @@ export default function App() {
               }`}
             >
               <Globe className="w-5 h-5" />
-              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{getTranslation(lang, 'menu_planets', 'Planetas')}</span>
+              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{t('menu_planets')}</span>
             </button>
 
             {/* Tarot Tab activator */}
@@ -7513,7 +7518,7 @@ export default function App() {
               }`}
             >
               <Sparkles className="w-5 h-5" />
-              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{getTranslation(lang, 'menu_tarot', 'Tarot')}</span>
+              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{t('menu_tarot')}</span>
             </button>
 
             {/* Configurações Tab activator */}
@@ -7526,7 +7531,7 @@ export default function App() {
               }`}
             >
               <Settings className="w-5 h-5" />
-              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{getTranslation(lang, 'menu_settings', 'Ajustes')}</span>
+              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{t('menu_settings')}</span>
             </button>
 
           </nav>

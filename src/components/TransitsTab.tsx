@@ -1,10 +1,9 @@
 import React, { useState } from "react";
 import { Zap, Calendar, Shuffle, CloudSun, AlertTriangle, Eye } from "lucide-react";
 import { motion } from "motion/react";
-import { Language, translations } from "../translations";
+import { Language } from "../translations";
 import { NatalChartData } from "../types";
 import { useTranslation } from "react-i18next";
-import { translateUiText } from "../lib/translations";
 import { useIdioma } from "../context/IdiomaContext";
 
 interface TransitsTabProps {
@@ -15,8 +14,7 @@ interface TransitsTabProps {
 export default function TransitsTab({ natalChart, lang }: TransitsTabProps) {
   const { idioma } = useIdioma();
   const activeLang = idioma || lang || 'pt';
-  const t = translations[activeLang];
-  const { t: tI18nRaw } = useTranslation();
+  const { t } = useTranslation();
 
   const localTranslations: Record<string, Record<string, string>> = {
     en: {
@@ -85,11 +83,7 @@ export default function TransitsTab({ natalChart, lang }: TransitsTabProps) {
       return localTranslations[targetLang][text];
     }
 
-    const res = tI18nRaw(text);
-    if (res === text || !res) {
-      return translateUiText(text, targetLang);
-    }
-    return res;
+    return t(text);
   };
 
   // Mock list of current transits of this day (moving planets)

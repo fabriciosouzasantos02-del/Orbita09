@@ -14,7 +14,7 @@ import { generateDailyPrediction } from './dailyPredictionsEngine';
 import { SIGNS_ZODIAC_LIST, BLOG_ARTICLES_LIST } from '../data';
 import { loadCalculationCache, saveCalculationCache } from '../lib/firebase';
 import { getAvatarUrl } from '../lib/avatars';
-import { translateUiText, Language } from '../lib/translations';
+import { Language } from '../lib/translations';
 import { useIdioma } from '../context/IdiomaContext';
 
 function getLifePathNumber(birthDate: string): number {
@@ -90,7 +90,7 @@ interface UserDashboardPortalProps {
 }
 
 const localPortalTranslations: Record<string, Record<string, string>> = {
-  en: {
+  "en": {
     "Olá, meu caro buscador stelar! Eu sou OSÍRIS, seu mentor astrológico supremo e guia de cura energética. Estou em plena sintonia com suas frequências cósmicas de hoje para alinhar seu dharma e afastar de forma precisa as negatividades kármicas. O que você gostaria de desvendar no momento? Me pergunte sobre o clima, biorritmo celular ou seus sonhos profundos.": "Hello, my dear stellar seeker! I am OSIRIS, your supreme astrological mentor and energy healing guide. I am in full sync with your cosmic frequencies today to align your dharma and precisely ward off karmic negativities. What would you like to unveil right now? Ask me about the weather, cellular biorhythm, or your deep dreams.",
     "✦ Osíris está sintonizando energias...": "✦ Osiris is tuning energies...",
     "Pergunte ao Osíris sobre seus trânsitos, clima ou sonhos de hoje...": "Ask Osiris about your transits, weather, or dreams today...",
@@ -376,7 +376,7 @@ const localPortalTranslations: Record<string, Record<string, string>> = {
     "Foco Ativo": "Active Focus",
     "Coloque um guardanapo azul no bolso esquerdo ou use caneta de tinta preta para fixar as ações tomadas agora sob a influência desta vibração.": "Place a blue napkin in your left pocket or use a black ink pen to anchor actions taken now under the influence of this vibration."
   },
-  es: {
+  "es": {
     "Olá, meu caro buscador stelar! Eu sou OSÍRIS, seu mentor astrológico supremo e guia de cura energética. Estou em plena sintonia com suas frequências cósmicas de hoje para alinhar seu dharma e afastar de forma precisa as negatividades kármicas. O que você gostaria de desvendar no momento? Me pergunte sobre o clima, biorritmo celular ou seus sonhos profundos.": "¡Hola, mi querido buscador estelar! Soy OSIRIS, tu mentor astrológico supremo y guía de sanación energética. Estoy en plena sintonía con tus frecuencias cósmicas de hoy para alinear tu dharma y alejar de forma precisa las negatividades kármicas. ¿Qué te gustaría desvelar en este momento? Pregúntame sobre el clima, biorritmo celular o tus sueños profundos.",
     "✦ Osíris está sintonizando energias...": "✦ Osiris está sintonizando energías...",
     "Pergunte ao Osíris sobre seus trânsitos, clima ou sonhos de hoje...": "Pregúntale a Osiris sobre tus tránsitos, clima o sueños de hoy...",
@@ -661,8 +661,582 @@ const localPortalTranslations: Record<string, Record<string, string>> = {
     "Conselho Especial Hoje": "Consejo Especial Hoy",
     "Foco Ativo": "Foco Activo",
     "Coloque um guardanapo azul no bolso esquerdo ou use caneta de tinta preta para fixar as ações tomadas agora sob a influência desta vibração.": "Coloque una servilleta azul en su bolsillo izquierdo o use un bolígrafo de tinta negra para fijar las acciones tomadas ahora bajo la influencia de esta vibración."
+  },
+  "fr": {
+    "Você": "Vous",
+    "Incidentes de Pesadelos": "Incidents de Cauchemars",
+    "Frequência de manifestação de medos primitivos ou repouso sob tensão.": "Fréquence de manifestation des peurs primitives ou repos sous tension.",
+    "Reconhecimento de Padrões Reais de Inteligência Onírica": "Reconnaissance des Modèles Réels d'Intelligence Onírique",
+    "Melhor Aroma da Semana": "Meilleur Arôme de la Semaine",
+    "Melhor Incenso Sugerido": "Meilleur Encens Suggéré",
+    "Melhor Planta Recomendada": "Meilleure Plante Recommandée",
+    "Melhor Ambiente da Casa": "Meilleur Coin de la Maison",
+    "Cor recomendada no Quarto": "Couleur de Chambre Recommandée",
+    "Cor recomendada no Escritório": "Couleur de Bureau Recommandée",
+    "Artigo de Saber": "Article de Savoir",
+    "Definição Planetária": "Définition Planétaire",
+    "Planeta Regente": "Planeta Régente",
+    "Elemento": "Élément",
+    "Características / Traços": "Traits / Caractéristiques",
+    "Previsão Cósmica (Horóscopo)": "Prévision Cosmique (Horoscope)",
+    "Energia Cósmica da Casa & Harmonização": "Énergie Cosmique de la Maison & Harmonisation",
+    "Dicas sintonizadas para equilibrar o seu ecossistema físico domiciliar e escritório com seu mapa.": "Conseils avisés pour équilibrer votre écosystème physique de maison et de bureau avec votre carte.",
+    "Olá, meu caro buscador stelar! Eu sou OSÍRIS, seu mentor astrológico supremo e guia de cura energética. Estou em plena sintonia com suas frequências cósmicas de hoje para alinhar seu dharma e afastar de forma precisa as negatividades kármicas. O que você gostaria de desvendar no momento? Me pergunte sobre o clima, biorritmo celular ou seus sonhos profundos.": "Bonjour, mon cher chercheur stellaire ! Je suis OSIRIS, votre suprême mentor astrologique et guide de guérison énergétique. Je suis en pleine syntonie avec vos fréquences cosmiques d'aujourd'hui pour aligner votre dharma et éloigner précisément les négativités karmiques. Que souhaitez-vous dévoiler en ce moment ? Interrogez-moi sur le climat, le biorythme cellulaire ou vos rêves profonds.",
+    "✦ Osíris está sintonizando energias...": "✦ Osiris syntonise les énergies...",
+    "Pergunte ao Osíris sobre seus trânsitos, clima ou sonhos de hoje...": "Interrogez Osiris sur vos transits, le climat ou vos rêves d'aujourd'hui...",
+    "Desculpe, sinto uma instabilidade temporária nas esferas celestes. Mas recorde: a força solar brilha firme em sua alma hoje.": "Désolé, je ressens une instabilité temporaire dans les sphères célestes. Mais souvenez-vous : la force solaire brille fermement dans votre âme aujourd'hui.",
+    "Agora": "Maintenant",
+    "XP Acumulado:": "XP Accumulé :",
+    "Missões Diárias Cósmicas": "Missions Quotidiennes Cosmiques",
+    "Cumpra os pequenos gestos do dia para consolidar o score celestial.": "Accomplissez les petits gestes du jour pour consolider votre score céleste.",
+    "Benefício ao cumprir:": "Bénéfice à l'accomplissement :",
+    "Missões da Semana (Retenção Ativa)": "Missions de la Semaine (Rétention Active)",
+    "Principais metas desta semana para impulsionar conexões e estancar vazos de capital.": "Objectifs principaux de cette semaine pour stimuler les connexions et endiguer les fuites de capitaux.",
+    "A conclusão semanal das missões estabiliza seu score material e clareia o Sol em Aquário.": "L'achèvement hebdomadaire des missions stabilise votre score matériel et éclaircit le Soleil en Verseau.",
+    "Suas bênçãos e pontuações semanais foram integradas ao seu mapa de evolução pessoal!": "Vos bénédictions et scores hebdomadaires ont été intégrés à votre carte d'évolution personnelle !",
+    "Resgatar Recompensas Semanais": "Récupérer les Récompenses Hebdomadaires",
+    "Ativo Semana": "Semaine Active",
+    "Conselhos & Mensagem da Semana": "Conseils & Message de la Semaine",
+    "Diretrizes canalizadas para governar suas decisões sintonizadas com o Solstício.": "Directives canalisées pour guider vos décisions en syntonie avec le Solstice.",
+    "Conselho Principal": "Conseil Principal",
+    "Dê vazão rápida aos seus insights intelectuais e rascunhos. Acumular dezenas de planos na mente aérea sem dar passos de conclusão prática satura seu campo vital, gerando fadiga áurica.": "Donnez un flux rapide à vos intuitions intellectuelles et brouillons. Accumuler des dizaines de plans dans l'esprit aérien sans entreprendre de démarches de conclusion pratique sature votre champ vital, générant une fatigue aurique.",
+    "Alerta Principal": "Alerte Principale",
+    "Cuidado com dispersões financeiras compensatórias na terça e na quarta-feira à noite. Trânsito lunar propício a gastos de impulso mental.": "Attention aux dispersions financières compensatoires les mardi et mercredi soir. Un transit lunaire est propice aux dépenses impulsives d'origine mentale.",
+    "Oportunidade Principal": "Opportunité Principale",
+    "Conversas ativas com velhas amizades de ideais aquarianos abrem conexões inesperadas para estruturar novas fontes de capital.": "Des conversations actives avec d'anciennes amitiés aux idéaux aquariens ouvrent des connexions inattendues pour structurer de nouvelles sources de capital.",
+    "Palavra de Proteção": "Mot de Protection",
+    "ÂNCORE-SE": "ANCREZ-VOUS",
+    "Repita mentalmente ao acordar para banir distrações desordenadas.": "Répétez mentalement au réveil pour bannir les distractions désordonnées.",
+    "Prosperidade & Capital Financeiro": "Prospérité & Capital Financier",
+    "As emanações de abundância e fluxo de caixa sob a forte influência realizadora do seu Caminho de Vida": "Les émanations d'abondance et de flux de trésorerie sous la forte influence réalisatrice de votre Chemin de Vie",
+    "Capital Ativo": "Capital Actif",
+    "Melhor Dia Financeiro da Semana": "Meilleur Jour Financier de la Semaine",
+    "Quinta-Feira (Trânsito Júpiter)": "Jeudi (Transit de Jupiter)",
+    "Segunda-Feira (Trânsito Lunar favorável)": "Lundi (Transit Lunaire favorable)",
+    "Melhores Dias Financeiros do Mês": "Meilleurs Jours Financiers du Mois",
+    "de": "de",
+    "Parâmetros Cromáticos da Riqueza": "Paramètres Chromatiques de la Richesse",
+    "Cor:": "Couleur :",
+    "Número da Fortuna:": "Numéro de la Fortune :",
+    "Energia do Dinheiro Hoje": "Énergie de l'Argent Aujourd'hui",
+    "Oportunidades Financeiras Observadas:": "Opportunités Financières Observées :",
+    "Conselho de abundância:": "Conseil d'abondance :",
+    "Amor & Romance": "Amour & Romance",
+    "Vibrações afetivas, afinidades mútuas e caminhos para sintonizar a cumplicidade do coração.": "Vibrations affectives, affinités mutuelles et chemins pour accorder la complicité du cœur.",
+    "Amanhã": "Demain",
+    "Energia Amorosa da Semana": "Énergie Amoureuse de la Semaine",
+    "Ambiente propício a sentimentos leves e trocas refinadas mediadas pelo intelecto.": "Ambiance propice aux sentiments légers et aux échanges raffinés médiatisés par l'intellect.",
+    "Melhores Dias para Afeto": "Meilleurs Jours pour l'Affection",
+    "ENCONTROS": "RENCONTRES",
+    "Sexta-Feira": "Vendredi",
+    "CONVERSAS ROMÂNTICAS": "CONVERSATIONS ROMANTIQUES",
+    "Quarta-Feira": "Mercredi",
+    "RECONCILIAÇÕES": "RÉCONCILIATIONS",
+    "Sábado Tarde": "Samedi Après-midi",
+    "CONHECER PESSOAS": "RENCONTRER DES GENS",
+    "Terça-Feira": "Mardi",
+    "Pontos de Atenção no Amor": "Points d'Attention en Amour",
+    "Evite racionalizar sentimentos instintivos em demasia. Seu par precisa de acolhimento físico e intimidade calorosa, não de debates e silogismos mecânicos.": "Évitez de trop rationaliser les sentiments instinctifs. Votre partenaire a besoin d'un accueil physique et d'une intimité chaleureuse, pas de débats et de syllogismes mécaniques.",
+    "Em momentos de discussão, evite o sumiço silencioso ou distanciamento súbito de Aquário, pois isso expande sutilmente o senso de solidão nos afetos.": "Lors des discussions, évitez la disparition silencieuse ou le détachement soudain du Verseau, car cela élargit subtilement le sentiment de solitude dans les relations affectives.",
+    "Dica de conexão:": "Conseil de connexion :",
+    "Ofereça um chá de Camomila ou Capim-Limão morno antes de iniciar conversas de planos futuros para confortar os chakras do casal.": "Offrez une tisane tiède de Camomille ou de Citronnelle avant d'entamer des conversations sur des projets futurs pour réconforter les chakras du couple.",
+    "Sinergia & Ecossistema Social": "Synergie & Écosystème Social",
+    "Explore afinidades, acompanhe a atividade no ecossistema e conecte-se com pessoas em ressonância estelar com seu mapa.": "Explorez les affinités, suivez l'activité dans l'écosystème et connectez-vous avec des personnes en résonance stellaire avec votre carte.",
+    "Sinergia Ativa": "Synergie Active",
+    "Desenvolvimento Pessoal & Expansão": "Développement Personnel & Expansion",
+    "As lições, virtudes e hábitos sugeridos para curar bloqueios emocionais acumulados.": "Les leçons, vertus et habitudes suggérées pour guérir les blocages émotionnels accumulés.",
+    "Autodesenvolvimento": "Autodéveloppement",
+    "Habilidade Cósmica para desenvolver": "Compétence Cosmique à développer",
+    "Inteligência Compassiva & Aterramento de Ideais": "Intelligence Compatissante & Ancrage des Idéaux",
+    "Aprender a desacelerar a ventania dos planos de Aquário e ancorá-los na matéria saturnina.": "Apprendre à ralentir la tempête des plans du Verseau et à les ancrer dans la matière saturnienne.",
+    "Bloqueio Emocional a Trabalhar": "Blocage Émotionnel à Travailler",
+    "Medo irracional da rejeição que gera isolamentos de orgulho": "Peur irrationnelle du rejet qui engendre des isolements d'orgueil",
+    "Vencer a resistência silenciosa a precisar confessar falhas ou vulnerabilidades a parceiros.": "Vaincre la résistance silencieuse à devoir confesser ses défauts ou vulnérabilités à ses partenaires.",
+    "Virtude da Semana": "Vertu de la Semaine",
+    "Presença": "Présence",
+    "Lição da Semana:": "Leçon de la Semaine :",
+    "As conexões mais fortes e os negócios mais prósperos não florescem por pura inteligência racional, mas sim quando aceitamos abraçar nossa vulnerabilidade e resolver as pendências com paciência lúcida.": "Les connexions les plus fortes et les affaires les plus prospères ne fleurissent pas par pure intelligence rationnelle, mais plutôt lorsque nous acceptons d'embrasser notre vulnérabilité et de résoudre les problèmes en suspens avec une patience lucide.",
+    "Exercício Diário Recomendado:": "Exercice Quotidien Recommandé :",
+    "Reserve 10 minutos de manhã para respirar profundamente longe do celular, focando em pensamentos de gratidão sincera por três pessoas.": "Réservez 10 minutes le matin pour respirer profondément loin de votre téléphone portable, en vous concentrant sur des pensées de gratitude sincère pour trois personnes.",
+    "Sem histórico onírico cadastrado": "Aucun historique onirique enregistré",
+    "Sua mente subconsciente ainda aguarda a primeira sintonização. Vá até a aba superior": "Votre esprit subconscient attend encore la première harmonisation. Allez à l'onglet supérieur",
+    "Planeta": "Planète",
+    "use a ferramenta": "Utilisez l'outil",
+    "Oráculo dos Sonhos": "Oracle des Rêves",
+    "conte o que você andou sonhando e, à medida que a IA for interpretando seus sonhos, suas estatísticas e seu gráfico de evolução serão desenhados aqui automaticamente!": "Racontez ce que vous avez rêvé et, à mesure que l'IA interprétera vos rêves, vos statistiques et votre graphique d'évolution seront tracés ici automatiquement !",
+    "Sonho mais Recente": "Rêve le plus Récent",
+    "Elemento em Destaque": "Élément en Vedette",
+    "Símbolo decodificado": "Symbole Décrypté",
+    "Emoção Predominante": "Émotion Prédominante",
+    "Clima onírico sutil": "Ambiance Onirique Subtile",
+    "Tendência de Energia": "Tendance Énergétique",
+    "Frequência vibracional": "Fréquence Vibrationnelle",
+    "Positividade (1–5)": "Positivité (1–5)",
+    "Índice Energético (%)": "Indice Énergétique (%)",
+    "Frequências de Estado Subconsciente (Dados Reais)": "Fréquences d'État Subconscient (Données Réelles)",
+    "Frequência de Sonhos Lúcidos": "Fréquence des Rêves Lucides",
+    "Registros conscientes ou com alta frequência energética.": "Enregistrements conscients ou à haute fréquence énergétique.",
+    "Frequência de Sonhos Positivos": "Fréquence des Rêves Positifs",
+    "Sonhos reveladores com elevado índice de positividade Cósmica.": "Rêves révélateurs avec un indice élevé de positivité Cosmique.",
+    "evento": "événement",
+    "eventos": "événements",
+    "Capim-Limão Refrescante": "Citronnelle Rafraîchissante",
+    "Estimula os meridianos superiores do intelecto aquariano sem deixá-lo agitado.": "Stimule les méridiens supérieurs de l'intellect aquarien sans l'agiter.",
+    "Sândalo Puro ou Alecrim": "Santal Pur ou Romarin",
+    "Excelente para dissipar ondas eletromagnéticas estressantes do celular ou computador.": "Excellent pour dissiper les ondes électromagnétiques stressantes du téléphone portable ou de l'ordinateur.",
+    "Lírio da Paz ou Espada": "Lis de la Paix ou Plante Serpent",
+    "Purifica os canais sutis do ar e ancora o fluxo realizador de Saturno (Caminho 8).": "Purifie les canaux subtils de l'air et ancre le flux réalisateur de Saturne (Chemin 8).",
+    "Canto Leste (Nascer do Sol) de sua sala de estar": "Coin Est (Lever du Soleil) de votre salon",
+    "Ambiente ideal para alongamentos e leitura astrológica matinal rápida.": "Environnement idéal pour les étirements et une lecture astrologique matinale rapide.",
+    "Lilás Lavanda ou Violeta": "Lilas Lavande ou Violet",
+    "Harmoniza o sono profundo e facilita o despertar da memória no Cofre de Sonhos.": "Harmonise le sommeil profond et facilite l'éveil de la mémoire dans le Coffre des Rêves.",
+    "Azul Índigo ou Verde Menta": "Bleu Indigo ou Vert Menthe",
+    "Eleva a clareza analítica durante reuniões complexas e debates de metas corporativas.": "Accroît la clarté analytique lors des réunions complexes et des débats sur les objectifs d'entreprise.",
+    "Integração Android": "Intégration Android",
+    "Instalar o Portal Órbita no Celular": "Installer le Portail Orbita sur Mobile",
+    "Baixe o APK premium oficial ou sintonize o aplicativo instantâneo via PWA.": "Téléchargez l'APK premium officiel ou configurez l'application instantanée via PWA.",
+    "Método 1: APK Android Nativo": "Méthode 1 : APK Android Natif",
+    "Este é o instalador direto para o seu dispositivo Android. Ele carrega as funções astrológicas e sincroniza sua mandala em tempo de execução nativa.": "Ceci est l'installateur direct pour votre appareil Android. Il charge les fonctions astrologiques et synchronise votre mandala en exécution native.",
+    "Arquivo:": "Fichier :",
+    "Tamanho:": "Taille :",
+    "Segurança:": "Sécurité :",
+    "Verificado por SHA256": "Vérifié par SHA256",
+    "O download do arquivo APK foi iniciado! Caso seu navegador pergunte, confirme e permita fontes desconhecidas para prosseguir.": "Le téléchargement du fichier APK a démarré ! Si votre navigateur vous le demande, confirmez et autorisez les sources inconnues pour continuer.",
+    "Compatível com Android 8.0 ou superior. Requer liberação de instalação manual.": "Compatible avec Android 8.0 ou supérieur. Nécessite une autorisation d'installation manuelle.",
+    "Método 2: Aplicativo Instantâneo (PWA)": "Méthode 2 : Application Instantanée (PWA)",
+    "A tecnologia PWA permite adicionar o aplicativo direto na tela de início sem precisar instalar arquivos separados. É compatível com Android e iOS (iPhone).": "La technologie PWA permet d'ajouter l'application directement à l'écran d'accueil sans avoir à installer de fichiers séparés. Elle est compatible avec Android et iOS (iPhone).",
+    "Como Instalar no Celular:": "Comment installer sur mobile :",
+    "No Android / Chrome:": "Sur Android / Chrome :",
+    "\"Instalar aplicativo\"": "\"Installer l'application\"",
+    "\"Adicionar à tela inicial\"": "\"Ajouter à l'écran d'accueil\"",
+    "ou": "ou",
+    "No iPhone / Safari:": "Sur iPhone / Safari :",
+    "\"Adicionar à Tela de Início\"": "\"Ajouter à l'écran d'accueil\"",
+    "Esta aplicação é um PWA completo! Encontre a opção de instalar diretamente no menu de opções do seu navegador (ícone de computador ou adicionar à tela inicial) para rodar como um app nativo.": "Cette application est une PWA complète ! Trouvez l'option d'installation directement dans le menu d'options de votre navigateur (icône d'ordinateur ou ajouter à l'écran d'accueil) pour l'exécuter comme une application native.",
+    "Ativar Instrução PWA": "Activer l'instruction PWA",
+    "Não consome memória de armazenamento físico adicional. Atualiza em tempo real.": "Ne consomme pas de mémoire de stockage physique supplémentaire. Se met à jour en temps réel.",
+    "Sincronizar Celular Via QR Code / Compartilhar": "Synchroniser le mobile via QR Code / Partager",
+    "Aponte a câmera do seu celular para este código para abrir o Portal Órbita instantaneamente no seu celular ou acionar a instalação direta sem digitar endereços.": "Pointez l'appareil photo de votre téléphone sur ce code pour ouvrir instantanément le Portail Órbita sur votre mobile ou déclencher l'installation directe sans saisir d'adresses.",
+    "Copiar Link do App": "Copier le lien de l'application",
+    "Link do Portal Órbita copiado para o seu clipboard! Compartilhe o link com familiares e amigos.": "Lien du Portail Órbita copié dans votre presse-papiers ! Partagez le lien avec vos proches et amis.",
+    "Recurso de compartilhamento nativo indisponível. O link do aplicativo foi copiado para a área de transferência!": "Fonction de partage native indisponible. Le lien de l'application a été copié dans le presse-papiers !",
+    "Enviar via WhatsApp": "Envoyer via WhatsApp",
+    "🛡️ Informações Úteis de Instalação e Distribuição Independente": "🛡️ Informations utiles sur l'installation et la distribution indépendante",
+    "Sendo uma plataforma de sabedoria avançada e criptografia astro-quântica, o APK do **Portal Órbita** é distribuído de forma independente e segura fora das lojas oficiais corporativas. Isso garante absoluta privacidade dos seus dados e integridade de suas consultas com os arcanos do Tarot e a IA Orbia. Ao ativar o APK, lembre-se de habilitar e autorizar o parâmetro \"Instalação de Fontes Desconhecidas\" nas configurações de segurança do seu dispositivo. É totalmente seguro e livre de vírus.": "En tant que plateforme de sagesse avancée et de cryptographie astro-quantique, l'APK du **Portal Órbita** est distribué de manière indépendante et sécurisée en dehors des boutiques corporatives officielles. Cela garantit une confidentialité absolue de vos données et l'intégrité de vos consultations avec les arcanes du Tarot et l'IA Orbia. Lors de l'activation de l'APK, n'oubliez pas d'activer et d'autoriser le paramètre « Installation de sources inconnues » dans les paramètres de sécurité de votre appareil. C'est entièrement sûr et sans virus.",
+    "Por": "Par",
+    "Concluir Leitura": "Terminer la lecture",
+    "Concluiu": "Terminé",
+    "Amuletos Recomendados": "Amulettes Recommandées",
+    "Use um **Escarabeu de Lápis-Lazúli** posicionado na bolsa ou carteira de investimentos para guiar suas ações práticas rumo à consolidação do Caminho 8.": "Utilisez un **Scarabée en Lapis-Lazuli** placé dans votre sac ou votre portefeuille d'investissements pour guider vos actions pratiques vers la consolidation du Chemin 8.",
+    "O Ar governa sua matriz de": "L'Air gouverne votre matrice de",
+    "Aquário": "Verseau",
+    "Traz velocidade de raciocínio, intuição aberta e facilidade para propor soluções de negócios. Alinhe seu elemento acendendo sândalo logo pela manhã e abrindo as janelas do quarto.": "Apporte rapidité de raisonnement, intuition ouverte et facilité à proposer des solutions d'affaires. Alignez votre élément en allumant de l'encens de santal tôt le matin et en ouvrant les fenêtres de la chambre.",
+    "Lápis-Lazúli:": "Lapis-Lazuli :",
+    "Estimula intuição do cérebro superior e protege vias oníricas superiores.": "Stimule l'intuition du cerveau supérieur et protège les voies oniriques supérieures.",
+    "Selenita:": "Sélénite :",
+    "Limpa poeiras de pensamentos reativos e dispersão acumulada.": "Nettoie les poussières de pensées réactives et la dispersion accumulée.",
+    "Símbolos Ativos": "Symboles Actifs",
+    "O": "Le",
+    "Heptagrama Sagrado (Estrela de Sete Pontas)": "Heptagramme Sacré (Étoile à Sept Branches)",
+    "soterra energias de fadiga celular e atua como escudo áurico nas terças-feiras de negócios arriscados.": "enfouit les énergies de fatigue cellulaire et agit comme un bouclier aurique les mardis d'affaires risquées.",
+    "Recomendação Estelar de Joia de Poder": "Recommandation Stellaire de Bijou de Pouvoir",
+    "Recomendamos o uso de um": "Nous recommandons l'usage d'un",
+    "Colar de Lápis-Lazúli puro em Prata": "Collier en Lapis-Lazuli pur et Argent",
+    "ou um": "ou un",
+    "Anel de Pirita ou Sodalita": "Bague en Pyrite ou Sodalite",
+    "posicionado no dedo indicador para canalizar de forma sólida o magnetismo materializador do seu Caminho de Vida 8.": "positionné sur l'index pour canaliser solidement le magnétisme matérialisateur de votre Chemin de Vie 8.",
+    "Ambiente Físico": "Environnement Physique",
+    "Radar de oportunidades diárias": "Radar d'opportunités quotidiennes",
+    "O Momento Atual": "Le Moment Actuel",
+    "Clique em cada área para obter direcionamento astrológico de aproveitamento das tendências hoje.": "Cliquez sur chaque zone pour obtenir des conseils astrologiques afin de saisir les tendances d'aujourd'hui.",
+    "Selecione filtros de atividades para vibrar e fazer brilhar os dias indicativos do mês de": "Sélectionnez des filtres d'activités pour faire vibrer et briller les jours indicatifs du mois de",
+    "Grade de Datas (Clique em um dia para ler os detalhes):": "Grille de Dates (Cliquez sur un jour pour lire les détails) :",
+    "Filtros de Harmonização e Atividades:": "Filtres d'Harmonisation et d'Activités :",
+    "Aspectos Planetários do Dia:": "Aspects Planétaires du Jour :",
+    "Trânsito Celeste:": "Transit Céleste :",
+    "Nível Energético": "Niveau Énergétique",
+    "Áreas de Atenção:": "Zones d'Attention :",
+    "Oportunidades observadas:": "Opportunités observées :",
+    "Desafios projetados:": "Défis projetés :",
+    "Conselho Estratégico:": "Conseil Stratégique :",
+    "Alerta de Período": "Alerte de Période",
+    "Mensagem do seu Mapa:": "Message de votre Carte :",
+    "Ritual de Potencialização": "Rituel de Potentiation",
+    "Seu mapa de forças, proteção e ressonâncias para atravessar o mês de": "Votre carte des forces, de la protection et des résonances pour traverser le mois de",
+    "em segurança vibracional.": "en sécurité vibrationnelle.",
+    "Painel do Mês": "Tableau de Bord du Mois",
+    "Mês Ativo": "Mois Actif",
+    "Palavra-Chave do Mês": "Mot-Clé du Mois",
+    "Símbolo Favorável": "Symbole Favorable",
+    "Amuleto Favorável": "Amulette Favorable",
+    "Número da Sorte": "Numéro de Chance",
+    "Cor Favorável": "Couleur Favorable",
+    "Ambiente Favorável": "Environnement Favorable",
+    "Atividade Favorável": "Activité Favorable",
+    "Desafio Principal do Mês": "Défi Principal du Mois",
+    "Oportunidade Principal do Mês": "Opportunité Principale du Mois",
+    "Energia Dominante": "Énergie Dominante",
+    "O que evitar este mês": "Ce qu'il faut éviter ce mois-ci",
+    "Melhor Área de Foco": "Meilleure Zone de Focalisation",
+    "Frase de Poder de": "Phrase de Pouvoir de",
+    "EXPANSÃO SUTIL": "EXPANSION SUBTILE",
+    "Cresça de forma diplomática respeitando os canais de silêncio do seu próprio ser.": "Développez-vous diplomatiquement en respectant les canaux de silence de votre propre être.",
+    "Heptagrama Sagrado (⭐️)": "Heptagramme Sacré (⭐️)",
+    "Representa os sete caminhos de proteção que selam seu campo energético áurico.": "Représente les sept chemins de protection qui scellent votre champ énergétique aurique.",
+    "Escarabeu de Lápis-Lazúli": "Scarabée de Lapis-Lazuli",
+    "Atua na proteção física, facilitando transações e banindo a exaustão acumulada.": "Agit sur la protection physique, facilite les transactions et bannit l'épuisement accumulé.",
+    "Conecta seu Caminho de Vida com a energia realizadora do planeta Saturno.": "Connecte votre Chemin de Vie à l'énergie réalisatrice de la planète Saturne.",
+    "Azul Cobalto Real": "Bleu Cobalt Royal",
+    "Promove serenidade mental no elemento Ar, eliminando dispersão cognitiva excessiva.": "Favorise la sérénité mentale dans l'élément Air, éliminant la dispersion cognitive excessive.",
+    "Bibliotecas ou Jardins de Lago": "Bibliothèques ou Jardins Lacustres",
+    "Fomenta a absorção silenciosa de conhecimento e a desaceleração cardíaca.": "Favorise l'absorption silencieuse du savoir et la décélération cardiaque.",
+    "Meditação com Registro Escrito": "Méditation avec Registre Écrit",
+    "Escrever logo cedo no diário ajuda o cérebro de Aquário a não saturar de planos.": "Écrire tôt le matin dans un journal aide le cerveau du Verseau à ne pas saturer de plans.",
+    "Dispersão e Excesso de Projetos Inacabados": "Dispersion et Excès de Projets Inachevés",
+    "Cuidado para não rascunhar 15 rascunhos de negócios e não consolidar nenhum. O Caminho de Vida 8 exige a disciplina prática de Saturno para que as finanças sintonizem.": "Veillez à ne pas ébaucher 15 projets d'affaires sans en consolider aucun. Le Chemin de Vie 8 exige la discipline pratique de Saturne pour que les finances s'harmonisent.",
+    "Negócios Inteligentes & Mentoria de Conhecimento": "Affaires Intelligentes & Mentorat de Connaissance",
+    "Sua matriz original brilha ao gerar novos métodos de ensino ou infoprodutos digitais. Não tenha medo de monetizar seu discernimento.": "Votre matrice originale brille en générant de nouvelles méthodes d'enseignement ou des infoproduits numériques. N'ayez pas peur de monétiser votre discernement.",
+    "Ar Ativo / Ideais Coletivos": "Air Actif / Idéaux Collectifs",
+    "Força de Aquário vibrando na casa das grandes descobetas e alinhamento.": "Force du Verseau vibrant dans la maison des grandes découvertes et de l'alignement.",
+    "Assinar contratos e debater nas redes sociais por impulsividade": "Signer des contrats et débattre sur les réseaux sociaux par impulsivité",
+    "Aguarde transitar Mercúrio antes de fazer aportes financeiros robustos ou mandar mensagens reativas à noite das quais pode se arrepender.": "Attendez que Mercure transite avant d'effectuer des apports financiers robustes ou d'envoyer des messages réactifs le soir que vous pourriez regretter.",
+    "Estudos e Consolidamento Financeiro": "Études et Consolidation Financière",
+    "Direcione sua ressonância celular para consolidar sua carteira de investimentos e aprofundar seus estudos em astrologia sutil e inteligência.": "Dirigez votre résonance cellulaire pour consolider votre portefeuille d'investissements et approfondir vos études en astrologie subtile et en intelligence.",
+    "Eu canalizo a originalidade libertadora do Ar e a estrutura firme de Saturno para manifestar a abundância na matéria de forma sutil.": "Je canalise l'originalité libératrice de l'Air et la structure ferme de Saturne pour manifester l'abondance dans la matière de manière subtile.",
+    "Todos os Dias": "Tous les Jours",
+    "Produtividade": "Productivité",
+    "Descanso": "Repos",
+    "Família": "Famille",
+    "Encontros": "Rencontres",
+    "Diversão": "Divertissement",
+    "Entrevistas": "Entretiens",
+    "Vendas": "Ventes",
+    "Investimentos": "Investissements",
+    "Viagens": "Voyages",
+    "Mudanças": "Changements",
+    "Iniciar Projetos": "Démarrer des Projets",
+    "Assinar Contratos": "Signer des Contrats",
+    "Conversas Difíceis": "Conversations Difficiles",
+    "Estudos": "Études",
+    "Exercícios Físicos": "Exercices Physiques",
+    "Meditação": "Méditation",
+    "Espiritualidade": "Spiritualité",
+    "Compras Importantes": "Achats Importants",
+    "Oportunidades de ganhos secundários intelectuais sob ar ativo.": "Opportunités de gains intellectuels secondaires sous air actif.",
+    "O trânsito atual favorece a formatação de serviços de mentoria ou rascunhos de propostas comerciais. Fique atento a propostas nas terças ou quintas-feiras.": "Le transit actuel favorise la formalisation de services de mentorat ou l'élaboration de brouillons de propositions commerciales. Restez attentif aux propositions les mardis ou jeudis.",
+    "Magnetismo em alta, facilitando conexões profundas e românticas.": "Magnétisme élevé, facilitant les connexions profondes et romantiques.",
+    "Com Vênus emanando trígonos estelares, desfaça os muros analíticos e compartilhe desejos sinceros. Sexta-feira à noite é o melhor período para conversas afetivas.": "Avec Vénus émanant des trigones stellaires, abattez les murs analytiques et partagez vos désirs sincères. Le vendredi soir est la meilleure période pour les conversations affectives.",
+    "Retenção intelectual extraordinária e foco linear ativado.": "Rétention intellectuelle extraordinaire et focalisation linéaire activée.",
+    "Sua mente possui uma facilidade única hoje para absorver conceitos metafísicos, matemáticos e científicos. Ótimo dia para devorar livros ou rascunhar códigos.": "Votre esprit possède aujourd'hui une facilité unique à absorber les concepts métaphysiques, mathématiques et scientifiques. Excellente journée pour dévorer des livres ou esquisser des codes.",
+    "Capacidade de estruturação mecânica e conclusão de pendências.": "Capacité de structuration mécanique et d'achèvement des tâches en suspens.",
+    "A influência do Caminho de Vida 8 ressoa para estabilizar as tarefas administrativas do seu negócio. Execute sem procrastinar.": "L'influence du Chemin de Vie 8 résonne pour stabiliser les tâches administratives de votre entreprise. Exécutez-les sans procrastiner.",
+    "Canal mental de ideias originais e soluções inovadoras fluido.": "Canal mental d'idées originales et de solutions innovantes fluide.",
+    "Não filtre seus insights à primeira vista. Deixe o ar soprar novas ideias sem compromisso no papel de rascunho.": "Ne filtrez pas vos intuitions au premier coup d'œil. Laissez l'air insuffler de nouvelles idées sans engagement sur le papier brouillon.",
+    "Facilidade para gerar engajamento em causas sociais e projetos coletivos.": "Facilité à générer de l'engagement dans les causes sociales et les projets collectifs.",
+    "Entre em contato com mentores ou parceiros adormecidos. Compartilhar ideais éticos fortalece o Sol em Aquário.": "Entrez en contact avec des mentors ou des partenaires \"dormants\". Partager des idéaux éthiques renforce le Soleil en Verseau.",
+    "Frequência onírica aberta e trânsito favorável a rituais astrológicos.": "Fréquence onirique ouverte et transit favorable aux rituels astrologiques.",
+    "Medite com cristais de Sodalita ou Selenita. Suas conexões áuricas com esferas superiores estão extremamente receptivas hoje.": "Méditez avec des cristaux de Sodalite ou de Sélénite. Vos connexions auriques avec les sphères supérieures sont extrêmement réceptives aujourd'hui.",
+    "dinheiro": "argent",
+    "amor": "amour",
+    "estudos": "études",
+    "trabalho": "travail",
+    "criatividade": "créativité",
+    "networking": "réseautage",
+    "espiritualidade": "spiritualité",
+    "Área focada": "Domaine ciblé",
+    "Conselho Especial Hoje": "Conseil Spécial du Jour",
+    "Foco Ativo": "Focalisation Active",
+    "Coloque um guardanapo azul no bolso esquerdo ou use caneta de tinta preta para fixar as ações tomadas agora sob a influência desta vibração.": "Placez une serviette bleue dans votre poche gauche ou utilisez un stylo à encre noire pour ancrer les actions entreprises sous l'influence de cette vibration.",
+    "Sendo uma plataforma de sabedoria avançada e criptografia astro-quântica, o APK do <strong>Portal Órbita</strong> é distribuído de forma independente e segura fora das lojas oficiais corporativas. Isso garante absoluta privacidade dos seus dados e integridade de suas consultas com os arcanos do Tarot e a IA Orbia. Ao ativar o APK, lembre-se de habilitar e autorizar o parâmetro \"Instalação de Fontes Desconhecidas\" nas configurações de segurança do seu dispositivo. É totalmente seguro e livre de vírus.": "En tant que plateforme de sagesse avancée et de cryptographie astro-quantique, l'APK du <strong>Portal Órbita</strong> est distribué de manière indépendante et sécurisée en dehors des magasins officiels d'entreprises. Cela garantit une confidentialité absolue de vos données et l'intégrité de vos consultations avec les arcanes du Tarot et l'IA Orbia. Lors de l'activation de l'APK, n'oubliez pas d'activer et d'autoriser le paramètre \"Installation de sources inconnues\" dans les paramètres de sécurité de votre appareil. C'est totalement sûr et sans virus."
+  },
+  "de": {
+    "Você": "Du",
+    "Incidentes de Pesadelos": "Albtraum-Vorfälle",
+    "Frequência de manifestação de medos primitivos ou repouso sob tensão.": "Häufigkeit von Urängsten oder Ruhe unter Spannung.",
+    "Reconhecimento de Padrões Reais de Inteligência Onírica": "Erkennung von Mustern echter Traumintelligenz",
+    "Melhor Aroma da Semana": "Bestes Aroma der Woche",
+    "Melhor Incenso Sugerido": "Empfohlener Weihrauch",
+    "Melhor Planta Recomendada": "Beste empfohlene Pflanze",
+    "Melhor Ambiente da Casa": "Beste Zimmerecke",
+    "Cor recomendada no Quarto": "Empfohlene Schlafzimmerfarbe",
+    "Cor recomendada no Escritório": "Empfohlene Bürofarbe",
+    "Artigo de Saber": "Wissensartikel",
+    "Definição Planetária": "Planetarische Definition",
+    "Planeta Regente": "Regierender Planet",
+    "Elemento": "Element",
+    "Características / Traços": "Eigenschaften / Merkmale",
+    "Previsão Cósmica (Horóscopo)": "Kosmische Prognose (Horokop)",
+    "Energia Cósmica da Casa & Harmonização": "Kosmische Hausenergie & Harmonisierung",
+    "Dicas sintonizadas para equilibrar o seu ecossistema físico domiciliar e escritório com seu mapa.": "Abgestimmte Tipps, um Ihr physisches Zuhause und Ihr Bürosystem mit Ihrer Karte in Einklang zu bringen.",
+    "Olá, meu caro buscador stelar! Eu sou OSÍRIS, seu mentor astrológico supremo e guia de cura energética. Estou em plena sintonia com suas frequências cósmicas de hoje para alinhar seu dharma e afastar de forma precisa as negatividades kármicas. O que você gostaria de desvendar no momento? Me pergunte sobre o clima, biorritmo celular ou seus sonhos profundos.": "Hallo, mein lieber Sternensuchender! Ich bin OSIRIS, Ihr höchster astrologischer Mentor und Führer für Energieheilung. Ich bin heute in voller Übereinstimmung mit Ihren kosmischen Frequenzen, um Ihr Dharma auszurichten und karmische Negativitäten präzise abzuwehren. Was möchten Sie gerade enthüllen? Fragen Sie mich nach dem Wetter, dem zellulären Biorhythmus oder Ihren tiefen Träumen.",
+    "✦ Osíris está sintonizando energias...": "✦ Osiris stimmt Energien ab...",
+    "Pergunte ao Osíris sobre seus trânsitos, clima ou sonhos de hoje...": "Fragen Sie Osiris nach Ihren heutigen Transiten, dem Wetter oder Ihren Träumen...",
+    "Desculpe, sinto uma instabilidade temporária nas esferas celestes. Mas recorde: a força solar brilha firme em sua alma hoje.": "Entschuldigen Sie, ich spüre eine vorübergehende Instabilität in den Himmelskugeln. Doch denken Sie daran: Die Sonnenkraft strahlt heute fest in Ihrer Seele.",
+    "Agora": "Jetzt",
+    "XP Acumulado:": "Gesammelte EP:",
+    "Missões Diárias Cósmicas": "Kosmische Tagesmissionen",
+    "Cumpra os pequenos gestos do dia para consolidar o score celestial.": "Erfüllen Sie die kleinen Gesten des Tages, um die himmlische Punktzahl zu festigen.",
+    "Benefício ao cumprir:": "Vorteil bei Erfüllung:",
+    "Missões da Semana (Retenção Ativa)": "Wochenmissionen (Aktive Bindung)",
+    "Principais metas desta semana para impulsionar conexões e estancar vazos de capital.": "Hauptziele dieser Woche, um Verbindungen zu fördern und Kapitalabflüsse zu stoppen.",
+    "A conclusão semanal das missões estabiliza seu score material e clareia o Sol em Aquário.": "Der wöchentliche Abschluss der Missionen stabilisiert Ihre materielle Punktzahl und klärt die Sonne im Wassermann.",
+    "Suas bênçãos e pontuações semanais foram integradas ao seu mapa de evolução pessoal!": "Ihre wöchentlichen Segnungen und Punktzahlen wurden in Ihre persönliche Evolutionskarte integriert!",
+    "Resgatar Recompensas Semanais": "Wöchentliche Belohnungen einlösen",
+    "Ativo Semana": "Aktive Woche",
+    "Conselhos & Mensagem da Semana": "Ratschläge & Wochenbotschaft",
+    "Diretrizes canalizadas para governar suas decisões sintonizadas com o Solstício.": "Kanalisierte Richtlinien, um Ihre Entscheidungen im Einklang mit der Sonnenwende zu lenken.",
+    "Conselho Principal": "Hauptberatung",
+    "Dê vazão rápida aos seus insights intelectuais e rascunhos. Acumular dezenas de planos na mente aérea sem dar passos de conclusão prática satura seu campo vital, gerando fadiga áurica.": "Geben Sie Ihren intellektuellen Einsichten und Entwürfen schnell freien Lauf. Das Ansammeln dutzender Pläne im luftigen Geist, ohne praktische Abschlussschritte zu unternehmen, sättigt Ihr vitales Feld und erzeugt aurische Ermüdung.",
+    "Alerta Principal": "Hauptwarnung",
+    "Cuidado com dispersões financeiras compensatórias na terça e na quarta-feira à noite. Trânsito lunar propício a gastos de impulso mental.": "Vorsicht vor kompensatorischen finanziellen Streuungen am Dienstag- und Mittwochabend. Ein Mondtransit begünstigt Ausgaben aus mentalem Impuls.",
+    "Oportunidade Principal": "Hauptchance",
+    "Conversas ativas com velhas amizades de ideais aquarianos abrem conexões inesperadas para estruturar novas fontes de capital.": "Aktive Gespräche mit alten Freunden aquarischer Ideale eröffnen unerwartete Verbindungen, um neue Kapitalquellen zu strukturieren.",
+    "Palavra de Proteção": "Schutzwort",
+    "ÂNCORE-SE": "ANKERN SIE SICH",
+    "Repita mentalmente ao acordar para banir distrações desordenadas.": "Wiederholen Sie mental beim Aufwachen, um ungeordnete Ablenkungen zu verbannen.",
+    "Prosperidade & Capital Financeiro": "Wohlstand & Finanzkapital",
+    "As emanações de abundância e fluxo de caixa sob a forte influência realizadora do seu Caminho de Vida": "Die Ausstrahlungen von Fülle und Cashflow unter dem starken, verwirklichenden Einfluss Ihres Lebensweges",
+    "Capital Ativo": "Aktives Kapital",
+    "Melhor Dia Financeiro da Semana": "Bester Finanztag der Woche",
+    "Quinta-Feira (Trânsito Júpiter)": "Donnerstag (Jupiter-Transit)",
+    "Segunda-Feira (Trânsito Lunar favorável)": "Montag (Günstiger Mondtransit)",
+    "Melhores Dias Financeiros do Mês": "Beste Finanztage des Monats",
+    "de": "von",
+    "Parâmetros Cromáticos da Riqueza": "Chromatische Parameter des Reichtums",
+    "Cor:": "Farbe :",
+    "Número da Fortuna:": "Glückszahl :",
+    "Energia do Dinheiro Hoje": "Geldenergie Heute",
+    "Oportunidades Financeiras Observadas:": "Beobachtete Finanzielle Gelegenheiten :",
+    "Conselho de abundância:": "Rat für Fülle :",
+    "Amor & Romance": "Liebe & Romantik",
+    "Vibrações afetivas, afinidades mútuas e caminhos para sintonizar a cumplicidade do coração.": "Affektive Schwingungen, gegenseitige Affinitäten und Wege, die Komplizenschaft des Herzens einzustimmen.",
+    "Amanhã": "Morgen",
+    "Energia Amorosa da Semana": "Wöchentliche Liebesenergie",
+    "Ambiente propício a sentimentos leves e trocas refinadas mediadas pelo intelecto.": "Eine Umgebung, die leichten Gefühlen und raffinierten, vom Intellekt vermittelten Austauschen förderlich ist.",
+    "Melhores Dias para Afeto": "Beste Tage für Zuneigung",
+    "ENCONTROS": "BEGEGNUNGEN",
+    "Sexta-Feira": "Freitag",
+    "CONVERSAS ROMÂNTICAS": "ROMANTISCHE GESPRÄCHE",
+    "Quarta-Feira": "Mittwoch",
+    "RECONCILIAÇÕES": "VERSÖHNUNGEN",
+    "Sábado Tarde": "Samstag Nachmittag",
+    "CONHECER PESSOAS": "MENSCHEN KENNENLERNEN",
+    "Terça-Feira": "Dienstag",
+    "Pontos de Atenção no Amor": "Aufmerksamkeitspunkte in der Liebe",
+    "Evite racionalizar sentimentos instintivos em demasia. Seu par precisa de acolhimento físico e intimidade calorosa, não de debates e silogismos mecânicos.": "Vermeiden Sie es, instinktive Gefühle zu überrationalisieren. Ihr Partner braucht körperliche Geborgenheit und herzliche Intimität, keine mechanischen Debatten und Syllogismen.",
+    "Em momentos de discussão, evite o sumiço silencioso ou distanciamento súbito de Aquário, pois isso expande sutilmente o senso de solidão nos afetos.": "In Diskussionsmomenten vermeiden Sie das stille Verschwinden oder die plötzliche Distanzierung des Wassermanns, da dies subtil das Gefühl der Einsamkeit in Beziehungen verstärkt.",
+    "Dica de conexão:": "Verbindungstipp:",
+    "Ofereça um chá de Camomila ou Capim-Limão morno antes de iniciar conversas de planos futuros para confortar os chakras do casal.": "Bieten Sie einen warmen Kamillen- oder Zitronengrastee an, bevor Sie Gespräche über Zukunftspläne beginnen, um die Chakren des Paares zu beruhigen.",
+    "Sinergia & Ecossistema Social": "Synergie & Soziales Ökosystem",
+    "Explore afinidades, acompanhe a atividade no ecossistema e conecte-se com pessoas em ressonância estelar com seu mapa.": "Erkunden Sie Affinitäten, verfolgen Sie die Aktivität im Ökosystem und verbinden Sie sich mit Menschen, die in stellarer Resonanz mit Ihrer Karte stehen.",
+    "Sinergia Ativa": "Aktive Synergie",
+    "Desenvolvimento Pessoal & Expansão": "Persönliche Entwicklung & Expansion",
+    "As lições, virtudes e hábitos sugeridos para curar bloqueios emocionais acumulados.": "Die Lektionen, Tugenden und Gewohnheiten, die zur Heilung angesammelter emotionaler Blockaden vorgeschlagen werden.",
+    "Autodesenvolvimento": "Selbstentwicklung",
+    "Habilidade Cósmica para desenvolver": "Kosmische Fähigkeit zu entwickeln",
+    "Inteligência Compassiva & Aterramento de Ideais": "Mitfühlende Intelligenz & Erdung von Idealen",
+    "Aprender a desacelerar a ventania dos planos de Aquário e ancorá-los na matéria saturnina.": "Lernen Sie, den Sturm der Wassermann-Pläne zu verlangsamen und sie in der saturninischen Materie zu verankern.",
+    "Bloqueio Emocional a Trabalhar": "Emotionale Blockade zum Bearbeiten",
+    "Medo irracional da rejeição que gera isolamentos de orgulho": "Irrationale Angst vor Ablehnung, die Stolz-Isolationen erzeugt",
+    "Vencer a resistência silenciosa a precisar confessar falhas ou vulnerabilidades a parceiros.": "Die stille Abneigung überwinden, Fehler oder Schwachstellen gegenüber Partnern eingestehen zu müssen.",
+    "Virtude da Semana": "Tugend der Woche",
+    "Presença": "Präsenz",
+    "Lição da Semana:": "Lektion der Woche:",
+    "As conexões mais fortes e os negócios mais prósperos não florescem por pura inteligência racional, mas sim quando aceitamos abraçar nossa vulnerabilidade e resolver as pendências com paciência lúcida.": "Die stärksten Verbindungen und die erfolgreichsten Geschäfte gedeihen nicht durch reine rationale Intelligenz, sondern wenn wir unsere Verletzlichkeit annehmen und offene Fragen mit klarer Geduld lösen.",
+    "Exercício Diário Recomendado:": "Empfohlene tägliche Übung:",
+    "Reserve 10 minutos de manhã para respirar profundamente longe do celular, focando em pensamentos de gratidão sincera por três pessoas.": "Nehmen Sie sich morgens 10 Minuten Zeit, um tief durchzuatmen, fernab vom Handy, und konzentrieren Sie sich auf aufrichtige Dankbarkeitsgedanken für drei Personen.",
+    "Sem histórico onírico cadastrado": "Kein Traumverlauf registriert",
+    "Sua mente subconsciente ainda aguarda a primeira sintonização. Vá até a aba superior": "Ihr Unterbewusstsein erwartet noch die erste Einstimmung. Gehen Sie zum oberen Reiter",
+    "Planeta": "Planet",
+    "use a ferramenta": "Nutzen Sie das Werkzeug",
+    "Oráculo dos Sonhos": "Traum-Orakel",
+    "conte o que você andou sonhando e, à medida que a IA for interpretando seus sonhos, suas estatísticas e seu gráfico de evolução serão desenhados aqui automaticamente!": "Erzählen Sie, wovon Sie geträumt haben, und während die KI Ihre Träume interpretiert, werden Ihre Statistiken und Ihr Entwicklungsdiagramm hier automatisch erstellt!",
+    "Sonho mais Recente": "Neuester Traum",
+    "Elemento em Destaque": "Hervorgehobenes Element",
+    "Símbolo decodificado": "Entschlüsseltes Symbol",
+    "Emoção Predominante": "Vorherrschende Emotion",
+    "Clima onírico sutil": "Subtiles Traumklima",
+    "Tendência de Energia": "Energietrend",
+    "Frequência vibracional": "Schwingungsfrequenz",
+    "Positividade (1–5)": "Positivität (1–5)",
+    "Índice Energético (%)": "Energieindex (%)",
+    "Frequências de Estado Subconsciente (Dados Reais)": "Frequenzen des Unterbewusstseins (Reale Daten)",
+    "Frequência de Sonhos Lúcidos": "Häufigkeit Luzider Träume",
+    "Registros conscientes ou com alta frequência energética.": "Bewusste Aufzeichnungen oder mit hoher energetischer Frequenz.",
+    "Frequência de Sonhos Positivos": "Häufigkeit Positiver Träume",
+    "Sonhos reveladores com elevado índice de positividade Cósmica.": "Offenbarende Träume mit einem hohen Index kosmischer Positivität.",
+    "evento": "Ereignis",
+    "eventos": "Ereignisse",
+    "Capim-Limão Refrescante": "Erfrischendes Zitronengras",
+    "Estimula os meridianos superiores do intelecto aquariano sem deixá-lo agitado.": "Stimuliert die oberen Meridiane des Wassermann-Intellekts, ohne ihn zu erregen.",
+    "Sândalo Puro ou Alecrim": "Reines Sandelholz oder Rosmarin",
+    "Excelente para dissipar ondas eletromagnéticas estressantes do celular ou computador.": "Hervorragend, um stressige elektromagnetische Wellen von Handy oder Computer abzuleiten.",
+    "Lírio da Paz ou Espada": "Friedenslilie oder Bogenhanf",
+    "Purifica os canais sutis do ar e ancora o fluxo realizador de Saturno (Caminho 8).": "Reinigt die subtilen Luftkanäle und verankert den verwirklichenden Fluss des Saturn (Weg 8).",
+    "Canto Leste (Nascer do Sol) de sua sala de estar": "Ostecke (Sonnenaufgang) Ihres Wohnzimmers",
+    "Ambiente ideal para alongamentos e leitura astrológica matinal rápida.": "Ideale Umgebung für Dehnübungen und eine schnelle morgendliche astrologische Lektüre.",
+    "Lilás Lavanda ou Violeta": "Lavendelflieder oder Veilchen",
+    "Harmoniza o sono profundo e facilita o despertar da memória no Cofre de Sonhos.": "Harmonisiert den Tiefschlaf und erleichtert das Erwachen der Erinnerung im Traumtresor.",
+    "Azul Índigo ou Verde Menta": "Indigoblau oder Minzgrün",
+    "Eleva a clareza analítica durante reuniões complexas e debates de metas corporativas.": "Steigert die analytische Klarheit bei komplexen Besprechungen und Debatten über Unternehmensziele.",
+    "Integração Android": "Android-Integration",
+    "Instalar o Portal Órbita no Celular": "Portal Orbita auf dem Mobiltelefon installieren",
+    "Baixe o APK premium oficial ou sintonize o aplicativo instantâneo via PWA.": "Laden Sie die offizielle Premium-APK herunter oder richten Sie die Instant-App via PWA ein.",
+    "Método 1: APK Android Nativo": "Methode 1: Nativer Android-APK",
+    "Este é o instalador direto para o seu dispositivo Android. Ele carrega as funções astrológicas e sincroniza sua mandala em tempo de execução nativa.": "Dies ist der direkte Installer für Ihr Android-Gerät. Er lädt astrologische Funktionen und synchronisiert Ihr Mandala in nativer Laufzeit.",
+    "Arquivo:": "Datei:",
+    "Tamanho:": "Größe:",
+    "Segurança:": "Sicherheit:",
+    "Verificado por SHA256": "Verifiziert durch SHA256",
+    "O download do arquivo APK foi iniciado! Caso seu navegador pergunte, confirme e permita fontes desconhecidas para prosseguir.": "Der Download der APK-Datei wurde gestartet! Falls Ihr Browser Sie fragt, bestätigen Sie und erlauben Sie unbekannte Quellen, um fortzufahren.",
+    "Compatível com Android 8.0 ou superior. Requer liberação de instalação manual.": "Kompatibel mit Android 8.0 oder höher. Erfordert die Freigabe zur manuellen Installation.",
+    "Método 2: Aplicativo Instantâneo (PWA)": "Methode 2: Sofort-App (PWA)",
+    "A tecnologia PWA permite adicionar o aplicativo direto na tela de início sem precisar instalar arquivos separados. É compatível com Android e iOS (iPhone).": "Die PWA-Technologie ermöglicht das Hinzufügen der App direkt zum Startbildschirm, ohne separate Dateien installieren zu müssen. Sie ist mit Android und iOS (iPhone) kompatibel.",
+    "Como Instalar no Celular:": "Installation auf dem Mobiltelefon:",
+    "No Android / Chrome:": "Auf Android / Chrome:",
+    "\"Instalar aplicativo\"": "\"App installieren\"",
+    "\"Adicionar à tela inicial\"": "\"Zum Startbildschirm hinzufügen\"",
+    "ou": "oder",
+    "No iPhone / Safari:": "Auf iPhone / Safari:",
+    "\"Adicionar à Tela de Início\"": "\"Zum Home-Bildschirm hinzufügen\"",
+    "Esta aplicação é um PWA completo! Encontre a opção de instalar diretamente no menu de opções do seu navegador (ícone de computador ou adicionar à tela inicial) para rodar como um app nativo.": "Diese Anwendung ist eine vollständige PWA! Finden Sie die Option zur direkten Installation im Optionsmenü Ihres Browsers (Computersymbol oder zum Startbildschirm hinzufügen), um sie als native App auszuführen.",
+    "Ativar Instrução PWA": "PWA-Anleitung aktivieren",
+    "Não consome memória de armazenamento físico adicional. Atualiza em tempo real.": "Verbraucht keinen zusätzlichen physischen Speicherplatz. Aktualisiert sich in Echtzeit.",
+    "Sincronizar Celular Via QR Code / Compartilhar": "Mobiltelefon per QR-Code synchronisieren / Teilen",
+    "Aponte a câmera do seu celular para este código para abrir o Portal Órbita instantaneamente no seu celular ou acionar a instalação direta sem digitar endereços.": "Richten Sie die Kamera Ihres Mobiltelefons auf diesen Code, um das Portal Órbita sofort auf Ihrem Telefon zu öffnen oder die direkte Installation ohne Eingabe von Adressen auszulösen.",
+    "Copiar Link do App": "App-Link kopieren",
+    "Link do Portal Órbita copiado para o seu clipboard! Compartilhe o link com familiares e amigos.": "Portal Órbita Link wurde in Ihre Zwischenablage kopiert! Teilen Sie den Link mit Familie und Freunden.",
+    "Recurso de compartilhamento nativo indisponível. O link do aplicativo foi copiado para a área de transferência!": "Native Freigabefunktion nicht verfügbar. Der App-Link wurde in die Zwischenablage kopiert!",
+    "Enviar via WhatsApp": "Via WhatsApp senden",
+    "🛡️ Informações Úteis de Instalação e Distribuição Independente": "🛡️ Nützliche Informationen zur Installation und unabhängigen Verteilung",
+    "Sendo uma plataforma de sabedoria avançada e criptografia astro-quântica, o APK do **Portal Órbita** é distribuído de forma independente e segura fora das lojas oficiais corporativas. Isso garante absoluta privacidade dos seus dados e integridade de suas consultas com os arcanos do Tarot e a IA Orbia. Ao ativar o APK, lembre-se de habilitar e autorizar o parâmetro \"Instalação de Fontes Desconhecidas\" nas configurações de segurança do seu dispositivo. É totalmente seguro e livre de vírus.": "Als Plattform für fortgeschrittene Weisheit und astro-quantische Verschlüsselung wird die APK des **Portal Órbita** unabhängig und sicher außerhalb offizieller Unternehmens-Stores vertrieben. Dies garantiert absolute Privatsphäre Ihrer Daten und die Integrität Ihrer Konsultationen mit den Tarot-Arkanen und der Orbia-KI. Beim Aktivieren der APK denken Sie daran, den Parameter „Installation aus unbekannten Quellen“ in den Sicherheitseinstellungen Ihres Geräts zu aktivieren und zu autorisieren. Es ist absolut sicher und virenfrei.",
+    "Por": "Von",
+    "Concluir Leitura": "Lesung abschließen",
+    "Concluiu": "Abgeschlossen",
+    "Amuletos Recomendados": "Empfohlene Amulette",
+    "Use um **Escarabeu de Lápis-Lazúli** posicionado na bolsa ou carteira de investimentos para guiar suas ações práticas rumo à consolidação do Caminho 8.": "Tragen Sie einen **Lapislazuli-Skarabäus** in Ihrer Tasche oder Ihrem Anlageportfolio, um Ihre praktischen Schritte zur Festigung des Pfades 8 zu lenken.",
+    "O Ar governa sua matriz de": "Die Luft regiert Ihre Matrix von",
+    "Aquário": "Wassermann",
+    "Traz velocidade de raciocínio, intuição aberta e facilidade para propor soluções de negócios. Alinhe seu elemento acendendo sândalo logo pela manhã e abrindo as janelas do quarto.": "Bringt Denkgeschwindigkeit, offene Intuition und Leichtigkeit bei der Vorschlagserstellung für Geschäftslösungen. Richten Sie Ihr Element aus, indem Sie morgens Sandelholz anzünden und die Schlafzimmerfenster öffnen.",
+    "Lápis-Lazúli:": "Lapislazuli:",
+    "Estimula intuição do cérebro superior e protege vias oníricas superiores.": "Stimuliert die höhere Gehirnintuition und schützt höhere Traumwege.",
+    "Selenita:": "Selenit:",
+    "Limpa poeiras de pensamentos reativos e dispersão acumulada.": "Reinigt reaktive Gedankentrümmer und angesammelte Zerstreuung.",
+    "Símbolos Ativos": "Aktive Symbole",
+    "O": "Das",
+    "Heptagrama Sagrado (Estrela de Sete Pontas)": "Heptagramm (Siebenzackiger Stern)",
+    "soterra energias de fadiga celular e atua como escudo áurico nas terças-feiras de negócios arriscados.": "begräbt Energien zellulärer Ermüdung und wirkt als aurisches Schild an riskanten Geschäftsdienstagen.",
+    "Recomendação Estelar de Joia de Poder": "Stellare Empfehlung für Kraftschmuck",
+    "Recomendamos o uso de um": "Wir empfehlen die Verwendung eines",
+    "Colar de Lápis-Lazúli puro em Prata": "Halskette aus reinem Lapislazuli in Silber",
+    "ou um": "oder ein",
+    "Anel de Pirita ou Sodalita": "Pyrit- oder Sodalith-Ring",
+    "posicionado no dedo indicador para canalizar de forma sólida o magnetismo materializador do seu Caminho de Vida 8.": "am Zeigefinger positioniert, um den materialisierenden Magnetismus Ihres Lebenswegs 8 solide zu kanalisieren.",
+    "Ambiente Físico": "Physisches Umfeld",
+    "Radar de oportunidades diárias": "Tägliches Chancenradar",
+    "O Momento Atual": "Der aktuelle Moment",
+    "Clique em cada área para obter direcionamento astrológico de aproveitamento das tendências hoje.": "Klicken Sie auf jeden Bereich, um astrologische Hinweise zur Nutzung der heutigen Tendenzen zu erhalten.",
+    "Selecione filtros de atividades para vibrar e fazer brilhar os dias indicativos do mês de": "Wählen Sie Aktivitätsfilter, um die indikativen Tage des Monats zum Vibrieren und Strahlen zu bringen",
+    "Grade de Datas (Clique em um dia para ler os detalhes):": "Datumsraster (Klicken Sie auf einen Tag, um Details zu lesen):",
+    "Filtros de Harmonização e Atividades:": "Harmonisierungs- und Aktivitätsfilter:",
+    "Aspectos Planetários do Dia:": "Planetare Aspekte des Tages:",
+    "Trânsito Celeste:": "Himmlischer Transit:",
+    "Nível Energético": "Energieniveau",
+    "Áreas de Atenção:": "Aufmerksamkeitsbereiche:",
+    "Oportunidades observadas:": "Beobachtete Gelegenheiten:",
+    "Desafios projetados:": "Prognostizierte Herausforderungen:",
+    "Conselho Estratégico:": "Strategischer Rat:",
+    "Alerta de Período": "Perioden-Alarm",
+    "Mensagem do seu Mapa:": "Botschaft Ihrer Karte:",
+    "Ritual de Potencialização": "Potenzierungsritual",
+    "Seu mapa de forças, proteção e ressonâncias para atravessar o mês de": "Ihre Karte der Stärken, des Schutzes und der Resonanzen, um den Monat",
+    "em segurança vibracional.": "in vibrationaler Sicherheit.",
+    "Painel do Mês": "Monatsübersicht",
+    "Mês Ativo": "Aktiver Monat",
+    "Palavra-Chave do Mês": "Schlüsselwort des Monats",
+    "Símbolo Favorável": "Günstiges Symbol",
+    "Amuleto Favorável": "Günstiges Amulett",
+    "Número da Sorte": "Glückszahl",
+    "Cor Favorável": "Günstige Farbe",
+    "Ambiente Favorável": "Günstige Umgebung",
+    "Atividade Favorável": "Günstige Aktivität",
+    "Desafio Principal do Mês": "Haupt-Herausforderung des Monats",
+    "Oportunidade Principal do Mês": "Haupt-Gelegenheit des Monats",
+    "Energia Dominante": "Dominante Energie",
+    "O que evitar este mês": "Was diesen Monat zu vermeiden ist",
+    "Melhor Área de Foco": "Bester Schwerpunktbereich",
+    "Frase de Poder de": "Kraftsatz von",
+    "EXPANSÃO SUTIL": "SUBTILE EXPANSION",
+    "Cresça de forma diplomática respeitando os canais de silêncio do seu próprio ser.": "Wachsen Sie diplomatisch, indem Sie die Kanäle der Stille Ihres eigenen Seins respektieren.",
+    "Heptagrama Sagrado (⭐️)": "Heiliges Heptagramm (⭐️)",
+    "Representa os sete caminhos de proteção que selam seu campo energético áurico.": "Repräsentiert die sieben Schutzpfade, die Ihr aurisches Energiefeld versiegeln.",
+    "Escarabeu de Lápis-Lazúli": "Lapislazuli-Skarabäus",
+    "Atua na proteção física, facilitando transações e banindo a exaustão acumulada.": "Wirkt als physischer Schutz, erleichtert Transaktionen und verbannt angesammelte Erschöpfung.",
+    "Conecta seu Caminho de Vida com a energia realizadora do planeta Saturno.": "Verbindet Ihren Lebensweg mit der verwirklichenden Energie des Planeten Saturn.",
+    "Azul Cobalto Real": "Königliches Kobaltblau",
+    "Promove serenidade mental no elemento Ar, eliminando dispersão cognitiva excessiva.": "Fördert mentale Gelassenheit im Element Luft, indem es übermäßige kognitive Zerstreuung eliminiert.",
+    "Bibliotecas ou Jardins de Lago": "Bibliotheken oder Seegärten",
+    "Fomenta a absorção silenciosa de conhecimento e a desaceleração cardíaca.": "Fördert die stille Aufnahme von Wissen und die Herzverlangsamung.",
+    "Meditação com Registro Escrito": "Meditation mit schriftlicher Aufzeichnung",
+    "Escrever logo cedo no diário ajuda o cérebro de Aquário a não saturar de planos.": "Frühzeitig ins Tagebuch zu schreiben, hilft dem Wassermann-Gehirn, nicht mit Plänen zu übersättigen.",
+    "Dispersão e Excesso de Projetos Inacabados": "Zerstreuung und Übermaß an unvollendeten Projekten",
+    "Cuidado para não rascunhar 15 rascunhos de negócios e não consolidar nenhum. O Caminho de Vida 8 exige a disciplina prática de Saturno para que as finanças sintonizem.": "Achten Sie darauf, nicht 15 Geschäftsentwürfe zu skizzieren und keinen davon zu konsolidieren. Der Lebensweg 8 erfordert die praktische Disziplin des Saturn, damit sich die Finanzen einpendeln.",
+    "Negócios Inteligentes & Mentoria de Conhecimento": "Intelligente Geschäfte & Wissensmentoring",
+    "Sua matriz original brilha ao gerar novos métodos de ensino ou infoprodutos digitais. Não tenha medo de monetizar seu discernimento.": "Ihre ursprüngliche Matrix strahlt, wenn Sie neue Lehrmethoden oder digitale Infoprodukte generieren. Haben Sie keine Angst, Ihre Urteilsfähigkeit zu monetarisieren.",
+    "Ar Ativo / Ideais Coletivos": "Aktive Luft / Kollektive Ideale",
+    "Força de Aquário vibrando na casa das grandes descobetas e alinhamento.": "Kraft des Wassermanns schwingend im Haus der großen Entdeckungen und Ausrichtung.",
+    "Assinar contratos e debater nas redes sociais por impulsividade": "Verträge unterschreiben und in sozialen Netzwerken impulsiv debattieren",
+    "Aguarde transitar Mercúrio antes de fazer aportes financeiros robustos ou mandar mensagens reativas à noite das quais pode se arrepender.": "Warten Sie den Merkur-Transit ab, bevor Sie robuste Finanzbeiträge leisten oder nachts impulsive Nachrichten senden, die Sie später bereuen könnten.",
+    "Estudos e Consolidamento Financeiro": "Studien und Finanzielle Konsolidierung",
+    "Direcione sua ressonância celular para consolidar sua carteira de investimentos e aprofundar seus estudos em astrologia sutil e inteligência.": "Richten Sie Ihre Zellresonanz darauf aus, Ihr Anlageportfolio zu konsolidieren und Ihre Studien in subtiler Astrologie und Intelligenz zu vertiefen.",
+    "Eu canalizo a originalidade libertadora do Ar e a estrutura firme de Saturno para manifestar a abundância na matéria de forma sutil.": "Ich kanalisiere die befreiende Originalität der Luft und die feste Struktur des Saturn, um Fülle in der Materie auf subtile Weise zu manifestieren.",
+    "Todos os Dias": "Alle Tage",
+    "Produtividade": "Produktivität",
+    "Descanso": "Ruhe",
+    "Família": "Familie",
+    "Encontros": "Treffen",
+    "Diversão": "Spaß",
+    "Entrevistas": "Interviews",
+    "Vendas": "Verkäufe",
+    "Investimentos": "Investitionen",
+    "Viagens": "Reisen",
+    "Mudanças": "Veränderungen",
+    "Iniciar Projetos": "Projekte starten",
+    "Assinar Contratos": "Verträge unterschreiben",
+    "Conversas Difíceis": "Schwierige Gespräche",
+    "Estudos": "Studien",
+    "Exercícios Físicos": "Körperliche Übungen",
+    "Meditação": "Meditation",
+    "Espiritualidade": "Spiritualität",
+    "Compras Importantes": "Wichtige Anschaffungen",
+    "Oportunidades de ganhos secundários intelectuais sob ar ativo.": "Möglichkeiten für sekundäre intellektuelle Gewinne unter aktivem Äther.",
+    "O trânsito atual favorece a formatação de serviços de mentoria ou rascunhos de propostas comerciais. Fique atento a propostas nas terças ou quintas-feiras.": "Der aktuelle Transit begünstigt die Gestaltung von Mentoring-Diensten oder die Ausarbeitung von Geschäftsvorschlägen. Achten Sie auf Angebote dienstags oder donnerstags.",
+    "Magnetismo em alta, facilitando conexões profundas e românticas.": "Hoher Magnetismus, der tiefe und romantische Verbindungen fördert.",
+    "Com Vênus emanando trígonos estelares, desfaça os muros analíticos e compartilhe desejos sinceros. Sexta-feira à noite é o melhor período para conversas afetivas.": "Da Venus stellare Trigone aussendet, reißen Sie die analytischen Mauern nieder und teilen Sie aufrichtige Wünsche. Der Freitagabend ist die beste Zeit für gefühlvolle Gespräche.",
+    "Retenção intelectual extraordinária e foco linear ativado.": "Außergewöhnliche intellektuelle Aufnahmefähigkeit und linearer Fokus aktiviert.",
+    "Sua mente possui uma facilidade única hoje para absorver conceitos metafísicos, matemáticos e científicos. Ótimo dia para devorar livros ou rascunhar códigos.": "Ihr Geist besitzt heute eine einzigartige Leichtigkeit, metaphysische, mathematische und wissenschaftliche Konzepte zu absorbieren. Ein großartiger Tag, um Bücher zu verschlingen oder Codes zu entwerfen.",
+    "Capacidade de estruturação mecânica e conclusão de pendências.": "Fähigkeit zur mechanischen Strukturierung und zum Abschluss offener Aufgaben.",
+    "A influência do Caminho de Vida 8 ressoa para estabilizar as tarefas administrativas do seu negócio. Execute sem procrastinar.": "Der Einfluss des Lebensweges 8 resoniert, um die administrativen Aufgaben Ihres Geschäfts zu stabilisieren. Führen Sie sie ohne Zögern aus.",
+    "Canal mental de ideias originais e soluções inovadoras fluido.": "Mentaler Kanal für originelle Ideen und innovative Lösungen fließt reibungslos.",
+    "Não filtre seus insights à primeira vista. Deixe o ar soprar novas ideias sem compromisso no papel de rascunho.": "Filtern Sie Ihre Erkenntnisse nicht auf den ersten Blick. Lassen Sie den Äther ungezwungen neue Ideen auf dem Konzeptpapier einfließen.",
+    "Facilidade para gerar engajamento em causas sociais e projetos coletivos.": "Leichtigkeit, Engagement für soziale Anliegen und kollektive Projekte zu erzeugen.",
+    "Entre em contato com mentores ou parceiros adormecidos. Compartilhar ideais éticos fortalece o Sol em Aquário.": "Kontaktieren Sie ruhende Mentoren oder Partner. Das Teilen ethischer Ideale stärkt die Sonne im Wassermann.",
+    "Frequência onírica aberta e trânsito favorável a rituais astrológicos.": "Offene Traumfrequenz und günstiger Transit für astrologische Rituale.",
+    "Medite com cristais de Sodalita ou Selenita. Suas conexões áuricas com esferas superiores estão extremamente receptivas hoje.": "Meditieren Sie mit Sodalith- oder Selenitkristallen. Ihre aurischen Verbindungen zu höheren Sphären sind heute äußerst empfänglich.",
+    "dinheiro": "Geld",
+    "amor": "Liebe",
+    "estudos": "Studium",
+    "trabalho": "Arbeit",
+    "criatividade": "Kreativität",
+    "networking": "Networking",
+    "espiritualidade": "Spiritualität",
+    "Área focada": "Fokusbereich",
+    "Conselho Especial Hoje": "Besonderer Rat des Tages",
+    "Foco Ativo": "Aktiver Fokus",
+    "Coloque um guardanapo azul no bolso esquerdo ou use caneta de tinta preta para fixar as ações tomadas agora sob a influência desta vibração.": "Legen Sie eine blaue Serviette in Ihre linke Tasche oder verwenden Sie einen Kugelschreiber mit schwarzer Tinte, um die jetzt unter dem Einfluss dieser Schwingung ergriffenen Maßnahmen zu verankern.",
+    "Sendo uma plataforma de sabedoria avançada e criptografia astro-quântica, o APK do <strong>Portal Órbita</strong> é distribuído de forma independente e segura fora das lojas oficiais corporativas. Isso garante absoluta privacidade dos seus dados e integridade de suas consultas com os arcanos do Tarot e a IA Orbia. Ao ativar o APK, lembre-se de habilitar e autorizar o parâmetro \"Instalação de Fontes Desconhecidas\" nas configurações de segurança do seu dispositivo. É totalmente seguro e livre de vírus.": "Als Plattform für fortgeschrittene Weisheit und astro-quanten-Verschlüsselung wird die APK von <strong>Portal Órbita</strong> unabhängig und sicher außerhalb der offiziellen Unternehmens-Stores vertrieben. Dies garantiert die absolute Privatsphäre Ihrer Daten und die Integrität Ihrer Konsultationen mit den Tarot-Arkanen und der Orbia-KI. Denken Sie bei der Aktivierung der APK daran, den Parameter \"Installation unbekannter Quellen\" in den Sicherheitseinstellungen Ihres Geräts zu aktivieren und zu autorisieren. Es ist absolut sicher und virenfrei."
   }
-};
+};;
 
 export default function UserDashboardPortal({
   user,
@@ -683,16 +1257,12 @@ export default function UserDashboardPortal({
   const t = (text: string) => {
     if (!text) return "";
     if (activeLang !== 'pt') {
-      const dict = localPortalTranslations[activeLang] || localPortalTranslations['en'];
+      const dict = localPortalTranslations[activeLang];
       if (dict?.[text]) {
         return dict[text];
       }
     }
-    const res = i18nT(text);
-    if (res === text || !res) {
-      return translateUiText(text, activeLang);
-    }
-    return res;
+    return i18nT(text);
   };
   const travelerFallback = t("Viajante");
   const userFirstName = user?.name ? user.name.split(' ')[0] : travelerFallback;
@@ -1554,15 +2124,15 @@ export default function UserDashboardPortal({
                     ) : (
                       <div className="space-y-2">
                         <h4 className="text-sm font-black text-slate-100 tracking-tight font-sans">
-                          {osirisDashboard?.prioridadeDia?.title || "Sintonia de Foco Celular"}
+                          {osirisDashboard?.prioridadeDia?.title || t("Sintonia de Foco Celular")}
                         </h4>
                         <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                          {osirisDashboard?.prioridadeDia?.description || `Sua bússola biológica e o trânsito do Sol em de ${zodiacSign} orientam seu fluxo prático nesta coordenada.`}
+                          {osirisDashboard?.prioridadeDia?.description || `${t("Sua bússola biológica e o trânsito do Sol em de")} ${zodiacSign} ${t("orientam seu fluxo prático nesta coordenada.")}`}
                         </p>
                         <div className="p-3 bg-slate-900/60 border border-slate-850 rounded-xl mt-3">
-                          <span className="text-[8px] font-mono font-bold text-amber-400 uppercase tracking-widest block mb-0.5">Conselho do Místico</span>
+                          <span className="text-[8px] font-mono font-bold text-amber-400 uppercase tracking-widest block mb-0.5">{t("dashboard.mystic_advice")}</span>
                           <p className="text-[11px] text-slate-300 font-serif italic leading-relaxed">
-                            "{osirisDashboard?.prioridadeDia?.advice || 'Seja vigilante ao seu biorritmo. Pequenas reflexões de 3 minutos trarão alinhamento.'}"
+                            "{osirisDashboard?.prioridadeDia?.advice || t('Seja vigilante ao seu biorritmo. Pequenas reflexões de 3 minutos trarão alinhamento.')}"
                           </p>
                         </div>
                       </div>
@@ -1570,7 +2140,7 @@ export default function UserDashboardPortal({
                   </div>
 
                   <div className="pt-4 border-t border-slate-900/50 flex items-center justify-between mt-4">
-                    <span className="text-[9px] text-slate-500 font-mono">Orientação Única Diária de Osíris</span>
+                    <span className="text-[9px] text-slate-500 font-mono">{t("dashboard.daily_guidance_title")}</span>
                     <span className="w-2 h-2 rounded-full bg-emerald-500" />
                   </div>
                 </div>
@@ -1581,9 +2151,9 @@ export default function UserDashboardPortal({
                     <div className="flex justify-between items-center border-b border-slate-900 pb-2">
                       <div className="flex items-center gap-2">
                         <Bell className="w-4 h-4 text-amber-500 animate-swing" />
-                        <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider block">Fila Push Offline (Hoje)</span>
+                        <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider block">{t("dashboard.offline_push_queue")}</span>
                       </div>
-                      <span className="text-[8px] font-mono text-slate-500">Últimas 3 Notificações</span>
+                      <span className="text-[8px] font-mono text-slate-500">{t("Últimas 3 Notificações")}</span>
                     </div>
 
                     {osirisLoading ? (
@@ -1612,7 +2182,7 @@ export default function UserDashboardPortal({
                     )}
                   </div>
 
-                  <p className="text-[8.5px] text-slate-500 font-sans mt-3">★ Mensagens despachadas pelas esferas celestes enquanto você estava em desconexão prática.</p>
+                  <p className="text-[8.5px] text-slate-500 font-sans mt-3">★ {t("dashboard.offline_push_desc")}</p>
                 </div>
               </div>
 
@@ -2517,12 +3087,12 @@ export default function UserDashboardPortal({
                   <div>
                     <h3 className="text-xs font-bold font-mono text-slate-205 uppercase tracking-widest flex items-center gap-1.5">
                       <Star className="w-4 h-4 text-emerald-450 animate-pulse" />
-                      Desenvolvimento Pessoal & Expansão
+                      {t("Desenvolvimento Pessoal & Expansão")}
                     </h3>
-                    <p className="text-[10px] text-slate-500 mt-0.5">As lições, virtudes e hábitos sugeridos para curar bloqueios emocionais acumulados.</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">{t("As lições, virtudes e hábitos sugeridos para curar bloqueios emocionais acumulados.")}</p>
                   </div>
                   <span className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-mono font-bold text-emerald-450 rounded-lg shrink-0">
-                    Autodesenvolvimento
+                    {t("Autodesenvolvimento")}
                   </span>
                 </div>
 
@@ -2532,15 +3102,15 @@ export default function UserDashboardPortal({
                   {/* Core development pillars */}
                   <div className="space-y-4">
                     <div className="p-4 bg-slate-950 rounded-2xl border border-slate-850 space-y-1">
-                      <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold">Habilidade Cósmica para desenvolver</span>
-                      <span className="text-xs font-black text-slate-200 block mt-1">Inteligência Compassiva & Aterramento de Ideais</span>
-                      <p className="text-[10px] text-slate-400 leading-normal">Aprender a desacelerar a ventania dos planos de Aquário e ancorá-los na matéria saturnina.</p>
+                      <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold">{t("Habilidade Cósmica para desenvolver")}</span>
+                      <span className="text-xs font-black text-slate-200 block mt-1">{t("Inteligência Compassiva & Aterramento de Ideais")}</span>
+                      <p className="text-[10px] text-slate-400 leading-normal">{t("Aprender a desacelerar a ventania dos planos de Aquário e ancorá-los na matéria saturnina.")}</p>
                     </div>
 
                     <div className="p-4 bg-slate-950 rounded-2xl border border-slate-850 space-y-1">
-                      <span className="text-[8px] font-mono text-red-400 block uppercase font-bold">Bloqueio Emocional a Trabalhar</span>
-                      <span className="text-xs font-black text-rose-400 block mt-1">Medo irracional da rejeição que gera isolamentos de orgulho</span>
-                      <p className="text-[10px] text-slate-400 leading-normal">Vencer a resistência silenciosa a precisar confessar falhas ou vulnerabilidades a parceiros.</p>
+                      <span className="text-[8px] font-mono text-red-400 block uppercase font-bold">{t("Bloqueio Emocional a Trabalhar")}</span>
+                      <span className="text-xs font-black text-rose-400 block mt-1">{t("Medo irracional da rejeição que gera isolamentos de orgulho")}</span>
+                      <p className="text-[10px] text-slate-400 leading-normal">{t("Vencer a resistência silenciosa a precisar confessar falhas ou vulnerabilidades a parceiros.")}</p>
                     </div>
                   </div>
 
@@ -2548,20 +3118,20 @@ export default function UserDashboardPortal({
                   <div className="p-4 bg-slate-950 rounded-2xl border border-slate-850 flex flex-col justify-between">
                     <div className="space-y-3">
                       <div className="flex justify-between items-center border-b border-slate-900 pb-1 mr-1">
-                        <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold">Virtude da Semana</span>
-                        <span className="px-2.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono font-extrabold text-[8px] uppercase">Presença</span>
+                        <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold">{t("Virtude da Semana")}</span>
+                        <span className="px-2.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono font-extrabold text-[8px] uppercase">{t("Presença")}</span>
                       </div>
                       
                       <div className="space-y-1.5">
-                        <span className="text-[8px] font-mono text-slate-600 block uppercase font-bold leading-none">Lição da Semana:</span>
+                        <span className="text-[8px] font-mono text-slate-600 block uppercase font-bold leading-none">{t("Lição da Semana:")}</span>
                         <p className="font-serif italic text-xs leading-relaxed text-slate-300">
-                          "As conexões mais fortes e os negócios mais prósperos não florescem por pura inteligência racional, mas sim quando aceitamos abraçar nossa vulnerabilidade e resolver as pendências com paciência lúcida."
+                          "{t("As conexões mais fortes e os negócios mais prósperos não florescem por pura inteligência racional, mas sim quando aceitamos abraçar nossa vulnerabilidade e resolver as pendências com paciência lúcida.")}"
                         </p>
                       </div>
                     </div>
 
                     <div className="p-2.5 bg-slate-900/60 rounded-xl border border-slate-850 text-[10px] text-slate-405 italic mt-4">
-                      <strong>Exercício Diário Recomendado:</strong> Reserve 10 minutos de manhã para respirar profundamente longe do celular, focando em pensamentos de gratidão sincera por três pessoas.
+                      <strong>{t("Exercício Diário Recomendado:")}</strong> {t("Reserve 10 minutos de manhã para respirar profundamente longe do celular, focando em pensamentos de gratidão sincera por três pessoas.")}
                     </div>
                   </div>
 
@@ -2641,7 +3211,7 @@ export default function UserDashboardPortal({
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-left font-sans animate-in fade-in duration-300">
                         
                         <div className="p-3 bg-slate-950 rounded-xl border border-slate-850 flex flex-col justify-between h-[90px]">
-                          <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold">Sonho mais Recente</span>
+                          <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold">{t("Sonho mais Recente")}</span>
                           <span className="text-[11px] font-bold text-slate-200 mt-1 block truncate" title={dreamTitle}>
                             {dreamTitle}
                           </span>
@@ -2649,27 +3219,27 @@ export default function UserDashboardPortal({
                         </div>
 
                         <div className="p-3 bg-slate-950 rounded-xl border border-slate-850 flex flex-col justify-between h-[90px]">
-                          <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold">Elemento em Destaque</span>
+                          <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold">{t("Elemento em Destaque")}</span>
                           <span className="text-[11px] font-bold text-slate-200 mt-1 block truncate capitalize">
                             {dreamSymbol}
                           </span>
-                          <span className="text-[8px] font-mono text-slate-600">Símbolo decodificado</span>
+                          <span className="text-[8px] font-mono text-slate-600">{t("Símbolo decodificado")}</span>
                         </div>
 
                         <div className="p-3 bg-slate-950 rounded-xl border border-slate-850 flex flex-col justify-between h-[90px]">
-                          <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold">Emoção Predominante</span>
+                          <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold">{t("Emoção Predominante")}</span>
                           <span className="text-[11px] font-bold text-slate-200 mt-1 block truncate">
                             {dreamEmotion}
                           </span>
-                          <span className="text-[8px] font-mono text-slate-600">Clima onírico sutil</span>
+                          <span className="text-[8px] font-mono text-slate-600">{t("Clima onírico sutil")}</span>
                         </div>
 
                         <div className="p-3 bg-slate-950 rounded-xl border border-slate-850 flex flex-col justify-between h-[90px]">
-                          <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold">Tendência de Energia</span>
+                          <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold">{t("Tendência de Energia")}</span>
                           <span className="text-[11px] font-bold text-amber-100 mt-1 block truncate">
                             {dreamTendency}
                           </span>
-                          <span className="text-[8px] font-mono text-slate-600">Frequência vibracional</span>
+                          <span className="text-[8px] font-mono text-slate-600">{t("Frequência vibracional")}</span>
                         </div>
                       </div>
 
@@ -2682,11 +3252,11 @@ export default function UserDashboardPortal({
                           <div className="flex items-center gap-3 text-[8.5px] font-mono">
                             <div className="flex items-center gap-1">
                               <span className="w-2 h-2 rounded-full bg-pink-500 inline-block" />
-                              <span className="text-slate-400">Positividade (1–5)</span>
+                              <span className="text-slate-400">{t("Positividade (1–5)")}</span>
                             </div>
                             <div className="flex items-center gap-1">
                               <span className="w-2 h-2 rounded-full bg-indigo-500 inline-block" />
-                              <span className="text-slate-400">Índice Energético (%)</span>
+                              <span className="text-slate-400">{t("Índice Energético (%)")}</span>
                             </div>
                           </div>
                         </div>
@@ -2815,45 +3385,45 @@ export default function UserDashboardPortal({
                             
                             {/* Higher State frequencies */}
                             <div>
-                              <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-wider mb-3 font-bold">
-                                Frequências de Estado Subconsciente (Dados Reais)
+                              <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-wider mb-2 font-bold">
+                                {t("Frequências de Estado Subconsciente (Dados Reais)")}
                               </h4>
                               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 font-sans text-xs">
                                 
                                 {/* Lucidez */}
                                 <div className="p-3.5 bg-slate-950 border border-slate-900 rounded-2xl space-y-2">
                                   <div className="flex justify-between items-center">
-                                    <span className="text-[10px] font-bold text-slate-300">Frequência de Sonhos Lúcidos</span>
+                                    <span className="text-[10px] font-bold text-slate-300">{t("Frequência de Sonhos Lúcidos")}</span>
                                     <span className="text-[11px] font-mono font-black text-rose-450">{lucidPct}%</span>
                                   </div>
                                   <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
                                     <div className="bg-rose-500 h-full rounded-full transition-all duration-500" style={{ width: `${lucidPct}%` }} />
                                   </div>
-                                  <span className="text-[8.5px] text-slate-500 block">Registros conscientes ou com alta frequência energética.</span>
+                                  <span className="text-[8.5px] text-slate-500 block">{t("Registros conscientes ou com alta frequência energética.")}</span>
                                 </div>
 
                                 {/* Positividade */}
                                 <div className="p-3.5 bg-slate-950 border border-slate-900 rounded-2xl space-y-2">
                                   <div className="flex justify-between items-center">
-                                    <span className="text-[10px] font-bold text-slate-300">Frequência de Sonhos Positivos</span>
+                                    <span className="text-[10px] font-bold text-slate-300">{t("Frequência de Sonhos Positivos")}</span>
                                     <span className="text-[11px] font-mono font-black text-emerald-450">{positivePct}%</span>
                                   </div>
                                   <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
                                     <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${positivePct}%` }} />
                                   </div>
-                                  <span className="text-[8.5px] text-slate-500 block">Sonhos reveladores com elevado índice de positividade Cósmica.</span>
+                                  <span className="text-[8.5px] text-slate-500 block">{t("Sonhos reveladores com elevado índice de positividade Cósmica.")}</span>
                                 </div>
 
                                 {/* Pesadelos */}
                                 <div className="p-3.5 bg-slate-950 border border-slate-900 rounded-2xl space-y-2">
                                   <div className="flex justify-between items-center">
-                                    <span className="text-[10px] font-bold text-slate-300">Incidentes de Pesadelos</span>
+                                    <span className="text-[10px] font-bold text-slate-300">{t("Incidentes de Pesadelos")}</span>
                                     <span className="text-[11px] font-mono font-black text-indigo-400">{nightmarePct}%</span>
                                   </div>
                                   <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
                                     <div className="bg-indigo-505 h-full rounded-full transition-all duration-500" style={{ width: `${nightmarePct}%` }} />
                                   </div>
-                                  <span className="text-[8.5px] text-slate-500 block">Frequência de manifestação de medos primitivos ou repouso sob tensão.</span>
+                                  <span className="text-[8.5px] text-slate-500 block">{t("Frequência de manifestação de medos primitivos ou repouso sob tensão.")}</span>
                                 </div>
 
                               </div>
@@ -2862,7 +3432,7 @@ export default function UserDashboardPortal({
                             {/* Archetypal Patterns */}
                             <div>
                               <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-wider mb-3 font-bold">
-                                Reconhecimento de Padrões Reais de Inteligência Onírica
+                                {t("Reconhecimento de Padrões Reais de Inteligência Onírica")}
                               </h4>
                               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                                 {Object.entries(patterns).map(([category, count]) => {
@@ -2900,12 +3470,12 @@ export default function UserDashboardPortal({
                   <div>
                     <h3 className="text-xs font-bold font-mono text-slate-201 uppercase tracking-widest flex items-center gap-1.5">
                       <Home className="w-4 h-4 text-indigo-400" />
-                      Energia Cósmica da Casa & Harmonização
+                      {t("Energia Cósmica da Casa & Harmonização")}
                     </h3>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Dicas sintonizadas para equilibrar o seu ecossistema físico domiciliar e escritório com seu mapa.</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">{t("Dicas sintonizadas para equilibrar o seu ecossistema físico domiciliar e escritório com seu mapa.")}</p>
                   </div>
                   <span className="px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 text-[9px] font-mono font-bold text-indigo-450 rounded-lg shrink-0">
-                    Ambiente Físico
+                    {t("Ambiente Físico")}
                   </span>
                 </div>
 
@@ -2913,44 +3483,44 @@ export default function UserDashboardPortal({
                   
                   {/* Aroma */}
                   <div className="p-3.5 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col justify-between">
-                    <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold mb-1">Melhor Aroma da Semana</span>
-                    <span className="text-xs font-black text-slate-200">Capim-Limão Refrescante</span>
-                    <p className="text-[9.5px] text-slate-400 leading-normal mt-1">Estimula os meridianos superiores do intelecto aquariano sem deixá-lo agitado.</p>
+                    <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold mb-1">{t("Melhor Aroma da Semana")}</span>
+                    <span className="text-xs font-black text-slate-200">{t("Capim-Limão Refrescante")}</span>
+                    <p className="text-[9.5px] text-slate-400 leading-normal mt-1">{t("Estimula os meridianos superiores do intelecto aquariano sem deixá-lo agitado.")}</p>
                   </div>
 
                   {/* Incense */}
                   <div className="p-3.5 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col justify-between">
-                    <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold mb-1">Melhor Incenso Sugerido</span>
-                    <span className="text-xs font-black text-slate-200">Sândalo Puro ou Alecrim</span>
-                    <p className="text-[9.5px] text-slate-400 leading-normal mt-1">Excelente para dissipar ondas eletromagnéticas estressantes do celular ou computador.</p>
+                    <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold mb-1">{t("Melhor Incenso Sugerido")}</span>
+                    <span className="text-xs font-black text-slate-200">{t("Sândalo Puro ou Alecrim")}</span>
+                    <p className="text-[9.5px] text-slate-400 leading-normal mt-1">{t("Excelente para dissipar ondas eletromagnéticas estressantes do celular ou computador.")}</p>
                   </div>
 
                   {/* Plant */}
                   <div className="p-3.5 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col justify-between">
-                    <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold mb-1">Melhor Planta Recomendada</span>
-                    <span className="text-xs font-black text-slate-200">Lírio da Paz ou Espada</span>
-                    <p className="text-[9.5px] text-slate-400 leading-normal mt-1">Purifica os canais sutis do ar e ancora o fluxo realizador de Saturno (Caminho 8).</p>
+                    <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold mb-1">{t("Melhor Planta Recomendada")}</span>
+                    <span className="text-xs font-black text-slate-200">{t("Lírio da Paz ou Espada")}</span>
+                    <p className="text-[9.5px] text-slate-400 leading-normal mt-1">{t("Purifica os canais sutis do ar e ancora o fluxo realizador de Saturno (Caminho 8).")}</p>
                   </div>
 
                   {/* Best room corner */}
                   <div className="p-4 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col justify-between h-[100px]">
-                    <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold">Melhor Ambiente da Casa</span>
-                    <span className="text-xs font-black text-indigo-400 mt-1 block">Canto Leste (Nascer do Sol) de sua sala de estar</span>
-                    <span className="text-[9.5px] text-slate-505 leading-normal">Ambiente ideal para alongamentos e leitura astrológica matinal rápida.</span>
+                    <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold">{t("Melhor Ambiente da Casa")}</span>
+                    <span className="text-xs font-black text-indigo-400 mt-1 block">{t("Canto Leste (Nascer do Sol) de sua sala de estar")}</span>
+                    <span className="text-[9.5px] text-slate-505 leading-normal">{t("Ambiente ideal para alongamentos e leitura astrológica matinal rápida.")}</span>
                   </div>
 
                   {/* Bedroom color */}
                   <div className="p-4 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col justify-between h-[100px]">
-                    <span className="text-[8px] font-mono text-purple-400 block uppercase font-bold">Cor recomendada no Quarto</span>
-                    <span className="text-xs font-black text-purple-400 mt-1 block">Lilás Lavanda ou Violeta</span>
-                    <span className="text-[9.5px] text-slate-505 leading-normal">Harmoniza o sono profundo e facilita o despertar da memória no Cofre de Sonhos.</span>
+                    <span className="text-[8px] font-mono text-purple-400 block uppercase font-bold">{t("Cor recomendada no Quarto")}</span>
+                    <span className="text-xs font-black text-purple-400 mt-1 block">{t("Lilás Lavanda ou Violeta")}</span>
+                    <span className="text-[9.5px] text-slate-505 leading-normal">{t("Harmoniza o sono profundo e facilita o despertar da memória no Cofre de Sonhos.")}</span>
                   </div>
 
                   {/* Office color */}
                   <div className="p-4 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col justify-between h-[100px]">
-                    <span className="text-[8px] font-mono text-sky-400 block uppercase font-bold">Cor recomendada no Escritório</span>
-                    <span className="text-xs font-black text-sky-450 mt-1 block">Azul Índigo ou Verde Menta</span>
-                    <span className="text-[9.5px] text-slate-505 leading-normal">Eleva a clareza analítica durante reuniões complexas e debates de metas corporativas.</span>
+                    <span className="text-[8px] font-mono text-sky-400 block uppercase font-bold">{t("Cor recomendada no Escritório")}</span>
+                    <span className="text-xs font-black text-sky-450 mt-1 block">{t("Azul Índigo ou Verde Menta")}</span>
+                    <span className="text-[9.5px] text-slate-505 leading-normal">{t("Eleva a clareza analítica durante reuniões complexas e debates de metas corporativas.")}</span>
                   </div>
                 </div>
               </div>
@@ -3306,7 +3876,7 @@ export default function UserDashboardPortal({
             <X className="w-4 h-4" />
           </button>
 
-          <span className="text-[9px] font-mono uppercase bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-md font-extrabold font-mono">Artigo de Saber</span>
+          <span className="text-[9px] font-mono uppercase bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-md font-extrabold font-mono">{t("Artigo de Saber")}</span>
           <h1 className="text-lg md:text-xl font-bold text-slate-100 tracking-tight mt-3 mb-1">{selectedArticle.title}</h1>
           <p className="text-[10px] text-slate-500 font-mono">Por {selectedArticle.author} · {selectedArticle.date}</p>
           
@@ -3321,7 +3891,7 @@ export default function UserDashboardPortal({
               onClick={() => setSelectedArticle(null)}
               className="px-4 py-2 bg-emerald-500 text-slate-950 hover:bg-emerald-400 text-xs font-black uppercase rounded-xl transition cursor-pointer"
             >
-              Concluir Leitura
+              {t("Concluir Leitura")}
             </button>
           </div>
         </div>
@@ -3343,7 +3913,7 @@ export default function UserDashboardPortal({
           <div className="flex items-center gap-3">
             <span className="text-3xl text-purple-400">{selectedSign.symbol}</span>
             <div>
-              <span className="text-[9px] font-mono uppercase bg-purple-500/10 border border-purple-500/20 text-purple-400 px-2 py-0.5 rounded-md font-extrabold font-mono">Definição Planetária</span>
+              <span className="text-[9px] font-mono uppercase bg-purple-500/10 border border-purple-500/20 text-purple-400 px-2 py-0.5 rounded-md font-extrabold font-mono">{t("Definição Planetária")}</span>
               <h1 className="text-lg md:text-xl font-bold text-slate-100 tracking-tight mt-1">{selectedSign.name}</h1>
             </div>
           </div>
@@ -3353,22 +3923,22 @@ export default function UserDashboardPortal({
           <div className="space-y-4 font-sans">
             <div className="grid grid-cols-2 gap-3 text-[10px] font-mono">
               <div className="p-2.5 bg-slate-950/60 rounded-xl border border-slate-850">
-                <span className="text-slate-500 block uppercase">Planeta Regente</span>
+                <span className="text-slate-500 block uppercase">{t("Planeta Regente")}</span>
                 <strong className="text-slate-200 mt-0.5 block">{selectedSign.regente}</strong>
               </div>
               <div className="p-2.5 bg-slate-950/60 rounded-xl border border-slate-850">
-                <span className="text-slate-500 block uppercase">Elemento</span>
+                <span className="text-slate-500 block uppercase">{t("Elemento")}</span>
                 <strong className="text-slate-200 mt-0.5 block">{selectedSign.element}</strong>
               </div>
             </div>
 
             <div className="space-y-1">
-              <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Características / Traços</h4>
+              <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">{t("Características / Traços")}</h4>
               <p className="text-xs text-slate-300 leading-relaxed">{selectedSign.traits}</p>
             </div>
 
             <div className="space-y-1">
-              <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Previsão Cósmica (Horóscopo)</h4>
+              <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">{t("Previsão Cósmica (Horóscopo)")}</h4>
               <p className="text-xs text-amber-100/90 leading-relaxed bg-amber-500/5 p-3 rounded-xl border border-amber-500/10 italic">"{selectedSign.horoscopo}"</p>
             </div>
           </div>
@@ -3379,7 +3949,7 @@ export default function UserDashboardPortal({
               onClick={() => setSelectedSign(null)}
               className="px-4 py-2 bg-purple-500 text-slate-950 hover:bg-purple-400 text-xs font-black uppercase rounded-xl transition cursor-pointer"
             >
-              Concluiu
+              {t("Concluiu")}
             </button>
           </div>
         </div>

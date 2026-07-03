@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Calendar, Sparkles, AlertTriangle, Heart, HelpCircle, RefreshCw, Layers, Compass, Loader2, ChevronDown, ChevronUp, Clock, Activity, Hash, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
-import { translateUiText, Language } from '../lib/translations';
+import { Language } from '../lib/translations';
 import { loadCalculationCache, saveCalculationCache } from '../lib/firebase';
 
 interface AstroEvent {
@@ -278,11 +278,7 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
         return localDict[text];
       }
     }
-    const res = i18nT(text);
-    if (res === text || !res) {
-      return translateUiText(text, (lang as Language) || 'pt');
-    }
-    return res;
+    return i18nT(text);
   };
 
   const [events, setEvents] = useState<AstroEvent[]>([]);

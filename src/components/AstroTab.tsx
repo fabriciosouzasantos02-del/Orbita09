@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Sparkles, Star, Compass, AlertCircle, RefreshCw, FileText, Globe } from "lucide-react";
 import { motion } from "motion/react";
-import { Language, translations } from "../translations";
+import { Language } from "../translations";
 import { NatalChartData, UserProfile } from "../types";
 import { useTranslation } from "react-i18next";
 import { useIdioma } from "../context/IdiomaContext";
@@ -19,8 +19,8 @@ export default function AstroTab({ userProfile, natalChart, lang }: AstroTabProp
   const [report, setReport] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [errorWord, setErrorWord] = useState<string>("");
-  const t = translations[activeLang];
-  const { t: tI18n } = useTranslation();
+  const { t } = useTranslation();
+  const tI18n = t;
 
   const handleGenerateReport = async () => {
     setLoading(true);
@@ -93,10 +93,10 @@ export default function AstroTab({ userProfile, natalChart, lang }: AstroTabProp
         <div className="relative z-10 space-y-2">
           <h2 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
             <Compass className="w-5.5 h-5.5 text-indigo-400" />
-            <span>{t.natalChart}</span>
+            <span>{t("natalChart")}</span>
           </h2>
           <p className="text-indigo-200/80 text-xs sm:text-sm max-w-2xl leading-relaxed">
-            {t.natalDescription}
+            {t("natalDescription")}
           </p>
         </div>
         
@@ -156,7 +156,7 @@ export default function AstroTab({ userProfile, natalChart, lang }: AstroTabProp
           {/* Active Aspects card list */}
           <div className="space-y-3">
             <div className="flex items-center justify-between border-b border-neutral-100 pb-2.5">
-              <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">{t.aspectsList}</h3>
+              <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">{t("aspectsList")}</h3>
               <span className="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-bold">
                 {natalChart.aspects.length} {tI18n("Aspectos")}
               </span>
@@ -195,7 +195,7 @@ export default function AstroTab({ userProfile, natalChart, lang }: AstroTabProp
           {/* House System list */}
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between border-b border-neutral-100 pb-2.5">
-              <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">{t.houseSystem}</h3>
+              <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">{t("houseSystem")}</h3>
               <Globe className="w-4 h-4 text-emerald-600" />
             </div>
 
@@ -218,7 +218,7 @@ export default function AstroTab({ userProfile, natalChart, lang }: AstroTabProp
       <section className="bg-white border border-neutral-200/90 rounded-2xl p-6 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-100 pb-4">
           <div className="space-y-1">
-            <h3 className="font-display font-semibold text-neutral-900 text-base">{t.deepReport}</h3>
+            <h3 className="font-display font-semibold text-neutral-900 text-base">{t("deepReport")}</h3>
             <p className="text-neutral-500 text-xs">
               {tI18n("Uma imersão literária no seu design existencial analisado pelo Google Gemini AI.")}
             </p>
@@ -232,12 +232,12 @@ export default function AstroTab({ userProfile, natalChart, lang }: AstroTabProp
             {loading ? (
               <>
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                <span>{t.interpreting}</span>
+                <span>{t("interpreting")}</span>
               </>
             ) : (
               <>
                 <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
-                <span>{t.generateDeepInterpretation}</span>
+                <span>{t("generateDeepInterpretation")}</span>
               </>
             )}
           </button>

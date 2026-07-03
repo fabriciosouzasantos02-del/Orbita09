@@ -1,9 +1,8 @@
 import React from "react";
 import { Layers, HelpCircle, Palette, Binary, ArrowUpRight } from "lucide-react";
-import { Language, translations } from "../translations";
+import { Language } from "../translations";
 import { NumerologyData } from "../types";
 import { useTranslation } from "react-i18next";
-import { translateUiText } from "../lib/translations";
 import { useIdioma } from "../context/IdiomaContext";
 
 interface NumerologyTabProps {
@@ -32,19 +31,14 @@ const localTabTranslations: Record<Language, Record<string, string>> = {
 export default function NumerologyTab({ numerologyData, lang }: NumerologyTabProps) {
   const { idioma } = useIdioma();
   const activeLang = idioma || lang || 'pt';
-  const t = translations[activeLang];
-  const { t: tI18nRaw } = useTranslation();
+  const { t } = useTranslation();
 
   const tI18n = (text: string) => {
     if (!text) return "";
     if (localTabTranslations[activeLang]?.[text]) {
       return localTabTranslations[activeLang][text];
     }
-    const res = tI18nRaw(text);
-    if (res === text || !res) {
-      return translateUiText(text, activeLang);
-    }
-    return res;
+    return t(text);
   };
 
   // In depth Pythagorean descriptions for numbers 1-9, plus master numbers 11, 22, 33 localized by language
@@ -378,11 +372,11 @@ export default function NumerologyTab({ numerologyData, lang }: NumerologyTabPro
   };
 
   const cardsByRole = [
-    { key: "lifePath", label: t.lifePathNum, value: numerologyData.lifePath, color: "border-indigo-100 bg-indigo-50/20 text-indigo-900" },
-    { key: "expression", label: t.expressionNum, value: numerologyData.expression, color: "border-emerald-100 bg-emerald-50/20 text-emerald-900" },
-    { key: "soulUrge", label: t.soulUrgeNum, value: numerologyData.soulUrge, color: "border-amber-100 bg-amber-50/20 text-amber-900" },
-    { key: "personality", label: t.personalityNum, value: numerologyData.personality, color: "border-rose-100 bg-rose-50/20 text-rose-900" },
-    { key: "destiny", label: t.destinyNum, value: numerologyData.destiny, color: "border-sky-100 bg-sky-50/20 text-sky-900" },
+    { key: "lifePath", label: t("lifePathNum"), value: numerologyData.lifePath, color: "border-indigo-100 bg-indigo-50/20 text-indigo-900" },
+    { key: "expression", label: t("expressionNum"), value: numerologyData.expression, color: "border-emerald-100 bg-emerald-50/20 text-emerald-900" },
+    { key: "soulUrge", label: t("soulUrgeNum"), value: numerologyData.soulUrge, color: "border-amber-100 bg-amber-50/20 text-amber-900" },
+    { key: "personality", label: t("personalityNum"), value: numerologyData.personality, color: "border-rose-100 bg-rose-50/20 text-rose-900" },
+    { key: "destiny", label: t("destinyNum"), value: numerologyData.destiny, color: "border-sky-100 bg-sky-50/20 text-sky-900" },
   ];
 
   return (
@@ -392,10 +386,10 @@ export default function NumerologyTab({ numerologyData, lang }: NumerologyTabPro
       <div className="bg-white border border-neutral-200/90 rounded-2xl p-6 shadow-sm">
         <div className="flex items-center gap-3 mb-2">
           <Binary className="w-6 h-6 text-indigo-600" />
-          <h2 className="text-xl font-display font-semibold text-neutral-900">{t.numerologyTitle}</h2>
+          <h2 className="text-xl font-display font-semibold text-neutral-900">{t("numerologyTitle")}</h2>
         </div>
         <p className="text-neutral-500 text-xs sm:text-sm leading-relaxed max-w-2xl">
-          {t.numerologyDesc}
+          {t("numerologyDesc")}
         </p>
       </div>
 

@@ -1,6 +1,5 @@
 import { performAstroCalculation, AstroPlacement, AstroAspectDetails } from './astroMath';
 import { generateBespokeCategory } from './compatibilityTemplates';
-import { translateUiText } from '../lib/translations';
 import i18next from 'i18next';
 
 export interface CategoryDetails {
@@ -810,8 +809,8 @@ export function computeDetailedCompatibility(
   };
 
   const fallbackTexts = {
-    naoFornecida: translateUiText("Não fornecida", lang),
-    naoFornecido: translateUiText("Não fornecido", lang)
+    naoFornecida: i18next.t("Não fornecida", { lng: lang }),
+    naoFornecido: i18next.t("Não fornecido", { lng: lang })
   };
 
   return {

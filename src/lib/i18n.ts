@@ -1,7 +1,12 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import { translationDict, uiTranslations, getInitialLanguage } from './translations';
+import { translationDict, uiTranslations } from './translations';
 import { staticTranslations as rootTranslations } from '../translations';
+import { applyTranslationPatches } from './translationPatch';
+import { mergedTranslations, getInitialLanguage } from '../i18n';
+
+// Apply the manual highly polished translations to ensure 100% key consistency
+applyTranslationPatches();
 
 const resources: any = {
   pt: {
@@ -14,34 +19,39 @@ const resources: any = {
       ...Object.fromEntries(
         Object.keys(uiTranslations.en).map(ptKey => [ptKey, ptKey])
       ),
+      ...mergedTranslations.pt,
     }
   },
   en: {
     translation: {
       ...translationDict.en,
       ...rootTranslations.en,
-      ...uiTranslations.en
+      ...uiTranslations.en,
+      ...mergedTranslations.en,
     }
   },
   es: {
     translation: {
       ...translationDict.es,
       ...rootTranslations.es,
-      ...uiTranslations.es
+      ...uiTranslations.es,
+      ...mergedTranslations.es,
     }
   },
   de: {
     translation: {
       ...translationDict.de,
       ...rootTranslations.de,
-      ...uiTranslations.de
+      ...uiTranslations.de,
+      ...mergedTranslations.de,
     }
   },
   fr: {
     translation: {
       ...translationDict.fr,
       ...rootTranslations.fr,
-      ...uiTranslations.fr
+      ...uiTranslations.fr,
+      ...mergedTranslations.fr,
     }
   }
 };
@@ -51,7 +61,7 @@ i18n
   .init({
     resources,
     lng: getInitialLanguage(),
-    fallbackLng: 'pt',
+    fallbackLng: 'en',
     interpolation: {
       escapeValue: false
     }

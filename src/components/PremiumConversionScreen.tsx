@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Sparkles, Lock, ShieldCheck, CheckCircle2, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { getTranslation, Language } from '../lib/translations';
+import { Language } from '../lib/translations';
+import { useTranslation } from 'react-i18next';
 
 const LOCAL_PREMIUM_TRANSLATIONS: Record<Language, Record<string, string>> = {
   pt: {
@@ -62,12 +63,14 @@ export const PremiumConversionScreen: React.FC<PremiumConversionScreenProps> = (
   const [step, setStep] = useState<'checkout' | 'success'>('checkout');
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual'>('monthly');
 
+  const { t: i18nT } = useTranslation();
   const t = (key: string, fallback?: string) => {
     const localDict = LOCAL_PREMIUM_TRANSLATIONS[currentLang];
     if (localDict && localDict[key]) {
       return localDict[key];
     }
-    return getTranslation(currentLang, key, fallback);
+    const translated = i18nT(key);
+    return translated !== key ? translated : (fallback || key);
   };
 
   const plansList = [

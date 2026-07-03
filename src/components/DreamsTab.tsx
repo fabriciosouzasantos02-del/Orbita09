@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Sparkles, Moon, RefreshCw, Feather, PlusCircle, Trash, Notebook, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { Language, translations } from "../translations";
+import { Language } from "../translations";
 import { DreamEntry } from "../types";
 import { useTranslation } from "react-i18next";
 import { useIdioma } from "../context/IdiomaContext";
@@ -155,19 +155,13 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
   const [symbols, setSymbols] = useState("");
   const [loadingAI, setLoadingAI] = useState<string | null>(null);
 
-  const t = translations[activeLang];
-  const { t: tI18nRaw } = useTranslation();
+  const { t } = useTranslation();
 
   const tI18n = (text: string): string => {
     if (!text) return "";
-    if (activeLang === "pt") return text;
     const localVal = LOCAL_DREAMS_TRANSLATIONS[activeLang]?.[text];
     if (localVal) return localVal;
-    const res = tI18nRaw(text);
-    if (res === text || !res) {
-      return text;
-    }
-    return res;
+    return t(text);
   };
 
   const handleSaveDream = (e: React.FormEvent) => {
@@ -224,11 +218,11 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
 
   const getMoodEmojiAndColor = (m: DreamEntry["mood"]) => {
     const maps: Record<DreamEntry["mood"], { emoji: string; text: string; css: string }> = {
-      peaceful: { emoji: "🌸", text: t.peaceful, css: "bg-emerald-50 text-emerald-800 border-emerald-100" },
-      neutral: { emoji: "😐", text: t.neutral, css: "bg-slate-50 text-slate-800 border-slate-100" },
-      lucid: { emoji: "👁️", text: t.lucid, css: "bg-indigo-50 text-indigo-800 border-indigo-100" },
-      intense: { emoji: "🌋", text: t.intense, css: "bg-amber-50 text-amber-800 border-amber-105" },
-      nightmare: { emoji: "👹", text: t.nightmare, css: "bg-rose-50 text-rose-800 border-rose-100" }
+      peaceful: { emoji: "🌸", text: t("peaceful"), css: "bg-emerald-50 text-emerald-800 border-emerald-100" },
+      neutral: { emoji: "😐", text: t("neutral"), css: "bg-slate-50 text-slate-800 border-slate-100" },
+      lucid: { emoji: "👁️", text: t("lucid"), css: "bg-indigo-50 text-indigo-800 border-indigo-100" },
+      intense: { emoji: "🌋", text: t("intense"), css: "bg-amber-50 text-amber-800 border-amber-105" },
+      nightmare: { emoji: "👹", text: t("nightmare"), css: "bg-rose-50 text-rose-800 border-rose-100" }
     };
     return maps[m] || maps.neutral;
   };
@@ -238,9 +232,9 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
       
       {/* Descriptor layout */}
       <div className="bg-white border border-neutral-200/90 rounded-2xl p-6 shadow-sm">
-        <h2 className="text-xl font-display font-semibold text-neutral-900">{t.dreamsTitle}</h2>
+        <h2 className="text-xl font-display font-semibold text-neutral-900">{t("dreamsTitle")}</h2>
         <p className="text-neutral-500 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
-          {t.dreamsDesc}
+          {t("dreamsDesc")}
         </p>
       </div>
 
@@ -255,7 +249,7 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
 
           <form onSubmit={handleSaveDream} className="space-y-4 text-xs sm:text-sm">
             <div className="space-y-1">
-              <label className="block text-xs font-semibold text-neutral-500">{t.dreamTitleLabel}</label>
+              <label className="block text-xs font-semibold text-neutral-500">{t("dreamTitleLabel")}</label>
               <input
                 type="text"
                 required
@@ -267,7 +261,7 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
             </div>
 
             <div className="space-y-1">
-              <label className="block text-xs font-semibold text-neutral-500">{t.dreamContentLabel}</label>
+              <label className="block text-xs font-semibold text-neutral-500">{t("dreamContentLabel")}</label>
               <textarea
                 required
                 value={content}
@@ -279,17 +273,17 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
 
             <div className="grid grid-cols-2 gap-3.5">
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-neutral-500">{t.dreamMood}</label>
+                <label className="block text-xs font-semibold text-neutral-500">{t("dreamMood")}</label>
                 <select
                   value={mood}
                   onChange={(e) => setMood(e.target.value as DreamEntry["mood"])}
                   className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition"
                 >
-                  <option value="peaceful">{t.peaceful}</option>
-                  <option value="neutral">{t.neutral}</option>
-                  <option value="lucid">{t.lucid}</option>
-                  <option value="intense">{t.intense}</option>
-                  <option value="nightmare">{t.nightmare}</option>
+                  <option value="peaceful">{t("peaceful")}</option>
+                  <option value="neutral">{t("neutral")}</option>
+                  <option value="lucid">{t("lucid")}</option>
+                  <option value="intense">{t("intense")}</option>
+                  <option value="nightmare">{t("nightmare")}</option>
                 </select>
               </div>
 
@@ -309,7 +303,7 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
               type="submit"
               className="w-full py-2.5 bg-neutral-900 hover:bg-neutral-800 font-semibold text-white rounded-xl text-xs sm:text-sm cursor-pointer transition shadow hover:shadow-md"
             >
-              {t.saveDream}
+              {t("saveDream")}
             </button>
           </form>
         </section>
@@ -318,7 +312,7 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
         <section className="bg-white border border-neutral-200/90 rounded-2xl p-6 shadow-sm lg:col-span-7 space-y-4">
           <div className="flex items-center gap-2 border-b border-neutral-100 pb-3">
             <Notebook className="w-5 h-5 text-indigo-500" />
-            <h3 className="font-display font-semibold text-neutral-900 text-sm">{t.dreamJournal}</h3>
+            <h3 className="font-display font-semibold text-neutral-900 text-sm">{t("dreamJournal")}</h3>
           </div>
 
           <div className="space-y-5 max-h-[440px] overflow-y-auto pr-1">
@@ -422,7 +416,7 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
                           ) : (
                             <>
                               <Sparkles className="w-3.5 h-3.5 text-rose-400" />
-                              <span>{t.analyzeDreamAI}</span>
+                              <span>{t("analyzeDreamAI")}</span>
                             </>
                           )}
                         </button>

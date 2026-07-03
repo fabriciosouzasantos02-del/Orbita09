@@ -3582,7 +3582,7 @@ export const uiTranslations: Record<Exclude<Language, 'pt'>, Record<string, stri
     "POR QUE EXISTE COMPATIBILIDADE": "POURQUOI LA COMPATIBILITÉ EXISTE",
     "POR QUE EXISTE CONFLITO": "POURQUOI LE CONFLIT EXISTE",
     "CARACTERÍSTICAS QUE UNEM": "CARACTÉRISTIQUES QUI UNISSENT",
-    "CARACTERÍSTICAS QUE ÉLOIGNENT": "CARACTÉRISTIQUES QUI ÉLOIGNENT",
+    "CARACTERÍSTICAS QUE AFASTAM": "CARACTÉRISTIQUES QUI ÉLOIGNENT",
     "COMO FORTALECER A CONEXÃO": "COMMENT RENFORCER LA CONNEXION",
     "Preencha os dados do parceiro(a) ao lado para realizar o cruzamento astrológico de sinastria e obter o relatório completo de 15 módulos.": "Remplissez les données du partenaire sur le côté pour effectuer le croisement de synastrie astrologique et obtenir le rapport complet de 15 modules.",
     "Módulo Astrologia Premium": "Module d'Astrologie Premium",

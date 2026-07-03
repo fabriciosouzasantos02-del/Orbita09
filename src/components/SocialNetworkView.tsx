@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from "react-i18next";
-import { translateUiText, Language } from '../lib/translations';
+import { Language } from '../lib/translations';
 import { 
   Heart, Users, Sparkles, UserPlus, UserMinus, Search, 
   MapPin, Award, Check, TrendingUp, RefreshCw, MessageSquare, 
@@ -70,6 +70,7 @@ interface SocialNetworkViewProps {
   lang?: Language;
 }
 
+/*
 const localSocialTranslations: Record<Exclude<Language, 'pt'>, Record<string, string>> = {
   en: {
     // cities
@@ -384,6 +385,7 @@ const localSocialTranslations: Record<Exclude<Language, 'pt'>, Record<string, st
     "Escreva algo curto sobre você...": "Schreibe etwas Kurzes über dich..."
   }
 };
+*/
 
 const SEED_USERS = [
   {
@@ -454,25 +456,7 @@ const SEED_USERS = [
 ];
 
 export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, lang }: SocialNetworkViewProps) {
-  const { t: tI18nRaw, i18n } = useTranslation();
-
-  useEffect(() => {
-    const langs: ('en' | 'es' | 'de' | 'fr')[] = ['en', 'es', 'de', 'fr'];
-    langs.forEach(l => {
-      if (i18n && i18n.addResourceBundle) {
-        i18n.addResourceBundle(l, 'translation', localSocialTranslations[l], true, true);
-      }
-    });
-  }, [i18n]);
-
-  const tI18n = (text: string) => {
-    if (!text) return "";
-    const res = tI18nRaw(text);
-    if (res === text || !res) {
-      return translateUiText(text, lang || 'pt');
-    }
-    return res;
-  };
+  const { t: tI18n } = useTranslation();
   const currentEmail = (currentUser.email || "viajante@starportal.com").toLowerCase().trim();
   
   // State variables
@@ -1206,7 +1190,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
                       className="px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/25 hover:bg-blue-500/20 text-blue-400 font-sans font-bold text-[10px] flex items-center gap-1.5 transition"
                     >
                       <Facebook className="w-3.5 h-3.5 text-blue-400" />
-                      <span>Facebook</span>
+                      <span>{tI18n("Facebook")}</span>
                     </a>
                   )}
                 </div>

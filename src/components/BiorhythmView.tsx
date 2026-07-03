@@ -19,7 +19,7 @@ import {
   TrendingDown, 
   AlertCircle 
 } from 'lucide-react';
-import { translateUiText, Language } from '../lib/translations';
+import { Language } from '../lib/translations';
 import { useIdioma } from '../context/IdiomaContext';
 
 interface BiorhythmViewProps {
@@ -45,11 +45,7 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
   const { t: i18nT } = useTranslation();
   const t = (text: string) => {
     if (!text) return "";
-    const res = i18nT(text);
-    if (res === text || !res) {
-      return translateUiText(text, activeL);
-    }
-    return res;
+    return i18nT(text);
   };
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const d = new Date();

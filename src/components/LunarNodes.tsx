@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
-import { translateUiText, Language } from '../lib/translations';
+import { Language } from '../lib/translations';
 import { useIdioma } from '../context/IdiomaContext';
 import { NODE_SIGNS_LOCALIZED, NODE_HOUSES_LOCALIZED } from '../lib/nodeTranslations';
 import { 
@@ -986,6 +986,7 @@ export const localLunarNodesTranslations: Record<Language, Record<string, string
 
 export default function LunarNodes({ userName = 'Buscador de Sabedoria', mapData, lang }: LunarNodesProps) {
   const { idioma } = useIdioma();
+  const { t: tI18n } = useTranslation();
   const idiomaAtual = idioma || (lang as Language) || 'pt';
 
   const tLocal = (text: string) => {
@@ -999,7 +1000,7 @@ export default function LunarNodes({ userName = 'Buscador de Sabedoria', mapData
     if (match && match[activeLang]) {
       return match[activeLang];
     }
-    return translateUiText(text, activeLang);
+    return tI18n(text);
   };
 
   const t = tLocal;

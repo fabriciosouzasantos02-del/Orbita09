@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Bell, Sparkles, Check, Info, Calendar, AlertTriangle, Eye, ChevronRight, X, Compass, Globe } from 'lucide-react';
-import { translateUiText, Language } from '../lib/translations';
+import { Language } from '../lib/translations';
 
 export interface AstroNotification {
   id: string;
@@ -27,11 +27,7 @@ export default function AstroNotifications({ userName, birthDate, userEmail, onR
   const { t: tI18n } = useTranslation();
   const t = (text: string) => {
     if (!text) return "";
-    const res = tI18n(text);
-    if (res === text || !res) {
-      return translateUiText(text, lang || 'pt');
-    }
-    return res;
+    return tI18n(text);
   };
   const [notifications, setNotifications] = useState<AstroNotification[]>([]);
   const [isOpen, setIsOpen] = useState<boolean>(false);

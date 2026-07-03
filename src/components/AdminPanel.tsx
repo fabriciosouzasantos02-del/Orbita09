@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { translateUiText, Language } from '../lib/translations';
+import { Language } from '../lib/translations';
 import { 
   Users, 
   DollarSign, 
@@ -51,17 +51,7 @@ export default function AdminPanel({
   const { t: i18nT } = useTranslation();
   const t = (text: string, options?: any): string => {
     if (!text) return "";
-    const res = i18nT(text, options) as any as string;
-    if (res === text || !res) {
-      let result = translateUiText(text, (lang as Language) || 'pt');
-      if (options) {
-        Object.keys(options).forEach(key => {
-          result = result.replace(new RegExp(`{{${key}}}`, 'g'), options[key]);
-        });
-      }
-      return result;
-    }
-    return res;
+    return i18nT(text, options) as any as string;
   };
 
   // Navigation for Sub-panels inside the configurations page
@@ -711,10 +701,10 @@ export default function AdminPanel({
                         onChange={(e) => setCreateUserForm({...createUserForm, plan: e.target.value})}
                         className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl focus:outline-hidden text-slate-305"
                       >
-                        <option value="Free Tier">Free Tier</option>
-                        <option value="Basic Plan">Basic Plan</option>
-                        <option value="Astro Premium">Astro Premium</option>
-                        <option value="Celestial VIP">Celestial VIP</option>
+                        <option value="Free Tier">{t("admin.free_tier")}</option>
+                        <option value="Basic Plan">{t("admin.basic_plan")}</option>
+                        <option value="Astro Premium">{t("admin.astro_premium")}</option>
+                        <option value="Celestial VIP">{t("admin.celestial_vip")}</option>
                       </select>
                     </div>
                   </div>
@@ -794,10 +784,10 @@ export default function AdminPanel({
                           onChange={(e) => handleUpdateUserPlan(userItem.id, e.target.value)}
                           className="px-2 py-1 rounded bg-[#050811] border border-slate-800 text-[10px] text-slate-300 focus:outline-hidden"
                         >
-                          <option value="Free Tier">Free Tier</option>
-                          <option value="Basic Plan">Basic Plan</option>
-                          <option value="Astro Premium">Astro Premium</option>
-                          <option value="Celestial VIP">Celestial VIP</option>
+                          <option value="Free Tier">{t("admin.free_tier")}</option>
+                          <option value="Basic Plan">{t("admin.basic_plan")}</option>
+                          <option value="Astro Premium">{t("admin.astro_premium")}</option>
+                          <option value="Celestial VIP">{t("admin.celestial_vip")}</option>
                         </select>
 
                         <button 

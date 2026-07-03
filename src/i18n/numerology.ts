@@ -1,693 +1,20 @@
-import { Language } from '../lib/translations';
+import { Language } from '../translations';
 
-export interface Interpretation {
-  name: string;
-  archetype: string;
-  general: string;
-  talents: string;
-  challenges: string;
-  love: string;
-  motto: string;
-  color: string;
-  element: string;
-  harmonicNumbers: number[];
-}
-
-export const numerologyInterpretationsMultilang: Record<Language, Record<number, Interpretation>> = {
-  pt: {
-    1: {
-      name: "Liderança, Originalidade e Iniciativa",
-      archetype: "O Pioneiro e Empreendedor",
-      general: "Representa a força motriz primordial, o início de toda manifestação e a centelha de pura iniciativa. É o número da autossuficiência e coragem para desbravar caminhos.",
-      talents: "Inovação radical, atitude executiva, facilidade de comando e extrema autonomia.",
-      challenges: "Autoritarismo, ansiedade imediatista e impaciência com os ritmos alheios.",
-      love: "Valoriza a individualidade. Necessita de admiração mútua e parceiros que estimulem sua ambição.",
-      motto: "Eu abro caminhos originais com foco e ousadia cósmica.",
-      color: "from-amber-500 to-orange-600",
-      element: "Fogo Volitivo",
-      harmonicNumbers: [3, 5, 9]
-    },
-    2: {
-      name: "Diplomacia, Conexão e Sensibilidade",
-      archetype: "O Pacificador e Harmonizador",
-      general: "Flui com as marés do acolhimento, associação e equilíbrio. Prefere o diálogo ao conflito, sendo elo de ligação ideal.",
-      talents: "Mediação de tensões, intuição analítica, adaptabilidade e escuta terapêutica.",
-      challenges: "Superdependência de aprovação, hipersensibilidade a críticas e dificuldade em dizer não.",
-      love: "Entrega total e busca por estabilidade. Requer paz e trocas românticas constantes.",
-      motto: "Eu reconcilio as dualidades e teço harmonia no planeta.",
-      color: "from-sky-400 to-blue-600",
-      element: "Água Intuitiva",
-      harmonicNumbers: [4, 6, 8]
-    },
-    3: {
-      name: "Expressão Social, Arte e Expansão",
-      archetype: "O Criador e Comunicador",
-      general: "Pura abundância expressiva. Otimismo transbordante, carisma e facilidade para inspirar e comunicar.",
-      talents: "Habilidades de escrita, oratória, carisma e brilhantismo criativo.",
-      challenges: "Dispersão de esforços, vaidade e inconsistência com rotinas.",
-      love: "Exige liberdade intelectual e trocas dinâmicas. Detesta possessividade.",
-      motto: "Eu manifesto a beleza do universo através da palavra e do ser.",
-      color: "from-yellow-400 to-amber-500",
-      element: "Ar Mutável",
-      harmonicNumbers: [1, 5, 9]
-    },
-    4: {
-      name: "Estrutura, Métodos e Consolidação",
-      archetype: "O Construtor Sistemático",
-      general: "Denota o alicerce absoluto, pragmatismo e consistência. Força do trabalho focado em resultados tangíveis.",
-      talents: "Organização estratégica, paciência de planejamento e lealdade inabalável.",
-      challenges: "Teimosia, rigidez metodológica e relutância em perdoar erros operacionais.",
-      love: "Proteção sólida e estabilidade duradoura. Ações valem mais que discursos românticos.",
-      motto: "Eu consolido, organizo e ergo as bases firmes do futuro.",
-      color: "from-emerald-600 to-teal-800",
-      element: "Terra Concreta",
-      harmonicNumbers: [2, 6, 8]
-    },
-    5: {
-      name: "Liberdade, Mudança e Magnetismo",
-      archetype: "O Viajante e Visionário Livre",
-      general: "Pulsa na velocidade da mudança. Rejeita o confinamento e adora testar hipóteses pela experiência direta.",
-      talents: "Adaptabilidade incrível, magnetismo persuasivo e coragem de arriscar.",
-      challenges: "Falta de disciplina, impaciência com rotinas e excessos sensoriais.",
-      love: "Parceria pautada na novidade e viagens. Habilidade de dar e receber flexibilidade.",
-      motto: "Eu experimento o milagre da vida em movimento irrestrito.",
-      color: "from-indigo-500 to-purple-600",
-      element: "Éter Dinâmico",
-      harmonicNumbers: [1, 3, 7]
-    },
-    6: {
-      name: "Cuidado, Responsabilidade e Equilíbrio",
-      archetype: "O Protetor e Conciliador do Lar",
-      general: "Ressoa com a cura, família, artes terapêuticas e nutrição de ambientes harmoniosos.",
-      talents: "Conciliação afetiva, bom gosto estético e justiça protetora.",
-      challenges: "Perfeccionismo de controle amoroso e tendência a assumir fardos alheios.",
-      love: "Romantismo clássico e lealdade. Deseja co-criar um refúgio seguro de beleza e paz.",
-      motto: "Eu protejo, curo e semeio harmonia sagrada no ninho da vida.",
-      color: "from-rose-500 to-pink-600",
-      element: "Água Conectiva",
-      harmonicNumbers: [2, 4, 8]
-    },
-    7: {
-      name: "Sabedoria, Investigação e Introspecção",
-      archetype: "O Sábio e Investigador Oculto",
-      general: "Portal de mistério e silêncio analítico. Combina raciocínio metodológico com profunda intuição mística.",
-      talents: "Discernimento cirúrgico, capacidade de pesquisa complexa e sabedoria metafísica.",
-      challenges: "Ceticismo amargo, isolamento excessivo e frieza emocional aparente.",
-      love: "Busca conexões de alto nível intelectual que respeitem sua forte necessidade de privacidade.",
-      motto: "Eu investigo as profundezas do conhecimento para desvelar a Verdade.",
-      color: "from-cyan-500 to-teal-600",
-      element: "Mente Abstrata",
-      harmonicNumbers: [5, 9, 11]
-    },
-    8: {
-      name: "Justiça, Realização e Poder Material",
-      archetype: "O Soberano e Gestor de Recursos",
-      general: "Rege o fluxo de causa e efeito no plano material. Poder prático gerido com integridade ética.",
-      talents: "Visão estratégica macro, gestão de crises e grande poder de reconstrução.",
-      challenges: "Materialismo opressor, mania de controle e dificuldade em demonstrar afeto simples.",
-      love: "Apoio prático e segurança madura. Valoriza a solidez e conquistas compartilhadas.",
-      motto: "Eu governo com integridade e transformo energia abstrata em abundância prática.",
-      color: "from-amber-600 to-yellow-800",
-      element: "Terra Conquistadora",
-      harmonicNumbers: [2, 4, 6]
-    },
-    9: {
-      name: "Humanitarismo, Desapego e Sabedoria",
-      archetype: "O Filósofo e Benfeitor Universal",
-      general: "Une todas as vibrações anteriores na compaixão impessoal, amor planetário e generosidade das almas antigas.",
-      talents: "Luz de inspiração coletiva, altruísmo e magnetismo de aconselhamento espiritual.",
-      challenges: "Utopismo doloroso, drama com fins de ciclos e negligência de si mesmo.",
-      love: "Amor sublime, poético e livre de ciúmes corriqueiros. Requer parceria idealista.",
-      motto: "Eu integro a totalidade cósmica com amor incondicional e altruísmo.",
-      color: "from-violet-600 to-fuchsia-700",
-      element: "Éter Sublime",
-      harmonicNumbers: [1, 3, 7]
-    },
-    11: {
-      name: "Clarividência Intuitiva e Iluminação",
-      archetype: "O Mensageiro e Canalizador Cósmico",
-      general: "Número mestre de alta voltagem intuitiva. Farol espiritual que inspira e cura mentalidades.",
-      talents: "Intuição profética, carisma telepático de liderança e idealismo revolucionário.",
-      challenges: "Ansiedade nervosa por sobrecarga vibratória, insônia e utopia extrema.",
-      love: "Enlace sagrado baseado em propósitos evolutivos ou de cura comuns.",
-      motto: "Eu sirvo de antena para o sagrado emanado pelas constelações.",
-      color: "from-blue-500 via-indigo-600 to-violet-600",
-      element: "Luz Mental Radiante",
-      harmonicNumbers: [7, 9, 22]
-    },
-    22: {
-      name: "Arquitetura Prática da Nova Era",
-      archetype: "O Criador Mestre e Edificador Cósmico",
-      general: "Poder de concretizar utopias em larga escala. Une o idealismo sublime com engenharia prática sólida.",
-      talents: "Liderança de projetos de grande escala, autodisciplina e capacidade organizadora colossal.",
-      challenges: "Exigência de autodesempenho sufocante e tendência a ignorar necessidades básicas.",
-      love: "Parcerias de alta potência construtiva. Busca criar impérios de benefícios humanitários.",
-      motto: "Eu materializo os mais sublimes sonhos em tijolos perpétuos de evolução.",
-      color: "from-emerald-500 via-teal-600 to-amber-600",
-      element: "Terra Tridimensional Elevada",
-      harmonicNumbers: [4, 8, 11]
-    }
-  },
-  en: {
-    1: {
-      name: "Leadership, Originality and Initiative",
-      archetype: "The Pioneer and Entrepreneur",
-      general: "Represents the primary driving force, the start of all manifestation and the spark of pure initiative. It is the number of self-reliance and courage to blaze new trails.",
-      talents: "Radical innovation, executive attitude, ease of command and extreme autonomy.",
-      challenges: "Authoritarianism, immediate anxiety and impatience with others' rhythms.",
-      love: "Values individuality. Needs mutual admiration and partners who stimulate ambition.",
-      motto: "I open original paths with cosmic focus and boldness.",
-      color: "from-amber-500 to-orange-600",
-      element: "Volitive Fire",
-      harmonicNumbers: [3, 5, 9]
-    },
-    2: {
-      name: "Diplomacy, Connection and Sensitivity",
-      archetype: "The Peacemaker and Harmonizer",
-      general: "Flows with the tides of welcoming, association and balance. Prefers dialogue over conflict, acting as an ideal link.",
-      talents: "Tension mediation, analytical intuition, adaptability and therapeutic listening.",
-      challenges: "Over-reliance on approval, hypersensitivity to criticism and difficulty saying no.",
-      love: "Total surrender and search for stability. Requires peace and constant romantic exchanges.",
-      motto: "I reconcile dualities and weave harmony on the planet.",
-      color: "from-sky-400 to-blue-600",
-      element: "Intuitive Water",
-      harmonicNumbers: [4, 6, 8]
-    },
-    3: {
-      name: "Social Expression, Art and Expansion",
-      archetype: "The Creator and Communicator",
-      general: "Pure expressive abundance. Overflowing optimism, charisma and ease to inspire and communicate.",
-      talents: "Writing skills, public speaking, charisma and creative brilliance.",
-      challenges: "Dispersion of efforts, vanity and inconsistency with routines.",
-      love: "Requires intellectual freedom and dynamic exchanges. Hates possessiveness.",
-      motto: "I manifest the beauty of the universe through word and being.",
-      color: "from-yellow-400 to-amber-500",
-      element: "Mutable Air",
-      harmonicNumbers: [1, 5, 9]
-    },
-    4: {
-      name: "Structure, Methods and Consolidation",
-      archetype: "The Systematic Builder",
-      general: "Denotes the absolute foundation, pragmatism and consistency. Strength of work focused on tangible results.",
-      talents: "Strategic organization, planning patience and unwavering loyalty.",
-      challenges: "Stubbornness, methodological rigidity and reluctance to forgive operational errors.",
-      love: "Solid protection and long-term stability. Actions speak louder than romantic speeches.",
-      motto: "I consolidate, organize and build the firm bases of the future.",
-      color: "from-emerald-600 to-teal-800",
-      element: "Concrete Earth",
-      harmonicNumbers: [2, 6, 8]
-    },
-    5: {
-      name: "Freedom, Change and Magnetism",
-      archetype: "The Free Traveler and Visionary",
-      general: "Pulses at the speed of change. Rejects confinement and loves to test hypotheses through direct experience.",
-      talents: "Incredible adaptability, persuasive magnetism and courage to risk.",
-      challenges: "Lack of discipline, impatience with routines and sensory excesses.",
-      love: "Partnership based on novelty and travels. Ability to give and receive flexibility.",
-      motto: "I experience the miracle of life in unrestricted motion.",
-      color: "from-indigo-500 to-purple-600",
-      element: "Dynamic Ether",
-      harmonicNumbers: [1, 3, 7]
-    },
-    6: {
-      name: "Care, Responsibility and Balance",
-      archetype: "The Protector and Conciliator of the Home",
-      general: "Resonates with healing, family, therapeutic arts and nurturing harmonious environments.",
-      talents: "Emotional reconciliation, aesthetic taste and protective justice.",
-      challenges: "Perfectionism of loving control and tendency to take on others' burdens.",
-      love: "Classic romanticism and loyalty. Desires to co-create a safe haven of beauty and peace.",
-      motto: "I protect, heal and sow sacred harmony in the nest of life.",
-      color: "from-rose-500 to-pink-600",
-      element: "Connective Water",
-      harmonicNumbers: [2, 4, 8]
-    },
-    7: {
-      name: "Wisdom, Investigation and Introspection",
-      archetype: "The Wise and Hidden Investigator",
-      general: "Portal of mystery and analytical silence. Combines methodological reasoning with deep mystical intuition.",
-      talents: "Surgical discernment, complex research ability and metaphysical wisdom.",
-      challenges: "Bitter skepticism, excessive isolation and apparent emotional coldness.",
-      love: "Seeks high-level intellectual connections that respect their strong need for privacy.",
-      motto: "I investigate the depths of knowledge to unveil the Truth.",
-      color: "from-cyan-500 to-teal-600",
-      element: "Abstract Mind",
-      harmonicNumbers: [5, 9, 11]
-    },
-    8: {
-      name: "Justice, Achievement and Material Power",
-      archetype: "The Sovereign and Asset Manager",
-      general: "Governs the flow of cause and effect on the material plane. Practical power managed with ethical integrity.",
-      talents: "Macro strategic vision, crisis management and great power of reconstruction.",
-      challenges: "Oppressive materialism, control mania and difficulty showing simple affection.",
-      love: "Practical support and mature security. Values solidity and shared achievements.",
-      motto: "I govern with integrity and transform abstract energy into practical abundance.",
-      color: "from-amber-600 to-yellow-800",
-      element: "Conquering Earth",
-      harmonicNumbers: [2, 4, 6]
-    },
-    9: {
-      name: "Humanitarianism, Detachment and Wisdom",
-      archetype: "The Philosopher and Universal Benefactor",
-      general: "Unites all previous vibrations in impersonal compassion, planetary love and generosity of ancient souls.",
-      talents: "Light of collective inspiration, altruism and spiritual counseling magnetism.",
-      challenges: "Painful utopianism, drama with ends of cycles and neglect of self.",
-      love: "Sublime, poetic love free from common jealousy. Requires idealistic partnership.",
-      motto: "I integrate the cosmic totality with unconditional love and altruism.",
-      color: "from-violet-600 to-fuchsia-700",
-      element: "Sublime Ether",
-      harmonicNumbers: [1, 3, 7]
-    },
-    11: {
-      name: "Intuitive Clairvoyance and Enlightenment",
-      archetype: "The Cosmic Messenger and Channeler",
-      general: "High-voltage intuitive master number. Spiritual beacon that inspires and heals mindsets.",
-      talents: "Prophetic intuition, telepathic leadership charisma and revolutionary idealism.",
-      challenges: "Nervous anxiety from vibrational overload, insomnia and extreme utopia.",
-      love: "Sacred bond based on common evolutive or healing purposes.",
-      motto: "I serve as an antenna for the sacred emanated by the constellations.",
-      color: "from-blue-500 via-indigo-600 to-violet-600",
-      element: "Radiant Mental Light",
-      harmonicNumbers: [7, 9, 22]
-    },
-    22: {
-      name: "Practical Architecture of the New Age",
-      archetype: "The Master Builder and Cosmic Edifier",
-      general: "Power to concretize utopian visions on a large scale. Welds sublime idealism with solid practical engineering.",
-      talents: "Large-scale project leadership, self-discipline and colossal organizing capacity.",
-      challenges: "Suffocating self-performance demand and tendency to ignore basic needs.",
-      love: "High-power constructive partnerships. Seeks to build empires of humanitarian benefits.",
-      motto: "I materialize the most sublime dreams in perpetual bricks of evolution.",
-      color: "from-emerald-500 via-teal-600 to-amber-600",
-      element: "Elevated Three-Dimensional Earth",
-      harmonicNumbers: [4, 8, 11]
-    }
-  },
-  es: {
-    1: {
-      name: "Liderazgo, Originalidad e Iniciativa",
-      archetype: "El Pionero y Emprendedor",
-      general: "Representa la fuerza motriz primordial, el inicio de toda manifestación y la chispa de pura iniciativa. Es el número de la autosuficiencia y el coraje para abrir nuevos caminos.",
-      talents: "Innovación radical, actitud ejecutiva, facilidad de mando y autonomía extrema.",
-      challenges: "Autoritarismo, ansiedad inmediatista e impaciencia con el ritmo de los demás.",
-      love: "Valora la individualidad. Necesita admiración mutua y parejas que estimulen su ambición.",
-      motto: "Abro caminos originales con enfoque y audacia cósmica.",
-      color: "from-amber-500 to-orange-600",
-      element: "Fuego Volitivo",
-      harmonicNumbers: [3, 5, 9]
-    },
-    2: {
-      name: "Diplomacia, Conexión y Sensibilidad",
-      archetype: "El Pacificador y Harmonizador",
-      general: "Fluye con las mareas de la acogida, asociación y equilibrio. Prefiere el diálogo al conflicto, actuando como enlace ideal.",
-      talents: "Mediación de tensiones, intuición analítica, adaptabilidad y escucha terapéutica.",
-      challenges: "Superdependencia de aprobación, hipersensibilidad a críticas y dificultad para decir no.",
-      love: "Entrega total y búsqueda de estabilidad. Requiere paz e intercambios románticos constantes.",
-      motto: "Reconcilio las dualidades y tejo armonía en el planeta.",
-      color: "from-sky-400 to-blue-600",
-      element: "Agua Intuitiva",
-      harmonicNumbers: [4, 6, 8]
-    },
-    3: {
-      name: "Expresión Social, Arte y Expansión",
-      archetype: "El Creador y Comunicador",
-      general: "Pura abundancia expresiva. Optimismo desbordante, carisma y facilidad para inspirar y comunicar.",
-      talents: "Habilidades de escritura, oratoria, carisma y brillantez creativa.",
-      challenges: "Dispersión de esfuerzos, vanidad e inconsistencia con rutinas.",
-      love: "Requiere libertad intelectual e intercambios dinámicos. Detesta la posesividad.",
-      motto: "Manifiesto la belleza del universo a través de la palabra y el ser.",
-      color: "from-yellow-400 to-amber-500",
-      element: "Aire Mutable",
-      harmonicNumbers: [1, 5, 9]
-    },
-    4: {
-      name: "Estructura, Métodos y Consolidación",
-      archetype: "El Constructor Sistemático",
-      general: "Denota el cimiento absoluto, pragmatismo y consistencia. Fuerza de trabajo enfocada en resultados tangibles.",
-      talents: "Organización estratégica, paciencia de planificación y lealtad inquebrantable.",
-      challenges: "Obstinación, rigidez metodológica y renuencia a perdonar errores operativos.",
-      love: "Protección sólida y estabilidad duradera. Las acciones valen más que los discursos románticos.",
-      motto: "Consolido, organizo y levanto las bases firmes del futuro.",
-      color: "from-emerald-600 to-teal-800",
-      element: "Tierra Concreta",
-      harmonicNumbers: [2, 6, 8]
-    },
-    5: {
-      name: "Liberdade, Mudança e Magnetismo",
-      archetype: "El Viajero y Visionario Libre",
-      general: "Pulsa a la velocidad del cambio. Rechaza el confinamiento y adora probar hipótesis por la experiencia directa.",
-      talents: "Adaptabilidad increíble, magnetismo persuasivo y coraje para arriesgar.",
-      challenges: "Falta de disciplina, impaciencia con rutinas y excesos sensoriales.",
-      love: "Relación basada en la novedad y los viajes. Capacidad de dar y recibir flexibilidad.",
-      motto: "Experimento el milagro de la vida en movimiento ilimitado.",
-      color: "from-indigo-500 to-purple-600",
-      element: "Éter Dinâmico",
-      harmonicNumbers: [1, 3, 7]
-    },
-    6: {
-      name: "Cuidado, Responsabilidad y Equilibrio",
-      archetype: "El Protector y Conciliador del Hogar",
-      general: "Resuena con la curación, la familia, las artes terapéuticas y la nutrición de ambientes armoniosos.",
-      talents: "Conciliación afectiva, gusto estético y justicia protectora.",
-      challenges: "Perfeccionismo de control amoroso y tendencia a asumir cargas ajenas.",
-      love: "Romanticismo clásico y lealtad. Desea co-crear un refugio seguro de belleza y paz.",
-      motto: "Protejo, curo y siembro armonía sagrada en el nido de la vida.",
-      color: "from-rose-500 to-pink-600",
-      element: "Agua Conectiva",
-      harmonicNumbers: [2, 4, 8]
-    },
-    7: {
-      name: "Sabiduría, Investigación e Introspecção",
-      archetype: "El Sabio e Investigador Oculto",
-      general: "Portal de misterio y silencio analítico. Combina razonamiento metodológico con profunda intuición mística.",
-      talents: "Discernimiento quirúrgico, capacidad de investigación compleja y sabiduría metafísica.",
-      challenges: "Escepticismo amargo, aislamiento excesivo y frialdad emocional aparente.",
-      love: "Busca conexiones de alto nivel intelectual que respeten su necesidad de privacidad.",
-      motto: "Investigo las profundidades del conocimiento para desvelar la Verdad.",
-      color: "from-cyan-500 to-teal-600",
-      element: "Mente Abstracta",
-      harmonicNumbers: [5, 9, 11]
-    },
-    8: {
-      name: "Justicia, Realización e Poder Material",
-      archetype: "El Soberano y Gestor de Recursos",
-      general: "Rige el flujo de causa y efecto en el plano material. Poder práctico gestionado con integridad ética.",
-      talents: "Visión estratégica macro, gestión de crisis y gran poder de reconstrucción.",
-      challenges: "Materialismo opresor, manía de control y dificultad para demostrar afecto simple.",
-      love: "Apoyo práctico y seguridad madura. Valora la solidez y logros compartidos.",
-      motto: "Gobierno con integridad y transformo energía abstracta en abundancia práctica.",
-      color: "from-amber-600 to-yellow-800",
-      element: "Tierra Conquistadora",
-      harmonicNumbers: [2, 4, 6]
-    },
-    9: {
-      name: "Humanitarismo, Desapego e Sabedoria",
-      archetype: "El Filósofo y Benefactor Universal",
-      general: "Une todas las vibraciones anteriores en compasión impersonal, amor planetario y generosidad de almas antiguas.",
-      talents: "Luz de inspiración colectiva, altruismo y magnetismo de consejo espiritual.",
-      challenges: "Utopismo doloroso, drama con finales de ciclos y negligencia de sí mismo.",
-      love: "Amor sublime, poético y libre de celos comunes. Requiere pareja idealista.",
-      motto: "Integro la totalidad cósmica con amor incondicional y altruismo.",
-      color: "from-violet-600 to-fuchsia-700",
-      element: "Éter Sublime",
-      harmonicNumbers: [1, 3, 7]
-    },
-    11: {
-      name: "Clarividência Intuitiva e Iluminação",
-      archetype: "El Mensajero y Canalizador Cósmico",
-      general: "Número maestro de alta tensión intuitiva. Faro espiritual que inspira y sana mentalidades.",
-      talents: "Intuición profética, carisma telepático de liderazgo e idealismo revolucionario.",
-      challenges: "Ansiedad nerviosa por sobrecarga vibratoria, insomnio y utopía extrema.",
-      love: "Enlace sagrado basado en propósitos evolutivos o de sanación comunes.",
-      motto: "Sirvo de antena para lo sagrado emanado por las constelaciones.",
-      color: "from-blue-500 via-indigo-600 to-violet-600",
-      element: "Luz Mental Radiante",
-      harmonicNumbers: [7, 9, 22]
-    },
-    22: {
-      name: "Arquitetura Prática da Nova Era",
-      archetype: "El Creador Maestro y Edificador Cósmico",
-      general: "Poder de concretar utopías a gran escala. Une el idealismo sublime con ingeniería práctica sólida.",
-      talents: "Liderazgo de proyectos de gran escala, autodisciplina y capacidad organizadora colossal.",
-      challenges: "Exigencia de autodesempeño asfixiante y tendencia a ignorar necesidades básicas.",
-      love: "Alianzas de alta potencia constructiva. Busca crear imperios de beneficio humanitario.",
-      motto: "Materializo los más sublimes sueños en ladrillos perpetuos de evolución.",
-      color: "from-emerald-500 via-teal-600 to-amber-600",
-      element: "Tierra Tridimensional Elevada",
-      harmonicNumbers: [4, 8, 11]
-    }
-  },
-  de: {
-    1: {
-      name: "Führung, Originalität und Initiative",
-      archetype: "Der Pionier und Unternehmer",
-      general: "Repräsentiert die primäre Antriebskraft, den Beginn aller Manifestation und den Funken reiner Initiative. Es ist die Zahl der Eigenständigkeit und des Mutes, neue Wege zu beschreiten.",
-      talents: "Radikale Innovation, exekutive Haltung, Leichtigkeit bei der Führung und extreme Autonomie.",
-      challenges: "Autoritarismus, unmittelbare Angst und Ungeduld mit dem Tempo anderer.",
-      love: "Schätzt die Individualität. Benötigt gegenseitige Bewunderung und Partner, die den Ehrgeiz anregen.",
-      motto: "Ich eröffne originelle Wege mit kosmischem Fokus und Mut.",
-      color: "from-amber-500 to-orange-600",
-      element: "Willensfeuer",
-      harmonicNumbers: [3, 5, 9]
-    },
-    2: {
-      name: "Diplomatie, Verbindung und Sensibilität",
-      archetype: "Der Friedensstifter und Harmonisierer",
-      general: "Fließt mit den Gezeiten der Aufnahme, Assoziation und des Gleichgewichts. Bevorzugt den Dialog gegenüber dem Konflikt und wirkt als ideales Bindeglied.",
-      talents: "Vermittlung von Spannungen, analytische Intuition, Anpassungsfähigkeit und therapeutisches Zuhören.",
-      challenges: "Übermäßige Abhängigkeit von Bestätigung, Überempfindlichkeit gegenüber Kritik und Schwierigkeiten, Nein zu sagen.",
-      love: "Vollständige Hingabe und Suche nach Stabilität. Benötigt Frieden und ständigen romantischen Austausch.",
-      motto: "Ich versöhne Dualitäten und webe Harmonie auf dem Planeten.",
-      color: "from-sky-400 to-blue-600",
-      element: "Intuitive Wasser",
-      harmonicNumbers: [4, 6, 8]
-    },
-    3: {
-      name: "Sozialer Ausdruck, Kunst und Expansion",
-      archetype: "Der Schöpfer und Kommunikator",
-      general: "Reine Ausdrucksfülle. Überfließender Optimismus, Charisma und Leichtigkeit zu inspirieren und zu kommunizieren.",
-      talents: "Schreibfähigkeiten, Redegabe, Charisma und kreative Brillanz.",
-      challenges: "Verzettelung von Bemühungen, Eitelkeit und Inkonsistenz mit Routinen.",
-      love: "Erfordert intellektuelle Freiheit und dynamischen Austausch. Hasst Besessenheit.",
-      motto: "Ich manifestiere die Schönheit des Universums durch Wort und Sein.",
-      color: "from-yellow-400 to-amber-500",
-      element: "Veränderliche Luft",
-      harmonicNumbers: [1, 5, 9]
-    },
-    4: {
-      name: "Struktur, Methoden und Konsolidierung",
-      archetype: "Der systematische Erbauer",
-      general: "Bezeichnet das absolute Fundament, Pragmatismus und Beständigkeit. Kraft der Arbeit, die auf greifbare Ergebnisse ausgerichtet ist.",
-      talents: "Strategische Organisation, Planungungsgeduld und unerschütterliche Loyalität.",
-      challenges: "Sturheit, methodische Starrheit und Widerwille, betriebliche Fehler zu verzeihen.",
-      love: "Solider Schutz und langfristige Stabilität. Taten sprechen lauter als romantische Reden.",
-      motto: "Ich konsolidiere, organisiere und baue das feste Fundament der Zukunft.",
-      color: "from-emerald-600 to-teal-800",
-      element: "Konkrete Erde",
-      harmonicNumbers: [2, 6, 8]
-    },
-    5: {
-      name: "Freiheit, Wandel und Magnetismus",
-      archetype: "Der freie Reisende und Visionär",
-      general: "Pulsieren im Tempo des Wandels. Lehnt Einengung ab und liebt es, Hypothesen durch direkte Erfahrung zu testen.",
-      talents: "Unglaubliche Anpassungsfähigkeit, überzeugender Magnetismus und Mut zum Risiko.",
-      challenges: "Mangel an Disziplin, Ungeduld mit Routinen und sensorische Exzesse.",
-      love: "Partnerschaft basierend auf Neuheit und Reisen. Fähigkeit, Flexibilität zu geben und zu nehmen.",
-      motto: "Ich erlebe das Wunder des Lebens in uneingeschränkter Bewegung.",
-      color: "from-indigo-500 to-purple-600",
-      element: "Dynamischer Äther",
-      harmonicNumbers: [1, 3, 7]
-    },
-    6: {
-      name: "Fürsorge, Verantwortung und Gleichgewicht",
-      archetype: "Der Beschützer und Vermittler des Heims",
-      general: "Resoniert mit Heilung, Familie, therapeutischen Künsten und der Pflege harmonischer Umgebungen.",
-      talents: "Emotionale Versöhnung, ästhetischer Geschmack und schützende Gerechtigkeit.",
-      challenges: "Perfektionismus der liebevollen Kontrolle und Tendenz, Lasten anderer zu tragen.",
-      love: "Klassische Romantik und Loyalität. Möchte ein sicheres Nest der Schönheit und des Friedens schaffen.",
-      motto: "Ich beschütze, heile und säe heilige Harmonie im Nest des Lebens.",
-      color: "from-rose-500 to-pink-600",
-      element: "Verbindendes Wasser",
-      harmonicNumbers: [2, 4, 8]
-    },
-    7: {
-      name: "Weisheit, Untersuchung und Introspektion",
-      archetype: "Der Weise und verborgene Ermittler",
-      general: "Portal des Geheimnisses und des analytischen Schweigens. Verbindet methodisches Denken mit tiefer mystischer Intuition.",
-      talents: "Chirurgisches Urteilsvermögen, komplexe Forschungsfähigkeit und metaphysische Weisheit.",
-      challenges: "Bitterer Skeptizismus, übermäßige Isolation und scheinbare emotionale Kälte.",
-      love: "Sucht intellektuelle Verbindungen auf hohem Niveau, die ihr Bedürfnis nach Privatsphäre respektieren.",
-      motto: "Ich erforsche die Tiefen des Wissens, um die Wahrheit zu enthüllen.",
-      color: "from-cyan-500 to-teal-600",
-      element: "Abstrakter Geist",
-      harmonicNumbers: [5, 9, 11]
-    },
-    8: {
-      name: "Gerechtigkeit, Leistung und materielle Macht",
-      archetype: "Der Souverän und Vermögensverwalter",
-      general: "Regiert das Spiel von Ursache und Wirkung auf der materiellen Ebene. Praktische Kraft, die mit ethischer Integrität verwaltet wird.",
-      talents: "Makrostrategische Vision, Krisenmanagement und große Kraft des Wiederaufbaus.",
-      challenges: "Unterdrückerischer Materialismus, Kontrollwahn und Schwierigkeiten, Zuneigung zu zeigen.",
-      love: "Praktische Unterstützung und reife Sicherheit. Schätzt Solidität und gemeinsame Erfolge.",
-      motto: "Ich regiere mit Integrität und verwandle abstrakte Energie in praktischen Überfluss.",
-      color: "from-amber-600 to-yellow-800",
-      element: "Erobernde Erde",
-      harmonicNumbers: [2, 4, 6]
-    },
-    9: {
-      name: "Humanismus, Distanz und ganzheitliche Weisheit",
-      archetype: "Der Philosoph und universelle Wohltäter",
-      general: "Vereint alle vorherigen Schwingungen in unpersönlichem Mitgefühl, universeller Liebe und der Großzügigkeit alter Seelen.",
-      talents: "Licht kollektiver Inspiration, Altruismus und spirituelles Beratungscharisma.",
-      challenges: "Schmerzhafter Utopismus, Drama mit Zyklenenden und Selbstvernachlässigung.",
-      love: "Sublime, poetische Liebe frei von Eifersucht. Erfordert einen idealistischen Partner.",
-      motto: "Ich integriere die kosmische Gesamtheit mit bedingungsloser Liebe und Altruismus.",
-      color: "from-violet-600 to-fuchsia-700",
-      element: "Sublimer Äther",
-      harmonicNumbers: [1, 3, 7]
-    },
-    11: {
-      name: "Intuitive Hellseherei und Erleuchtung",
-      archetype: "Der kosmische Bote und Kanalisierer",
-      general: "Meisterzahl mit hoher intuitiver Spannung. Spirituelles Leuchtfeuer, das inspiriert und Denkweisen heilt.",
-      talents: "Prophetische Intuition, telepathisches Führungscharisma und revolutionärer Idealismus.",
-      challenges: "Nervöse Angst durch Überlastung, Schlaflosigkeit und utopischer Perfektionismus.",
-      love: "Heilige Verbindung basierend auf gemeinsamen Evolutions- oder Heilungszielen.",
-      motto: "Ich diene als Antenne für das Heilige, das von den Konstellationen ausgeht.",
-      color: "from-blue-500 via-indigo-600 to-violet-600",
-      element: "Strahlendes geistiges Licht",
-      harmonicNumbers: [7, 9, 22]
-    },
-    22: {
-      name: "Praktische Architektur der Neuen Ära",
-      archetype: "Der Meister-Erbauer und kosmische Errichter",
-      general: "Macht, utopische Visionen in großem Maßstab zu verwirklichen. Verbindet erhabenen Idealismus mit solider praktischer Technik.",
-      talents: "Leitung von Großprojekten, Selbstdisziplin und kolossale Organisationsfähigkeit.",
-      challenges: "Erstickender Leistungsdruck und Tendenz, Grundbedürfnisse zu ignorieren.",
-      love: "Hocheffiziente konstruktive Partnerschaften. Sucht Imperien des humanitären Nutzens aufzubauen.",
-      motto: "Ich materialisiere die erhabensten Träume in ewigen Steinen der Evolution.",
-      color: "from-emerald-500 via-teal-600 to-amber-600",
-      element: "Erhöhte dreidimensionale Erde",
-      harmonicNumbers: [4, 8, 11]
-    }
-  },
-  fr: {
-    1: {
-      name: "Leadership, Originalité et Initiative",
-      archetype: "Le Pionnier et Entrepreneur",
-      general: "Représente la force motrice primordiale, le début de toute manifestation et l'étincelle de pure initiative. C'est le nombre de l'autonomie et du courage pour ouvrir de nouvelles voies.",
-      talents: "Innovation radicale, attitude exécutive, facilité de commandement et autonomie extrême.",
-      challenges: "Autoritarisme, anxiété immédiate et impatience avec le rythme des autres.",
-      love: "Valorise l'individualité. A besoin d'admiration mutuelle et de partenaires qui stimulent l'ambition.",
-      motto: "J'ouvre des voies originales avec un focus et une audace cosmique.",
-      color: "from-amber-500 to-orange-600",
-      element: "Feu Volitif",
-      harmonicNumbers: [3, 5, 9]
-    },
-    2: {
-      name: "Diplomatie, Connexion et Sensibilité",
-      archetype: "Le Conciliateur et Harmonisateur",
-      general: "Coule avec les marées de l'accueil, de l'association et de l'équilibre. Préfère le dialogue au conflit, agissant comme lien idéal.",
-      talents: "Médiation des tensions, intuition analytique, adaptabilité et écoute thérapeutique.",
-      challenges: "Dépendance excessive à l'approbation, hypersensibilité aux critiques et difficulté à dire non.",
-      love: "Abandon total et recherche de stabilité. Nécessite la paix et des échanges romantiques constants.",
-      motto: "Je réconcilie les dualités et tisse l'harmonie sur la planète.",
-      color: "from-sky-400 to-blue-600",
-      element: "Eau Intuitive",
-      harmonicNumbers: [4, 6, 8]
-    },
-    3: {
-      name: "Expression Sociale, Art et Expansion",
-      archetype: "Le Créateur et Communicateur",
-      general: "Pure abondance expressive. Optimisme débordant, charisme et facilité à inspirer et communiquer.",
-      talents: "Compétences en écriture, art oratoire, charisme et brillance créative.",
-      challenges: "Dispersion des efforts, vanité et incohérence avec les routines.",
-      love: "Exige la liberté intellectuelle et des échanges dynamiques. Déteste la possessivité.",
-      motto: "Je manifeste la beauté de l'univers à travers la parole et l'être.",
-      color: "from-yellow-400 to-amber-500",
-      element: "Air Mutable",
-      harmonicNumbers: [1, 5, 9]
-    },
-    4: {
-      name: "Structure, Méthodes et Consolidation",
-      archetype: "Le Bâtisseur Systématique",
-      general: "Dénote le fondement absolu, le pragmatisme et la cohérence. Force du travail axé sur des résultats tangibles.",
-      talents: "Organisation stratégique, patience de planification et loyauté inébranlable.",
-      challenges: "Entêtement, rigidité méthodologique et réticence à pardonner les erreurs opérationnelles.",
-      love: "Protection solide et stabilité durable. Les actions valent mieux que les discours romantiques.",
-      motto: "Je consolide, organise et érige les bases fermes de l'avenir.",
-      color: "from-emerald-600 to-teal-800",
-      element: "Terre Concrète",
-      harmonicNumbers: [2, 6, 8]
-    },
-    5: {
-      name: "Liberté, Changement et Magnétisme",
-      archetype: "Le Voyageur Libre et Visionnaire",
-      general: "Pulse à la vitesse du changement. Refuse le confinement et adore tester des hypothèses par l'expérience directe.",
-      talents: "Adaptabilité incroyable, magnétisme persuasif et courage de risquer.",
-      challenges: "Manque de discipline, impatience avec les routines et excès sensoriels.",
-      love: "Partenariat basé sur la nouveauté et les voyages. Capacité à donner et recevoir de la flexibilité.",
-      motto: "J'expérimente le miracle de la vie en mouvement libre.",
-      color: "from-indigo-500 to-purple-600",
-      element: "Éther Dynamique",
-      harmonicNumbers: [1, 3, 7]
-    },
-    6: {
-      name: "Soin, Responsabilité et Équilibre",
-      archetype: "Le Protecteur et Conciliateur du Foyer",
-      general: "Résonne avec la guérison, la famille, les arts thérapeutiques et la nutrition d'environnements harmonieux.",
-      talents: "Réconciliation affective, goût esthétique et justice protectrice.",
-      challenges: "Perfectionnisme du contrôle affectif et tendance à assumer les fardeaux d'autrui.",
-      love: "Romantisme classique et loyauté. Désire co-créer un havre sûr de beauté et de paix.",
-      motto: "Je protège, guéris et sème l'harmonie sacrée dans le nid de la vie.",
-      color: "from-rose-500 to-pink-600",
-      element: "Eau Connective",
-      harmonicNumbers: [2, 4, 8]
-    },
-    7: {
-      name: "Sagesse, Investigation et Introspection",
-      archetype: "Le Sage et Enquêteur Caché",
-      general: "Portail du mystère et du silence analytique. Combine le raisonnement méthodologique avec une profonde intuition mystique.",
-      talents: "Discernement chirurgical, capacité de recherche complexe et sagesse métaphysique.",
-      challenges: "Scepticisme amer, isolement excessif et froideur émotionnelle apparente.",
-      love: "Recherche des connexions intellectuelles de haut niveau qui respectent son besoin d'intimité.",
-      motto: "J'explore les profondeurs de la connaissance pour dévoiler la vérité.",
-      color: "from-cyan-500 to-teal-600",
-      element: "Esprit Abstrait",
-      harmonicNumbers: [5, 9, 11]
-    },
-    8: {
-      name: "Justice, Réalisation et Pouvoir Matériel",
-      archetype: "Le Souverain et Gestionnaire de Ressources",
-      general: "Régit le flux de cause à effet sur le plan matériel. Pouvoir pratique géré avec intégrité éthique.",
-      talents: "Vision macro stratégique, gestion de crise et grand pouvoir de reconstruction.",
-      challenges: "Matérialisme oppresseur, manie du contrôle et difficulté à exprimer une affection simple.",
-      love: "Soutien pratique et sécurité mûre. Valorise la solide et les réalisations partagées.",
-      motto: "Je gouverne avec intégrité et transforme l'énergie abstraite en abondance pratique.",
-      color: "from-amber-600 to-yellow-800",
-      element: "Terre Conquérante",
-      harmonicNumbers: [2, 4, 6]
-    },
-    9: {
-      name: "Humanitarisme, Détachement et Sagesse",
-      archetype: "Le Philosophe et Bienfaiteur Universel",
-      general: "Unit toutes les vibrations précédentes dans la compassion impersonnelle, l'amour planétaire et la générosité des âmes anciennes.",
-      talents: "Lumière d'inspiration collective, altruisme et magnétisme de conseil spirituel.",
-      challenges: "Utopisme douloureux, drame avec les fins de cycles et négligence de soi.",
-      love: "Amour sublime, poétique et libre de jalousie ordinaire. Nécessite un partenariat idéaliste.",
-      motto: "J'intègre la totalité cosmique avec un amour incondicional et de l'altruisme.",
-      color: "from-violet-600 to-fuchsia-700",
-      element: "Éther Sublime",
-      harmonicNumbers: [1, 3, 7]
-    },
-    11: {
-      name: "Clairvoyance Intuitive et Illumination",
-      archetype: "Le Messager et Canaliseur Cosmique",
-      general: "Nombre maître à haute tension intuitive. Phare spirituel qui inspire et guérit les mentalités.",
-      talents: "Intuition prophétique, charisme de leadership télépathique et idéalisme révolutionnaire.",
-      challenges: "Anxiété nerveuse due à la surcharge vibratoire, insomnie et utopie extrême.",
-      love: "Union sacrée basée sur des objectifs évolutifs ou de guérison communs.",
-      motto: "Je sers d'antenne pour le sacré émanant des constellations.",
-      color: "from-blue-500 via-indigo-600 to-violet-600",
-      element: "Lumière Mentale Radiante",
-      harmonicNumbers: [7, 9, 22]
-    },
-    22: {
-      name: "Architecture Pratique de la Nouvelle Ère",
-      archetype: "Le Maître Bâtisseur et Édificateur Cosmique",
-      general: "Pouvoir de concrétiser des visions utopiques à grande échelle. Allie l'idéalisme sublime à une ingénierie pratique solide.",
-      talents: "Direction de projets à grande échelle, autodiscipline et capacité d'organisation colossale.",
-      challenges: "Exigence de performance personnelle étouffante et tendance à ignorer les besoins de base.",
-      love: "Partenariats constructifs à haute puissance. Cherche à bâtir des empires de bénéfices humanitaires.",
-      motto: "Je matérialise les rêves les plus sublimes en briques perpétuelles d'évolution.",
-      color: "from-emerald-500 via-teal-600 to-amber-600",
-      element: "Terre Tridimensionnelle Élevée",
-      harmonicNumbers: [4, 8, 11]
-    }
-  }
-};
-
-export const uiTranslationsMultilang: Record<Language, Record<string, string>> = {
-  pt: {
+export const numerologyTranslations: Record<Language, Record<string, string>> = {
+  "pt": {
+    "Leitura Detalhada de seus Números Força": "Leitura Detalhada de seus Números Força",
+    "Estudo Pitagórico de Vibração Numérica": "Estudo Pitagórico de Vibração Numérica",
+    "Análise dos Arquétipos Geométricos do Nome e Nascimento": "Análise dos Arquétipos Geométricos do Nome e Nascimento",
+    "Número de Destino (Missão de Vida)": "Número de Destino (Missão de Vida)",
+    "Número de Expressão (Talentos e Habilidades)": "Número de Expressão (Talentos e Habilidades)",
+    "Número de Desejo da Alma (Impulso Íntimo)": "Número de Desejo da Alma (Impulso Íntimo)",
+    "Número de Personalidade (Aparência Social)": "Número de Personalidade (Aparência Social)",
+    "Sua Vibração Cósmica Principal": "Sua Vibração Cósmica Principal",
+    "Sua vibração indica": "Sua vibração indica",
+    "Palavra-Chave:": "Palavra-Chave:",
+    "Descrição Arquetípica:": "Descrição Arquetípica:",
+    "Desbloquear Relatório de Numerologia Hermética": "Desbloquear Relatório de Numerologia Hermética",
+    "Analisando frequências vibratórias...": "Analisando frequências vibratórias...",
     "(Multiplicador de Fase)": "(Multiplicador de Fase)",
     "Módulo Pro Premium Ativo": "Módulo Pro Premium Ativo",
     "Análise Vibracional Completa": "Análise Vibracional Completa",
@@ -774,7 +101,20 @@ export const uiTranslationsMultilang: Record<Language, Record<string, string>> =
     "Ciclo Produtivo (28-56 anos)": "Ciclo Produtivo (28-56 anos)",
     "Ciclo de Colheita (56+ anos)": "Ciclo de Colheita (56+ anos)"
   },
-  en: {
+  "en": {
+    "Leitura Detalhada de seus Números Força": "Detailed Reading of Your Power Numbers",
+    "Estudo Pitagórico de Vibração Numérica": "Pythagorean Study of Numerical Vibration",
+    "Análise dos Arquétipos Geométricos do Nome e Nascimento": "Analysis of Geometric Archetypes of Name and Birth",
+    "Número de Destino (Missão de Vida)": "Destiny Number (Life Mission)",
+    "Número de Expressão (Talentos e Habilidades)": "Expression Number (Talents and Abilities)",
+    "Número de Desejo da Alma (Impulso Íntimo)": "Soul Urge Number (Inner Impulse)",
+    "Número de Personalidade (Aparência Social)": "Personality Number (Social Appearance)",
+    "Sua Vibração Cósmica Principal": "Your Main Cosmic Vibration",
+    "Sua vibração indica": "Your vibration indicates",
+    "Palavra-Chave:": "Key-Word:",
+    "Descrição Arquetípica:": "Archetypal Description:",
+    "Desbloquear Relatório de Numerologia Hermética": "Unlock Hermetic Numerology Report",
+    "Analisando frequências vibratórias...": "Analyzing vibrational frequencies...",
     "(Multiplicador de Fase)": "(Phase Multiplier)",
     "Módulo Pro Premium Ativo": "Active Premium Pro Module",
     "Análise Vibracional Completa": "Complete Vibrational Analysis",
@@ -861,7 +201,20 @@ export const uiTranslationsMultilang: Record<Language, Record<string, string>> =
     "Ciclo Produtivo (28-56 anos)": "Productive Cycle (28-56 years)",
     "Ciclo de Colheita (56+ anos)": "Harvest Cycle (56+ years)"
   },
-  es: {
+  "es": {
+    "Leitura Detalhada de seus Números Força": "Lectura Detallada de sus Números de Fuerza",
+    "Estudo Pitagórico de Vibração Numérica": "Estudio Pitagórico de Vibración Numérica",
+    "Análise dos Arquétipos Geométricos do Nome e Nascimento": "Análisis de Arquetipos Geométricos del Nombre y Nacimiento",
+    "Número de Destino (Missão de Vida)": "Número de Destino (Misión de Vida)",
+    "Número de Expressão (Talentos e Habilidades)": "Número de Expresión (Talentos y Habilidades)",
+    "Número de Desejo da Alma (Impulso Íntimo)": "Número de Deseo del Alma (Impulso Íntimo)",
+    "Número de Personalidade (Aparência Social)": "Número de Personalidad (Apariencia Social)",
+    "Sua Vibração Cósmica Principal": "Su Vibración Cósmica Principal",
+    "Sua vibração indica": "Su vibración indica",
+    "Palavra-Chave:": "Palabra Clave:",
+    "Descrição Arquetípica:": "Descripción Arquetípica:",
+    "Desbloquear Relatório de Numerologia Hermética": "Desbloquear Informe de Numerología Hermética",
+    "Analisando frequências vibratórias...": "Analizando frecuencias vibratorias...",
     "(Multiplicador de Fase)": "(Multiplicador de Fase)",
     "Módulo Pro Premium Ativo": "Módulo Pro Premium Activo",
     "Análise Vibracional Completa": "Análisis Vibracional Completo",
@@ -948,7 +301,20 @@ export const uiTranslationsMultilang: Record<Language, Record<string, string>> =
     "Ciclo Produtivo (28-56 anos)": "Ciclo Productivo (28-56 años)",
     "Ciclo de Colheita (56+ anos)": "Ciclo de Cosecha (56+ años)"
   },
-  de: {
+  "de": {
+    "Leitura Detalhada de seus Números Força": "Detaillierte Lesung Ihrer Kraftzahlen",
+    "Estudo Pitagórico de Vibração Numérica": "Pythagoreische Studie der numerischen Schwingung",
+    "Análise dos Arquétipos Geométricos do Nome e Nascimento": "Analyse geometrischer Archetypen von Name und Geburt",
+    "Número de Destino (Missão de Vida)": "Schicksalszahl (Lebensmission)",
+    "Número de Expressão (Talentos e Habilidades)": "Ausdruckszahl (Talente und Fähigkeiten)",
+    "Número de Desejo da Alma (Impulso Íntimo)": "Seelenzahl (Innerer Impuls)",
+    "Número de Personalidade (Aparência Social)": "Persönlichkeitszahl (Soziales Erscheinungsbild)",
+    "Sua Vibração Cósmica Principal": "Ihre kosmische Hauptschwingung",
+    "Sua vibração indica": "Ihre Schwingung deutet auf",
+    "Palavra-Chave:": "Schlüsselwort:",
+    "Descrição Arquetípica:": "Archetypische Beschreibung:",
+    "Desbloquear Relatório de Numerologia Hermética": "Hermetisches Numerologie-Bericht freischalten",
+    "Analisando frequências vibratórias...": "Vibrationsfrequenzen werden analysiert...",
     "(Multiplicador de Fase)": "(Phasenmultiplikator)",
     "Módulo Pro Premium Ativo": "Pro Premium Modul Aktiv",
     "Análise Vibracional Completa": "Vollständige Schwingungsanalyse",
@@ -1035,7 +401,20 @@ export const uiTranslationsMultilang: Record<Language, Record<string, string>> =
     "Ciclo Produtivo (28-56 anos)": "Produktiven Zyklus (28-56 Jahre)",
     "Ciclo de Colheita (56+ anos)": "Erntezyklus (56+ Jahre)"
   },
-  fr: {
+  "fr": {
+    "Leitura Detalhada de seus Números Força": "Lecture Détaillée de vos Nombres de Force",
+    "Estudo Pitagórico de Vibração Numérica": "Étude Pythagoricienne de la Vibration Numérique",
+    "Análise dos Arquétipos Geométricos do Nome e Nascimento": "Analyse des Archétypes Géométriques du Nom et de la Naissance",
+    "Número de Destino (Missão de Vida)": "Nombre de Destin (Mission de Vie)",
+    "Número de Expressão (Talentos e Habilidades)": "Nombre d'Expression (Talents et Aptitudes)",
+    "Número de Desejo da Alma (Impulso Íntimo)": "Nombre d'Élan de l'Âme (Impulsion Intime)",
+    "Número de Personalidade (Aparência Social)": "Nombre de Personnalité (Apparence Sociale)",
+    "Sua Vibração Cósmica Principal": "Votre Vibration Cosmique Principale",
+    "Sua vibração indica": "Votre vibration indique",
+    "Palavra-Chave:": "Mot-Clé :",
+    "Descrição Arquetípica:": "Description Archétypale :",
+    "Desbloquear Relatório de Numerologia Hermética": "Débloquer le Rapport de Numérologie Hermétique",
+    "Analisando frequências vibratórias...": "Analyse des fréquences vibratoires...",
     "(Multiplicador de Fase)": "(Multiplicateur de Phase)",
     "Módulo Pro Premium Ativo": "Module Pro Premium Activé",
     "Análise Vibracional Completa": "Analyse Vibratoire Complète",

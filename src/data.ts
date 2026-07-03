@@ -1,5 +1,9 @@
 import i18n from './lib/i18n';
-import { translateUiText, Language } from './lib/translations';
+import { Language } from './lib/translations';
+
+const translateUiText = (ptText: string, lang: Language): string => {
+  return i18n.t(ptText, { lng: lang }) as string;
+};
 
 export interface AppPreset {
   id: string;

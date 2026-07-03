@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Compass, Moon, Sun, Flame, MessageSquareQuote, RefreshCw, Zap } from "lucide-react";
 import { motion } from "motion/react";
-import { Language, translations } from "../translations";
+import { Language } from "../translations";
 import { NatalChartData } from "../types";
 import { useTranslation } from "react-i18next";
-import { translateUiText } from "../lib/translations";
 import { useIdioma } from "../context/IdiomaContext";
 
 interface DashboardTabProps {
@@ -69,18 +68,13 @@ export default function DashboardTab({ natalChart, lang }: DashboardTabProps) {
     return { name: defaultName, symbol: "🌑", percent: 0 };
   });
   const [activeHoroscope, setActiveHoroscope] = useState<'daily' | 'weekly'>('daily');
-  const t = translations[activeLang];
-  const { t: tI18nRaw } = useTranslation();
+  const { t } = useTranslation();
 
   const tI18n = (text: string) => {
     if (!text) return "";
     const localVal = LOCAL_DASHBOARD_TRANSLATIONS[activeLang || 'pt']?.[text];
     if (localVal) return localVal;
-    const res = tI18nRaw(text);
-    if (res === text || !res) {
-      return translateUiText(text, activeLang || 'pt');
-    }
-    return res;
+    return t(text);
   };
 
   // Calculate moon phase mathematically based on current date
@@ -176,16 +170,16 @@ export default function DashboardTab({ natalChart, lang }: DashboardTabProps) {
         <div className="space-y-1">
           <h2 className="text-2xl font-display font-semibold text-neutral-900 flex items-center gap-2">
             <Sun className="w-6 h-6 text-indigo-600 animate-spin-slow" />
-            <span>{t.welcome}!</span>
+            <span>{t("welcome")}!</span>
           </h2>
           <p className="text-neutral-505 text-xs">
-            {t.subtitle} — {tI18n("Sol em")} <strong>{translateUiText(sunSign, activeLang)}</strong>
+            {t("subtitle")} — {tI18n("Sol em")} <strong>{t(sunSign)}</strong>
           </p>
         </div>
         
         <div className="px-3.5 py-1.5 bg-neutral-50 rounded-lg border border-neutral-100 flex items-center gap-2 text-xs text-neutral-600">
           <Zap className="w-4 h-4 text-amber-500 animate-bounce" />
-          <span>{t.recalculatingCode}</span>
+          <span>{t("recalculatingCode")}</span>
         </div>
       </div>
 
@@ -203,7 +197,7 @@ export default function DashboardTab({ natalChart, lang }: DashboardTabProps) {
                     : "bg-neutral-50 text-neutral-500 hover:bg-neutral-100"
                 }`}
               >
-                {t.dailyHoroscope}
+                {t("dailyHoroscope")}
               </button>
               <button
                 onClick={() => setActiveHoroscope('weekly')}
@@ -213,7 +207,7 @@ export default function DashboardTab({ natalChart, lang }: DashboardTabProps) {
                     : "bg-neutral-50 text-neutral-500 hover:bg-neutral-100"
                 }`}
               >
-                {t.weeklyHoroscope}
+                {t("weeklyHoroscope")}
               </button>
             </div>
             <Flame className="w-5 h-5 text-amber-500" />
@@ -240,7 +234,7 @@ export default function DashboardTab({ natalChart, lang }: DashboardTabProps) {
           <div className="flex gap-3 items-start p-4 bg-neutral-50 rounded-xl border border-neutral-100">
             <MessageSquareQuote className="w-5 h-5 text-neutral-400 mt-0.5 flex-shrink-0" />
             <div className="space-y-1">
-              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{t.insightOfTheDay}</span>
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{t("insightOfTheDay")}</span>
               <p className="italic text-neutral-500 text-xs">
                 {tI18n(`"O universo não fala por palavras externas, mas pelo compasso calmo do seu coração quando silencia."`)}
               </p>
@@ -251,7 +245,7 @@ export default function DashboardTab({ natalChart, lang }: DashboardTabProps) {
         {/* Lunar phase widget */}
         <section className="bg-white border border-neutral-200/90 rounded-2xl p-6 shadow-sm md:col-span-4 flex flex-col justify-between space-y-4">
           <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
-            <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">{t.lunarPhase}</span>
+            <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">{t("lunarPhase")}</span>
             <Moon className="w-4 h-4 text-indigo-500" />
           </div>
 

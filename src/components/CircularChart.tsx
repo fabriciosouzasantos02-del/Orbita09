@@ -1,7 +1,7 @@
 import React from 'react';
 import { AstroAstroPosition } from '../types';
 import { useTranslation } from 'react-i18next';
-import { translateUiText, Language } from '../lib/translations';
+import { Language } from '../lib/translations';
 
 interface CircularChartProps {
   astros: AstroAstroPosition[];
@@ -27,11 +27,7 @@ export default function CircularChart({ astros }: CircularChartProps) {
   const { t: i18nT, i18n } = useTranslation();
   const t = (text: string) => {
     if (!text) return "";
-    const res = i18nT(text);
-    if (res === text || !res) {
-      return translateUiText(text, (i18n.language as Language) || 'pt');
-    }
-    return res;
+    return i18nT(text);
   };
 
   const size = 320;

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { translateUiText, Language } from '../lib/translations';
+import { Language } from '../lib/translations';
 import { useIdioma } from '../context/IdiomaContext';
 import { CompatibilityResult, UserProfile } from '../types';
 import { computeDetailedCompatibility } from './compatibilityEngine';
@@ -925,11 +925,12 @@ const FIND_PEOPLE_DATABASE = [
 
 export default function CompatibilityView({ user, lang }: CompatibilityViewProps) {
   const { idioma } = useIdioma();
+  const { t: tI18n } = useTranslation();
   const idiomaAtual = (idioma as Language) || (lang as Language) || 'pt';
 
   const t = (text: string) => {
     if (!text) return "";
-    return translateUiText(text, idiomaAtual);
+    return tI18n(text);
   };
 
   const [activeSubTab, setActiveSubTab] = useState<'geral'>('geral'); // Only Cruzamento Astrológico remains

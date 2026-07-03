@@ -4,7 +4,7 @@ import { AstrologyMap, AstroAstroPosition } from '../types';
 import { Orbit, Play, Pause, RotateCcw, Info, Zap, Calendar, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
-import { translateUiText, Language } from '../lib/translations';
+import { Language } from '../lib/translations';
 
 interface TransitMapProps {
   mapData: AstrologyMap;
@@ -277,11 +277,7 @@ export default function TransitMap({ mapData }: TransitMapProps) {
         return localDict[text];
       }
     }
-    const res = i18nT(text);
-    if (res === text || !res) {
-      return translateUiText(text, (i18n.language as Language) || 'pt');
-    }
-    return res;
+    return i18nT(text);
   };
 
   const svgRef = useRef<SVGSVGElement | null>(null);

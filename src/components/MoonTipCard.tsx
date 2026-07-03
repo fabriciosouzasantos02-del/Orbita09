@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { translateUiText, Language } from '../lib/translations';
+import { Language } from '../lib/translations';
 import { Moon, Sparkles, ChevronDown, ChevronUp, X, CheckCircle } from 'lucide-react';
 import { loadCalculationCache, saveCalculationCache } from '../lib/firebase';
 
@@ -86,11 +86,7 @@ export default function MoonTipCard({ userName, birthDate, onRewardPoints, lang 
     if (localTranslations[activeLang]?.[text]) {
       return localTranslations[activeLang][text];
     }
-    const res = i18nT(text);
-    if (res === text || !res) {
-      return translateUiText(text, activeLang);
-    }
-    return res;
+    return i18nT(text);
   };
 
   const [data, setData] = useState<MoonTipData | null>(null);

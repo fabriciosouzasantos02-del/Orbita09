@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Send } from 'lucide-react';
 import { ChatMessage, DailyOracleResponse } from '../types';
-import { translateUiText, Language } from '../lib/translations';
+import { Language } from '../lib/translations';
 
 const LOCAL_ORACLE_TRANSLATIONS: Record<Language, Record<string, string>> = {
   pt: {
@@ -137,11 +137,7 @@ export default function OrbiaAIAndOracle({
     if (localDict && localDict[text]) {
       return localDict[text];
     }
-    const res = i18nT(text);
-    if (res === text || !res) {
-      return translateUiText(text, activeLang);
-    }
-    return res;
+    return i18nT(text);
   };
 
   return (

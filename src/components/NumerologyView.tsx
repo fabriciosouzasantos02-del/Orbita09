@@ -1,5 +1,5 @@
 import React, { useState, useMemo, memo } from 'react';
-import { translateUiText, Language } from '../lib/translations';
+import { Language } from '../lib/translations';
 import { useIdioma } from '../context/IdiomaContext';
 import { NumerologyCycle } from '../types';
 import { 

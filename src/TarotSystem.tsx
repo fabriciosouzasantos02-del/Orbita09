@@ -216,7 +216,7 @@ function romanize(num: number): string {
 }
 
 import { useTranslation } from 'react-i18next';
-import { translateUiText, Language } from './lib/translations';
+import { Language } from './lib/translations';
 import { TRANSLATIONS_WORLD } from './tarot';
 
 interface TarotSystemProps {
@@ -230,11 +230,7 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
   const { t: i18nT } = useTranslation();
   const t = (text: string) => {
     if (!text) return "";
-    const res = i18nT(text);
-    if (res === text || !res) {
-      return translateUiText(text, lang || 'pt');
-    }
-    return res;
+    return i18nT(text);
   };
 
   const rankTranslations: Record<string, Record<string, string>> = {

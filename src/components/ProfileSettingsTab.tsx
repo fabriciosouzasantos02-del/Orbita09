@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import { User, Shield, Info, LogOut, Globe, Heart, RefreshCw, KeyRound } from "lucide-react";
-import { Language, translations } from "../translations";
+import { Language } from "../translations";
 import { UserProfile } from "../types";
 import { useTranslation } from "react-i18next";
-import { translateUiText } from "../lib/translations";
 import { useIdioma } from "../context/IdiomaContext";
 
 const LOCAL_SETTINGS_TRANSLATIONS: Record<Language, Record<string, string>> = {
@@ -85,8 +84,7 @@ export default function ProfileSettingsTab({ userProfile, lang, setLang, onLogou
   const [birthDate, setBirthDate] = useState(userProfile.birthDetails.birthDate);
   const [success, setSuccess] = useState(false);
 
-  const t = translations[activeLang];
-  const { t: tI18nRaw } = useTranslation();
+  const { t } = useTranslation();
 
   const tI18n = (text: string) => {
     if (!text) return "";
@@ -94,11 +92,7 @@ export default function ProfileSettingsTab({ userProfile, lang, setLang, onLogou
     if (localDict && localDict[text]) {
       return localDict[text];
     }
-    const res = tI18nRaw(text);
-    if (res === text || !res) {
-      return translateUiText(text, activeLang || 'pt');
-    }
-    return res;
+    return t(text);
   };
 
   const handleUpdate = (e: React.FormEvent) => {
@@ -130,7 +124,7 @@ export default function ProfileSettingsTab({ userProfile, lang, setLang, onLogou
       
       {/* Description header */}
       <div className="bg-white border border-neutral-200/90 rounded-2xl p-6 shadow-sm">
-        <h2 className="text-xl font-display font-semibold text-neutral-900">{t.profile}</h2>
+        <h2 className="text-xl font-display font-semibold text-neutral-900">{t("profile")}</h2>
         <p className="text-neutral-500 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
           {tI18n("Inspecione as chaves criptográficas locais de seu mapa astral místico e gerencie as configurações de privacidade.")}
         </p>
@@ -154,7 +148,7 @@ export default function ProfileSettingsTab({ userProfile, lang, setLang, onLogou
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-neutral-500">{t.name}</label>
+                <label className="block text-xs font-semibold text-neutral-500">{t("name")}</label>
                 <input
                   type="text"
                   required
@@ -165,7 +159,7 @@ export default function ProfileSettingsTab({ userProfile, lang, setLang, onLogou
               </div>
 
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-neutral-500">{t.birthCity}</label>
+                <label className="block text-xs font-semibold text-neutral-500">{t("birthCity")}</label>
                 <input
                   type="text"
                   required
@@ -261,7 +255,7 @@ export default function ProfileSettingsTab({ userProfile, lang, setLang, onLogou
               className="w-full py-2 px-4 border border-rose-200/80 hover:bg-rose-50/50 text-rose-700 font-semibold rounded-xl text-xs sm:text-sm cursor-pointer transition flex items-center justify-center gap-2"
             >
               <LogOut className="w-4 h-4" />
-              <span>{t.logout}</span>
+              <span>{t("logout")}</span>
             </button>
           </div>
 

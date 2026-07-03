@@ -24,7 +24,7 @@ import {
   performAstroCalculation 
 } from './astroMath';
 import { useTranslation } from 'react-i18next';
-import { translateUiText, Language } from '../lib/translations';
+import { Language } from '../lib/translations';
 import { LUNAR_PHASES_TRANSLATIONS, SIGN_MEDICAL_TRANSLATED, LOCAL_UI_TRANSLATIONS } from '../lib/lunarTranslations';
 import { useIdioma } from '../context/IdiomaContext';
 
@@ -329,11 +329,7 @@ export default function LunarCycle({
   const activeL = (idioma || lang || 'pt') as Language;
   const t = (text: string) => {
     if (!text) return "";
-    const res = i18nT(text);
-    if (res === text || !res) {
-      return translateUiText(text, activeL);
-    }
-    return res;
+    return i18nT(text);
   };
 
   const tLocal = (ptText: string) => {
@@ -344,7 +340,7 @@ export default function LunarCycle({
     if (item && item[activeL]) {
       return item[activeL];
     }
-    return translateUiText(ptText, activeL);
+    return i18nT(ptText);
   };
   
   // Temporal States
@@ -443,7 +439,7 @@ export default function LunarCycle({
     }
     if (transitElem === natalElem) {
       const transitElemName = { pt: transitElem, en: { 'Fogo': 'Fire', 'Terra': 'Earth', 'Ar': 'Air', 'Água': 'Water' }[transitElem] || transitElem, es: { 'Fogo': 'Fuego', 'Terra': 'Tierra', 'Ar': 'Aire', 'Água': 'Agua' }[transitElem] || transitElem, de: { 'Fogo': 'Feuer', 'Terra': 'Erde', 'Ar': 'Luft', 'Água': 'Wasser' }[transitElem] || transitElem, fr: { 'Fogo': 'Feu', 'Terra': 'Terre', 'Ar': 'Air', 'Água': 'Eau' }[transitElem] || transitElem }[activeL] || transitElem;
-      const userSunSignName = translateUiText(userSunSign, activeL);
+      const userSunSignName = t(userSunSign);
       return {
         type: { pt: 'Trígono Elemental', en: 'Elemental Trine', es: 'Trígono Elemental', de: 'Elementares Trigon', fr: 'Trigone Élémentaire' }[activeL] || 'Trígono Elemental',
         badge: { pt: '▲ Harmonia Fluida', en: '▲ Fluid Harmony', es: '▲ Armonía Fluida', de: '▲ Fließende Harmonie', fr: '▲ Harmonie Fluide' }[activeL] || '▲ Harmonia Fluida',
@@ -461,7 +457,7 @@ export default function LunarCycle({
       const tIdx = indices.indexOf(moonState.moonSign);
       const nIdx = indices.indexOf(userSunSign);
       if (Math.abs(tIdx - nIdx) === 6) {
-        const moonSignName = translateUiText(moonState.moonSign, activeL);
+        const moonSignName = t(moonState.moonSign);
         return {
           type: { pt: 'Oposição Celestial', en: 'Celestial Opposition', es: 'Oposición Celestial', de: 'Himmlische Opposition', fr: 'Opposition Céleste' }[activeL] || 'Oposição Celestial',
           badge: { pt: '➔ Polaridade / Espelho', en: '➔ Polarity / Mirror', es: '➔ Polaridad / Espejo', de: '➔ Polarität / Spiegel', fr: '➔ Polarité / Miroir' }[activeL] || '➔ Polaridade / Espelho',
@@ -676,7 +672,7 @@ export default function LunarCycle({
     const pTranslation = LUNAR_PHASES_TRANSLATIONS[dayItem.phase.key]?.[activeL];
     return {
       ...dayItem,
-      sign: translateUiText(dayItem.sign, activeL),
+      sign: t(dayItem.sign),
       phase: {
         ...dayItem.phase,
         name: pTranslation?.name || dayItem.phase.name,
@@ -694,7 +690,7 @@ export default function LunarCycle({
       ...phase,
       phaseName: pTranslation?.name || phase.phaseName,
       desc: pTranslation?.desc || phase.desc,
-      sign: translateUiText(phase.sign, activeL)
+      sign: t(phase.sign)
     };
   });
 
@@ -882,7 +878,7 @@ export default function LunarCycle({
                   <div className="flex gap-2.5 items-start p-3 bg-slate-950/80 rounded-xl border border-slate-900 text-xs text-slate-350 leading-relaxed font-sans">
                     <span className="text-indigo-400 text-sm leading-none mt-0.5">☄</span>
                     <div>
-                      {tLocal("A Lua está posicionada nos exatos")} <strong className="text-indigo-300 font-mono font-bold">{moonState.moonDegree}º {moonState.moonMinute}'</strong> {tLocal("de")} <strong className="text-slate-105 font-bold">{translateUiText(moonState.moonSign, activeL)}</strong> ({tLocal("Elemento de")} {medicalDetails.element}).
+                      {tLocal("A Lua está posicionada nos exatos")} <strong className="text-indigo-300 font-mono font-bold">{moonState.moonDegree}º {moonState.moonMinute}'</strong> {tLocal("de")} <strong className="text-slate-105 font-bold">{t(moonState.moonSign)}</strong> ({tLocal("Elemento de")} {medicalDetails.element}).
                     </div>
                   </div>
                 </div>
@@ -890,7 +886,7 @@ export default function LunarCycle({
                 {/* Grid of 4 sectors affected */}
                 <div className="space-y-3">
                   <h4 className="text-[10px] font-mono uppercase text-slate-400 tracking-wider font-bold">
-                    {tLocal("Vetores de Impacto Diário: Lua em")} {translateUiText(moonState.moonSign, activeL)}
+                    {tLocal("Vetores de Impacto Diário: Lua em")} {t(moonState.moonSign)}
                   </h4>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -901,7 +897,7 @@ export default function LunarCycle({
                         <Coins className="w-4 h-4" />
                       </div>
                       <div className="space-y-1.5 text-xs font-sans">
-                        <h5 className="font-mono font-bold text-slate-205 uppercase">$ Finanças</h5>
+                        <h5 className="font-mono font-bold text-slate-205 uppercase">{t('lunar.finances')}</h5>
                         <p className="text-[10.5px] text-slate-400 leading-relaxed">
                           {medicalDetails.finances}
                         </p>
@@ -914,7 +910,7 @@ export default function LunarCycle({
                         <Heart className="w-4 h-4" />
                       </div>
                       <div className="space-y-1.5 text-xs font-sans">
-                        <h5 className="font-mono font-bold text-slate-205 uppercase">♥ Relacionamentos</h5>
+                        <h5 className="font-mono font-bold text-slate-205 uppercase">{t('lunar.relationships')}</h5>
                         <p className="text-[10.5px] text-slate-400 leading-relaxed">
                           {medicalDetails.relationships}
                         </p>
@@ -927,7 +923,7 @@ export default function LunarCycle({
                         <Activity className="w-4 h-4" />
                       </div>
                       <div className="space-y-1.5 text-xs font-sans">
-                        <h5 className="font-mono font-bold text-slate-205 uppercase">✚ Saúde e Bem-estar</h5>
+                        <h5 className="font-mono font-bold text-slate-205 uppercase">{t('lunar.health')}</h5>
                         <p className="text-[10.5px] text-slate-400 leading-relaxed">
                           {medicalDetails.health}
                         </p>
@@ -940,7 +936,7 @@ export default function LunarCycle({
                         <Scissors className="w-4 h-4" />
                       </div>
                       <div className="space-y-1.5 text-xs font-sans">
-                        <h5 className="font-mono font-bold text-slate-205 uppercase">✦ Beleza e Autocuidado</h5>
+                        <h5 className="font-mono font-bold text-slate-205 uppercase">{t('lunar.beauty')}</h5>
                         <p className="text-[10.5px] text-slate-400 leading-relaxed">
                           {medicalDetails.beauty}
                         </p>
@@ -1007,7 +1003,7 @@ export default function LunarCycle({
               <span className="text-xl">🧘</span>
               <div>
                 <h4 className="text-xs font-bold font-mono text-slate-350 uppercase tracking-widest leading-none">{tLocal('Órgãos Mais Sensíveis Hoje')}</h4>
-                <p className="text-[9.5px] text-slate-505 mt-1 leading-none">{tLocal('Suscetibilidade anatômica regida pela Lua em')} {translateUiText(moonState.moonSign, activeL)}</p>
+                <p className="text-[9.5px] text-slate-505 mt-1 leading-none">{tLocal('Suscetibilidade anatômica regida pela Lua em')} {t(moonState.moonSign)}</p>
               </div>
             </div>
 
@@ -1015,7 +1011,7 @@ export default function LunarCycle({
               {medicalDetails.organs.map((org, oIdx) => (
                 <div key={oIdx} className="p-2.5 bg-slate-950/80 rounded-xl border border-slate-900 flex items-center gap-3">
                   <span className="w-2.5 h-2.5 bg-indigo-400 rounded-full shrink-0 flex items-center justify-center animate-pulse" />
-                  <span className="text-slate-300 font-medium">{org} <span className="text-slate-500 font-normal text-[10.5px] font-mono">({translateUiText(moonState.moonSign, activeL)} {tLocal('regência')})</span></span>
+                  <span className="text-slate-300 font-medium">{org} <span className="text-slate-500 font-normal text-[10.5px] font-mono">({t(moonState.moonSign)} {tLocal('regência')})</span></span>
                 </div>
               ))}
             </div>

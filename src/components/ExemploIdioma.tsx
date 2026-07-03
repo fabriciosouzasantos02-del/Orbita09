@@ -1,6 +1,5 @@
 import React from 'react';
 import { useIdioma, Idioma } from '../context/IdiomaContext';
-import { translateUiText, Language } from '../lib/translations';
 
 /**
  * Exemplo prático de como consumir a estrutura de internacionalização (i18n)
@@ -16,7 +15,7 @@ export default function ExemploIdioma() {
   };
 
   const tI18n = (text: string) => {
-    return translateUiText(text, (idioma as Language) || 'pt');
+    return t(text);
   };
 
   return (
