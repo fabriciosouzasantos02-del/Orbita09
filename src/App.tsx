@@ -85,7 +85,7 @@ import {
   saveNotificationToDatabase,
   saveSubscriptionToDatabase
 } from './lib/firebase';
-import { generatePersonalizedProsperityMap } from './components/prosperityEngine';
+import { generatePersonalizedProsperityMap } from './prosperityEngine';
 import { generateDailyPrediction } from './components/dailyPredictionsEngine';
 import { PremiumConversionScreen } from './components/PremiumConversionScreen';
 import { Language } from './lib/translations';
@@ -160,7 +160,18 @@ import {
 } from 'lucide-react';
 
 export function isPostTrialLocked(user: UserProfile): boolean {
-  return false;
+  if (!user) return false;
+  if (user.subscriptionStatus === 'active' || user.isPremium === true || user.isSubscribed === true) {
+    return false;
+  }
+  const tEnds = user.trialEnds || user.trialEndDate;
+  if (tEnds) {
+    const trialEndsTime = new Date(tEnds).getTime();
+    if (Date.now() < trialEndsTime) {
+      return false;
+    }
+  }
+  return true;
 }
 
 // Helper functions for user profile metadata
@@ -332,7 +343,82 @@ function getZodiacSignForMissions(dateString: string): string {
   return "Peixes";
 }
 
-function generateDailyMissions(user: any, activeLang?: Language): DailyMission[] {
+function generateDailyRadar(user: any, activeLang?: Language, dateParam?: Date): DailyRadar {
+  const currentL = activeLang || 'pt';
+  const name = user?.name ? user.name.split(" ")[0] : "Viajante";
+  const birthDate = user?.birthDate || "2000-01-01";
+  
+  const today = dateParam || new Date();
+  const day = today.getDate();
+  const month = today.getMonth() + 1;
+  const year = today.getFullYear();
+  
+  const seedVal = (day + month * 7 + year + name.length) % 5;
+  const dispositionLevel = 80 + ((day + name.length) % 18); // 80% to 98%
+  
+  const energyPoolPT = [
+    "Intuição Harmoniosa & Foco Singular",
+    "Alta Vibração Mental & Comunicação Clara",
+    "Estabilidade Prática & Retiro Espiritual",
+    "Sensibilidade Expandida & Conexão de Alma",
+    "Impulso Criativo & Força Vital Ativa"
+  ];
+  const energyPoolEN = [
+    "Harmonious Intuition & Singular Focus",
+    "High Mental Vibration & Clear Communication",
+    "Practical Stability & Spiritual Retreat",
+    "Expanded Sensitivity & Soul Connection",
+    "Creative Impulse & Active Vital Force"
+  ];
+  const energyPoolES = [
+    "Intuición Armoniosa & Enfoque Singular",
+    "Alta Vibración Mental & Comunicación Clara",
+    "Estabilidad Práctica & Retiro Espiritual",
+    "Sensibilidad Expandida & Conexión de Alma",
+    "Impulso Creativo & Fuerza Vital Activa"
+  ];
+  const energyPoolDE = [
+    "Harmonische Intuition & Einzigartiger Fokus",
+    "Hohe Mentale Schwingung & Klare Kommunikation",
+    "Praktische Stabilität & Spiritueller Rückzug",
+    "Erweiterte Sensibilität & Seelenverbindung",
+    "Kreativer Impuls & Aktive Lebenskraft"
+  ];
+  const energyPoolFR = [
+    "Intuition Harmonieuse & Focus Singulier",
+    "Haute Vibration Mentale & Communication Claire",
+    "Stabilité Pratique & Retraite Spirituelle",
+    "Sensibilité Élargie & Connexion d'Âme",
+    "Impulsion Créative & Force Vitale Active"
+  ];
+
+  let energyOfDay = energyPoolPT[seedVal];
+  if (currentL === 'en') energyOfDay = energyPoolEN[seedVal];
+  if (currentL === 'es') energyOfDay = energyPoolES[seedVal];
+  if (currentL === 'de') energyOfDay = energyPoolDE[seedVal];
+  if (currentL === 'fr') energyOfDay = energyPoolFR[seedVal];
+
+  const hourOffsets = [
+    { prod: "10:00 - 12:30", rel: "18:00 - 20:30", stud: "14:15 - 16:45", org: "08:30 - 09:45" },
+    { prod: "09:00 - 11:30", rel: "19:00 - 21:30", stud: "15:00 - 17:30", org: "07:30 - 08:45" },
+    { prod: "10:30 - 13:00", rel: "17:30 - 19:45", stud: "13:30 - 15:45", org: "09:00 - 10:15" },
+    { prod: "08:15 - 11:00", rel: "18:30 - 21:00", stud: "16:00 - 18:15", org: "11:30 - 12:45" },
+    { prod: "11:00 - 13:30", rel: "20:00 - 22:00", stud: "14:00 - 16:00", org: "08:00 - 09:15" }
+  ];
+  const times = hourOffsets[seedVal];
+
+  return {
+    date: `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`,
+    energyOfDay,
+    dispositionLevel,
+    bestTimeProductivity: times.prod,
+    bestTimeRelationships: times.rel,
+    bestTimeStudies: times.stud,
+    bestTimeOrganization: times.org
+  };
+}
+
+function generateDailyMissions(user: any, activeLang?: Language, dateParam?: Date): DailyMission[] {
   const currentL = activeLang || 'pt';
   const name = user?.name ? user.name.split(" ")[0] : "Viajante";
   const birthDate = user?.birthDate || "2000-01-01";
@@ -344,7 +430,7 @@ function generateDailyMissions(user: any, activeLang?: Language): DailyMission[]
 
   const zodiac = tM(zodiacPT);
 
-  const today = new Date();
+  const today = dateParam || new Date();
   const day = today.getDate();
   const month = today.getMonth() + 1;
   const year = today.getFullYear();
@@ -708,7 +794,7 @@ export default function App() {
       birthTime: "",
       birthCity: "",
       isUnknownTime: false,
-      isPremium: true,
+      isPremium: false,
       hasCreatedMap: false
     };
 
@@ -851,6 +937,27 @@ export default function App() {
     return localStorage.getItem("orbi_high_contrast") === "true";
   });
 
+  // System calendar timer state to trigger auto invalidation of all dynamic contents
+  const [systemDate, setSystemDate] = useState<Date>(new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      // Check if day/hour/minute/year/month has changed since last systemDate
+      if (
+        now.getDate() !== systemDate.getDate() ||
+        now.getMonth() !== systemDate.getMonth() ||
+        now.getFullYear() !== systemDate.getFullYear() ||
+        now.getHours() !== systemDate.getHours()
+      ) {
+        console.log("[Live Engine] Time tick update detected. Recalculating calendar dependent resources...");
+        setSystemDate(now);
+      }
+    }, 10000); // Check every 10 seconds for real-time responsiveness
+
+    return () => clearInterval(interval);
+  }, [systemDate]);
+
   useEffect(() => {
     if (highContrast) {
       document.documentElement.classList.add('alto-contraste');
@@ -863,6 +970,25 @@ export default function App() {
   const toggleHighContrast = () => {
     setHighContrast(prev => !prev);
   };
+
+  // Automatic trial lock enforcer timer
+  useEffect(() => {
+    if (!isLoggedIn || !user) return;
+    const tEnds = user.trialEnds || user.trialEndDate;
+    if (!tEnds) return;
+    
+    const trialEndsTime = new Date(tEnds).getTime();
+    const timeLeft = trialEndsTime - Date.now();
+    if (timeLeft <= 0) return;
+    
+    console.log(`[Trial Enforcer] Trial ending in ${timeLeft / 1000} seconds. Enforcer armed.`);
+    const timer = setTimeout(() => {
+      console.log("[Trial Enforcer] Trial period expired! Locking features.");
+      setUser(prev => ({ ...prev }));
+    }, timeLeft + 500); // 500ms safety buffer
+    
+    return () => clearTimeout(timer);
+  }, [isLoggedIn, user?.trialEnds, user?.trialEndDate]);
 
 
 
@@ -904,7 +1030,7 @@ export default function App() {
             birthTime: birthTimeToUse,
             birthCity: birthCityToUse,
             isUnknownTime: isUnknownTimeToUse,
-            isPremium: existingProfile.isPremium ?? true,
+            isPremium: existingProfile.isPremium ?? false,
             hasCreatedMap: hasProvidedData,
             email: emailLower,
             scorePoints: existingProfile.scorePoints ?? 0,
@@ -914,7 +1040,14 @@ export default function App() {
             provider: 'google',
             trialUsed: forceTrialUsed ? true : (existingProfile.trialUsed ?? false),
             trialStartDate: existingProfile.trialStartDate || new Date().toISOString(),
-            trialEndDate: existingProfile.trialEndDate || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+            trialEndDate: existingProfile.trialEndDate || new Date(Date.now() + 60 * 1000).toISOString(),
+            trialStart: existingProfile.trialStart || existingProfile.trialStartDate || new Date().toISOString(),
+            trialEnds: existingProfile.trialEnds || existingProfile.trialEndDate || new Date(Date.now() + 60 * 1000).toISOString(),
+            plan: existingProfile.plan || "none",
+            subscriptionStatus: existingProfile.subscriptionStatus || (forceTrialUsed ? "ended" : "trialing"),
+            stripeCustomerId: existingProfile.stripeCustomerId || "",
+            stripeSubscriptionId: existingProfile.stripeSubscriptionId || "",
+            subscriptionUpdatedAt: existingProfile.subscriptionUpdatedAt || new Date().toISOString(),
             deviceId: checkStatus.deviceId,
             deviceFingerprint: checkStatus.fingerprint,
             lastLoginAt: new Date().toISOString(),
@@ -955,7 +1088,7 @@ export default function App() {
             birthTime: birthTimeToUse,
             birthCity: birthCityToUse,
             isUnknownTime: isUnknownTimeToUse,
-            isPremium: true,
+            isPremium: false,
             hasCreatedMap: hasProvidedData,
             email: emailLower,
             scorePoints: user.scorePoints || 0,
@@ -969,7 +1102,16 @@ export default function App() {
             trialStartDate: user.trialStartDate || new Date().toISOString(),
             trialEndDate: blockTrial 
               ? new Date(Date.now() - 1000).toISOString()
-              : (user.trialEndDate || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString()),
+              : (user.trialEndDate || new Date(Date.now() + 60 * 1000).toISOString()),
+            trialStart: user.trialStart || user.trialStartDate || new Date().toISOString(),
+            trialEnds: blockTrial
+              ? new Date(Date.now() - 1000).toISOString()
+              : (user.trialEnds || user.trialEndDate || new Date(Date.now() + 60 * 1000).toISOString()),
+            plan: user.plan || "none",
+            subscriptionStatus: user.subscriptionStatus || (blockTrial ? "ended" : "trialing"),
+            stripeCustomerId: user.stripeCustomerId || "",
+            stripeSubscriptionId: user.stripeSubscriptionId || "",
+            subscriptionUpdatedAt: user.subscriptionUpdatedAt || new Date().toISOString(),
             deviceId: checkStatus.deviceId || user.deviceId,
             deviceFingerprint: checkStatus.fingerprint || user.deviceFingerprint,
             lastLoginAt: new Date().toISOString(),
@@ -1042,7 +1184,7 @@ export default function App() {
             birthTime: existingProfile.birthTime || "",
             birthCity: finalBirthCity,
             isUnknownTime: existingProfile.isUnknownTime ?? false,
-            isPremium: existingProfile.isPremium ?? true,
+            isPremium: existingProfile.isPremium ?? false,
             hasCreatedMap: existingProfile.hasCreatedMap ?? (existingProfile.birthDate ? true : false),
             email: emailLower,
             scorePoints: existingProfile.scorePoints ?? 0,
@@ -1052,7 +1194,14 @@ export default function App() {
             provider: 'facebook',
             trialUsed: forceTrialUsed ? true : (existingProfile.trialUsed ?? false),
             trialStartDate: existingProfile.trialStartDate || new Date().toISOString(),
-            trialEndDate: existingProfile.trialEndDate || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+            trialEndDate: existingProfile.trialEndDate || new Date(Date.now() + 60 * 1000).toISOString(),
+            trialStart: existingProfile.trialStart || existingProfile.trialStartDate || new Date().toISOString(),
+            trialEnds: existingProfile.trialEnds || existingProfile.trialEndDate || new Date(Date.now() + 60 * 1000).toISOString(),
+            plan: existingProfile.plan || "none",
+            subscriptionStatus: existingProfile.subscriptionStatus || (forceTrialUsed ? "ended" : "trialing"),
+            stripeCustomerId: existingProfile.stripeCustomerId || "",
+            stripeSubscriptionId: existingProfile.stripeSubscriptionId || "",
+            subscriptionUpdatedAt: existingProfile.subscriptionUpdatedAt || new Date().toISOString(),
             deviceId: checkStatus.deviceId,
             deviceFingerprint: checkStatus.fingerprint,
             lastLoginAt: new Date().toISOString(),
@@ -1085,7 +1234,7 @@ export default function App() {
             birthTime: "",
             birthCity: loginBirthCity.trim() || "",
             isUnknownTime: false,
-            isPremium: true,
+            isPremium: false,
             hasCreatedMap: false,
             email: emailLower,
             scorePoints: 0,
@@ -1097,7 +1246,16 @@ export default function App() {
             trialStartDate: new Date().toISOString(),
             trialEndDate: blockTrial 
               ? new Date(Date.now() - 1000).toISOString()
-              : new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+              : new Date(Date.now() + 60 * 1000).toISOString(),
+            trialStart: new Date().toISOString(),
+            trialEnds: blockTrial
+              ? new Date(Date.now() - 1000).toISOString()
+              : new Date(Date.now() + 60 * 1000).toISOString(),
+            plan: "none",
+            subscriptionStatus: blockTrial ? "ended" : "trialing",
+            stripeCustomerId: "",
+            stripeSubscriptionId: "",
+            subscriptionUpdatedAt: new Date().toISOString(),
             deviceId: checkStatus.deviceId,
             deviceFingerprint: checkStatus.fingerprint,
             lastLoginAt: new Date().toISOString(),
@@ -1137,7 +1295,7 @@ export default function App() {
           birthTime: "",
           birthCity: "",
           isUnknownTime: false,
-          isPremium: true,
+          isPremium: false,
           hasCreatedMap: false,
           email: emailLower,
           scorePoints: 0,
@@ -1256,7 +1414,7 @@ export default function App() {
         birthTime: birthTimeToUse,
         birthCity: birthCityToUse,
         isUnknownTime: isUnknownTimeToUse,
-        isPremium: true,
+        isPremium: false,
         hasCreatedMap: hasProvidedData,
         email: mailLower,
         scorePoints: user.scorePoints || 0,
@@ -1272,7 +1430,16 @@ export default function App() {
         trialStartDate: user.trialStartDate || new Date().toISOString(),
         trialEndDate: blockTrial 
           ? new Date(Date.now() - 1000).toISOString()
-          : (user.trialEndDate || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString()),
+          : (user.trialEndDate || new Date(Date.now() + 60 * 1000).toISOString()),
+        trialStart: user.trialStart || user.trialStartDate || new Date().toISOString(),
+        trialEnds: blockTrial
+          ? new Date(Date.now() - 1000).toISOString()
+          : (user.trialEnds || user.trialEndDate || new Date(Date.now() + 60 * 1000).toISOString()),
+        plan: user.plan || "none",
+        subscriptionStatus: user.subscriptionStatus || (blockTrial ? "ended" : "trialing"),
+        stripeCustomerId: user.stripeCustomerId || "",
+        stripeSubscriptionId: user.stripeSubscriptionId || "",
+        subscriptionUpdatedAt: user.subscriptionUpdatedAt || new Date().toISOString(),
         deviceId: checkStatus.deviceId || user.deviceId,
         deviceFingerprint: checkStatus.fingerprint || user.deviceFingerprint,
         lastLoginAt: new Date().toISOString()
@@ -1399,7 +1566,7 @@ export default function App() {
           birthTime: cloudUser.birthTime || "",
           birthCity: finalBirthCity,
           isUnknownTime: cloudUser.isUnknownTime ?? false,
-          isPremium: cloudUser.isPremium ?? true,
+          isPremium: cloudUser.isPremium ?? false,
           hasCreatedMap: cloudUser.hasCreatedMap ?? (cloudUser.birthDate ? true : false),
           email: mailLower,
           scorePoints: cloudUser.scorePoints ?? 0,
@@ -1408,7 +1575,14 @@ export default function App() {
           provider: 'password',
           trialUsed: forceTrialUsed ? true : (cloudUser.trialUsed ?? false),
           trialStartDate: cloudUser.trialStartDate || new Date().toISOString(),
-          trialEndDate: cloudUser.trialEndDate || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+          trialEndDate: cloudUser.trialEndDate || new Date(Date.now() + 60 * 1000).toISOString(),
+          trialStart: cloudUser.trialStart || cloudUser.trialStartDate || new Date().toISOString(),
+          trialEnds: cloudUser.trialEnds || cloudUser.trialEndDate || new Date(Date.now() + 60 * 1000).toISOString(),
+          plan: cloudUser.plan || "none",
+          subscriptionStatus: cloudUser.subscriptionStatus || (forceTrialUsed ? "ended" : "trialing"),
+          stripeCustomerId: cloudUser.stripeCustomerId || "",
+          stripeSubscriptionId: cloudUser.stripeSubscriptionId || "",
+          subscriptionUpdatedAt: cloudUser.subscriptionUpdatedAt || new Date().toISOString(),
           deviceId: checkStatus.deviceId,
           deviceFingerprint: checkStatus.fingerprint,
           lastLoginAt: new Date().toISOString(),
@@ -1447,7 +1621,7 @@ export default function App() {
           birthTime: "",
           birthCity: loginBirthCity.trim() || "",
           isUnknownTime: false,
-          isPremium: true,
+          isPremium: false,
           hasCreatedMap: false,
           email: mailLower,
           scorePoints: 0,
@@ -1458,7 +1632,16 @@ export default function App() {
           trialStartDate: new Date().toISOString(),
           trialEndDate: forceTrialUsed 
             ? new Date(Date.now() - 1000).toISOString()
-            : new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+            : new Date(Date.now() + 60 * 1000).toISOString(),
+          trialStart: new Date().toISOString(),
+          trialEnds: forceTrialUsed
+            ? new Date(Date.now() - 1000).toISOString()
+            : new Date(Date.now() + 60 * 1000).toISOString(),
+          plan: "none",
+          subscriptionStatus: forceTrialUsed ? "ended" : "trialing",
+          stripeCustomerId: "",
+          stripeSubscriptionId: "",
+          subscriptionUpdatedAt: new Date().toISOString(),
           deviceId: checkStatus.deviceId,
           deviceFingerprint: checkStatus.fingerprint,
           lastLoginAt: new Date().toISOString(),
@@ -1664,6 +1847,13 @@ export default function App() {
             createdAt: updatedProfile.createdAt || prev.createdAt,
             isSubscribed: updatedProfile.isSubscribed ?? prev.isSubscribed,
             subscriptionEndDate: updatedProfile.subscriptionEndDate || prev.subscriptionEndDate,
+            subscriptionStatus: updatedProfile.subscriptionStatus || prev.subscriptionStatus || "none",
+            plan: updatedProfile.plan || prev.plan || "none",
+            trialStart: updatedProfile.trialStart || updatedProfile.trialStartDate || prev.trialStart || "",
+            trialEnds: updatedProfile.trialEnds || updatedProfile.trialEndDate || prev.trialEnds || "",
+            stripeCustomerId: updatedProfile.stripeCustomerId || prev.stripeCustomerId || "",
+            stripeSubscriptionId: updatedProfile.stripeSubscriptionId || prev.stripeSubscriptionId || "",
+            subscriptionUpdatedAt: updatedProfile.subscriptionUpdatedAt || prev.subscriptionUpdatedAt || "",
             scorePoints: updatedProfile.stellarPoints !== undefined ? updatedProfile.stellarPoints : (updatedProfile.scorePoints !== undefined ? updatedProfile.scorePoints : prev.scorePoints),
             stellarPoints: updatedProfile.stellarPoints !== undefined ? updatedProfile.stellarPoints : (updatedProfile.scorePoints !== undefined ? updatedProfile.scorePoints : prev.stellarPoints)
           };
@@ -1782,7 +1972,11 @@ export default function App() {
               ...baseUser,
               isSubscribed: true,
               isPremium: true,
-              subscriptionEndDate: futureDate
+              subscriptionEndDate: futureDate,
+              subscriptionStatus: 'active',
+              plan: planId || 'premium',
+              trialUsed: true,
+              subscriptionUpdatedAt: new Date().toISOString()
             };
 
             setUser(nextUser);
@@ -1895,7 +2089,7 @@ export default function App() {
                 birthTime: cloudProfile.birthTime || "",
                 birthCity: cloudProfile.birthCity || "",
                 isUnknownTime: cloudProfile.isUnknownTime ?? false,
-                isPremium: cloudProfile.isPremium ?? true,
+                isPremium: cloudProfile.isPremium ?? false,
                 hasCreatedMap: cloudProfile.hasCreatedMap ?? (cloudProfile.birthDate ? true : false),
                 email: emailLower,
                 scorePoints: cloudProfile.scorePoints ?? 0,
@@ -1909,6 +2103,13 @@ export default function App() {
                 trialUsed: cloudProfile.trialUsed ?? false,
                 trialStartDate: cloudProfile.trialStartDate || "",
                 trialEndDate: cloudProfile.trialEndDate || "",
+                trialStart: cloudProfile.trialStart || cloudProfile.trialStartDate || "",
+                trialEnds: cloudProfile.trialEnds || cloudProfile.trialEndDate || "",
+                plan: cloudProfile.plan || "none",
+                subscriptionStatus: cloudProfile.subscriptionStatus || "none",
+                stripeCustomerId: cloudProfile.stripeCustomerId || "",
+                stripeSubscriptionId: cloudProfile.stripeSubscriptionId || "",
+                subscriptionUpdatedAt: cloudProfile.subscriptionUpdatedAt || "",
                 deviceId: cloudProfile.deviceId || "",
                 deviceFingerprint: cloudProfile.deviceFingerprint || "",
                 latitude: cloudProfile.latitude,
@@ -1957,7 +2158,7 @@ export default function App() {
                 birthTime: "",
                 birthCity: "",
                 isUnknownTime: false,
-                isPremium: true,
+                isPremium: false,
                 hasCreatedMap: false,
                 createdAt: new Date().toISOString()
               };
@@ -2077,16 +2278,10 @@ export default function App() {
   const [isDrawingTarot, setIsDrawingTarot] = useState<boolean>(false);
   const [tarotDrawnToday, setTarotDrawnToday] = useState<boolean>(false);
 
-  // Daily Radar and missions (gamified) state
-  const [dailyRadar, setDailyRadar] = useState<DailyRadar>({
-    date: new Date().toISOString().split('T')[0],
-    energyOfDay: "Intuição Harmoniosa & Foco Singular",
-    dispositionLevel: 88,
-    bestTimeProductivity: "10:00 - 12:30",
-    bestTimeRelationships: "18:00 - 20:30",
-    bestTimeStudies: "14:15 - 16:45",
-    bestTimeOrganization: "08:30 - 09:45"
-  });
+  // Daily Radar (gamified and fully computed in real-time)
+  const dailyRadar = React.useMemo(() => {
+    return generateDailyRadar(user, currentLang, systemDate);
+  }, [user, currentLang, systemDate]);
 
   const [dailyMissions, setDailyMissions] = useState<DailyMission[]>(() => {
     try {
@@ -2101,7 +2296,7 @@ export default function App() {
   // Sync / Load Daily Missions with cached fallback or live Firestore retrieval
   useEffect(() => {
     let active = true;
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = systemDate.toISOString().split('T')[0];
     const email = user?.email || loggedEmail;
     const cacheKey = `orbi_missions_${email || "default"}_${todayStr}`;
     
@@ -2134,7 +2329,7 @@ export default function App() {
 
       // 3. Fallback to generating new ones if not found anywhere else
       if (!savedLocal) {
-        const generated = generateDailyMissions(user, currentLang);
+        const generated = generateDailyMissions(user, currentLang, systemDate);
         if (active) {
           setDailyMissions(generated);
           localStorage.setItem(cacheKey, JSON.stringify(generated));
@@ -2150,13 +2345,13 @@ export default function App() {
     return () => {
       active = false;
     };
-  }, [user?.email, isLoggedIn, loggedEmail]);
+  }, [user?.email, isLoggedIn, loggedEmail, systemDate, currentLang]);
 
   // Keep Firestore dailyMissions list updated on change only (with comparison to reduce unnecessary setDoc triggers)
   const prevMissionsRef = useRef("");
   useEffect(() => {
     if (dailyMissions && dailyMissions.length > 0) {
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = systemDate.toISOString().split('T')[0];
       const email = user?.email || loggedEmail;
       const cacheKey = `orbi_missions_${email || "default"}_${todayStr}`;
       const serialized = JSON.stringify(dailyMissions);
@@ -2165,14 +2360,14 @@ export default function App() {
       if (prevMissionsRef.current !== serialized) {
         prevMissionsRef.current = serialized;
         localStorage.setItem(cacheKey, serialized);
-
+        
         // Re-route dynamically to Cloud Firestore if logged in
         if (isLoggedIn && email) {
           saveMissionToDatabase(email, todayStr, dailyMissions).catch(console.warn);
         }
       }
     }
-  }, [dailyMissions, isLoggedIn, loggedEmail, user?.email]);
+  }, [dailyMissions, isLoggedIn, loggedEmail, user?.email, systemDate]);
 
   // Translate existing dailyMissions immediately when language changes
   useEffect(() => {
@@ -2195,6 +2390,21 @@ export default function App() {
     const isEs = currentLang === 'es';
     const isDe = currentLang === 'de';
     const isFr = currentLang === 'fr';
+
+    let completedIds: string[] = [];
+    try {
+      const today = new Date();
+      const startOfYear = new Date(today.getFullYear(), 0, 1);
+      const pastDaysOfYear = (today.getTime() - startOfYear.getTime()) / 86400000;
+      const weekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+      const weekStr = `${today.getFullYear()}-W${weekNumber}`;
+      const saved = localStorage.getItem(`orbi_weekly_completed_${weekStr}`);
+      if (saved) {
+        completedIds = JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error("Failed to parse weekly missions", e);
+    }
     return [
       { id: "w1", title: isEn ? "This week try to resolve an old pending matter" : isEs ? "Esta semana intente resolver un asunto pendiente antiguo" : isDe ? "Versuchen Sie diese Woche, eine alte Angelegenheit zu klären" : isFr ? "Cette semaine essayez de résoudre une affaire en suspens ancienne" : "Esta semana tente resolver uma pendência antiga", description: isEn ? "Identify a long-standing commitment and take the first step to resolve it, releasing Saturn's flow." : isEs ? "Identifique un compromiso pendiente desde hace mucho tempo y dé el primer paso para resolverlo, liberando el flujo de Saturno." : isDe ? "Identifizieren Sie eine seit langem ausstehende Verpflichtung und machen Sie den ersten Schritt, um sie zu lösen, um den Fluss Saturns freizusetzen." : isFr ? "Identifiez un engagement de longue date et faites le premier pas pour le résoudre, libérant ainsi le flux de Saturne." : "Identifique um compromisso pendente há muito tempo e dê o primeiro passo para resolvê-lo, liberando fluxo de Saturno.", isCompleted: false, points: 120 },
       { id: "w2", title: isEn ? "This week strengthen an important relationship" : isEs ? "Esta semana fortalezca una relación importante" : isDe ? "Stärken Sie diese Woche eine wichtige Beziehung" : isFr ? "Cette semaine renforcez une relation importante" : "Esta semana fortaleça um relacionamento importante", description: isEn ? "Send a sincere message of gratitude or make a light conversation invitation to someone you care about." : isEs ? "Envíe un mensaje sincero de gratitud o invite a una conversación ligera a alguien que aprecia." : isDe ? "Senden Sie eine aufrichtige Botschaft der Dankbarkeit oder laden Sie jemanden, den Sie schätzen, zu einem leichten Gespräch ein." : isFr ? "Envoyez un message sincère de gratitude ou invitez quelqu'un que vous appréciez à une conversation légère." : "Envie uma mensagem sincera de gratidão ou faça um convite de conversa leve a quem você quer bem.", isCompleted: false, points: 150 },
@@ -2225,6 +2435,47 @@ export default function App() {
       return m;
     }));
   }, [currentLang]);
+
+  // Load weekly missions completed state from localStorage
+  useEffect(() => {
+    try {
+      const today = systemDate;
+      const startOfYear = new Date(today.getFullYear(), 0, 1);
+      const pastDaysOfYear = (today.getTime() - startOfYear.getTime()) / 86400000;
+      const weekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+      const weekStr = `${today.getFullYear()}-W${weekNumber}`;
+      const saved = localStorage.getItem(`orbi_weekly_completed_${weekStr}`);
+      if (saved) {
+        const completedIds: string[] = JSON.parse(saved);
+        setWeeklyMissions(prev => prev.map(m => ({
+          ...m,
+          isCompleted: completedIds.includes(m.id)
+        })));
+      } else {
+        setWeeklyMissions(prev => prev.map(m => ({
+          ...m,
+          isCompleted: false
+        })));
+      }
+    } catch (e) {
+      console.error("Failed to load weekly progress", e);
+    }
+  }, [systemDate]);
+
+  // Save weekly missions completed state to localStorage
+  useEffect(() => {
+    try {
+      const today = systemDate;
+      const startOfYear = new Date(today.getFullYear(), 0, 1);
+      const pastDaysOfYear = (today.getTime() - startOfYear.getTime()) / 86400000;
+      const weekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+      const weekStr = `${today.getFullYear()}-W${weekNumber}`;
+      const completedIds = weeklyMissions.filter(m => m.isCompleted).map(m => m.id);
+      localStorage.setItem(`orbi_weekly_completed_${weekStr}`, JSON.stringify(completedIds));
+    } catch (e) {
+      console.error("Failed to save weekly progress", e);
+    }
+  }, [weeklyMissions, systemDate]);
 
   // Automatically regenerate Astrology Map if active language changes
   useEffect(() => {
@@ -2346,15 +2597,17 @@ export default function App() {
     );
   };
 
-  const mapLocalChartToAstrologyMap = (name: string, date: string, time: string, city: string): AstrologyMap => {
-    const activeLang = (i18n.language || 'pt').toLowerCase().split('-')[0] as 'pt' | 'en' | 'es' | 'de' | 'fr';
+  const mapLocalChartToAstrologyMap = (name: string, date: string, time: string, city: string, forcedLang?: Language): AstrologyMap => {
+    const activeLang = forcedLang || (i18n.language || 'pt').toLowerCase().split('-')[0] as 'pt' | 'en' | 'es' | 'de' | 'fr';
     
     // Perform high-precision mathematical astrological calculations
     const chart = performAstroCalculation(
       date,
       time || "12:00",
       user.latitude !== undefined ? user.latitude : -23.5505,
-      user.longitude !== undefined ? user.longitude : -46.6333
+      user.longitude !== undefined ? user.longitude : -46.6333,
+      undefined,
+      activeLang
     );
 
     const astros: AstroAstroPosition[] = chart.astros.map(p => ({
@@ -2629,7 +2882,8 @@ export default function App() {
       details.name || user.name || "Buscador",
       defaultBirthDate,
       defaultBirthTime,
-      defaultBirthCity
+      defaultBirthCity,
+      forcedLang
     );
     const clientNum = calculateNumerology(
       details.name || user.name || "Buscador",
@@ -2643,6 +2897,8 @@ export default function App() {
 
     try {
       const email = details.email || user.email || loggedEmail;
+      let dbChart: any = null;
+      let cachedMatch: any = null;
       if (email) {
         // High-Precision subcollection lookup via candidate IDs (robust and typo-tolerant)
         const birthDateClean = (details.birthDate || user.birthDate || "1997-02-11").replace(/[^a-zA-Z0-9]/g, "_");
@@ -2653,7 +2909,7 @@ export default function App() {
 
         const activeChartId = details.currentChartId || user.currentChartId || dynamicChartId;
         
-        let dbChart = null;
+        dbChart = null;
         const candidateIds = Array.from(new Set([
           activeChartId,
           details.currentChartId,
@@ -2704,6 +2960,7 @@ export default function App() {
           return;
         }
 
+        cachedMatch = null;
         // Fallback to traditional cache with language check
         try {
           const cached = await loadCalculationCache(email, "natal_chart");
@@ -2713,14 +2970,17 @@ export default function App() {
               p.birthDate === details.birthDate &&
               p.birthTime === details.birthTime &&
               p.birthCity === details.birthCity &&
-              p.isUnknownTime === details.isUnknownTime &&
-              p.lang === activeLang;
+              p.isUnknownTime === details.isUnknownTime;
+            
             if (isMatch && cached.map && cached.numerology) {
-              console.log("[Intelligent Cache] Natal chart loaded from Firestore cache.");
-              setMapData(cached.map);
-              setNumerology(cached.numerology);
-              pushRealNotification(`Você (${details.name || user.name || "Buscador"}) sintonizou seu novo Mapa Astral diretamente do Cache Celestial Inteligente! 🪐`);
-              return;
+              cachedMatch = cached;
+              if (p.lang === activeLang) {
+                console.log("[Intelligent Cache] Natal chart loaded from Firestore cache.");
+                setMapData(cached.map);
+                setNumerology(cached.numerology);
+                pushRealNotification(`Você (${details.name || user.name || "Buscador"}) sintonizou seu novo Mapa Astral diretamente do Cache Celestial Inteligente! 🪐`);
+                return;
+              }
             }
           }
         } catch (cacheErr) {
@@ -2745,7 +3005,9 @@ export default function App() {
             isUnknownTime: details.isUnknownTime,
             latitude: details.latitude !== undefined ? details.latitude : user.latitude,
             longitude: details.longitude !== undefined ? details.longitude : user.longitude,
-            lang: activeLang
+            lang: activeLang,
+            existingMap: dbChart?.mapData || cachedMatch?.map || (mapData && mapData.welcomeMessage ? mapData : null),
+            existingNumerology: dbChart?.numerology || cachedMatch?.numerology || numerology
           })
         });
         if (response.ok) {
@@ -3338,7 +3600,7 @@ export default function App() {
         birthTime: "",
         birthCity: "",
         isUnknownTime: false,
-        isPremium: true,
+        isPremium: false,
         hasCreatedMap: false
       });
       
@@ -3433,19 +3695,20 @@ export default function App() {
     }
   };
 
-  const biorhythmToday = calculateBiorhythm(user.birthDate, new Date().toISOString().split('T')[0]);
+  const biorhythmToday = calculateBiorhythm(user.birthDate, systemDate.toISOString().split('T')[0]);
 
   const personalProsperity = generatePersonalizedProsperityMap(
     user?.hasCreatedMap ? user.birthDate : "1997-02-11",
     mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Touro"),
     user?.hasCreatedMap ? user.name : "Viajante",
-    new Date()
+    systemDate,
+    currentLang
   );
 
   // Automated Real-Time Biorhythm Sync Hook
   useEffect(() => {
     if (user.birthDate && user.hasCreatedMap) {
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = systemDate.toISOString().split('T')[0];
       const email = user.email || loggedEmail;
       if (isLoggedIn && email && biorhythmToday) {
         saveBiorhythmToDatabase(email, todayStr, {
@@ -3458,13 +3721,13 @@ export default function App() {
         }).catch(console.warn);
       }
     }
-  }, [biorhythmToday, user?.birthDate, user?.hasCreatedMap, isLoggedIn, loggedEmail]);
+  }, [biorhythmToday, user?.birthDate, user?.hasCreatedMap, isLoggedIn, loggedEmail, systemDate]);
 
   // Automated Real-Time Prosperity Map Sync Hook
   useEffect(() => {
     if (user.birthDate && user.hasCreatedMap && personalProsperity) {
       const email = user.email || loggedEmail;
-      const currentMonthStr = `prosperity_${new Date().getFullYear()}_${new Date().getMonth() + 1}`;
+      const currentMonthStr = `prosperity_${systemDate.getFullYear()}_${systemDate.getMonth() + 1}`;
       if (isLoggedIn && email) {
         saveProsperityMapToDatabase(email, currentMonthStr, {
           favoredColor: personalProsperity.favorableColor?.name || "",
@@ -3473,11 +3736,11 @@ export default function App() {
           keyword: personalProsperity.keyword,
           symbol: personalProsperity.amulet,
           recommendations: personalProsperity.strategicAdvice,
-          monthNumber: new Date().getMonth() + 1
+          monthNumber: systemDate.getMonth() + 1
         }).catch(console.warn);
       }
     }
-  }, [personalProsperity, user?.birthDate, user?.hasCreatedMap, isLoggedIn, loggedEmail]);
+  }, [personalProsperity, user?.birthDate, user?.hasCreatedMap, isLoggedIn, loggedEmail, systemDate]);
 
   // Automated Real-Time Numerology Matrix Sync Hook
   useEffect(() => {
@@ -3561,10 +3824,10 @@ export default function App() {
               <OrbitaLogo className="w-9 h-9" />
               <div className="flex flex-col">
                 <span className="text-sm font-black font-sans tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500 uppercase leading-none">
-                  PORTAL ÓRBITA
+                  {t("PORTAL ÓRBITA")}
                 </span>
                 <span className="text-[7.5px] font-mono tracking-widest text-slate-500 uppercase mt-0.5 font-bold">
-                  Sistemas Astrológicos de Alta Precisão & Efemérides Plácidus
+                  {t("Sistemas Astrológicos de Alta Precisão & Efemérides Plácidus")}
                 </span>
               </div>
             </div>
@@ -3596,16 +3859,16 @@ export default function App() {
               <div className="absolute inset-0 bg-radial from-amber-500/5 to-transparent blur-3xl pointer-events-none -z-10" />
 
               <span className="px-3.5 py-1 rounded-full text-[9px] uppercase font-mono font-bold tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/20 self-start">
-                🛡️ TECNOLOGIA DE PONTA · REAL-TIME INTERPOLATION
+                {t("🛡️ TECNOLOGIA DE PONTA · REAL-TIME INTERPOLATION")}
               </span>
               <h1 className="text-3xl md:text-5xl font-sans font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-slate-50 via-slate-200 to-slate-400 leading-tight">
-                SUA ALMA DECODIFICADA COM PRECISÃO DE ATÉ 1/1000 DE GRAU
+                {t("SUA ALMA DECODIFICADA COM PRECISÃO DE ATÉ 1/1000 DE GRAU")}
               </h1>
               <p className="text-slate-300 text-xs sm:text-sm leading-relaxed max-w-xl font-sans">
-                Esqueça os horóscopos robóticos e as aproximações rasas de internet. O <strong className="text-amber-400 font-bold">Portal Órbita</strong> calcula as efemérides planetárias exatas e as cúspides das casas de Plácidus cruzando dados reais de fuso horário histórico, correções de horário de verão e coordenadas de latitude e longitude. 
+                {t("Esqueça os horóscopos robóticos e as aproximações rasas de internet. O Portal Órbita calcula as efemérides planetárias exatas e as cúspides das casas de Plácidus cruzando dados reais de fuso horário histórico, correções de horário de verão e coordenadas de latitude e longitude.")}
               </p>
               <p className="text-slate-405 text-xs leading-relaxed max-w-xl font-sans">
-                O único sistema autárquico que integra seu <strong className="text-amber-300">Mapa Astral de Alta Resolução</strong> com sintonizador de <strong className="text-amber-300">Nodos Lunares de Evolução Pessoal</strong>, gráficos computados de <strong className="text-amber-300">Biorritmos</strong>, tiragens dinâmicas de <strong className="text-amber-300">Tarot</strong> e <strong className="text-amber-300">Oráculo Psicanalítico de Sonhos</strong>.
+                {t("O único sistema autárquico que integra seu Mapa Astral de Alta Resolução com sintonizador de Nodos Lunares de Evolução Pessoal, gráficos computados de Biorritmos, tiragens dinâmicas de Tarot e Oráculo Psicanalítico de Sonhos.")}
               </p>
 
               {/* Masterful Celestial Projection SVG Graphic */}
@@ -3812,9 +4075,9 @@ export default function App() {
                 <>
                   <div className="space-y-1">
                     <h2 className="text-lg font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-250 font-sans uppercase">
-                      Faça seu mapa astral gratuito
+                      {t("Faça seu mapa astral gratuito")}
                     </h2>
-                    <p className="text-xs text-slate-400">Preencha seus dados natais terrestres e crie sua conta de acesso para sintonizar os astros de forma imediata.</p>
+                    <p className="text-xs text-slate-400">{t("Preencha seus dados natais terrestres e crie sua conta de acesso para sintonizar os astros de forma imediata.")}</p>
                   </div>
 
                   {/* Help Modal Popup for Birth Time */}
@@ -3828,7 +4091,7 @@ export default function App() {
                         ✕
                       </button>
                       <p className="pr-4">
-                        O horário do seu nascimento é o que permite o cálculo do seu ascendente e tudo o que é relativo a ele. É uma informação muito importante para que possamos criar o seu mapa astral completo! Você pode obter essa informação em sua certidão de nascimento.
+                        {t("O horário do seu nascimento é o que permite o cálculo do seu ascendente e tudo o que é relativo a ele. É uma informação muito importante para que possamos criar o seu mapa astral completo! Você pode obter essa informação em sua certidão de nascimento.")}
                       </p>
                     </div>
                   )}
@@ -3861,11 +4124,11 @@ export default function App() {
                     className="space-y-4"
                   >
                     <div>
-                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">(Qual seu Nome Completo?)</label>
+                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("(Qual seu Nome Completo?)")}</label>
                       <input 
                         type="text" 
                         required
-                        placeholder="Ex: Carlos Santos"
+                        placeholder={t("Ex: Carlos Santos")}
                         value={createMainName}
                         onChange={(e) => setCreateMainName(e.target.value)}
                         className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-850 font-sans text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50"
@@ -3873,7 +4136,7 @@ export default function App() {
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">(Em qual cidade você nasceu?)</label>
+                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("(Em qual cidade você nasceu?)")}</label>
                       <CityAutocomplete
                         value={createMainCity}
                         onChange={(val) => setCreateMainCity(val)}
@@ -3886,7 +4149,7 @@ export default function App() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">(Qual sua data de nascimento?)</label>
+                        <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("(Qual sua data de nascimento?)")}</label>
                         <input 
                           type="date" 
                           required
@@ -3896,12 +4159,12 @@ export default function App() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">(Qual seu horário de nascimento?)</label>
+                        <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("(Qual seu horário de nascimento?)")}</label>
                         <input 
                           type="text" 
                           disabled={timeIsUnknown}
                           required={!timeIsUnknown}
-                          placeholder={timeIsUnknown ? "Informar depois..." : "Ex: 15:30"}
+                          placeholder={timeIsUnknown ? t("Informar depois...") : t("Ex: 15:30")}
                           value={timeIsUnknown ? "" : createMainTime}
                           onChange={(e) => setCreateMainTime(e.target.value)}
                           className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-850 font-sans text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50 disabled:opacity-40"
@@ -3924,7 +4187,7 @@ export default function App() {
                         className="w-4 h-4 rounded border-slate-700 bg-slate-950 accent-amber-500 cursor-pointer"
                       />
                       <label htmlFor="unknown-time-checkbox" className="text-[11px] text-slate-350 cursor-pointer flex items-center gap-1.5 font-sans leading-none">
-                        Não sei meu horário de nascimento / Informar depois
+                        {t("Não sei meu horário de nascimento / Informar depois")}
                       </label>
                       <button 
                         type="button"
@@ -3938,22 +4201,22 @@ export default function App() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                       <div>
-                        <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-1.5">(E-mail para acesso)</label>
+                        <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-1.5">{t("(E-mail para acesso)")}</label>
                         <input 
                           type="email" 
                           required 
-                          placeholder="Ex: maria@provedor.com"
+                          placeholder={t("Ex: maria@provedor.com")}
                           value={authEmail}
                           onChange={(e) => setAuthEmail(e.target.value)}
                           className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-850 font-sans text-xs text-slate-205 focus:outline-hidden focus:border-amber-500/50"
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-1.5">(Crie sua Senha)</label>
+                        <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-1.5">{t("(Crie sua Senha)")}</label>
                         <input 
                           type="password" 
                           required 
-                          placeholder="Mínimo 6 caracteres"
+                          placeholder={t("Mínimo 6 caracteres")}
                           value={authPassword}
                           onChange={(e) => setAuthPassword(e.target.value)}
                           className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-850 font-sans text-xs text-slate-205 focus:outline-hidden focus:border-amber-500/50"
@@ -3972,7 +4235,7 @@ export default function App() {
                           className="w-4 h-4 rounded border-slate-700 bg-slate-950 accent-amber-500 cursor-pointer mt-0.5"
                         />
                         <label htmlFor="marketing-opt" className="text-[11px] text-slate-350 font-sans leading-snug cursor-pointer">
-                          Desejo receber e-mail sobre horóscopo, promoções e novos conteúdos. (Opcional)
+                          {t("Desejo receber e-mail sobre horóscopo, promoções e novos conteúdos. (Opcional)")}
                         </label>
                       </div>
 
@@ -3985,7 +4248,7 @@ export default function App() {
                           className="w-4 h-4 rounded border-slate-700 bg-slate-950 accent-amber-500 cursor-pointer mt-0.5"
                         />
                         <label htmlFor="mandatory-terms" className="text-[11px] text-slate-355 font-sans leading-snug cursor-pointer">
-                          Concordo com os Termos e a Política de privacidade. <span className="text-amber-500 font-black">*</span>
+                          {t("Concordo com os Termos e a Política de privacidade.")} <span className="text-amber-500 font-black">*</span>
                         </label>
                       </div>
                     </div>
@@ -3996,11 +4259,11 @@ export default function App() {
                         className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-black uppercase tracking-wider transition-all duration-300 active:scale-98 shadow-xl shadow-amber-500/10 cursor-pointer flex items-center justify-center gap-2"
                       >
                         <Star className="w-4 h-4 text-slate-950 fill-current animate-spin" style={{ animationDuration: '6s' }} />
-                        CADASTRAR E GERAR MEU MAPA
+                        {t("CADASTRAR E GERAR MEU MAPA")}
                       </button>
                       
                       <div className="text-center text-[10px] font-mono text-slate-500 uppercase tracking-widest leading-none py-1">
-                        ou login com
+                        {t("ou login com")}
                       </div>
 
                       <button
@@ -4026,12 +4289,12 @@ export default function App() {
                             d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.6-2.8c-1.1 1.74-2.5 1.83-4.36 1.83-3.71 0-6.05-1.76-6.9-4.26L1.03 18.1C2.9 21.95 6.85 24 12 24z"
                           />
                         </svg>
-                        Google
+                        {t("Google")}
                       </button>
                     </div>
 
                     <div className="pt-2 border-t border-slate-850 flex items-center justify-center gap-1.5 text-xs">
-                      <span className="text-slate-400 font-sans">Já tem um cadastro?</span>
+                      <span className="text-slate-400 font-sans">{t("Já tem um cadastro?")}</span>
                       <button 
                         type="button" 
                         onClick={() => {
@@ -4041,7 +4304,7 @@ export default function App() {
                         }}
                         className="text-amber-400 hover:text-amber-300 font-black font-sans uppercase tracking-wider underline cursor-pointer transition"
                       >
-                        Faça login
+                        {t("Faça login")}
                       </button>
                     </div>
                   </form>
@@ -4054,18 +4317,18 @@ export default function App() {
                   <div className="space-y-1">
                     <h3 className="text-base font-extrabold text-slate-100 flex items-center gap-2">
                       <Star className="w-5 h-5 text-amber-500 animate-pulse fill-amber-500/20" />
-                      Já tem um cadastro?
+                      {t("Já tem um cadastro?")}
                     </h3>
-                    <p className="text-xs text-slate-400 font-sans">Acesse o seu portal com e-mail e senha correspondentes.</p>
+                    <p className="text-xs text-slate-400 font-sans">{t("Acesse o seu portal com e-mail e senha correspondentes.")}</p>
                   </div>
 
                   <form onSubmit={handleLoginAccountSubmit} className="space-y-4">
                     <div>
-                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">(E-mail)</label>
+                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("(E-mail)")}</label>
                       <input 
                         type="email" 
                         required 
-                        placeholder="Ex: maria@provedor.com"
+                        placeholder={t("Ex: maria@provedor.com")}
                         value={authEmail}
                         onChange={(e) => setAuthEmail(e.target.value)}
                         className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-850 font-sans text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50"
@@ -4073,11 +4336,11 @@ export default function App() {
                     </div>
                     
                     <div>
-                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">(Senha)</label>
+                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("(Senha)")}</label>
                       <input 
                         type="password" 
                         required 
-                        placeholder="Digite sua senha cadastrada"
+                        placeholder={t("Digite sua senha cadastrada")}
                         value={authPassword}
                         onChange={(e) => setAuthPassword(e.target.value)}
                         className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-850 font-sans text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50"
@@ -4089,7 +4352,7 @@ export default function App() {
                         type="submit"
                         className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-black uppercase tracking-wider transition-all duration-300 active:scale-98 shadow-xl shadow-amber-500/10 cursor-pointer"
                       >
-                        Fazer login
+                        {t("Fazer login")}
                       </button>
 
                       <button
@@ -4128,22 +4391,28 @@ export default function App() {
                         }}
                         className="text-xs text-amber-500 hover:text-amber-400 font-bold font-sans transition cursor-pointer underline"
                       >
-                        Esqueci minha senha
+                        {t("Esqueci minha senha")}
                       </button>
                     </div>
 
                     <div className="pt-3 text-center text-[10px] font-sans text-slate-400 leading-normal">
-                      Ao criar uma conta, você concorda com os <span className="text-amber-500 underline cursor-pointer">Termos de uso</span> e a <span className="text-amber-500 underline cursor-pointer">Política de privacidade</span>.
+                      <button 
+                        type="button" 
+                        onClick={() => setLandingFooterModal('terms')}
+                        className="hover:text-amber-400 transition cursor-pointer font-sans"
+                      >
+                        {t("Ao criar uma conta, você concorda com os Termos de uso e a Política de privacidade.")}
+                      </button>
                     </div>
 
                     <div className="pt-4 border-t border-slate-850 flex items-center justify-center gap-1.5 text-xs">
-                      <span className="text-slate-400 font-sans">Não tem conta ainda?</span>
+                      <span className="text-slate-400 font-sans">{t("Não tem conta ainda?")}</span>
                       <button 
                         type="button" 
                         onClick={() => setAuthTab('birth_info')}
                         className="text-amber-400 hover:text-amber-300 font-black font-sans uppercase tracking-wider underline cursor-pointer transition"
                       >
-                        Criar Mapa Inteligente
+                        {t("Criar Mapa Inteligente")}
                       </button>
                     </div>
                   </form>
@@ -4156,18 +4425,18 @@ export default function App() {
                   <div className="space-y-1">
                     <h3 className="text-base font-extrabold text-slate-100 flex items-center gap-2">
                       <Star className="w-5 h-5 text-amber-500 animate-pulse fill-amber-500/20" />
-                      Esqueci minha senha
+                      {t("Esqueci minha senha")}
                     </h3>
-                    <p className="text-xs text-slate-400 font-sans">Enviaremos as orientações de recuperação de senha por e-mail para que possa criar uma nova senha.</p>
+                    <p className="text-xs text-slate-400 font-sans">{t("Enviaremos as orientações de recuperação de senha por e-mail para que possa criar uma nova senha.")}</p>
                   </div>
 
                   <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
                     <div>
-                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">E-mail Cadastrado</label>
+                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("E-mail Cadastrado")}</label>
                       <input 
                         type="email" 
                         required 
-                        placeholder="Ex: maria@provedor.com"
+                        placeholder={t("Ex: maria@provedor.com")}
                         value={forgotEmail}
                         onChange={(e) => setForgotEmail(e.target.value)}
                         className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-850 font-sans text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50"
@@ -4180,19 +4449,25 @@ export default function App() {
                         onClick={() => setAuthTab('login')}
                         className="flex-1 py-3 text-xs bg-slate-950 hover:bg-slate-900 border border-slate-850 hover:border-slate-800 rounded-2xl text-slate-450 uppercase tracking-wider font-mono cursor-pointer transition text-center"
                       >
-                        Voltar
+                        {t("Voltar")}
                       </button>
                       <button 
                         type="submit"
                         disabled={isSendingReset}
                         className="flex-2 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-black uppercase tracking-wider rounded-2xl transition active:scale-98 shadow-xl shadow-amber-500/10 cursor-pointer disabled:opacity-50"
                       >
-                        {isSendingReset ? 'Enviando...' : 'Recuperar Senha'}
+                        {isSendingReset ? t("Enviando...") : t("Recuperar Senha")}
                       </button>
                     </div>
 
                     <div className="pt-3 text-center text-[10px] font-sans text-slate-400 leading-normal">
-                      Ao criar uma conta, você concorda com os <span className="text-amber-500 underline cursor-pointer">Termos de uso</span> e a <span className="text-amber-500 underline cursor-pointer">Política de privacidade</span>.
+                      <button 
+                        type="button" 
+                        onClick={() => setLandingFooterModal('terms')}
+                        className="hover:text-amber-400 transition cursor-pointer font-sans"
+                      >
+                        {t("Ao criar uma conta, você concorda com os Termos de uso e a Política de privacidade.")}
+                      </button>
                     </div>
                   </form>
                 </>
@@ -4201,7 +4476,7 @@ export default function App() {
               {/* Secure encrypted credentials badge */}
               <div className="space-y-3 pt-3 border-t border-slate-850">
                 <div className="text-center text-[9px] font-mono text-slate-500 uppercase tracking-widest leading-normal">
-                  🔒 Autenticação do Portal Criptografada localmente no seu dispositivo.
+                  {t("🔒 Autenticação do Portal Criptografada localmente no seu dispositivo.")}
                 </div>
               </div>
             </div>
@@ -4211,13 +4486,13 @@ export default function App() {
           <div id="advantages-section" className="w-full max-w-7xl mx-auto px-4 py-8 space-y-8 scroll-mt-20">
             <div className="text-center space-y-2">
               <span className="px-3 py-1 rounded-full text-[9px] uppercase font-mono font-bold tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/20">
-                Comparativo de Engenharia Celeste
+                {t("Comparativo de Engenharia Celeste")}
               </span>
               <h2 className="text-2xl md:text-4xl font-sans font-black tracking-tight text-slate-100 uppercase">
-                Por que o Portal Órbita é Diferente de Tudo?
+                {t("Por que o Portal Órbita é Diferente de Tudo?")}
               </h2>
               <p className="text-xs text-slate-400 max-w-2xl mx-auto">
-                Compare a arquitetura matemática de precisão militar do nosso motor contra ferramentas amadoras que você encontra na internet.
+                {t("Compare a arquitetura matemática de precisão militar do nosso motor contra ferramentas amadoras que você encontra na internet.")}
               </p>
             </div>
 
@@ -4236,13 +4511,13 @@ export default function App() {
                   <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
                     <Orbit className="w-5 h-5" />
                   </div>
-                  <h3 className="text-base font-bold text-slate-200">Motor de Efemérides de Alta Resolução</h3>
+                  <h3 className="text-base font-bold text-slate-200">{t("Motor de Efemérides de Alta Resolução")}</h3>
                   <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                    Nossos servidores calculam a declinação e a ascensão reta geocêntrica verdadeira de cada planeta no instante preciso do seu nascimento. Corrigimos discrepâncias históricas de horário de verão e fusos horários locais de mais de 12.000 cidades mundiais. Isso garante que o seu signo Ascendente e Cúspide das Casas estejam 100% corretos.
+                    {t("Nossos servidores calculam a declinação e a ascensão reta geocêntrica verdadeira de cada planeta no instante preciso do seu nascimento. Corrigimos discrepâncias históricas de horário de verão e fusos horários locais de mais de 12.000 cidades mundiais. Isso garante que o seu signo Ascendente e Cúspide das Casas estejam 100% corretos.")}
                   </p>
                 </div>
                 <div className="text-[10px] font-mono text-amber-500/80 bg-amber-500/5 px-3 py-1.5 rounded-xl border border-amber-500/10 self-start">
-                  ⚡ Precisão de até 1/1000 de segundo de arco.
+                  {t("⚡ Precisão de até 1/1000 de segundo de arco.")}
                 </div>
               </motion.div>
 
@@ -4259,13 +4534,13 @@ export default function App() {
                   <div className="w-10 h-10 rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
                     <Activity className="w-5 h-5" />
                   </div>
-                  <h3 className="text-base font-bold text-slate-200">Suíte de Sintonização de Alma</h3>
+                  <h3 className="text-base font-bold text-slate-200">{t("Suíte de Sintonização de Alma")}</h3>
                   <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                    Não somos apenas um mapa natal estático. Sincronizamos sua energia com as correntes de subconsciência integral: rastreadores de Nodos Lunares (Cabeça e Cauda do Dragão), análise de Biorritmo Dinâmico (ciclos emocionais, físicos e intelectuais), tiragem de Tarot de autoconhecimento e decifrador de sementes oníricas.
+                    {t("Não somos apenas um mapa natal estático. Sincronizamos sua energia com as correntes de subconsciência integral: rastreadores de Nodos Lunares (Cabeça e Cauda do Dragão), análise de Biorritmo Dinâmico (ciclos emocionais, físicos e intelectuais), tiragem de Tarot de autoconhecimento e decifrador de sementes oníricas.")}
                   </p>
                 </div>
                 <div className="text-[10px] font-mono text-sky-400 bg-sky-500/5 px-3 py-1.5 rounded-xl border border-sky-500/10 self-start">
-                  🔮 Integração completa de 5 dimensões psíquicas.
+                  {t("🔮 Integração completa de 5 dimensões psíquicas.")}
                 </div>
               </motion.div>
 
@@ -4282,13 +4557,13 @@ export default function App() {
                   <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
                     <ShieldCheck className="w-5 h-5" />
                   </div>
-                  <h3 className="text-base font-bold text-slate-200">Segurança de Dados & Criptografia</h3>
+                  <h3 className="text-base font-bold text-slate-200">{t("Segurança de Dados & Criptografia")}</h3>
                   <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                    Sua data de nascimento, nome e local de origem não são mercadorias. O Portal Órbita é orgulhosamente livre de anúncios intrusivos de terceiros. Todos os seus dados são criptografados e salvos localmente utilizando tecnologia Sandbox de navegador isolada ou armazenados em bancos de dados de nuvem de alta segurança.
+                    {t("Sua data de nascimento, nome e local de origem não são mercadorias. O Portal Órbita é orgulhosamente livre de anúncios intrusivos de terceiros. Todos os seus dados são criptografados e salvos localmente utilizando tecnologia Sandbox de navegador isolada ou armazenados em bancos de dados de nuvem de alta segurança.")}
                   </p>
                 </div>
                 <div className="text-[10px] font-mono text-emerald-400 bg-emerald-500/5 px-3 py-1.5 rounded-xl border border-emerald-500/10 self-start">
-                  🔒 Selo de Blindagem GDPR/LGPD Ativo.
+                  {t("🔒 Selo de Blindagem GDPR/LGPD Ativo.")}
                 </div>
               </motion.div>
 
@@ -4304,34 +4579,34 @@ export default function App() {
                 <div className="absolute inset-0 bg-radial from-amber-500/5 to-transparent pointer-events-none" />
                 <div className="space-y-3 relative z-10">
                   <h4 className="text-xs font-mono font-bold text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" /> Tabela Comparativa de Autoridade
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" /> {t("Tabela Comparativa de Autoridade")}
                   </h4>
                   
                   <div className="space-y-2 pt-2 text-[11px] font-sans">
                     <div className="grid grid-cols-3 border-b border-slate-900 pb-1.5 font-bold text-slate-300">
-                      <span>Recurso</span>
-                      <span className="text-slate-500 text-center">Sites Comuns</span>
-                      <span className="text-amber-400 text-right">Portal Órbita</span>
+                      <span>{t("Recurso")}</span>
+                      <span className="text-slate-500 text-center">{t("Sites Comuns")}</span>
+                      <span className="text-amber-400 text-right">{t("Portal Órbita")}</span>
                     </div>
                     <div className="grid grid-cols-3 border-b border-slate-900 pb-1.5">
-                      <span className="text-slate-300">Efemérides Reais</span>
-                      <span className="text-slate-500 text-center">Aproximadas</span>
-                      <span className="text-emerald-400 text-right font-bold">Sim (NASA-std)</span>
+                      <span className="text-slate-300">{t("Efemérides Reais")}</span>
+                      <span className="text-slate-500 text-center">{t("Aproximadas")}</span>
+                      <span className="text-emerald-400 text-right font-bold">{t("Sim (NASA-std)")}</span>
                     </div>
                     <div className="grid grid-cols-3 border-b border-slate-900 pb-1.5">
-                      <span className="text-slate-300">Ajuste de Luz Solar</span>
-                      <span className="text-slate-500 text-center">Não Possuem</span>
-                      <span className="text-emerald-400 text-right font-bold">Automático</span>
+                      <span className="text-slate-300">{t("Ajuste de Luz Solar")}</span>
+                      <span className="text-slate-500 text-center">{t("Não Possuem")}</span>
+                      <span className="text-emerald-400 text-right font-bold">{t("Automático")}</span>
                     </div>
                     <div className="grid grid-cols-3 border-b border-slate-900 pb-1.5">
-                      <span className="text-slate-300">Painel com Tarot e Biorritmo</span>
-                      <span className="text-slate-500 text-center">Inexistente</span>
-                      <span className="text-emerald-400 text-right font-bold">Completo</span>
+                      <span className="text-slate-300">{t("Painel com Tarot e Biorritmo")}</span>
+                      <span className="text-slate-500 text-center">{t("Inexistente")}</span>
+                      <span className="text-emerald-400 text-right font-bold">{t("Completo")}</span>
                     </div>
                     <div className="grid grid-cols-3">
-                      <span className="text-slate-300">Uso de Anúncios</span>
-                      <span className="text-rose-450 text-center">Excessivo</span>
-                      <span className="text-emerald-400 text-right font-bold">Zero Anúncios</span>
+                      <span className="text-slate-300">{t("Uso de Anúncios")}</span>
+                      <span className="text-rose-450 text-center">{t("Excessivo")}</span>
+                      <span className="text-emerald-400 text-right font-bold">{t("Zero Anúncios")}</span>
                     </div>
                   </div>
                 </div>
@@ -4341,7 +4616,7 @@ export default function App() {
                   }}
                   className="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[10px] uppercase tracking-wider rounded-xl transition duration-300 shadow-md cursor-pointer mt-3 relative z-10"
                 >
-                  Sintonizar Meu Mapa Grátis Agora
+                  {t("Sintonizar Meu Mapa Grátis Agora")}
                 </button>
               </motion.div>
 
@@ -4351,9 +4626,9 @@ export default function App() {
           {/* Interactive Signs carousel / selector list */}
           <div id="signs-selection" className="w-full max-w-7xl mx-auto px-4 space-y-6 pt-8 scroll-mt-20">
             <div className="text-center space-y-1.5">
-              <span className="text-[10px] uppercase font-mono tracking-widest text-amber-500 font-bold">12 Constelações Zodiacais</span>
-              <h2 className="text-xl md:text-2xl font-sans font-extrabold text-slate-100">Visualize as Vibrações de Cada Signo</h2>
-              <p className="text-xs text-slate-405 max-w-xl mx-auto">Explore as características essenciais, astros regentes e receba previsões gratuitas diárias.</p>
+              <span className="text-[10px] uppercase font-mono tracking-widest text-amber-500 font-bold">{t("12 Constelações Zodiacais")}</span>
+              <h2 className="text-xl md:text-2xl font-sans font-extrabold text-slate-100">{t("Visualize as Vibrações de Cada Signo")}</h2>
+              <p className="text-xs text-slate-405 max-w-xl mx-auto">{t("Explore as características essenciais, astros regentes e receba previsões gratuitas diárias.")}</p>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-12 gap-3 max-w-6xl mx-auto">
@@ -4471,7 +4746,7 @@ export default function App() {
 
                     <div className="pt-2">
                       <span className="px-3.5 py-1.5 bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/20 text-[10px] font-mono uppercase tracking-wider rounded-xl text-amber-400 transition cursor-pointer inline-flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Sincronizar Mapa Natal Completo
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> {t("Sincronizar Mapa Natal Completo")}
                       </span>
                     </div>
                   </div>
@@ -4480,9 +4755,9 @@ export default function App() {
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] uppercase font-mono font-black text-amber-400 tracking-widest flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" /> Previsão Astrológica Diária
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" /> {t("Previsão Astrológica Diária")}
                         </span>
-                        <span className="text-[8px] uppercase tracking-widest font-mono text-slate-500">Gravitado pelo Sol</span>
+                        <span className="text-[8px] uppercase tracking-widest font-mono text-slate-500">{t("Gravitado pelo Sol")}</span>
                       </div>
                       <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-serif italic pt-1">
                         "{currentSign.horoscopo}"
@@ -4490,7 +4765,7 @@ export default function App() {
                     </div>
 
                     <div className="text-[9px] text-slate-500 font-mono mt-6 border-t border-slate-850 pt-3 flex justify-between items-center">
-                      <span>Atualizado às 00:00 UTC</span>
+                      <span>{t("Atualizado às 00:00 UTC")}</span>
                       <span>Sincronizado: 2026-06-12T07:45:00Z</span>
                     </div>
                   </div>
@@ -4503,19 +4778,19 @@ export default function App() {
           <div className="w-full max-w-4xl mx-auto px-4 py-8 bg-slate-900/20 rounded-3xl border border-slate-850 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <div className="p-6 text-center bg-gradient-to-tr from-slate-950/60 to-slate-900/60 rounded-3xl border border-amber-500/10 flex flex-col items-center justify-center min-h-[170px]">
               <OrbitaLogo className="w-12 h-12" />
-              <div className="text-sm font-bold text-amber-500 font-mono mt-4">PROJETO COSMIC PLACIDUS</div>
-              <p className="text-[10px] text-slate-400 mt-1.5 max-w-xs mx-auto leading-relaxed">Coordenadas celestes, horas e latitudes precisas de nascimento determinam ressonâncias autênticas.</p>
+              <div className="text-sm font-bold text-amber-500 font-mono mt-4">{t("PROJETO COSMIC PLACIDUS")}</div>
+              <p className="text-[10px] text-slate-400 mt-1.5 max-w-xs mx-auto leading-relaxed">{t("Coordenadas celestes, horas e latitudes precisas de nascimento determinam ressonâncias autênticas.")}</p>
             </div>
 
             <div className="space-y-4">
-              <h3 className="text-lg font-extrabold text-slate-100">O que é um Mapa Astral?</h3>
+              <h3 className="text-lg font-extrabold text-slate-100">{t("O que é um Mapa Astral?")}</h3>
               <p className="text-xs text-slate-400 leading-relaxed leading-[1.7]">
-                Seu Mapa Astral funciona como uma representação estática exata do firmamento planetário vistos na terra no instante de seu primeiro fôlego de ar terrestre. Ele aponta como Sol, Lua e os outros planetas se espelham em signos e determinam os eixos de vivências das suas doze casas terrenas fundamentais.
+                {t("Seu Mapa Astral funciona como uma representação estática exata do firmamento planetário vistos na terra no instante de seu primeiro fôlego de ar terrestre. Ele aponta como Sol, Lua e os outros planetas se espelham em signos e determinam os eixos de vivências das suas doze casas terrenas fundamentais.")}
               </p>
               <ul className="text-xs text-slate-400 space-y-1">
-                <li>· Sol denota seu ego básico e energia central vibrante.</li>
-                <li>· Lua dita o subconsciente íntimo e a assimilativa reativa.</li>
-                <li>· Ascendente expõe a casca física social de entrada no mundo.</li>
+                <li>{t("· Sol denota seu ego básico e energia central vibrante.")}</li>
+                <li>{t("· Lua dita o subconsciente íntimo e a assimilativa reativa.")}</li>
+                <li>{t("· Ascendente expõe a casca física social de entrada no mundo.")}</li>
               </ul>
             </div>
           </div>
@@ -4523,9 +4798,9 @@ export default function App() {
           {/* Blog posts articles carousel */}
           <div id="blog-section" className="w-full max-w-7xl mx-auto px-4 space-y-6 pt-4 scroll-mt-20">
             <div className="text-center space-y-1.5">
-              <span className="text-[10px] uppercase font-mono tracking-widest text-amber-400 font-bold">Conteúdos Notáveis</span>
-              <h2 className="text-xl md:text-2xl font-sans font-extrabold text-slate-100">Biblioteca da Consciência Completa</h2>
-              <p className="text-xs text-slate-400 max-w-xl mx-auto">Leia guias produzidos por astrólogos licenciados abordando transições de energia.</p>
+              <span className="text-[10px] uppercase font-mono tracking-widest text-amber-400 font-bold">{t("Conteúdos Notáveis")}</span>
+              <h2 className="text-xl md:text-2xl font-sans font-extrabold text-slate-100">{t("Biblioteca da Consciência Completa")}</h2>
+              <p className="text-xs text-slate-400 max-w-xl mx-auto">{t("Leia guias produzidos por astrólogos licenciados abordando transições de energia.")}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
@@ -4534,14 +4809,14 @@ export default function App() {
                   <div className="space-y-2">
                     <span className="text-[9px] font-mono text-slate-505 block uppercase">{art.author} · {art.date}</span>
                     <h4 className="text-sm font-bold text-slate-200">{art.title}</h4>
-                    <p className="text-xs text-slate-450 leading-relaxed line-clamp-3">{art.summary}</p>
+                    <p className="text-xs text-slate-455 leading-relaxed line-clamp-3">{art.summary}</p>
                   </div>
 
                   <button
                     onClick={() => setReadingBlogPost(art.id)}
                     className="text-xs text-amber-500 hover:text-amber-400 font-bold flex items-center gap-1 cursor-pointer"
                   >
-                    Ler Artigo Completo <ArrowRight className="w-3.5 h-3.5" />
+                    {t("Ler Artigo Completo")} <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
               ))}
@@ -4573,7 +4848,7 @@ export default function App() {
                       onClick={() => setReadingBlogPost(null)}
                       className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 rounded-xl"
                     >
-                      Fechar Leitor
+                      {t("Fechar Leitor")}
                     </button>
                   </div>
                 </div>
@@ -4583,7 +4858,7 @@ export default function App() {
 
           {/* Interactive FAQs Accordion */}
           <div id="faq-section" className="w-full max-w-3xl mx-auto px-4 space-y-6 pt-4 scroll-mt-20">
-            <h3 className="text-center text-sm font-bold font-mono uppercase text-slate-500 tracking-widest">Perguntas Frequentes</h3>
+            <h3 className="text-center text-sm font-bold font-mono uppercase text-slate-500 tracking-widest">{t("Perguntas Frequentes")}</h3>
             
             <div className="space-y-4">
               {faqList.map((faq, index) => (
@@ -4608,14 +4883,14 @@ export default function App() {
               <div className="space-y-3 md:col-span-2">
                 <div className="flex items-center gap-2.5">
                   <OrbitaLogo className="w-8 h-8" />
-                  <span className="text-sm font-black tracking-widest text-[#F59E0B] uppercase">PORTAL ÓRBITA</span>
+                  <span className="text-sm font-black tracking-widest text-[#F59E0B] uppercase">{t("PORTAL ÓRBITA")}</span>
                 </div>
                 <p className="text-[10px] text-slate-500 leading-relaxed font-sans max-w-sm">
                   {t("© 2011-2026 Portal Órbita S.A. Todos os direitos reservados. Projeto computado usando algoritmos de Plácidus de alta integridade geocêntrica física. Criptografia ativa de ponta a ponta.")}
                 </p>
                 <div className="text-[9px] font-mono text-slate-600">
-                  IP SEC INTERCEPT MODE: ACTIVE <br />
-                  SECURE DOMAIN: SSL SECURED BY FIREBASE AUTH
+                  {t("IP SEC INTERCEPT MODE: ACTIVE")} <br />
+                  {t("SECURE DOMAIN: SSL SECURED BY FIREBASE AUTH")}
                 </div>
               </div>
 
@@ -4737,21 +5012,21 @@ export default function App() {
 
                 {landingFooterModal === 'terms' && (
                   <div className="space-y-4">
-                    <span className="text-[9px] font-mono text-amber-400 uppercase tracking-widest font-bold">Estatuto Geral</span>
-                    <h3 className="text-xl font-sans font-black text-slate-100 uppercase">Termos de Uso do Portal Órbita</h3>
+                    <span className="text-[9px] font-mono text-amber-400 uppercase tracking-widest font-bold">{t("Estatuto Geral")}</span>
+                    <h3 className="text-xl font-sans font-black text-slate-100 uppercase">{t("Termos de Uso do Portal Órbita")}</h3>
                     
                     <div className="text-xs text-slate-300 space-y-3 leading-relaxed max-h-[50vh] overflow-y-auto pr-2">
-                      <p className="font-bold text-amber-300">1. PRECISÃO DOS CÁLCULOS ASTRONÔMICOS</p>
+                      <p className="font-bold text-amber-300">{t("1. PRECISÃO DOS CÁLCULOS ASTRONÔMICOS")}</p>
                       <p>
-                        O Portal Órbita utiliza o algoritmo "Placidus Solar Coordinates v2.4". Embora estejamos comprometidos com uma exatidão de até 1/1000 de grau, pequenas nuances locais ou flutuações de banco de dados geográficos podem ocorrer. As interpretações astrológicas geradas são direcionamentos de autoconhecimento e estimulação intelectual, não substituindo consultas médicas, financeiras ou jurídicas.
+                        {t("O Portal Órbita utiliza o algoritmo \"Placidus Solar Coordinates v2.4\". Embora estejamos comprometidos com uma exatidão de até 1/1000 de grau, pequenas nuances locais ou flutuações de banco de dados geográficos podem ocorrer. As interpretações astrológicas geradas são direcionamentos de autoconhecimento e estimulação intelectual, não substituindo consultas médicas, financeiras ou jurídicas.")}
                       </p>
-                      <p className="font-bold text-amber-300">2. EXCLUSIVIDADE DA CONTA DE USUÁRIO</p>
+                      <p className="font-bold text-amber-300">{t("2. EXCLUSIVIDADE DA CONTA DE USUÁRIO")}</p>
                       <p>
-                        Cada cadastro de mapa é intransferível. O usuário concorda em preencher informações verdadeiras de data, horário exato de parto e localidade física para garantir a correta renderização do firmamento planetário.
+                        {t("Cada cadastro de mapa é intransferível. O usuário concorda em preencher informações verdadeiras de data, horário exato de parto e localidade física para garantir a correta renderização do firmamento planetário.")}
                       </p>
-                      <p className="font-bold text-amber-300">3. PROPRIEDADE INTELECTUAL</p>
+                      <p className="font-bold text-amber-300">{t("3. PROPRIEDADE INTELECTUAL")}</p>
                       <p>
-                        Todo o conteúdo de interpretações inteligentes, descrições dos signos, layouts, e efemérides são pertencentes exclusivamente ao Portal Órbita S.A., sendo proibida a reprodução para fins comerciais sem outorga prévia escrita por nossa junta de advogados.
+                        {t("Todo o conteúdo de interpretações inteligentes, descrições dos signos, layouts, e efemérides são pertencentes exclusivamente ao Portal Órbita S.A., sendo proibida a reprodução para fins comerciais sem outorga prévia escrita por nossa junta de advogados.")}
                       </p>
                     </div>
                   </div>
@@ -4759,21 +5034,21 @@ export default function App() {
 
                 {landingFooterModal === 'privacy' && (
                   <div className="space-y-4">
-                    <span className="text-[9px] font-mono text-emerald-400 uppercase tracking-widest font-bold">Respeito e Integridade</span>
-                    <h3 className="text-xl font-sans font-black text-slate-100 uppercase">Diretrizes de Privacidade Cósmica</h3>
+                    <span className="text-[9px] font-mono text-emerald-400 uppercase tracking-widest font-bold">{t("Respeito e Integridade")}</span>
+                    <h3 className="text-xl font-sans font-black text-slate-100 uppercase">{t("Diretrizes de Privacidade Cósmica")}</h3>
                     
                     <div className="text-xs text-slate-300 space-y-3 leading-relaxed max-h-[50vh] overflow-y-auto pr-2">
-                      <p className="font-bold text-emerald-300">1. COMPROMISSO DE ZERO ADWARE</p>
+                      <p className="font-bold text-emerald-300">{t("1. COMPROMISSO DE ZERO ADWARE")}</p>
                       <p>
-                        Nós detestamos publicidade intrusiva tanto quanto você. O Portal Órbita se compromete a nunca veicular anúncios de terceiros em sua plataforma pública ou logada. Seus dados de navegação são sagrados.
+                        {t("Nós detestamos publicidade intrusiva tanto quanto você. O Portal Órbita se compromete a nunca veicular anúncios de terceiros em sua plataforma pública ou logada. Seus dados de navegação são sagrados.")}
                       </p>
-                      <p className="font-bold text-emerald-300">2. CRIPTOGRAFIA DE INFORMAÇÕES PESSOAIS</p>
+                      <p className="font-bold text-emerald-300">{t("2. CRIPTOGRAFIA DE INFORMAÇÕES PESSOAIS")}</p>
                       <p>
-                        Seu e-mail, nome, data e cidade de nascimento são protegidos por criptografia de banco de dados nativa. Caso faça login por vias sociais (como Google), aplicamos tokens seguros (OAuth 2.0) onde sua senha original jamais toca nossos servidores.
+                        {t("Seu e-mail, nome, data e cidade de nascimento são protegidos por criptografia de banco de dados nativa. Caso faça login por vias sociais (como Google), aplicamos tokens seguros (OAuth 2.0) onde sua senha original jamais toca nossos servidores.")}
                       </p>
-                      <p className="font-bold text-emerald-300">3. DESCARTE DE REGISTROS (LGPD)</p>
+                      <p className="font-bold text-emerald-300">{t("3. DESCARTE DE REGISTROS (LGPD)")}</p>
                       <p>
-                        Você possui plena autoridade sob suas sintonias. A qualquer momento, na tela de Configurações do seu Portal Ativo do Usuário, você poderá acionar o botão de "Exclusão Definitiva de Conta", apagando instantaneamente todo o seu histórico do nosso Firestore de maneira irreversível e transparente.
+                        {t("Você possui plena autoridade sob suas sintonias. A qualquer momento, na tela de Configurações do seu Portal Ativo do Usuário, você poderá acionar o botão de \"Exclusão Definitiva de Conta\", apagando instantaneamente todo o seu histórico do nosso Firestore de maneira irreversível e transparente.")}
                       </p>
                     </div>
                   </div>
@@ -4781,17 +5056,17 @@ export default function App() {
 
                 {landingFooterModal === 'security' && (
                   <div className="space-y-4">
-                    <span className="text-[9px] font-mono text-amber-400 uppercase tracking-widest font-bold">Blindagem Digital</span>
-                    <h3 className="text-xl font-sans font-black text-slate-100 uppercase">Segurança Operacional</h3>
+                    <span className="text-[9px] font-mono text-amber-400 uppercase tracking-widest font-bold">{t("Blindagem Digital")}</span>
+                    <h3 className="text-xl font-sans font-black text-slate-100 uppercase">{t("Segurança Operacional")}</h3>
                     
                     <div className="text-xs text-slate-300 space-y-3 leading-relaxed max-h-[50vh] overflow-y-auto pr-2">
-                      <p className="font-bold text-amber-400">1. CERTIFICAÇÕES SSL DE ALTO NÍVEL</p>
+                      <p className="font-bold text-amber-400">{t("1. CERTIFICAÇÕES SSL DE ALTO NÍVEL")}</p>
                       <p>
-                        Toda troca de pacotes entre o aplicativo e os servidores da Google Firebase é canalizada de forma autenticada usando HTTPS protegidos por chaves criptográficas SSL de 256 bits.
+                        {t("Toda troca de pacotes entre o aplicativo e os servidores da Google Firebase é canalizada de forma autenticada usando HTTPS protegidos por chaves criptográficas SSL de 256 bits.")}
                       </p>
-                      <p className="font-bold text-amber-400">2. FIREWALL CONTRA INTRUSÕES</p>
+                      <p className="font-bold text-amber-400">{t("2. FIREWALL CONTRA INTRUSÕES")}</p>
                       <p>
-                        Implementamos limites estritos de requisição por segundo (Rate Limiters) para repelir robôs mineradores de dados ou tentativas de vazamento artificial (DDoS), assegurando estabilidade ininterrupta para todos os astrólogos sintonizados.
+                        {t("Implementamos limites estritos de requisição por segundo (Rate Limiters) para repelir robôs mineradores de dados ou tentativas de vazamento artificial (DDoS), assegurando estabilidade ininterrupta para todos os astrólogos sintonizados.")}
                       </p>
                     </div>
                   </div>
@@ -4799,15 +5074,15 @@ export default function App() {
 
                 {landingFooterModal === 'about' && (
                   <div className="space-y-4">
-                    <span className="text-[9px] font-mono text-amber-400 uppercase tracking-widest font-bold">Nossa Origem</span>
-                    <h3 className="text-xl font-sans font-black text-slate-100 uppercase">Quem Somos & Nossa Missão</h3>
+                    <span className="text-[9px] font-mono text-amber-400 uppercase tracking-widest font-bold">{t("Nossa Origem")}</span>
+                    <h3 className="text-xl font-sans font-black text-slate-100 uppercase">{t("Quem Somos & Nossa Missão")}</h3>
                     
                     <div className="text-xs text-slate-300 space-y-3 leading-relaxed max-h-[50vh] overflow-y-auto pr-2">
                       <p>
-                        O <strong className="text-amber-400">Portal Órbita</strong> foi fundado em 2026 por uma aliança internacional de engenheiros aeroespaciais, psicanalistas arquetípicos junguianos e astrólogos especializados no sistema matemático de Plácidus.
+                        {t("O Portal Órbita foi fundado em 2026 por uma aliança internacional de engenheiros aeroespaciais, psicanalistas arquetípicos junguianos e astrólogos especializados no sistema matemático de Plácidus.")}
                       </p>
                       <p>
-                        Nossa missão é resgatar o valor científico e intelectual do posicionamento estelar, tirando o autoconhecimento do campo do misticismo vago e colocando-o sob a precisão geométrica e astronômica da computação de alta performance. Dedicamos nossa energia para trazer a você um espelho exato do Universo no segundo da sua primeira respiração.
+                        {t("Nossa missão é resgatar o valor científico e intelectual do posicionamento estelar, tirando o autoconhecimento do campo do misticismo vago e colocando-o sob a precisão geométrica e astronômica da computação de alta performance. Dedicamos nossa energia para trazer a você um espelho exato do Universo no segundo da sua primeira respiração.")}
                       </p>
                     </div>
                   </div>
@@ -4815,27 +5090,27 @@ export default function App() {
 
                 {landingFooterModal === 'support' && (
                   <div className="space-y-4">
-                    <span className="text-[9px] font-mono text-amber-400 uppercase tracking-widest font-bold">Central de Incidentes</span>
-                    <h3 className="text-xl font-sans font-black text-slate-100 uppercase">Canal de Atendimento Órbita</h3>
+                    <span className="text-[9px] font-mono text-amber-400 uppercase tracking-widest font-bold">{t("Central de Incidentes")}</span>
+                    <h3 className="text-xl font-sans font-black text-slate-100 uppercase">{t("Canal de Atendimento Órbita")}</h3>
                     
                     {supportSuccessMessage ? (
                       <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-3 animate-in zoom-in-95">
                         <div className="flex items-center gap-2.5">
                           <span className="p-1 rounded-full bg-emerald-500/20 text-emerald-400">✓</span>
-                          <span className="text-sm font-bold text-emerald-300">Mensagem Recebida com Sucesso!</span>
+                          <span className="text-sm font-bold text-emerald-300">{t("Mensagem Recebida com Sucesso!")}</span>
                         </div>
                         <p className="text-xs text-slate-300 leading-normal">
                           {supportSuccessMessage}
                         </p>
                         <p className="text-[10px] font-mono text-slate-500">
-                          ID de Rastreamento: <strong className="text-amber-400 font-bold">ORB-TKT-{(Math.random()*100000).toFixed(0)}-2026</strong>
+                          {t("ID de Rastreamento:")} <strong className="text-amber-400 font-bold">ORB-TKT-{(Math.random()*100000).toFixed(0)}-2026</strong>
                         </p>
                         <button 
                           type="button"
                           onClick={() => setLandingFooterModal(null)}
                           className="px-4 py-2 bg-emerald-500 text-slate-950 font-bold rounded-xl text-xs uppercase tracking-wider hover:bg-emerald-400 transition cursor-pointer"
                         >
-                          Entendido, Fechar Canal
+                          {t("Entendido, Fechar Canal")}
                         </button>
                       </div>
                     ) : (
@@ -4846,48 +5121,48 @@ export default function App() {
                           setSupportSending(true);
                           setTimeout(() => {
                             setSupportSending(false);
-                            setSupportSuccessMessage("Seu chamado técnico foi catalogado no Consórcio de Engenheiros Estelares. Uma resposta personalizada contendo a resposta astrológica ou suporte técnico correspondente será enviada ao seu e-mail cadastrado em um prazo máximo de 12 horas úteis.");
+                            setSupportSuccessMessage(t("Seu chamado técnico foi catalogado no Consórcio de Engenheiros Estelares. Uma resposta personalizada contendo a resposta astrológica ou suporte técnico correspondente será enviada ao seu e-mail cadastrado em um prazo máximo de 12 horas úteis."));
                           }, 1100);
                         }}
                         className="space-y-4"
                       >
                         <p className="text-xs text-slate-400">
-                          Preencha a categoria correspondente e detalhe sua solicitação técnico-astrológica. Nossa guilda investigará imediatamente.
+                          {t("Preencha a categoria correspondente e detalhe sua solicitação técnico-astrológica. Nossa guilda investigará imediatamente.")}
                         </p>
-
+ 
                         <div>
-                          <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">Categoria do Chamado</label>
+                          <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("Categoria do Chamado")}</label>
                           <select 
                             value={supportCategory}
                             onChange={(e) => setSupportCategory(e.target.value)}
-                            className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 font-sans text-xs text-slate-300 cursor-pointer"
+                            className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 font-sans text-xs text-slate-300 cursor-pointer text-slate-300"
                           >
-                            <option value="technical">Suporte Técnico de Calculadora</option>
-                            <option value="map_help">Dúvidas sobre Nodos Lunares / Plácidus</option>
-                            <option value="firebase_issue">Problema de Login / Firebase</option>
-                            <option value="collaboration">Parceria de Negócios / Imprensa</option>
+                            <option value="technical">{t("Suporte Técnico de Calculadora")}</option>
+                            <option value="map_help">{t("Dúvidas sobre Nodos Lunares / Plácidus")}</option>
+                            <option value="firebase_issue">{t("Problema de Login / Firebase")}</option>
+                            <option value="collaboration">{t("Parceria de Negócios / Imprensa")}</option>
                           </select>
                         </div>
-
+ 
                         <div>
-                          <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">Sua Mensagem / Relatório</label>
+                          <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("Sua Mensagem / Relatório")}</label>
                           <textarea 
                             required
-                            placeholder="Descreva sua questão em detalhes..."
+                            placeholder={t("Descreva sua questão em detalhes...")}
                             value={supportMessage}
                             onChange={(e) => setSupportMessage(e.target.value)}
                             rows={4}
                             className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 font-sans text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50"
                           />
                         </div>
-
+ 
                         <div className="flex justify-end gap-3 pt-2">
                           <button 
                             type="button" 
                             onClick={() => setLandingFooterModal(null)}
                             className="px-4 py-2.5 bg-slate-800 text-slate-300 hover:bg-slate-705 text-xs font-bold rounded-xl cursor-pointer"
                           >
-                            Cancelar
+                            {t("Cancelar")}
                           </button>
                           <button 
                             type="submit" 
@@ -4897,9 +5172,9 @@ export default function App() {
                             {supportSending ? (
                               <>
                                 <span className="w-3 h-3 rounded-full border border-slate-950 border-t-transparent animate-spin inline-block" />
-                                Transmitindo...
+                                {t("Transmitindo...")}
                               </>
-                            ) : 'Enviar Chamado seguro'}
+                            ) : t("Enviar Chamado seguro")}
                           </button>
                         </div>
                       </form>
@@ -5155,14 +5430,17 @@ export default function App() {
           )}
           
           {/* Floating Moon Tip Dashboard Card */}
-          <MoonTipCard 
-            userName={user?.name} 
-            birthDate={user?.birthDate} 
-            onRewardPoints={(amount) => {
-              setScorePoints(prev => prev + amount);
-              pushRealNotification(`${t("Você reivindicou com sucesso seu bônus diário do Sussurro Lunar")} (+${amount} ${t("pontos")})! 💎`);
-            }}
-          />
+          <div key={`moontip_${user?.name}_${currentLang}_${systemDate.toDateString()}`}>
+            <MoonTipCard 
+              userName={user?.name} 
+              birthDate={user?.birthDate} 
+              lang={currentLang}
+              onRewardPoints={(amount) => {
+                setScorePoints(prev => prev + amount);
+                pushRealNotification(`${t("Você reivindicou com sucesso seu bônus diário do Sussurro Lunar")} (+${amount} ${t("pontos")})! 💎`);
+              }}
+            />
+          </div>
           
           {/* Top User Status Header */}
           <header className="w-full bg-slate-900/60 border-b border-slate-850 px-4 py-4 sticky top-0 z-40 backdrop-blur-md">
@@ -5388,7 +5666,7 @@ export default function App() {
                             <div className="space-y-1">
                               <h2 className="text-base font-black text-slate-100 tracking-tight">{user.name}</h2>
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-blue-500/15 border border-blue-500/35 rounded-full text-[9.5px] uppercase tracking-wider text-blue-400 font-extrabold shadow-[0_0_10px_rgba(59,130,246,0.1)]">
-                                Usuário Premium
+                                {t("Usuário Premium")}
                                 <CheckCircle className="w-3.5 h-3.5 text-blue-500 fill-white rounded-full shrink-0" />
                               </span>
                             </div>
@@ -5404,14 +5682,14 @@ export default function App() {
                                   <Sun className="w-4.5 h-4.5 animate-pulse" />
                                 </div>
                                 <div className="space-y-0.5 min-w-0 flex-1">
-                                  <span className="text-[8px] font-mono text-slate-500 uppercase block tracking-wider font-bold">Signo Solar</span>
+                                  <span className="text-[8px] font-mono text-slate-500 uppercase block tracking-wider font-bold">{t("Signo Solar")}</span>
                                   {(() => {
                                     const solAst = mapData?.astros?.find(a => a.name === "Sol");
-                                    const label = solAst ? `Sol em ${solAst.sign} ${solAst.degree}` : `Sol em ${getZodiacSign(user.birthDate)}`;
+                                    const label = solAst ? `${t("Sol em")} ${t(solAst.sign)} ${solAst.degree}` : `${t("Sol em")} ${t(getZodiacSign(user.birthDate))}`;
                                     return <span className="font-bold text-xs text-slate-100 block break-words whitespace-normal leading-none">{label}</span>;
                                   })()}
                                   <p className="text-[9px] text-slate-400 leading-tight">
-                                    Essência, ego e sua força expressiva vital.
+                                    {t("Essência, ego e sua força expressiva vital.")}
                                   </p>
                                 </div>
                               </div>
@@ -5422,14 +5700,14 @@ export default function App() {
                                   <Compass className="w-4.5 h-4.5" />
                                 </div>
                                 <div className="space-y-0.5 min-w-0 flex-1">
-                                  <span className="text-[8px] font-mono text-slate-500 uppercase block tracking-wider font-bold">Ascendente</span>
+                                  <span className="text-[8px] font-mono text-slate-500 uppercase block tracking-wider font-bold">{t("Ascendente")}</span>
                                   {(() => {
                                     const ascAst = mapData?.astros?.find(a => a.name === "Ascendente");
-                                    const label = ascAst ? `Ascendente em ${ascAst.sign} ${ascAst.degree}` : `Ascendente em ${getRisingSign(user.birthDate, user.birthTime)}`;
+                                    const label = ascAst ? `${t("Ascendente em")} ${t(ascAst.sign)} ${ascAst.degree}` : `${t("Ascendente em")} ${t(getRisingSign(user.birthDate, user.birthTime))}`;
                                     return <span className="font-bold text-xs text-slate-100 block break-words whitespace-normal leading-none max-w-full">{label}</span>;
                                   })()}
                                   <p className="text-[9px] text-slate-400 leading-tight">
-                                    Casca física, expressão e o foco social de entrada.
+                                    {t("Casca física, expressão e o foco social de entrada.")}
                                   </p>
                                 </div>
                               </div>
@@ -5440,13 +5718,13 @@ export default function App() {
                                   <Hash className="w-4.5 h-4.5 font-bold" />
                                 </div>
                                 <div className="space-y-0.5 min-w-0 flex-1">
-                                  <span className="text-[8px] font-mono text-slate-500 uppercase block tracking-wider font-bold">Caminho Cósmico</span>
+                                  <span className="text-[8px] font-mono text-slate-500 uppercase block tracking-wider font-bold">{t("Caminho Cósmico")}</span>
                                   {(() => {
                                     const lpVal = numerology?.caminhoDeVida || getLifePathNumber(user.birthDate);
-                                    return <span className="font-bold text-xs text-amber-400 font-mono block break-words whitespace-normal leading-none">Caminho {lpVal}</span>;
+                                    return <span className="font-bold text-xs text-amber-400 font-mono block break-words whitespace-normal leading-none">{t("Caminho {count}").replace("{count}", String(lpVal))}</span>;
                                   })()}
                                   <p className="text-[9px] text-slate-400 leading-tight">
-                                    Vibração de destino e força realizadora cósmica.
+                                    {t("Vibração de destino e força realizadora cósmica.")}
                                   </p>
                                 </div>
                               </div>
@@ -5456,7 +5734,7 @@ export default function App() {
                               <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/25 text-slate-200 text-[11px] leading-relaxed flex items-start gap-2.5 shadow-xl animate-in fade-in duration-500">
                                 <span className="text-sm leading-none shrink-0 select-none">🌟</span>
                                 <p id="dst-precision-notice" className="text-slate-300">
-                                  <strong>Nota de Precisão:</strong> Identificamos que no dia, hora e local do seu nascimento estava vigorando o Horário de Verão. Plataformas de astrologia mais simples costumam errar o seu Ascendente porque esquecem de descontar essa 1 hora do relógio. Nosso sistema recalculou o céu com base na Hora Solar Real do seu nascimento, garantindo que o seu Ascendente em <strong>{mapData?.astros?.find(a => a.name === "Ascendente")?.sign || getRisingSign(user.birthDate, user.birthTime)}</strong> esteja 100% correto e astronamicamente preciso!
+                                  <strong>{t("Nota de Precisão:")}</strong> {t("Identificamos que no dia, hora e local do seu nascimento estava vigorando o Horário de Verão. Plataformas de astrologia mais simples costumam errar o seu Ascendente porque esquecem de descontar essa 1 hora do relógio. Nosso sistema recalculou o céu com base na Hora Solar Real do seu nascimento, garantindo que o seu Ascendente em")} <strong>{t(mapData?.astros?.find(a => a.name === "Ascendente")?.sign || getRisingSign(user.birthDate, user.birthTime))}</strong> {t("esteja 100% correto e astronamicamente preciso!")}
                                 </p>
                               </div>
                             )}
@@ -5464,15 +5742,18 @@ export default function App() {
                             {/* Dynamic event footer banner */}
                             <div className="p-2.5 bg-slate-950/60 rounded-xl border border-slate-850 text-[10px] leading-normal text-slate-405 flex items-center gap-2">
                               <Sparkles className="w-3 h-3 text-amber-400 shrink-0 animate-pulse" />
-                              <span className="truncate">
-                                Sincro-mapa com <strong>{user.birthCity}</strong>, nascido em <strong>{user.birthDate}</strong> às <strong>{user.birthTime || "12:00"}</strong>.
-                              </span>
+                              <span className="truncate" dangerouslySetInnerHTML={{
+                                __html: t("Sincro-mapa com <strong>{city}</strong>, nascido em <strong>{date}</strong> às <strong>{time}</strong>.")
+                                  .replace("{city}", user.birthCity)
+                                  .replace("{date}", user.birthDate)
+                                  .replace("{time}", user.birthTime || "12:00")
+                              }} />
                             </div>
                           </div>
                         </div>
 
                         {/* Interactive Área do Usuário Sub Navigation and Dashboard Portal */}
-                        <div key={`user_dashboard_portal_${user.name}_${user.birthDate}_${user.birthTime || ''}`}>
+                        <div key={`user_dashboard_portal_${user.name}_${user.birthDate}_${user.birthTime || ''}_${systemDate.toDateString()}`}>
                           <UserDashboardPortal
                             user={user}
                             scorePoints={scorePoints}
@@ -5484,6 +5765,7 @@ export default function App() {
                             setAreaSubTab={setAreaSubTab}
                             onUpdateCurrentUser={setUser}
                             lang={currentLang}
+                            mapData={mapData}
                           />
                         </div>
 
@@ -6043,21 +6325,21 @@ export default function App() {
                                 {isMapJustSaved || (user.hasCreatedMap && isLoggedIn) ? (
                                   <>
                                     <h4 className="text-xs font-bold font-mono text-emerald-400 uppercase tracking-wider">
-                                      MAPA SINCRONIZADO
+                                      {t("MAPA SINCRONIZADO")}
                                     </h4>
                                     <p className="text-[11px] text-emerald-300/90 mt-1 max-w-lg leading-relaxed">
-                                      Seu mapa astral principal foi protegido e sincronizado com sua conta.
+                                      {t("Seu mapa astral principal foi protegido e sincronizado com sua conta.")}
                                       <br />
-                                      A partir de agora você receberá atualizações contínuas sobre trânsitos, ciclos, frequências energéticas e movimentações celestes relacionadas ao seu mapa.
+                                      {t("A partir de agora você receberá atualizações contínuas sobre trânsitos, ciclos, frequências energéticas e movimentações celestes relacionadas ao seu mapa.")}
                                     </p>
                                   </>
                                 ) : (
                                   <>
                                     <h4 className="text-xs font-bold font-mono text-amber-500 uppercase tracking-wider">
-                                      SINCRONIZAÇÃO ATIVA
+                                      {t("SINCRONIZAÇÃO ATIVA")}
                                     </h4>
                                     <p className="text-[11px] text-slate-350 mt-1 max-w-lg leading-relaxed">
-                                      Salve seu mapa para receber atualizações personalizadas de trânsitos, energias, previsões e movimentos astrológicos em tempo real.
+                                      {t("Salve seu mapa para receber atualizações personalizadas de trânsitos, energias, previsões e movimentos astrológicos em tempo real.")}
                                     </p>
                                   </>
                                 )}
@@ -6089,7 +6371,7 @@ export default function App() {
                                 className="w-full md:w-auto px-4 py-2 rounded-xl border border-slate-700 hover:border-amber-500/50 bg-slate-950 hover:bg-slate-900 text-slate-350 hover:text-amber-500 text-xs font-mono transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer font-bold"
                               >
                                 <span>💾</span>
-                                <span>SALVAR MAPA</span>
+                                <span>{t("SALVAR MAPA")}</span>
                               </button>
                             </div>
                           </div>
@@ -6695,7 +6977,7 @@ export default function App() {
                 </div>
 
                 {/* THE NEW ADVANCED BIORHYTHM SYSTEM FOR FABRICIO */}
-                <div key={`biorhythm_${user?.name}_${user?.birthDate}`}>
+                <div key={`biorhythm_${user?.name}_${user?.birthDate}_${systemDate.toDateString()}`}>
                   <BiorhythmView 
                     userName={user?.name} 
                     birthDate={user?.birthDate} 
@@ -6704,7 +6986,7 @@ export default function App() {
                 </div>
 
                 {/* NEW COMPREHENSIVE LUNAR CYCLE MODULE */}
-                <div key={`lunar_cycle_${user?.name}_${user?.birthDate}_${user?.birthTime || ''}`}>
+                <div key={`lunar_cycle_${user?.name}_${user?.birthDate}_${user?.birthTime || ''}_${systemDate.toDateString()}`}>
                   <LunarCycle 
                     userName={user?.name} 
                     userSunSign={mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Aquário")} 
@@ -6718,22 +7000,22 @@ export default function App() {
                   {/* Mapa da Prosperidade Subcomponent */}
                   <div className="bg-slate-900/40 p-6 rounded-3xl border border-slate-800 space-y-4">
                     <div className="pb-2 border-b border-slate-850">
-                      <h4 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest">Mapa de Prosperidade Mensal</h4>
-                      <p className="text-[10px] text-slate-500 mt-0.5 font-sans">Sua vibração abundante orientada para {personalProsperity.monthName} {personalProsperity.year}.</p>
+                      <h4 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest">{t("Mapa de Prosperidade Mensal")}</h4>
+                      <p className="text-[10px] text-slate-500 mt-0.5 font-sans">{t("Sua vibração abundante orientada para")} {personalProsperity.monthName} {personalProsperity.year}.</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       {/* Prosperity fields */}
                       <div className="p-3 bg-slate-950 rounded-xl border border-slate-850">
-                        <span className="text-[8px] font-mono text-slate-500 uppercase block">Número do Mês</span>
+                        <span className="text-[8px] font-mono text-slate-500 uppercase block">{t("Número do Mês")}</span>
                         <span className="text-xl font-bold font-mono text-amber-500 block mt-1">{personalProsperity.monthNumber}</span>
-                        <p className="text-[9px] text-slate-500 leading-none mt-1">Amuleto: {personalProsperity.amulet}</p>
+                        <p className="text-[9px] text-slate-500 leading-none mt-1">{t("Amuleto:")} {personalProsperity.amulet}</p>
                       </div>
 
                       <div className="p-3 bg-slate-950 rounded-xl border border-slate-850 flex items-center gap-3">
                         <div className="w-8 h-8 rounded border border-white/10 shrink-0 shadow-sm" style={{ backgroundColor: personalProsperity.favorableColor.hex }} />
                         <div>
-                          <span className="text-[8px] font-mono text-slate-500 uppercase block">Cor Favorecida</span>
+                          <span className="text-[8px] font-mono text-slate-500 uppercase block">{t("Cor Favorecida")}</span>
                           <span className="text-[11px] text-slate-300 font-bold font-mono block mt-0.5">{personalProsperity.favorableColor.name}</span>
                           <span className="text-[8px] text-slate-500 font-mono">{personalProsperity.favorableColor.hex.toUpperCase()}</span>
                         </div>
@@ -6741,7 +7023,7 @@ export default function App() {
 
                       {/* Palabra chave */}
                       <div className="col-span-2 p-3 bg-slate-950 rounded-xl border border-slate-850">
-                        <span className="text-[8px] font-mono text-slate-500 uppercase block">Palavra-Chave Ativa</span>
+                        <span className="text-[8px] font-mono text-slate-500 uppercase block">{t("Palavra-Chave Ativa")}</span>
                         <span className="text-xs font-bold text-slate-200 mt-1 block">"{personalProsperity.keyword}"</span>
                       </div>
                     </div>
@@ -6751,15 +7033,15 @@ export default function App() {
                   <div className="bg-slate-900/30 p-6 rounded-3xl border border-slate-800 space-y-4 col-span-1 lg:col-span-2">
                     <div className="pb-2 border-b border-slate-800 flex justify-between items-center sm:flex-nowrap flex-wrap gap-2">
                       <div>
-                        <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest">Mapa dos Próximos 30 Dias (Calendário de Trânsitos)</h3>
-                        <p className="text-[10px] text-slate-500 mt-0.5">Clique nos dias sinalizados para abrir e analisar os detalhes e trânsitos reais.</p>
+                        <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest">{t("Mapa dos Próximos 30 Dias (Calendário de Trânsitos)")}</h3>
+                        <p className="text-[10px] text-slate-500 mt-0.5">{t("Clique nos dias sinalizados para abrir e analisar os detalhes e trânsitos reais.")}</p>
                       </div>
                       {selectedProsperityDay !== null && (
                         <button 
                           onClick={() => setSelectedProsperityDay(null)}
                           className="px-2 py-1 text-[9px] font-mono uppercase bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-md border border-red-500/20 transition cursor-pointer"
                         >
-                          Fechar Detalhes
+                          {t("Fechar Detalhes")}
                         </button>
                       )}
                     </div>
@@ -6796,11 +7078,11 @@ export default function App() {
                             key={idx} 
                             type="button"
                             onClick={() => setSelectedProsperityDay(isSelected ? null : dayNum)}
-                            title={`Dia ${dayNum}: energia de foco ${tagText}`}
+                            title={`${t("Dia")} ${dayNum}: ${t("energia de foco")} ${t(tagText)}`}
                             className={`p-2 rounded-xl border text-center transition cursor-pointer flex flex-col justify-between items-center h-12 ${dayColor}`}
                           >
                             <span className="block font-mono text-xs font-bold leading-none">{dayNum.toString().padStart(2, '0')}</span>
-                            <span className="text-[7.5px] font-mono block leading-none uppercase tracking-tight">{tagText.slice(0, 3)}</span>
+                            <span className="text-[7.5px] font-mono block leading-none uppercase tracking-tight">{t(tagText).slice(0, 3)}</span>
                           </button>
                         );
                       })}
@@ -6813,7 +7095,9 @@ export default function App() {
                         mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Touro"),
                         user?.name || "Viajante",
                         selectedProsperityDay - 1,
-                        new Date()
+                        systemDate,
+                        currentLang,
+                        mapData
                       );
                       
                       return (
@@ -6822,11 +7106,11 @@ export default function App() {
                             <div className="flex items-center gap-1.5">
                               <span className="w-2.5 h-2.5 rounded-full bg-sky-400 animate-pulse" />
                               <span className="text-sm font-bold uppercase font-mono text-slate-100">
-                                {prediction.dateFormatted} (Dia {selectedProsperityDay})
+                                {prediction.dateFormatted} ({t("Dia")} {selectedProsperityDay})
                               </span>
                             </div>
                             <span className={`px-2.5 py-0.5 rounded-md text-[9px] font-mono border ${prediction.tagColorClass}`}>
-                              Vibração: {prediction.tagText}
+                              {t("Vibração:")} {prediction.tagText}
                             </span>
                           </div>
 
@@ -6834,27 +7118,27 @@ export default function App() {
                             {/* Column 1 - Astrological details and energies */}
                             <div className="space-y-3">
                               <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">Influência Astrológica:</span>
+                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{t("Influência Astrológica:")}</span>
                                 <p className="text-slate-205 mt-1 leading-normal font-sans font-medium">{prediction.astroInfluence}</p>
                               </div>
 
                               <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">Aspectos Planetários do Dia:</span>
+                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{t("Aspectos Planetários do Dia:")}</span>
                                 <p className="text-slate-200 mt-1 leading-normal font-sans">{prediction.aspects}</p>
                               </div>
 
                               <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">Trânsito Lunar & Setores:</span>
+                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{t("Trânsito Lunar & Setores:")}</span>
                                 <p className="text-slate-300 mt-1 leading-normal font-sans italic">{prediction.transit}</p>
                               </div>
 
                               <div className="grid grid-cols-2 gap-3">
                                 <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                  <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">Energia Predominante:</span>
+                                  <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{t("Energia Predominante:")}</span>
                                   <span className="text-[11px] font-bold text-sky-400 block mt-1">{prediction.predominantEnergy}</span>
                                 </div>
                                 <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                  <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">Nível Energético:</span>
+                                  <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{t("Nível Energético:")}</span>
                                   <div className="flex items-center gap-1.5 mt-1">
                                     <div className="flex-1 h-1.5 rounded-full bg-slate-800 overflow-hidden">
                                       <div className="h-full bg-emerald-500" style={{ width: `${prediction.energyLevel}%` }} />
@@ -6866,11 +7150,11 @@ export default function App() {
 
                               <div className="grid grid-cols-2 gap-3">
                                 <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                  <span className="text-[8px] font-mono text-emerald-500 uppercase tracking-wider block font-bold">Áreas Favorecidas:</span>
+                                  <span className="text-[8px] font-mono text-emerald-500 uppercase tracking-wider block font-bold">{t("Áreas Favorecidas:")}</span>
                                   <p className="text-emerald-400 mt-1 font-bold truncate">{prediction.favoredAreas.join(', ')}</p>
                                 </div>
                                 <div className="p-2.5 bg-slate-900/40 rounded-xl border border-rose-500/60">
-                                  <span className="text-[8px] font-mono text-rose-500 uppercase tracking-wider block font-bold">Áreas de Atenção:</span>
+                                  <span className="text-[8px] font-mono text-rose-500 uppercase tracking-wider block font-bold">{t("Áreas de Atenção:")}</span>
                                   <p className="text-rose-400 mt-1 font-bold truncate">{prediction.attentionAreas.join(', ')}</p>
                                 </div>
                               </div>
@@ -6879,23 +7163,23 @@ export default function App() {
                             {/* Column 2 - Personal action, opportunities, challenges & advice */}
                             <div className="space-y-3">
                               <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">Mensagem Personalizada do Usuário:</span>
+                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{t("Mensagem Personalizada do Usuário:")}</span>
                                 <p className="text-slate-200 mt-1 leading-normal italic">"{prediction.personalizedMessage}"</p>
                               </div>
 
                               <div className="grid grid-cols-2 gap-3">
                                 <div className="p-2.5 bg-slate-900/40 rounded-xl border border-emerald-500/15">
-                                  <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold text-emerald-400">Oportunidades:</span>
+                                  <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold text-emerald-400">{t("Oportunidades:")}</span>
                                   <p className="text-slate-300 mt-1 leading-normal font-sans">{prediction.opportunities}</p>
                                 </div>
                                 <div className="p-2.5 bg-slate-900/40 rounded-xl border border-rose-500/15">
-                                  <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold text-rose-400">Desafios:</span>
+                                  <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold text-rose-400">{t("Desafios:")}</span>
                                   <p className="text-slate-300 mt-1 leading-normal font-sans">{prediction.challenges}</p>
                                 </div>
                               </div>
 
                               <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">Conselho Personalizado:</span>
+                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{t("Conselho Personalizado:")}</span>
                                 <p className="text-slate-200 mt-1 leading-normal font-medium">"{prediction.personalizedAdvice}"</p>
                               </div>
 
@@ -6903,23 +7187,23 @@ export default function App() {
                                 <div className="p-2 bg-slate-900/40 rounded-xl border border-slate-850/60 flex items-center gap-2">
                                   <span className="w-4 h-4 rounded-full border border-white/10 shrink-0 shadow-xs" style={{ backgroundColor: prediction.favorableColor === "Verde Esmeralda" ? "#16a34a" : prediction.favorableColor === "Azul Celeste" ? "#38bdf8" : prediction.favorableColor === "Violeta Púrpura" ? "#a855f7" : prediction.favorableColor === "Dourado Sol" ? "#eab308" : prediction.favorableColor === "Turquesa Fluido" ? "#06b6d4" : prediction.favorableColor === "Vermelho Rubi" ? "#dc2626" : "#f472b6" }} />
                                   <div>
-                                    <span className="text-[7.5px] font-mono text-slate-500 uppercase block leading-none">Cor Favorável</span>
+                                    <span className="text-[7.5px] font-mono text-slate-500 uppercase block leading-none">{t("Cor Favorável")}</span>
                                     <span className="text-[10px] text-slate-300 font-bold font-sans mt-0.5 block">{prediction.favorableColor}</span>
                                   </div>
                                 </div>
                                 <div className="p-2 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                  <span className="text-[7.5px] font-mono text-slate-500 uppercase block leading-none">Número da Sorte</span>
+                                  <span className="text-[7.5px] font-mono text-slate-500 uppercase block leading-none">{t("Número da Sorte")}</span>
                                   <span className="text-sm font-black text-amber-400 block font-mono text-left">{prediction.favorableNumber}</span>
                                 </div>
                               </div>
 
                               <div className="grid grid-cols-2 gap-3">
                                 <div className="p-2 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                  <span className="text-[7.5px] font-mono text-slate-500 block uppercase">Melhor Período</span>
+                                  <span className="text-[7.5px] font-mono text-slate-500 block uppercase">{t("Melhor Período")}</span>
                                   <span className="text-[10px] text-emerald-400 font-bold block font-mono mt-0.5">{prediction.bestPeriod}</span>
                                 </div>
                                 <div className="p-2 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                  <span className="text-[7.5px] font-mono text-slate-100 block uppercase text-rose-500">Período de Atenção</span>
+                                  <span className="text-[7.5px] font-mono text-slate-100 block uppercase text-rose-500">{t("Período de Atenção")}</span>
                                   <span className="text-[10px] text-rose-400 font-bold block font-mono mt-0.5">{prediction.attentionPeriod}</span>
                                 </div>
                               </div>
@@ -6933,7 +7217,7 @@ export default function App() {
                 </div>
 
                 {/* NODOS LUNARES - SUA EVOLUÇÃO PESSOAL */}
-                <div key={`lunar_nodes_planetas_${user?.name}_${user?.birthDate}`}>
+                <div key={`lunar_nodes_planetas_${user?.name}_${user?.birthDate}_${systemDate.toDateString()}`}>
                   <LunarNodes userName={user?.name} mapData={mapData} lang={currentLang} />
                 </div>
 
@@ -7000,12 +7284,19 @@ export default function App() {
                 )}
 
                 {/* Monthly Celestial Transits History Panel */}
-                <div key={`transit_history_planetas_${user?.name}_${user?.birthDate}`}>
-                  <TransitHistory userName={user?.name} birthDate={user?.birthDate} lang={currentLang} />
+                <div key={`transit_history_planetas_${user?.name}_${user?.birthDate}_${systemDate.toDateString()}`}>
+                  <TransitHistory
+                    userName={user?.name}
+                    birthDate={user?.birthDate}
+                    birthTime={user?.birthTime}
+                    latitude={user?.latitude}
+                    longitude={user?.longitude}
+                    lang={currentLang}
+                  />
                 </div>
 
                 {/* Orbia AI Chat and Oracle Component */}
-                <div key={`orbia_oracle_chat_${user?.name}_${user?.birthDate}_${user?.birthTime || ''}`}>
+                <div key={`orbia_oracle_chat_${user?.name}_${user?.birthDate}_${user?.birthTime || ''}_${systemDate.toDateString()}`}>
                   <OrbiaAIAndOracle
                     chatMessages={chatMessages}
                     currentChatInput={currentChatInput}
@@ -7067,7 +7358,14 @@ export default function App() {
               ) : (
                 <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-350">
                   <div key={`tarot_system_${user.name}_${user.birthDate}`}>
-                    <TarotSystem userName={user.name} lang={currentLang} />
+                    <TarotSystem
+                      userName={user.name}
+                      birthDate={user.birthDate}
+                      birthTime={user.birthTime}
+                      latitude={user.latitude}
+                      longitude={user.longitude}
+                      lang={currentLang}
+                    />
                   </div>
                 </div>
               )
@@ -7286,7 +7584,7 @@ export default function App() {
                           birthTime: "",
                           birthCity: "",
                           isUnknownTime: false,
-                          isPremium: true,
+                          isPremium: false,
                           hasCreatedMap: false
                         });
                         setMapData(null);

@@ -44,12 +44,19 @@ interface IdiomaProviderProps {
 
 export function IdiomaProvider({ children }: IdiomaProviderProps) {
   const { i18n, t: tI18n } = useTranslation();
-  const [idioma, setIdioma] = useState<Idioma>(() => (i18n.language as Idioma) || getInitialLanguage());
+
+  const normalizeLanguage = (langStr: string): Idioma => {
+    if (!langStr) return getInitialLanguage();
+    const base = langStr.toLowerCase().split('-')[0];
+    return ['pt', 'en', 'es', 'de', 'fr'].includes(base) ? (base as Idioma) : 'pt';
+  };
+
+  const [idioma, setIdioma] = useState<Idioma>(() => normalizeLanguage(i18n.language));
 
   // Keep state in sync with react-i18next
   useEffect(() => {
     const handleLanguageChanged = () => {
-      setIdioma((i18n.language as Idioma) || 'pt');
+      setIdioma(normalizeLanguage(i18n.language));
     };
     window.addEventListener('orbi_language_changed', handleLanguageChanged);
     return () => {

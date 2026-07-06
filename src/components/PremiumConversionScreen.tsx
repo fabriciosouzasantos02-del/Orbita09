@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Lock, ShieldCheck, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Sparkles, Lock, ShieldCheck, CheckCircle2, RefreshCw, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Language } from '../lib/translations';
 import { useTranslation } from 'react-i18next';
@@ -11,7 +11,11 @@ const LOCAL_PREMIUM_TRANSLATIONS: Record<Language, Record<string, string>> = {
     "plan_monthly_desc": "Acesso completo e ilimitado a todas as ferramentas astrológicas.",
     "plan_annual_name": "Anual (Economize 33%)",
     "79,99 EUR / ano": "79,99 EUR / ano",
-    "plan_annual_desc": "Melhor valor. Acesso ilimitado o ano todo (apenas 6,66 EUR/mês)."
+    "plan_annual_desc": "Melhor valor. Acesso ilimitado o ano todo (apenas 6,66 EUR/mês).",
+    "checkout_ready_title": "Sessão Segura Criada!",
+    "checkout_ready_desc": "Seu checkout seguro na Stripe está pronto. Caso o ambiente de pagamento não tenha aberto automaticamente em uma nova aba, clique no botão abaixo para prosseguir com segurança:",
+    "btn_open_checkout": "Abrir Checkout Seguro",
+    "btn_cancel_checkout": "Voltar e Tentar Novamente"
   },
   en: {
     "plan_monthly_name": "Monthly",
@@ -19,7 +23,11 @@ const LOCAL_PREMIUM_TRANSLATIONS: Record<Language, Record<string, string>> = {
     "plan_monthly_desc": "Complete and unlimited access to all astrological tools.",
     "plan_annual_name": "Annual (Save 33%)",
     "79,99 EUR / ano": "79.99 EUR / year",
-    "plan_annual_desc": "Best value. Unlimited access all year round (just 6.66 EUR/month)."
+    "plan_annual_desc": "Best value. Unlimited access all year round (just 6.66 EUR/month).",
+    "checkout_ready_title": "Secure Session Created!",
+    "checkout_ready_desc": "Your secure Stripe checkout is ready. If the payment environment did not open automatically in a new tab, click the button below to proceed securely:",
+    "btn_open_checkout": "Open Secure Checkout",
+    "btn_cancel_checkout": "Go Back & Try Again"
   },
   es: {
     "plan_monthly_name": "Mensual",
@@ -27,7 +35,11 @@ const LOCAL_PREMIUM_TRANSLATIONS: Record<Language, Record<string, string>> = {
     "plan_monthly_desc": "Acceso completo e ilimitado a todas las herramientas astrológicas.",
     "plan_annual_name": "Anual (Ahorra un 33%)",
     "79,99 EUR / ano": "79,99 EUR / año",
-    "plan_annual_desc": "El mejor valor. Acceso ilimitado todo el año (solo 6,66 EUR/mes)."
+    "plan_annual_desc": "El mejor valor. Acceso ilimitado todo el año (solo 6,66 EUR/mes).",
+    "checkout_ready_title": "¡Sesión Segura Creada!",
+    "checkout_ready_desc": "Tu pago seguro de Stripe está listo. Si el entorno de pago no se abrió automáticamente en una nueva pestaña, haz clic en el botón de abajo para proceder de manera segura:",
+    "btn_open_checkout": "Abrir Pago Seguro",
+    "btn_cancel_checkout": "Volver y Intentar de Nuevo"
   },
   de: {
     "plan_monthly_name": "Monatlich",
@@ -35,7 +47,11 @@ const LOCAL_PREMIUM_TRANSLATIONS: Record<Language, Record<string, string>> = {
     "plan_monthly_desc": "Vollständiger und unbegrenzter Zugriff auf alle astrologischen Werkzeuge.",
     "plan_annual_name": "Jährlich (Sparen Sie 33%)",
     "79,99 EUR / ano": "79,99 EUR / Jahr",
-    "plan_annual_desc": "Bestes Preis-Leistungs-Verhältnis. Unbegrenzter Zugriff das ganze Jahr über (nur 6,66 EUR/Monat)."
+    "plan_annual_desc": "Bestes Preis-Leistungs-Verhältnis. Unbegrenzter Zugriff das ganze Jahr über (nur 6,66 EUR/Monat).",
+    "checkout_ready_title": "Sichere Sitzung erstellt!",
+    "checkout_ready_desc": "Ihre sichere Stripe-Kasse ist bereit. Wenn sich die Zahlungsumgebung nicht automatisch in einem neuen Tab geöffnet hat, klicken Sie auf die Schaltfläche unten, um sicher fortzufahren:",
+    "btn_open_checkout": "Sichere Kasse öffnen",
+    "btn_cancel_checkout": "Zurück & Erneut versuchen"
   },
   fr: {
     "plan_monthly_name": "Mensuel",
@@ -43,7 +59,11 @@ const LOCAL_PREMIUM_TRANSLATIONS: Record<Language, Record<string, string>> = {
     "plan_monthly_desc": "Accès complet et illimité à tous les outils astrologiques.",
     "plan_annual_name": "Annuel (Économisez 33%)",
     "79,99 EUR / ano": "79,99 EUR / an",
-    "plan_annual_desc": "Meilleur rapport qualité-prix. Accès illimité toute l'année (seulement 6,66 EUR/mois)."
+    "plan_annual_desc": "Meilleur rapport qualité-prix. Accès illimité toute l'année (seulement 6,66 EUR/mois).",
+    "checkout_ready_title": "Session sécurisée créée !",
+    "checkout_ready_desc": "Votre paiement sécurisé Stripe est prêt. Si l'environnement de paiement ne s'est pas ouvert automatiquement dans un nouvel onglet, cliquez sur le bouton ci-dessous pour continuer en toute sécurité :",
+    "btn_open_checkout": "Ouvrir le paiement sécurisé",
+    "btn_cancel_checkout": "Retourner & Réessayer"
   }
 };
 
@@ -60,6 +80,7 @@ export const PremiumConversionScreen: React.FC<PremiumConversionScreenProps> = (
   userEmail,
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [step, setStep] = useState<'checkout' | 'success'>('checkout');
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual'>('monthly');
 
@@ -115,7 +136,23 @@ export const PremiumConversionScreen: React.FC<PremiumConversionScreenProps> = (
 
       const session = await response.json();
       if (session.url) {
-        window.location.href = session.url;
+        setCheckoutUrl(session.url);
+        
+        // Attempt to open in a new tab first (safest and required for Stripe inside iframes)
+        const stripeWindow = window.open(session.url, '_blank');
+        
+        // If popup blocker blocked it or if we are inside an iframe, try top-level redirect or keep the inline state
+        if (!stripeWindow || stripeWindow.closed || typeof stripeWindow.closed === 'undefined') {
+          try {
+            if (window.self !== window.top) {
+              window.top!.location.href = session.url;
+            } else {
+              window.location.href = session.url;
+            }
+          } catch (e) {
+            console.log("Iframe top navigation restricted. Relying on user clicking the fallback checkout button.", e);
+          }
+        }
       } else {
         throw new Error(session.error || 'Invalid session response');
       }
@@ -129,6 +166,65 @@ export const PremiumConversionScreen: React.FC<PremiumConversionScreenProps> = (
 
   return (
     <div id="premium-conversion-screen" className="relative z-10 space-y-10 pb-4 max-w-5xl mx-auto px-1">
+      {/* Fallback secure checkout modal overlay for iframe context and pop-up block prevention */}
+      <AnimatePresence>
+        {checkoutUrl && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-gradient-to-b from-slate-900 to-slate-950 border border-amber-500/35 rounded-3xl p-6 md:p-8 max-w-md w-full text-center space-y-6 shadow-2xl relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-amber-500/[0.04] rounded-full blur-3xl pointer-events-none" />
+              
+              <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto text-amber-500">
+                <Lock className="w-6 h-6 animate-pulse" />
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-lg font-sans font-black text-slate-100 tracking-tight">
+                  {t('checkout_ready_title', 'Sessão Segura Criada!')}
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed font-sans">
+                  {t('checkout_ready_desc', 'Seu checkout seguro na Stripe está pronto. Caso o ambiente de pagamento não tenha aberto automaticamente em uma nova aba, clique no botão abaixo para prosseguir com segurança:')}
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <a
+                  href={checkoutUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-amber-500 hover:from-purple-500 hover:via-indigo-500 hover:to-amber-400 text-slate-100 text-xs font-black uppercase tracking-wider rounded-xl transition duration-300 shadow-lg shadow-indigo-500/10 flex items-center justify-center gap-2 cursor-pointer border-0"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span>{t('btn_open_checkout', 'Abrir Checkout Seguro')}</span>
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => setCheckoutUrl(null)}
+                  className="w-full py-2.5 bg-slate-950/60 hover:bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 text-xs font-bold rounded-xl transition duration-200 cursor-pointer"
+                >
+                  {t('btn_cancel_checkout', 'Voltar e Tentar Novamente')}
+                </button>
+              </div>
+
+              <div className="flex justify-center items-center gap-1.5 text-[10px] font-mono text-slate-500">
+                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                <span>{t('stripe_secure_billing', 'Sua conexão é 100% criptografada')}</span>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence mode="wait">
         {step === 'checkout' ? (
           <motion.div

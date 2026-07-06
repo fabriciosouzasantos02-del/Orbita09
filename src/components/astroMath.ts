@@ -648,7 +648,7 @@ export function performAstroCalculation(
     { name: "Fundo do Céu", long: IC, desc: "O FUNDO DO CÉU sintoniza com as raízes de seu clã familiar, privacidade emocional e infância." }
   );
   
-  const lang = getActiveLanguage();
+  const lang = (passedLang && ["pt", "en", "es", "de", "fr"].includes(passedLang) ? passedLang : getActiveLanguage()) as 'pt' | 'en' | 'es' | 'de' | 'fr';
 
   // Mapping to final placements
   const astros: AstroPlacement[] = rawPlacementsList.map(item => {
@@ -656,7 +656,6 @@ export function performAstroCalculation(
     const minStr = info.minute.toString().padStart(2, "0");
     const dStr = `${info.degree}°${minStr}'`;
     
-    const translatedName = TRANSLATED_PLANETS[lang][item.name] || item.name;
     const translatedSign = TRANSLATED_SIGNS[lang][info.sign] || info.sign;
     const decWord = { pt: "decanato", en: "decanate", es: "decanato", de: "Dekanat", fr: "décanat" }[lang];
     const itemDesc = TRANSLATED_PLANET_DESCS[lang][item.name] || item.desc;
@@ -670,8 +669,8 @@ export function performAstroCalculation(
     }[lang];
 
     return {
-      name: translatedName,
-      sign: translatedSign,
+      name: item.name, // Keep canonical Portuguese name
+      sign: info.sign, // Keep canonical Portuguese sign
       degree: info.degree,
       minute: info.minute,
       longitude: item.long,
@@ -750,9 +749,9 @@ export function performAstroCalculation(
 
     houses.push({
       number: num,
-      sign: translatedSign,
+      sign: cuspInfo.sign, // Keep canonical Portuguese sign
       longitude: cusp,
-      planets: translatedPlanetsInHouse,
+      planets: planetsInHouse, // Keep canonical Portuguese planets
       interpretation: `${houseLabelsLang[num]} ${cuspText}${planetsText}`
     });
   }
@@ -812,9 +811,9 @@ export function performAstroCalculation(
           }[lang];
 
           aspects.push({
-            planet1: p1Name,
-            planet2: p2Name,
-            aspectType: aspName as any,
+            planet1: p1.name, // Keep canonical Portuguese name
+            planet2: p2.name, // Keep canonical Portuguese name
+            aspectType: asp.name as any, // Keep canonical Portuguese aspectType
             angle: asp.angle,
             orb: `${currentOrb.toFixed(2)}°`,
             intensity,

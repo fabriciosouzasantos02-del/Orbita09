@@ -1496,7 +1496,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
                   value={editInstagram}
                   onChange={(e) => setEditInstagram(e.target.value)}
                   className="w-full p-3 bg-slate-950 border border-slate-850 rounded-xl text-slate-200 font-mono"
-                  placeholder="@seu_perfil"
+                  placeholder={tI18n("@seu_perfil")}
                 />
               </div>
 
@@ -1507,7 +1507,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
                   value={editFacebook}
                   onChange={(e) => setEditFacebook(e.target.value)}
                   className="w-full p-3 bg-slate-950 border border-slate-850 rounded-xl text-slate-200 font-mono"
-                  placeholder="link_do_facebook"
+                  placeholder={tI18n("link_do_facebook")}
                 />
               </div>
             </div>

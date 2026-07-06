@@ -162,24 +162,189 @@ export default function DashboardTab({ natalChart, lang }: DashboardTabProps) {
   const currentHoroscope = dailyHoroscopes[sunSign] || dailyHoroscopes.default;
   const horoscopeText = currentHoroscope[activeLang] || currentHoroscope['en'] || currentHoroscope['pt'];
 
+  // Cosmic Aura Signature data
+  const majorTransits: Record<string, Record<Language, { title: string; desc: string }>> = {
+    "Áries": {
+      pt: { title: "Marte trígono Plutão", desc: "Impulsiona sua liderança natural, liberando coragem para quebrar barreiras cotidianas." },
+      en: { title: "Mars trine Pluto", desc: "Drives your natural leadership, releasing courage to break everyday barriers." },
+      es: { title: "Marte trígono Plutón", desc: "Impulsa tu liderazgo natural, liberando coraje para romper barreras cotidianas." },
+      de: { title: "Mars Trigon Pluto", desc: "Treibt Ihre natürliche Führungsrolle an und setzt Mut frei, um alltägliche Barrieren zu durchbrechen." },
+      fr: { title: "Mars trigone Pluton", desc: "Stimule votre leadership naturel, libérant du courage pour briser les barrières quotidiennes." }
+    },
+    "Touro": {
+      pt: { title: "Vênus sextil Saturno", desc: "Foco em atrativos duradouros e consolidação financeira em andamento prático." },
+      en: { title: "Venus sextile Saturn", desc: "Focus on lasting attractors and financial consolidation in practical progress." },
+      es: { title: "Venus sextil Saturno", desc: "Enfoque en atractivos duraderos y consolidación financiera en marcha práctica." },
+      de: { title: "Venus Sextil Saturn", desc: "Fokus auf dauerhafte Attraktoren und finanzielle Konsolidierung im praktischen Fortschritt." },
+      fr: { title: "Vénus sextile Saturne", desc: "Accent sur les attraits durables et la consolidation financière dans les progrès pratiques." }
+    },
+    "Gêmeos": {
+      pt: { title: "Mercúrio na Casa 3", desc: "Seus talentos de comunicação e oratória estão com vibração e clareza máximas." },
+      en: { title: "Mercury in House 3", desc: "Your communication and speaking talents are at peak vibration and clarity." },
+      es: { title: "Mercurio en Casa 3", desc: "Tus talentos de comunicación y oratoria están en máxima vibración y claridad." },
+      de: { title: "Merkur in Haus 3", desc: "Ihre Kommunikations- und Sprechtalente befinden sich auf dem Höhepunkt von Schwingung und Klarheit." },
+      fr: { title: "Mercure en Maison 3", desc: "Vos talents de communication et d'expression sont à leur apogée de vibration et de clarté." }
+    },
+    "Câncer": {
+      pt: { title: "Lua trígono Netuno", desc: "Sua sensibilidade intuitiva está no pico absoluto, favorecendo revelação de sonhos." },
+      en: { title: "Moon trine Neptune", desc: "Your intuitive sensitivity is at its absolute peak, favoring dream revelations." },
+      es: { title: "Luna trígono Neptuno", desc: "Tu sensibilidad intuitiva está en su punto máximo, favoreciendo la revelación de sueños." },
+      de: { title: "Mond Trigon Neptun", desc: "Ihre intuitive Sensibilität ist auf dem absoluten Höhepunkt, was Traumenthüllungen begünstigt." },
+      fr: { title: "Lune trigone Neptune", desc: "Votre sensibilité intuitive est à son apogée absolue, favorisant la révélation des rêves." }
+    },
+    "Leão": {
+      pt: { title: "Sol trígono Júpiter", desc: "Brilho pessoal radiante e amplas oportunidades de reconhecimento de sua aura." },
+      en: { title: "Sun trine Jupiter", desc: "Radiant personal brilliance and ample opportunities for aura recognition." },
+      es: { title: "Sol trígono Júpiter", desc: "Brillo personal radiante y amplias oportunidades de reconhecimento de tu aura." },
+      de: { title: "Sonne Trigon Jupiter", desc: "Strahlender persönlicher Glanz und reichliche Gelegenheiten zur Aura-Erkennung." },
+      fr: { title: "Soleil trigone Jupiter", desc: "Éclat personnel radieux et amples opportunités de reconnaissance de votre aura." }
+    },
+    "Virgem": {
+      pt: { title: "Mercúrio trígono Urano", desc: "Sua mente racional está iluminada com insights revolucionários e novas soluções." },
+      en: { title: "Mercury trine Uranus", desc: "Your rational mind is illuminated with revolutionary insights and new solutions." },
+      es: { title: "Mercurio trígono Urano", desc: "Tu mente racional está iluminada con ideas revolucionarias y nuevas soluciones." },
+      de: { title: "Merkur Trigon Uranus", desc: "Ihr rationaler Verstand ist mit revolutionären Einsichten und neuen Lösungen erleuchtet." },
+      fr: { title: "Mercure trigone Uranus", desc: "Votre esprit rationnel est illuminé par des idées revolucionnaires et de nouvelles solutions." }
+    },
+    "Libra": {
+      pt: { title: "Vênus trígono Marte", desc: "Sintonia perfeita entre afeto e ação prática, favorecendo seu magnetismo social." },
+      en: { title: "Venus trine Mars", desc: "Perfect harmony between affection and practical action, favoring your social magnetism." },
+      es: { title: "Venus trígono Marte", desc: "Sintonía perfecta entre afecto y acción práctica, favoreciendo tu magnetismo social." },
+      de: { title: "Venus Trigon Mars", desc: "Perfekte Harmonie zwischen Zuneigung und praktischem Handeln, die Ihren sozialen Magnetismus begünstigt." },
+      fr: { title: "Vénus trigone Mars", desc: "Parfaite harmonie entre affection et action pratique, favorisant votre magnétisme social." }
+    },
+    "Escorpião": {
+      pt: { title: "Plutão sextil Netuno", desc: "Sua percepção psíquica desvenda intenções invisíveis com clareza incomparável." },
+      en: { title: "Pluto sextile Neptune", desc: "Your psychic perception unlocks unseen intentions with unmatched clarity." },
+      es: { title: "Plutón sextil Neptuno", desc: "Tu percepción psíquica descifra intenciones invisibles con claridad inigualable." },
+      de: { title: "Pluto Sextil Neptun", desc: "Ihre psychische Wahrnehmung entschlüsselt unsichtbare Absichten mit unübertroffener Klarheit." },
+      fr: { title: "Pluton sextile Neptune", desc: "Votre perception psychique révèle des intentions invisibles avec une clarté inégale." }
+    },
+    "Sagitário": {
+      pt: { title: "Júpiter na Casa 9", desc: "Sua sede de expansão mental e espiritual abre canais de extrema prosperidade." },
+      en: { title: "Jupiter in House 9", desc: "Your thirst for mental and spiritual expansion opens channels of extreme prosperity." },
+      es: { title: "Júpiter en Casa 9", desc: "Tu sed de expansión mental y espiritual abre canales de extrema prosperidad." },
+      de: { title: "Jupiter in Haus 9", desc: "Ihr Durst nach geistiger und spiritueller Expansion öffnet Kanäle für extremen Wohlstand." },
+      fr: { title: "Jupiter en Maison 9", desc: "Votre soif d'expansion mentale et spirituelle ouvre des canaux d'extrême prospérité." }
+    },
+    "Capricórnio": {
+      pt: { title: "Saturno trígono Sol", desc: "Estabilidade de alma e colheita segura de esforços que fortalecem seu destino." },
+      en: { title: "Saturn trine Sun", desc: "Soul stability and safe harvest of efforts that strengthen your destiny." },
+      es: { title: "Saturno trígono Sol", desc: "Estabilidad del alma y cosecha segura de esfuerzos que fortalecen tu destino." },
+      de: { title: "Saturn Trigon Sonne", desc: "Seelische Stabilität und sichere Ernte von Anstrengungen, die Ihr Schicksal stärken." },
+      fr: { title: "Saturne trigone Soleil", desc: "Stabilité de l'âme et récolte sûre des efforts qui renforcent votre destin." }
+    },
+    "Aquário": {
+      pt: { title: "Urano sextil Sol", desc: "Libertação de velhas crenças mentais e originalidade em alta voltagem cósmica." },
+      en: { title: "Uranus sextile Sun", desc: "Release of old mental beliefs and high cosmic voltage originality." },
+      es: { title: "Urano sextil Sol", desc: "Liberación de viejas creencias mentales y originalidad en alta tensión cósmica." },
+      de: { title: "Uranus Sextil Sonne", desc: "Befreiung von alten mentalen Überzeugungen und hohe kosmische Spannungs-Originalität." },
+      fr: { title: "Uranus sextile Soleil", desc: "Libération des vieilles croyances mentales et originalité en haute tension cosmique." }
+    },
+    "Peixes": {
+      pt: { title: "Netuno trígono Vênus", desc: "Inspiração poética em alta, amor transcendente de alma e elevação de magnetismo." },
+      en: { title: "Neptune trine Venus", desc: "High poetic inspiration, transcendent soul love, and elevated aura magnetism." },
+      es: { title: "Neptuno trígono Venus", desc: "Alta inspiración poética, amor de alma trascendente y magnetismo elevado." },
+      de: { title: "Neptun Trigon Venus", desc: "Hohe poetische Inspiration, transzendente Seelenliebe und erhöhter Aura-Magnetismus." },
+      fr: { title: "Neptune trigone Vénus", desc: "Haute inspiration poétique, amour transcendant de l'âme et magnétisme élevé." }
+    }
+  };
+
+  const activeTransitData = majorTransits[sunSign] || majorTransits.default || majorTransits["Câncer"];
+  const localizedTransit = activeTransitData[activeLang] || activeTransitData["en"] || activeTransitData["pt"];
+
+  const headerTitles: Record<Language, string> = {
+    pt: "Assinatura de Aura Cósmica",
+    en: "Cosmic Aura Signature",
+    es: "Firma de Aura Cósmica",
+    de: "Kosmische Aura-Signatur",
+    fr: "Signature d'Aura Cosmique"
+  };
+
+  const headerSubtitles: Record<Language, string> = {
+    pt: "Sua vibração existencial decodificada em tempo real",
+    en: "Your existential vibration decoded in real-time",
+    es: "Tu vibración existencial decodificada en tiempo real",
+    de: "Ihre existenzielle Schwingung in Echtzeit decodiert",
+    fr: "Votre vibration existentielle décodée en temps réel"
+  };
+
+  const moonLabels: Record<Language, string> = {
+    pt: "Ciclo Lunar Ativo",
+    en: "Active Lunar Cycle",
+    es: "Ciclo Lunar Activo",
+    de: "Aktiver Mondzyklus",
+    fr: "Cycle Lunaire Actif"
+  };
+
+  const transitLabels: Record<Language, string> = {
+    pt: "Ativação Natal Principal",
+    en: "Primary Natal Activation",
+    es: "Activación Natal Principal",
+    de: "Hauptsächliche Geburtsaktivierung",
+    fr: "Activation Natale Principale"
+  };
+
   return (
     <div className="space-y-6">
       
-      {/* Dynamic Header Greeting */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-neutral-200/90 rounded-2xl p-6 shadow-sm">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-display font-semibold text-neutral-900 flex items-center gap-2">
-            <Sun className="w-6 h-6 text-indigo-600 animate-spin-slow" />
-            <span>{t("welcome")}!</span>
-          </h2>
-          <p className="text-neutral-505 text-xs">
-            {t("subtitle")} — {tI18n("Sol em")} <strong>{t(sunSign)}</strong>
-          </p>
-        </div>
-        
-        <div className="px-3.5 py-1.5 bg-neutral-50 rounded-lg border border-neutral-100 flex items-center gap-2 text-xs text-neutral-600">
-          <Zap className="w-4 h-4 text-amber-500 animate-bounce" />
-          <span>{t("recalculatingCode")}</span>
+      {/* Dynamic Header Greeting: Cosmic Aura Signature Banner */}
+      <div className="relative overflow-hidden bg-slate-950 text-slate-100 rounded-3xl p-6 border border-indigo-500/20 shadow-2xl">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/[0.04] rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-10 -left-10 w-64 h-64 bg-amber-500/[0.02] rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2 text-left">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 bg-indigo-500/15 border border-indigo-500/25 text-[9px] font-mono text-indigo-400 font-extrabold rounded-lg uppercase tracking-wider">
+                ★ Aura Signature
+              </span>
+              <span className="px-2.5 py-0.5 bg-amber-500/10 border border-amber-500/20 text-[9px] font-mono text-amber-400 font-extrabold rounded-lg uppercase tracking-wider flex items-center gap-1">
+                <Sun className="w-2.5 h-2.5 animate-spin-slow" />
+                {tI18n("Sol em")} {t(sunSign)}
+              </span>
+            </div>
+            <h2 className="text-2xl font-sans font-black tracking-tight text-slate-50">
+              {headerTitles[activeLang] || headerTitles.pt}
+            </h2>
+            <p className="text-slate-400 text-xs">
+              {headerSubtitles[activeLang] || headerSubtitles.pt}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4 shrink-0">
+            {/* Moon Phase Column */}
+            <div className="px-4 py-3 bg-slate-900/60 border border-slate-850 rounded-2xl flex items-center gap-3 text-left">
+              <span className="text-4xl select-none">{moonPhaseInfo.symbol}</span>
+              <div>
+                <span className="text-[9px] font-mono font-bold text-indigo-400 uppercase tracking-widest block">
+                  {moonLabels[activeLang] || moonLabels.pt}
+                </span>
+                <span className="text-xs font-bold text-slate-200 block">
+                  {moonPhaseInfo.name}
+                </span>
+                <span className="text-[10px] font-mono text-slate-400 block">
+                  {moonPhaseInfo.percent}% {tI18n("de iluminação")}
+                </span>
+              </div>
+            </div>
+
+            {/* Planetary Activation Column */}
+            <div className="px-4 py-3 bg-slate-900/60 border border-slate-850 rounded-2xl flex items-center gap-3 text-left max-w-xs">
+              <Compass className="w-8 h-8 text-amber-400 shrink-0" />
+              <div>
+                <span className="text-[9px] font-mono font-bold text-amber-400 uppercase tracking-widest block">
+                  {transitLabels[activeLang] || transitLabels.pt}
+                </span>
+                <span className="text-xs font-black text-slate-100 block">
+                  {localizedTransit.title}
+                </span>
+                <p className="text-[10px] text-slate-400 leading-normal">
+                  {localizedTransit.desc}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

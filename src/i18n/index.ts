@@ -13,6 +13,7 @@ import { onboardingTranslations } from './onboarding';
 import { numerologyTranslations } from './numerology';
 import { orbiaTranslations } from './orbia';
 import { serverTranslations } from './server';
+import { landingTranslations } from './landing';
 
 // Collection of all registered translation modules
 const modules = [
@@ -29,7 +30,8 @@ const modules = [
   onboardingTranslations,
   numerologyTranslations,
   orbiaTranslations,
-  serverTranslations
+  serverTranslations,
+  landingTranslations
 ];
 
 // Automatically merged single official source of truth
@@ -94,11 +96,19 @@ export function changeLanguage(novoIdioma: Language): void {
           key.startsWith('orbi_lunarnodes_') ||
           key.startsWith('tarot_saved_') ||
           key.startsWith('tarot_last_draw_') ||
+          key.startsWith('orbi_calc_cache_') ||
           key.includes('_insight_') ||
           key === 'orbi_map_data' ||
           key === 'orbi_numerology_data'
         ) {
           localStorage.removeItem(key);
+        }
+      });
+
+      // Clear relevant session storage caches
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.startsWith('astrological_')) {
+          sessionStorage.removeItem(key);
         }
       });
       // Dispatch global change event

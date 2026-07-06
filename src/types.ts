@@ -22,6 +22,13 @@ export interface UserProfile {
   trialUsed?: boolean;
   trialStartDate?: string;
   trialEndDate?: string;
+  plan?: string;
+  subscriptionStatus?: string;
+  trialStart?: string;
+  trialEnds?: string;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  subscriptionUpdatedAt?: string;
   deviceFingerprint?: string;
   deviceId?: string;
   lastLoginAt?: string;

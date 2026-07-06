@@ -856,7 +856,7 @@ const NODE_UI_TRANSLATIONS: Record<string, Record<Language, string>> = {
     de: 'ABGESTIMMT',
     fr: 'SYNTONISÉ'
   },
-  'Como base no sintonizador de efemérides reais do seu nascimento, identificamos que o seu': {
+  'Com base no sintonizador de efemérides reais do seu nascimento, identificamos que o seu': {
     pt: 'Com base no sintonizador de efemérides reais do seu nascimento, identificamos que o seu',
     en: 'Based on the real ephemeris tuner of your birth, we identified that your',
     es: 'Con base en el sintonizador de efemérides reales de tu nacimiento, identificamos que tu',
@@ -953,6 +953,160 @@ const NODE_UI_TRANSLATIONS: Record<string, Record<Language, string>> = {
     es: 'Quienes lograron comprender las propuestas de los nodos y se sienten libres de expresar sus potencialidades hacia el equilibrio.',
     de: 'Diejenigen, denen es gelungen ist, die Vorschläge der Knoten zu verstehen, und sich frei fühlen, ihre Potenziale in Richtung Gleichgewicht auszudrücken.',
     fr: 'Ceux qui ont réussi à comprendre les propositions des nœuds et se sentent libres d\'exprimer leurs potentialités vers l\'équilibre.'
+  },
+  'Símbolo:': {
+    pt: 'Símbolo:',
+    en: 'Symbol:',
+    es: 'Símbolo:',
+    de: 'Symbol:',
+    fr: 'Symbole :'
+  },
+  'Direção norte cósmica das águias ascendentes.': {
+    pt: 'Direção norte cósmica das águias ascendentes.',
+    en: 'Cosmic north direction of ascending eagles.',
+    es: 'Dirección norte cósmica de las águilas ascendentes.',
+    de: 'Kosmische Nordrichtung aufsteigender Adler.',
+    fr: 'Direction nord cosmique des aigles ascendants.'
+  },
+  'Benefício:': {
+    pt: 'Benefício:',
+    en: 'Benefit:',
+    es: 'Beneficio:',
+    de: 'Vorteil:',
+    fr: 'Bénéfice :'
+  },
+  'Força interna instintiva e inteligência consolidada.': {
+    pt: 'Força interna instintiva e inteligência consolidada.',
+    en: 'Instinctive inner strength and consolidated intelligence.',
+    es: 'Fuerza interna instintiva e inteligencia consolidada.',
+    de: 'Instinktive innere Stärke und konsolidierte Intelligenz.',
+    fr: 'Force intérieure instinctive et intelligence consolidée.'
+  },
+  'Nodo Sul em': {
+    pt: 'Nodo Sul em',
+    en: 'South Node in',
+    es: 'Nodo Sur en',
+    de: 'Südknoten in',
+    fr: 'Nœud Sud en'
+  },
+  'Nodo Sul na Casa': {
+    pt: 'Nodo Sul na Casa',
+    en: 'South Node in House',
+    es: 'Nodo Sur en la Casa',
+    de: 'Südknoten im Haus',
+    fr: 'Nœud Sud dans la Maison'
+  },
+  'Nodo Norte em': {
+    pt: 'Nodo Norte em',
+    en: 'North Node in',
+    es: 'Nodo Norte en',
+    de: 'Nordknoten in',
+    fr: 'Nœud Nord en'
+  },
+  'Oposição:': {
+    pt: 'Oposição:',
+    en: 'Opposition:',
+    es: 'Oposición:',
+    de: 'Opposition:',
+    fr: 'Opposition :'
+  },
+  'Integrar:': {
+    pt: 'Integrar:',
+    en: 'Integrate:',
+    es: 'Integrar:',
+    de: 'Integrieren:',
+    fr: 'Intégrer :'
+  },
+  'Território de Ação:': {
+    pt: 'Território de Ação:',
+    en: 'Territory of Action:',
+    es: 'Territorio de Acción:',
+    de: 'Aktionsbereich:',
+    fr: 'Territoire d\'Action :'
+  },
+  'Antigas Fugas:': {
+    pt: 'Antigas Fugas:',
+    en: 'Old Escapes:',
+    es: 'Antiguos Escapes:',
+    de: 'Alte Ausflüchte:',
+    fr: 'Anciennes Fuites :'
+  },
+  'LIÇÃO CENTRAL DA SUA ALMA:': {
+    pt: 'LIÇÃO CENTRAL DA SUA ALMA:',
+    en: 'CENTRAL LESSON OF YOUR SOUL:',
+    es: 'LECCIÓN CENTRAL DE TU ALMA:',
+    de: 'ZENTRALE LEKTION IHRER SEELE:',
+    fr: 'LEÇON CENTRALE DE VOTRE ÂME :'
+  },
+  'INTEGRAR NO COTIDIANO:': {
+    pt: 'INTEGRAR NO COTIDIANO:',
+    en: 'INTEGRATE INTO DAILY LIFE:',
+    es: 'INTEGRAR EN LA VIDA DIARIA:',
+    de: 'IN DEN ALLTAG INTEGRIEREN:',
+    fr: 'INTÉGRER AU QUOTIDIEN :'
+  },
+  'COMPORTAMENTO A EVITAR / TRANSFORMAR:': {
+    pt: 'COMPORTAMENTO A EVITAR / TRANSFORMAR:',
+    en: 'BEHAVIOR TO AVOID / TRANSFORM:',
+    es: 'COMPORTAMIENTO A EVITAR / TRANSFORMAR:',
+    de: 'ZU VERMEIDENDES / ZU VERÄNDERNDES VERHALTEN:',
+    fr: 'COMPORTEMENT À ÉVITER / TRANSFORMER :'
+  },
+  'COMPORTAMENTO A EVITAR:': {
+    pt: 'COMPORTAMENTO A EVITAR:',
+    en: 'BEHAVIOR TO AVOID:',
+    es: 'COMPORTAMIENTO A EVITAR:',
+    de: 'ZU VERMEIDENDES VERHALTEN:',
+    fr: 'COMPORTEMENT À ÉVITER :'
+  },
+  'Nodo Norte na Casa': {
+    pt: 'Nodo Norte na Casa',
+    en: 'North Node in House',
+    es: 'Nodo Norte en la Casa',
+    de: 'Nordknoten im Haus',
+    fr: 'Nœud Nord dans la Maison'
+  },
+  'DESAFIO NO TERRITÓRIO DA CASA:': {
+    pt: 'DESAFIO NO TERRITÓRIO DA CASA:',
+    en: 'CHALLENGE IN THE TERRITORY OF THE HOUSE:',
+    es: 'DESAFÍO EN EL TERRITORIO DE LA CASA:',
+    de: 'HERAUSFORDERUNG IM BEREICH DES HAUSES:',
+    fr: 'DÉFI SUR LE TERRITOIRE DE LA MAISON :'
+  },
+  'ATITUDE A ABRAÇAR:': {
+    pt: 'ATITUDE A ABRAÇAR:',
+    en: 'ATTITUDE TO EMBRACE:',
+    es: 'ACTITUD A ABRAZAR:',
+    de: 'EINZUNEHMENDE HALTUNG:',
+    fr: 'ATTITUDE À ADOPTER :'
+  },
+  'ANTIGAS FUGAS A EVITAR:': {
+    pt: 'ANTIGAS FUGAS A EVITAR:',
+    en: 'OLD ESCAPES TO AVOID:',
+    es: 'ANTIGUOS ESCAPES A EVITAR:',
+    de: 'ALTE FLUCHTEN ZU VERMEIDEN:',
+    fr: 'ANCIENNES FUITES À ÉVITER :'
+  },
+  'ASPECTOS E CONJUNÇÕES REAIS DETECTADAS EM SEU MAPA': {
+    pt: 'ASPECTOS E CONJUNÇÕES REAIS DETECTADAS EM SEU MAPA',
+    en: 'REAL ASPECTS AND CONJUNCTIONS DETECTED IN YOUR CHART',
+    es: 'ASPECTOS Y CONJUNCIONES REALES DETECTADOS EN TU CARTA',
+    de: 'REALE ASPEKTE UND KONJUNKTIONEN IN IHREM HOROSKOP ERKANNT',
+    fr: 'ASPECTS ET CONJONCTIONS RÉELS DÉTECTÉS DANS VOTRE THÈME'
+  },
+  'Orbe:': {
+    pt: 'Orbe:',
+    en: 'Orb:',
+    es: 'Orbe:',
+    de: 'Orbis:',
+    fr: 'Orbe :'
+  },
+  'Seu caminho demanda integrar ativamente:': {
+    pt: 'Seu caminho demanda integrar ativamente:',
+    en: 'Your path demands to actively integrate:',
+    es: 'Tu caminho exige integrar activamente:',
+    de: 'Ihr Weg erfordert eine aktive Integration von:',
+    fr: 'Votre chemin exige d\'intégrer activement :'
   }
 };
 

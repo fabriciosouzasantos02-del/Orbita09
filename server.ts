@@ -12,7 +12,7 @@ import ephemeris from 'ephemeris';
 import Stripe from 'stripe';
 import nodemailer from 'nodemailer';
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, doc, setDoc, addDoc, collection, getDocs, query, where } from "firebase/firestore";
+import { getFirestore, doc, setDoc, addDoc, collection, getDocs, query, where, getDoc } from "firebase/firestore";
 import fs from 'fs';
 import { mergedTranslations } from './src/i18n';
 import { translations, Language } from './translations';
@@ -567,7 +567,7 @@ function performPreciseServerCalculation(
   lang?: string
 ) {
   // Let's first make a baseline calculation using performAstroCalculation to get the houses, structural points, and baseline aspects
-  const chart = performAstroCalculation(birthDate, birthTime, latitude, longitude, timezoneOffset);
+  const chart = performAstroCalculation(birthDate, birthTime, latitude, longitude, timezoneOffset, lang);
   
   // Now, let's adjust the planets (Sol, Lua, Mercúrio, Vênus, Marte, Júpiter, Saturno, Urano, Netuno, Plutão, Quíron) using ephemeris package!
   try {
@@ -1221,6 +1221,7 @@ app.post("/api/astrology/generate", async (req, res) => {
       timezoneOffsetHours,
       lang
     );
+    (localMap as any).lang = lang || 'pt';
 
     if (!aiClient) {
       // Return high-quality calculated local mapping if Gemini is unavailable
@@ -1228,6 +1229,95 @@ app.post("/api/astrology/generate", async (req, res) => {
       setCachedResponse(cacheKey, result);
       return res.json(result);
     }
+
+    // --- DYNAMIC CONTENT LANGUAGE CHECK ARCHITECTURE ---
+    const { existingMap, existingNumerology } = req.body || {};
+    let existingMapData = existingMap;
+    let existingNumerologyData = existingNumerology;
+
+    const activeLang = lang || 'pt';
+
+    if (!existingMapData) {
+      // 1. Check in-memory cache for any other language version of the same natal chart
+      const prefix = `astrology:${name}:${safeBirthDate}:${safeBirthTime}:${safeBirthCity}:${isUnknownTime}:`;
+      for (const [key, entry] of geminiCache.entries()) {
+        if (key.startsWith(prefix) && entry.response && entry.response.map) {
+          const m = entry.response.map;
+          const mLang = m.lang || m.language || 'pt';
+          if (mLang === activeLang) {
+            existingMapData = m;
+            existingNumerologyData = entry.response.numerology;
+            console.log(`[Astro Architecture] Retrieved existing chart matching language (${activeLang}) from memory cache.`);
+            break;
+          }
+        }
+      }
+    }
+
+    if (!existingMapData && email) {
+      // 2. Check Firestore Database for any stored natal chart
+      const db = getBackendDb();
+      if (db) {
+        try {
+          const mailKey = email.toLowerCase().trim();
+          const birthDateClean = safeBirthDate.replace(/[^a-zA-Z0-9]/g, "_");
+          const birthTimeClean = safeBirthTime.replace(/[^a-zA-Z0-9]/g, "_");
+          const birthCityClean = safeBirthCity.replace(/[^a-zA-Z0-9]/g, "_");
+          const chartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
+          
+          const usersRef = collection(db, "users");
+          const q = query(usersRef, where("email", "==", mailKey));
+          const userSnap = await getDocs(q);
+          
+          let docKey = mailKey;
+          if (!userSnap.empty) {
+            docKey = userSnap.docs[0].id;
+          }
+          
+          const chartRef = doc(db, "users", docKey, "natalCharts", chartId);
+          const chartSnap = await getDoc(chartRef);
+          if (chartSnap.exists()) {
+            const chartDb = chartSnap.data();
+            if (chartDb && chartDb.mapData) {
+              const dbLang = chartDb.lang || chartDb.mapData.lang || chartDb.mapData.language || 'pt';
+              if (dbLang === activeLang) {
+                existingMapData = chartDb.mapData;
+                existingNumerologyData = chartDb.numerology;
+                console.log(`[Astro Architecture] Retrieved existing chart matching language (${activeLang}) from Firestore: ${chartId}`);
+              } else {
+                console.log(`[Astro Architecture] Firestore chart found in ${dbLang}, but active is ${activeLang}. Discarding and completely regenerating in ${activeLang}.`);
+              }
+            }
+          }
+        } catch (fsErr) {
+          console.warn("[Astro Architecture] Firestore lookup error:", fsErr);
+        }
+      }
+    }
+
+    const languageNames: Record<string, string> = {
+      pt: "Português",
+      en: "English (Inglês)",
+      es: "Spanish (Espanhol)",
+      de: "German (Alemão)",
+      fr: "French (Francês)"
+    };
+    const targetLanguage = languageNames[activeLang] || "Português";
+
+    // If we have existing map data that matches the active language, we return it immediately!
+    if (existingMapData && existingMapData.welcomeMessage) {
+      const existingLang = existingMapData.lang || existingMapData.language || 'pt';
+      if (existingLang === activeLang) {
+        console.log(`[Astro Architecture] Serving existing map in the active language: ${activeLang}`);
+        const result = { map: existingMapData, numerology: existingNumerologyData };
+        setCachedResponse(cacheKey, result);
+        return res.json(result);
+      }
+    }
+
+    // Otherwise, we completely discard any mismatched data and force regeneration in the new language!
+    existingMapData = null;
+    existingNumerologyData = null;
 
   try {
     const placementsSummary = localMap.astros.map(ast => `- ${ast.name}: em ${ast.sign} no grau ${ast.degree}`).join('\n');
@@ -1890,6 +1980,123 @@ Responda com um conselho meditativo e reflexivo escrito 100% em ${targetLangName
   }
 });
 
+// API: Unified Daily Vibrational Synthesis (Biorhythms + Numerology + Transits)
+app.post("/api/astrology/vibrational-synthesis", async (req, res) => {
+  try {
+    const { name, birthDate, biorhythm, caminhoDeVida, activeTransits, lang } = req.body || {};
+    const activeLang = (lang || 'pt').toLowerCase().split('-')[0];
+    
+    const userName = name || "Buscador";
+    const firstName = userName.split(' ')[0];
+    const cv = caminhoDeVida || 8;
+    
+    const physical = biorhythm?.physical !== undefined ? biorhythm.physical : 50;
+    const emotional = biorhythm?.emotional !== undefined ? biorhythm.emotional : 50;
+    const intellectual = biorhythm?.intellectual !== undefined ? biorhythm.intellectual : 50;
+    
+    const fallbackTransitsDict: Record<string, any> = {
+      pt: [
+        { title: "Sol em conjunção à Casa 1", description: "Foco no eu, renovação de imagem e vitalidade física ampliada." },
+        { title: "Trígono de Lua e Vênus", description: "Harmonia nos afetos, facilidade em expressar sentimentos e cura de mágoas passadas." }
+      ],
+      en: [
+        { title: "Sun conjunction House 1", description: "Focus on self, image renewal, and amplified physical vitality." },
+        { title: "Moon trine Venus", description: "Harmony in affection, ease in expressing feelings, and healing of past wounds." }
+      ],
+      es: [
+        { title: "Sol en conjunción a la Casa 1", description: "Enfoque en el yo, renovación de imagen y vitalidad física ampliada." },
+        { title: "Trígono de Luna y Venus", description: "Armonía en los afectos, facilidad para expresar sentimientos y sanación de heridas pasadas." }
+      ],
+      de: [
+        { title: "Sonne in Konjunktion mit Haus 1", description: "Fokus auf das Selbst, Erneuerung des Images und gesteigerte körperliche Vitalität." },
+        { title: "Mond im Trigon zur Venus", description: "Harmonie in der Zuneigung, Leichtigkeit beim Ausdrücken von Gefühlen und Heilung vergangener Wunden." }
+      ],
+      fr: [
+        { title: "Soleil en conjonction avec la Maison 1", description: "Mise au point sur soi, renouvellement de l'image et vitalité physique amplifiée." },
+        { title: "Lune trigone Vénus", description: "Harmonie dans l'affection, facilité à exprimer ses sentiments et guérison des blessures passées." }
+      ]
+    };
+
+    let transitsList = activeTransits;
+    if (!transitsList || transitsList.length === 0) {
+      transitsList = fallbackTransitsDict[activeLang] || fallbackTransitsDict.pt;
+    }
+
+    const transitText = transitsList.map((t: any) => `- ${t.eventName || t.title || t.name}: ${t.description}`).join('\n');
+      
+    const cacheKey = `vibrational_synthesis:${userName}:${birthDate || ''}:${physical}:${emotional}:${intellectual}:${cv}:${activeLang}`;
+    const cached = getCachedResponse(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+    
+    const fallbacks: Record<string, string> = {
+      pt: `Hoje, ${firstName}, com seu Biorritmo Físico em ${physical}% e seu Emocional em ${emotional}%, a poderosa energia do seu Caminho de Vida ${cv} se sintoniza com as influências planetárias ativas de hoje. Essa combinação convida você a agir com sabedoria, canalizando seus picos de discernimento intelectual (${intellectual}%) para harmonizar seus relacionamentos e clarear suas escolhas práticas.`,
+      en: `Today, ${firstName}, with your Physical Biorhythm at ${physical}% and Emotional at ${emotional}%, the strong energy of your Life Path ${cv} aligns with today's active planetary transits. This combination invites you to act with wisdom, channeling your intellectual clarity (${intellectual}%) to harmonize relationships and clear your practical path.`,
+      es: `Hoy, ${firstName}, con tu Biorritmo Físico al ${physical}% y tu Emocional al ${emotional}%, la poderosa energía de tu Camino de Vida ${cv} se sintoniza con las influencias planetarias activas de hoy. Esta combinación te invita a actuar con sabiduría, canalizando tu claridad intelectual (${intellectual}%) para armonizar tus relaciones y despejar tu camino práctico.`,
+      de: `Heute, ${firstName}, mit Ihrem physischen Biorhythmus bei ${physical}% und dem emotionalen bei ${emotional}%, richtet sich die starke Energie Ihres Lebenswegs ${cv} nach den heutigen aktiven planetarischen Transiten. Diese Kombination lädt Sie ein, mit Weisheit zu handeln und Ihre intellektuelle Klarheit (${intellectual}%) zu nutzen, um Beziehungen zu harmonisieren und Ihren praktischen Weg zu klären.`,
+      fr: `Aujourd'hui, ${firstName}, avec votre biorythme physique à ${physical}% et émotionnel à ${emotional}%, la puissante énergie de votre Chemin de Vie ${cv} s'aligne avec les transits planétaires actifs d'aujourd'hui. Cette combinaison vous invite à agir avec sagesse, en canalisant votre clarté intellectuelle (${intellectual}%) pour harmoniser vos relations et éclaircir votre chemin pratique.`
+    };
+    
+    const fallbackText = fallbacks[activeLang] || fallbacks.pt;
+    
+    if (!aiClient) {
+      const result = { synthesis: fallbackText };
+      setCachedResponse(cacheKey, result);
+      return res.json(result);
+    }
+    
+    const prompt = `
+Generate a short, inspiring, and beautiful "Daily Vibrational Synthesis" (Síntese Vibracional Diária) for ${userName}.
+Language requested: ${activeLang} (must respond strictly in this language).
+
+Personal Parameters of the day:
+- User Name: ${userName} (First name: ${firstName})
+- Life Path Number (Caminho de Vida): ${cv}
+- Physical Biorhythm: ${physical}%
+- Emotional Biorhythm: ${emotional}%
+- Intellectual Biorhythm: ${intellectual}%
+- Today's planetary transits:
+${transitText}
+
+Guidelines:
+1. Synthesize these metrics together into a single cohesive, highly personalized, short report (around 2 to 4 sentences).
+2. It must be elegant, professional, mystical, and filled with deep insight.
+3. Combine how the biorhythms interact with the Life Path number and transits. For example, if physical biorhythm is low but intellectual is high, and Camino de Vida is 7, suggest prioritizing inner study or mental work today.
+4. Do NOT use markdown headings or bullets. Just return a clean paragraph of flowing, beautiful text.
+5. Do NOT output any system headers or container details. Speak in the voice of a wise guide.
+6. Translate all terms into the target language (${activeLang}).
+    `;
+    
+    let synthesis = "";
+    try {
+      if (aiClient) {
+        const response = await aiClient.models.generateContent({
+          model: CHAT_MODEL,
+          contents: prompt,
+          config: {
+            systemInstruction: "You are an expert in biodynamic feedback, professional astrology, and Pythagorean numerology. Your task is to provide a single-paragraph unified cosmic report synthesizing the user's biorhythms, life path number, and current planetary transits. Keep it short (max 120 words), inspiring, fluid, and translated beautifully to the target language.",
+            temperature: 0.8
+          }
+        });
+        synthesis = response.text ? response.text.trim() : fallbackText;
+      } else {
+        synthesis = fallbackText;
+      }
+    } catch (apiErr: any) {
+      console.warn("Vibrational synthesis Gemini API call failed (quota limit or error), falling back to local synthesis:", apiErr?.message || apiErr);
+      synthesis = fallbackText;
+    }
+    
+    const result = { synthesis };
+    setCachedResponse(cacheKey, result);
+    return res.json(result);
+  } catch (err) {
+    console.error("Vibrational synthesis error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // API: Celestial transits history & events of the current month (June 2026)
 app.post("/api/astrology/transits-month", async (req, res) => {
   const { birthDate, name, lang } = req.body || {};
@@ -2165,20 +2372,412 @@ app.post("/api/astrology/transits-month", async (req, res) => {
 
   const fallbackTransits = fallbackTransitsDict[activeLang] || fallbackTransitsDict.pt;
 
-  const cacheKey = `transits:${name || ''}:${birthDate || ''}:${activeLang}`;
+  const today = new Date();
+  const currentMonthStr = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}`;
+
+  const { birthTime, latitude, longitude } = req.body || {};
+  const lat = latitude !== undefined ? Number(latitude) : -23.5505;
+  const lon = longitude !== undefined ? Number(longitude) : -46.6333;
+  const bTime = birthTime || "12:00";
+  const bDate = birthDate || "1997-02-11";
+
+  const currentYearNum = today.getFullYear();
+  const currentMonthIdx = today.getMonth(); // 0-indexed (0=Jan, 11=Dec)
+  const daysInMonth = new Date(currentYearNum, currentMonthIdx + 1, 0).getDate();
+
+  const cacheKey = `transits_real:${name || ''}:${bDate}:${currentMonthStr}:${activeLang}`;
   const cached = getCachedResponse(cacheKey);
   if (cached) {
     return res.json(cached);
   }
 
+  const mapping: Record<string, string> = {
+    sun: "Sol",
+    moon: "Lua",
+    mercury: "Mercúrio",
+    venus: "Vênus",
+    mars: "Marte",
+    jupiter: "Júpiter",
+    saturn: "Saturno",
+    uranus: "Urano",
+    neptune: "Netuno",
+    pluto: "Plutão"
+  };
+
+  const isLongBetween = (long: number, cusp: number, nextCusp: number): boolean => {
+    if (cusp < nextCusp) {
+      return long >= cusp && long < nextCusp;
+    } else {
+      return long >= cusp || long < nextCusp;
+    }
+  };
+
+  const SIGNS = [
+    "Áries", "Touro", "Gêmeos", "Câncer", "Leão", "Virgem",
+    "Libra", "Escorpião", "Sagitário", "Capricórnio", "Aquário", "Peixes"
+  ];
+
+  const getZodiacSignInfoLocal = (lon: number) => {
+    const norm = (lon + 360) % 360;
+    const idx = Math.floor(norm / 30) % 12;
+    const sign = SIGNS[idx];
+    const degree = Math.floor(norm % 30);
+    const minute = Math.floor(((norm % 30) * 60) % 60);
+    return { sign, degree, minute };
+  };
+
+  const getPlanetSpeedRank = (p: string): number => {
+    const speeds: Record<string, number> = {
+      "Lua": 10,
+      "Mercúrio": 9,
+      "Vênus": 8,
+      "Sol": 7,
+      "Marte": 6,
+      "Júpiter": 5,
+      "Saturno": 4,
+      "Urano": 3,
+      "Netuno": 2,
+      "Plutão": 1
+    };
+    return speeds[p] || 0;
+  };
+
+  const translatePlanet = (p: string, l: string): string => {
+    const planetNames: Record<string, Record<string, string>> = {
+      pt: { Sol: "Sol", Lua: "Lua", Mercúrio: "Mercúrio", Vênus: "Vênus", Marte: "Marte", Júpiter: "Júpiter", Saturno: "Saturno", Urano: "Urano", Netuno: "Netuno", Plutão: "Plutão" },
+      en: { Sol: "Sun", Lua: "Moon", Mercúrio: "Mercury", Vênus: "Venus", Marte: "Mars", Júpiter: "Jupiter", Saturno: "Saturn", Urano: "Uranus", Netuno: "Neptune", Plutão: "Pluto" },
+      es: { Sol: "Sol", Lua: "Luna", Mercúrio: "Mercurio", Vênus: "Venus", Marte: "Marte", Júpiter: "Júpiter", Saturno: "Saturno", Urano: "Urano", Netuno: "Neptuno", Plutão: "Plutón" },
+      de: { Sol: "Sonne", Lua: "Mond", Mercúrio: "Merkur", Vênus: "Venus", Marte: "Mars", Júpiter: "Jupiter", Saturno: "Saturn", Urano: "Uranus", Netuno: "Neptun", Plutão: "Pluto" },
+      fr: { Sol: "Soleil", Lua: "Lune", Mercúrio: "Mercure", Vênus: "Vénus", Marte: "Mars", Júpiter: "Jupiter", Saturno: "Saturne", Urano: "Uranus", Netuno: "Neptune", Plutão: "Pluton" }
+    };
+    return planetNames[l]?.[p] || planetNames.pt[p] || p;
+  };
+
+  const translateAspect = (a: string, l: string): string => {
+    const aspectNames: Record<string, Record<string, string>> = {
+      pt: { "Conjunção": "Conjunção", "Oposição": "Oposição", "Trígono": "Trígono", "Quadratura": "Quadratura", "Sextil": "Sextil" },
+      en: { "Conjunção": "Conjunction", "Oposição": "Opposition", "Trígono": "Trine", "Quadratura": "Square", "Sextil": "Sextile" },
+      es: { "Conjunção": "Conjunción", "Oposição": "Oposición", "Trígono": "Trígono", "Quadratura": "Cuadratura", "Sextil": "Sextil" },
+      de: { "Conjunção": "Konjunktion", "Oposição": "Opposition", "Trígono": "Trigon", "Quadratura": "Quadrat", "Sextil": "Sextil" },
+      fr: { "Conjunção": "Conjonction", "Oposição": "Opposition", "Trígono": "Trigone", "Quadratura": "Carré", "Sextil": "Sextile" }
+    };
+    return aspectNames[l]?.[a] || aspectNames.pt[a] || a;
+  };
+
+  const translateSign = (s: string, l: string): string => {
+    const signNames: Record<string, Record<string, string>> = {
+      pt: { Áries: "Áries", Touro: "Touro", Gêmeos: "Gêmeos", Câncer: "Câncer", Leão: "Leão", Virgem: "Virgem", Libra: "Libra", Escorpião: "Escorpião", Sagitário: "Sagitário", Capricórnio: "Capricórnio", Aquário: "Aquário", Peixes: "Peixes" },
+      en: { Áries: "Aries", Touro: "Taurus", Gêmeos: "Gemini", Câncer: "Cancer", Leão: "Leo", Virgem: "Virgo", Libra: "Libra", Escorpião: "Scorpio", Sagitário: "Sagittarius", Capricórnio: "Capricorn", Aquário: "Aquarius", Peixes: "Pisces" },
+      es: { Áries: "Aries", Touro: "Tauro", Gêmeos: "Géminis", Câncer: "Cáncer", Leão: "Leo", Virgem: "Virgo", Libra: "Libra", Escorpião: "Escorpio", Sagitário: "Sagitario", Capricórnio: "Capricornio", Aquário: "Acuario", Peixes: "Piscis" },
+      de: { Áries: "Widder", Touro: "Stier", Gêmeos: "Zwillinge", Câncer: "Krebs", Leão: "Löwe", Virgem: "Jungfrau", Libra: "Waage", Escorpião: "Skorpion", Sagitário: "Schütze", Capricórnio: "Steinbock", Aquário: "Wassermann", Peixes: "Fische" },
+      fr: { Áries: "Bélier", Touro: "Taureau", Gêmeos: "Gémeaux", Câncer: "Cancer", Leão: "Lion", Virgem: "Vierge", Libra: "Balance", Escorpião: "Scorpion", Sagitário: "Sagittaire", Capricórnio: "Capricorne", Aquário: "Verseau", Peixes: "Poissons" }
+    };
+    return signNames[l]?.[s] || signNames.pt[s] || s;
+  };
+
+  const getHouseLabel = (hNum: number, l: string) => {
+    const labels: Record<string, Record<number, string>> = {
+      pt: {
+        1: "Casa 1 (Vitalidade e Expressão Pessoal)",
+        2: "Casa 5 (Criatividade, Romance e Lazer) ou Casa 2 (Recursos)",
+        3: "Casa 3 (Comunicação, Escrita e Viagens)",
+        4: "Casa 4 (Lar, Sentimentos e Raízes)",
+        5: "Casa 5 (Criatividade, Romance e Lazer) ou Casa 2 (Recursos)",
+        6: "Casa 6 (Rotina, Trabalho e Energia Biológica)",
+        7: "Casa 8 (Transmutação e Mistérios)",
+        8: "Casa 8 (Transmutação e Mistérios)",
+        9: "Casa 9 (Filosofia, Expansão e Sabedoria)",
+        10: "Casa 10 (Carreira, Autoridade e Legado)",
+        11: "Casa 11 (Comunidade, Ideais e Tecnologia)",
+        12: "Casa 12 (Espiritualidade e Subconsciente)"
+      },
+      en: {
+        1: "House 1 (Vitality and Personal Expression)",
+        2: "House 5 (Creativity, Romance and Leisure) or House 2 (Resources)",
+        3: "House 3 (Communication, Writing and Travel)",
+        4: "House 4 (Home, Feelings and Roots)",
+        5: "House 5 (Creativity, Romance and Leisure) or House 2 (Resources)",
+        6: "House 6 (Routine, Work and Biological Energy)",
+        7: "House 8 (Transmutation and Mysteries)",
+        8: "House 8 (Transmutation and Mysteries)",
+        9: "House 9 (Philosophy, Expansion and Wisdom)",
+        10: "House 10 (Career, Authority and Legacy)",
+        11: "House 11 (Community, Ideals and Technology)",
+        12: "House 12 (Spirituality and Subconscious)"
+      },
+      es: {
+        1: "Casa 1 (Vitalidad y Expresión Personal)",
+        2: "Casa 5 (Creatividad, Romance y Ocio) o Casa 2 (Recursos)",
+        3: "Casa 3 (Comunicación, Escritura y Viajes)",
+        4: "Casa 4 (Hogar, Sentimientos y Raíces)",
+        5: "Casa 5 (Creatividad, Romance y Ocio) o Casa 2 (Recursos)",
+        6: "Casa 6 (Rutina, Trabajo y Energía Biológica)",
+        7: "Casa 8 (Transmutación y Misterios)",
+        8: "Casa 8 (Transmutación y Misterios)",
+        9: "Casa 9 (Filosofía, Expansión y Sabiduría)",
+        10: "Casa 10 (Carrera, Autoridad y Legado)",
+        11: "Casa 11 (Comunidad, Ideales y Tecnología)",
+        12: "Casa 12 (Espiritualidad y Subconsciente)"
+      },
+      de: {
+        1: "Haus 1 (Vitalität und persönlicher Ausdruck)",
+        2: "Haus 5 (Kreativität, Romantik und Freizeit) oder Haus 2 (Ressourcen)",
+        3: "Haus 3 (Kommunikation, Schreiben und Reisen)",
+        4: "Haus 4 (Heimat, Gefühle und Wurzeln)",
+        5: "Haus 5 (Kreativität, Romantik und Freizeit) oder Haus 2 (Ressourcen)",
+        6: "Haus 6 (Routine, Work und biologische Energie)",
+        7: "Haus 8 (Transmutation und Geheimnisse)",
+        8: "Haus 8 (Transmutation und Geheimnisse)",
+        9: "Haus 9 (Philosophie, Expansion und Weisheit)",
+        10: "Haus 10 (Karriere, Autorität und Vermächtnis)",
+        11: "Haus 11 (Gemeinschaft, Ideale und Technologie)",
+        12: "Haus 12 (Spiritualität und Unterbewusstsein)"
+      },
+      fr: {
+        1: "Maison 1 (Vitalité et Expression Personnelle)",
+        2: "Maison 5 (Créativité, Romance et Loisirs) ou Maison 2 (Ressources)",
+        3: "Maison 3 (Communication, Écriture et Voyages)",
+        4: "Maison 4 (Foyer, Sentiments et Racines)",
+        5: "Maison 5 (Créativité, Romance et Loisirs) ou Maison 2 (Ressources)",
+        6: "Maison 6 (Routine, Travail et Énergie Biologique)",
+        7: "Maison 8 (Transmutation et Mystères)",
+        8: "Maison 8 (Transmutation et Mystères)",
+        9: "Maison 9 (Philosophie, Expansion et Sagesse)",
+        10: "Maison 10 (Carrière, Autorité et Héritage)",
+        11: "Maison 11 (Communauté, Idéaux et Technologie)",
+        12: "Maison 12 (Spiritualité et Subconscient)"
+      }
+    };
+    return labels[l]?.[hNum] || labels.pt[hNum] || `Casa ${hNum}`;
+  };
+
+  const getElementWithEmoji = (sign: string, l: string) => {
+    const signElements: Record<string, string> = {
+      "Áries": "Fogo 🔥", "Leão": "Fogo 🔥", "Sagitário": "Fogo 🔥",
+      "Touro": "Terra 🌱", "Virgem": "Terra 🌱", "Capricórnio": "Terra 🌱",
+      "Gêmeos": "Ar 💨", "Libra": "Ar 💨", "Aquário": "Ar 💨",
+      "Câncer": "Água 🌊", "Escorpião": "Água 🌊", "Peixes": "Água 🌊"
+    };
+    const element = signElements[sign] || "Fogo 🔥";
+    const translations: Record<string, Record<string, string>> = {
+      pt: { "Fogo 🔥": "Fogo 🔥", "Terra 🌱": "Terra 🌱", "Ar 💨": "Ar 💨", "Água 🌊": "Água 🌊" },
+      en: { "Fogo 🔥": "Fire 🔥", "Terra 🌱": "Earth 🌱", "Ar 💨": "Air 💨", "Água 🌊": "Water 🌊" },
+      es: { "Fogo 🔥": "Fuego 🔥", "Terra 🌱": "Tierra 🌱", "Ar 💨": "Aire 💨", "Água 🌊": "Agua 🌊" },
+      de: { "Fogo 🔥": "Feuer 🔥", "Terra 🌱": "Erde 🌱", "Ar 💨": "Luft 💨", "Água 🌊": "Wasser 🌊" },
+      fr: { "Fogo 🔥": "Feu 🔥", "Terra 🌱": "Terre 🌱", "Ar 💨": "Air 💨", "Água 🌊": "Eau 🌊" }
+    };
+    return translations[l]?.[element] || translations.pt[element] || element;
+  };
+
+  // 1. Calculate user's natal chart house cusps
+  let cuspLongitudes: number[] = [];
+  try {
+    const natalChart = performAstroCalculation(bDate, bTime, lat, lon, undefined, activeLang);
+    cuspLongitudes = natalChart.houses.map((h: any) => h.longitude);
+  } catch (err) {
+    console.error("Error calculating natal house cusps:", err);
+    cuspLongitudes = Array.from({ length: 12 }, (_, i) => i * 30);
+  }
+
+  // 2. Scan the month for planetary aspects
+  const allAspects: any[] = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    try {
+      const qDate = new Date(Date.UTC(currentYearNum, currentMonthIdx, d, 12, 0, 0));
+      const ephemResult = ephemeris.getAllPlanets(qDate, lon, lat);
+      if (!ephemResult || !ephemResult.observed) continue;
+
+      const positions: Record<string, number> = {};
+      for (const [key, planetName] of Object.entries(mapping)) {
+        if (ephemResult.observed[key]) {
+          positions[planetName] = ephemResult.observed[key].apparentLongitudeDd;
+        }
+      }
+
+      const planetsList = Object.keys(positions);
+      for (let i = 0; i < planetsList.length; i++) {
+        for (let j = i + 1; j < planetsList.length; j++) {
+          const p1 = planetsList[i];
+          const p2 = planetsList[j];
+          const pos1 = positions[p1];
+          const pos2 = positions[p2];
+
+          let diff = Math.abs(pos1 - pos2) % 360;
+          if (diff > 180) diff = 360 - diff;
+
+          let aspectName = "";
+          let aspectAngle = 0;
+
+          if (diff <= 5) {
+            aspectName = "Conjunção";
+            aspectAngle = 0;
+          } else if (Math.abs(diff - 180) <= 5) {
+            aspectName = "Oposição";
+            aspectAngle = 180;
+          } else if (Math.abs(diff - 120) <= 5) {
+            aspectName = "Trígono";
+            aspectAngle = 120;
+          } else if (Math.abs(diff - 90) <= 5) {
+            aspectName = "Quadratura";
+            aspectAngle = 90;
+          } else if (Math.abs(diff - 60) <= 4) {
+            aspectName = "Sextil";
+            aspectAngle = 60;
+          }
+
+          if (aspectName) {
+            const orb = Math.abs(diff - aspectAngle);
+            // Ignore Moon aspects unless Sun-Moon or extremely tight orb to prevent Moon-heavy clutter
+            if ((p1 === "Lua" || p2 === "Lua") && !((p1 === "Sol" && p2 === "Lua") || (p1 === "Lua" && p2 === "Sol")) && orb > 1.2) {
+              continue;
+            }
+
+            allAspects.push({
+              date: `${currentYearNum}-${(currentMonthIdx + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`,
+              planet1: p1,
+              planet2: p2,
+              aspect: aspectName,
+              orb: orb,
+              pos1: pos1,
+              pos2: pos2,
+              day: d
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.error(`Error calculating ephemeris aspects for day ${d}:`, e);
+    }
+  }
+
+  // 3. Group and select peak transits
+  const groupedAspectsMap: Record<string, any> = {};
+  for (const asp of allAspects) {
+    const key = `${asp.planet1}-${asp.planet2}-${asp.aspect}`;
+    if (!groupedAspectsMap[key] || groupedAspectsMap[key].orb > asp.orb) {
+      groupedAspectsMap[key] = asp;
+    }
+  }
+
+  let uniqueTransits = Object.values(groupedAspectsMap);
+
+  const getPlanetWeight = (p: string) => {
+    if (["Plutão", "Netuno", "Urano"].includes(p)) return 5;
+    if (["Saturno", "Júpiter"].includes(p)) return 4;
+    if (["Marte", "Vênus", "Mercúrio"].includes(p)) return 3;
+    if (p === "Sol") return 2;
+    return 1; // Lua
+  };
+
+  const getTransitPriority = (t: any) => {
+    const w1 = getPlanetWeight(t.planet1);
+    const w2 = getPlanetWeight(t.planet2);
+    return (w1 + w2) * 2 - t.orb;
+  };
+
+  uniqueTransits.sort((a, b) => getTransitPriority(b) - getTransitPriority(a));
+
+  // Pick top 7 events and sort chronologically
+  let selectedTransits = uniqueTransits.slice(0, 7);
+  if (selectedTransits.length < 5) {
+    selectedTransits = uniqueTransits;
+  }
+  selectedTransits.sort((a, b) => a.date.localeCompare(b.date));
+
+  // Map to fully structured events
+  const computedEvents = selectedTransits.map((trans: any) => {
+    const speed1 = getPlanetSpeedRank(trans.planet1);
+    const speed2 = getPlanetSpeedRank(trans.planet2);
+
+    const activePlanetName = speed1 >= speed2 ? trans.planet1 : trans.planet2;
+    const secondaryPlanetName = speed1 >= speed2 ? trans.planet2 : trans.planet1;
+    const activePlanetLong = speed1 >= speed2 ? trans.pos1 : trans.pos2;
+
+    const signInfo = getZodiacSignInfoLocal(activePlanetLong);
+
+    let transitHouse = 1;
+    for (let k = 0; k < 12; k++) {
+      const cusp = cuspLongitudes[k];
+      const nextCusp = cuspLongitudes[(k + 1) % 12];
+      if (isLongBetween(activePlanetLong, cusp, nextCusp)) {
+        transitHouse = k + 1;
+        break;
+      }
+    }
+
+    const translatedActivePlanet = translatePlanet(activePlanetName, activeLang);
+    const translatedSecondaryPlanet = translatePlanet(secondaryPlanetName, activeLang);
+    const translatedSign = translateSign(signInfo.sign, activeLang);
+    const translatedAspect = translateAspect(trans.aspect, activeLang);
+
+    const eventName = `${translatedAspect} entre ${translatedActivePlanet} e ${translatedSecondaryPlanet} em ${translatedSign}`;
+
+    const degreeStr = `${signInfo.degree}° ${signInfo.minute.toString().padStart(2, '0')}' de ${translatedSign}`;
+    const houseLabel = getHouseLabel(transitHouse, activeLang);
+    const elementLabel = getElementWithEmoji(signInfo.sign, activeLang);
+    const orbStr = `${trans.orb.toFixed(1)}°`;
+
+    let influence: "Positive" | "Challenging" | "Neutral" | "Transformative" = "Neutral";
+    if (trans.aspect === "Trígono" || trans.aspect === "Sextil") {
+      influence = "Positive";
+    } else if (trans.aspect === "Quadratura" || trans.aspect === "Oposição") {
+      influence = "Challenging";
+    } else if (trans.aspect === "Conjunção") {
+      influence = ["Plutão", "Saturno", "Marte"].includes(activePlanetName) ? "Transformative" : "Positive";
+    }
+
+    // Default Fallbacks
+    const fallbackDescriptions: Record<string, Record<string, { description: string, safetyTip: string }>> = {
+      pt: {
+        "Trígono": {
+          description: `O trígono harmonioso entre ${translatedActivePlanet} e ${translatedSecondaryPlanet} traz facilidades e bênçãos fluidas para sua ${houseLabel}. Um excelente fluxo de sincronicidade cósmica está disponível para você.`,
+          safetyTip: "Aproveite esta maré favorável de forma proativa. Não deixe que o conforto o impeça de agir e materializar seus sonhos."
+        },
+        "Sextil": {
+          description: `O sextil cooperativo entre ${translatedActivePlanet} e ${translatedSecondaryPlanet} abre portas e oportunidades de crescimento na sua ${houseLabel}. Ótimo período para alinhar ideias e trocar experiências úteis.`,
+          safetyTip: "Abrace convites sociais e parcerias produtivas. A colaboração prática hoje pavimentará o sucesso do amanhã."
+        },
+        "Conjunção": {
+          description: `A poderosa conjunção de ${translatedActivePlanet} e ${translatedSecondaryPlanet} concentra uma energia intensa de novos começos na sua ${houseLabel}. Um ciclo renovado se inicia com foco total.`,
+          safetyTip: "Direcione essa energia explosiva com sabedoria. Defina intenções claras e inicie projetos que exijam coragem e dedicação absoluta."
+        },
+        "Quadratura": {
+          description: `A quadratura tensa entre ${translatedActivePlanet} e ${translatedSecondaryPlanet} provoca desafios construtivos e pequenas crises de reajuste na sua ${houseLabel}. É um teste de maturidade cósmica.`,
+          safetyTip: "Respire fundo perante obstáculos. A tensão de hoje é o combustível para seu fortalecimento interno. Seja paciente."
+        },
+        "Oposição": {
+          description: `A oposição de ${translatedActivePlanet} e ${translatedSecondaryPlanet} exige equilíbrio e mediação na sua ${houseLabel}. Tensões entre o eu e os outros podem emergir para serem harmonizadas.`,
+          safetyTip: "Evite polarizações estéreis ou discussões de controle. Busque o caminho do meio e aprenda a ouvir visões opostas à sua."
+        }
+      }
+    };
+
+    const fMap = fallbackDescriptions.pt;
+    const fItem = fMap[trans.aspect] || fMap["Trígono"];
+
+    return {
+      date: trans.date,
+      eventName: eventName,
+      planet: activePlanetName, // Keep key in canonical form (e.g. Sol, Lua, Mercúrio) so frontend icons/filters map nicely
+      description: fItem.description,
+      influence: influence,
+      aspect: trans.aspect, // Keep canonical Portuguese aspect key for the local translation dictionary
+      degree: degreeStr,
+      house: houseLabel,
+      orb: orbStr,
+      element: elementLabel,
+      safetyTip: fItem.safetyTip
+    };
+  });
+
+  const finalFallbackResult = { events: computedEvents };
+
   if (!aiClient) {
-    const result = fallbackTransits;
-    setCachedResponse(cacheKey, result);
-    return res.json(result);
+    setCachedResponse(cacheKey, finalFallbackResult);
+    return res.json(finalFallbackResult);
   }
 
   try {
-    const userContext = birthDate ? `O usuário nasceu em ${birthDate}${name ? ', nome ' + name : ''}.` : '';
     const languageNames: Record<string, string> = {
       pt: "Português",
       en: "English (Inglês)",
@@ -2188,21 +2787,37 @@ app.post("/api/astrology/transits-month", async (req, res) => {
     };
     const targetLanguage = languageNames[activeLang] || "Português";
 
-    const prompt = `Gere uma lista de 6 a 8 eventos astrológicos/trânsitos celestes importantes reais ou plausíveis para o mês atual de Junho de 2026.
-${userContext}
-Importante: O retorno DEVE ser um objeto JSON estrito com a seguinte estrutura de dados:
+    const prompt = `Você é um astrólogo profissional místico, refinado e poético.
+Recebemos uma lista de trânsitos celestes REAIS ocorrendo no mês atual, calculados com coordenadas astronômicas exatas por efemérides.
+Sua tarefa é ler os dados técnicos de cada evento e gerar descrições místicas, poéticas, ricas em insights, bem como conselhos/dicas de sintonia ("safetyTip") para cada um deles.
+
+O usuário se chama "${name || 'Buscador'}" e nasceu em ${bDate} às ${bTime}.
+
+Aqui está a lista de trânsitos calculados matematicamente:
+${JSON.stringify(computedEvents, null, 2)}
+
+Importante: O retorno DEVE ser um objeto JSON estrito com exatamente o mesmo formato, mantendo intocados todos os dados técnicos (date, eventName, planet, influence, aspect, degree, house, orb, element), mas gerando interpretações maravilhosas, poéticas, sábias e profundas em ${targetLanguage} especificamente para os campos "description" e "safetyTip".
+
+Exemplo de retorno JSON esperado:
 {
   "events": [
     {
-      "date": "YYYY-MM-DD", // Deve usar data formatada em Junho de 2026 (por exemplo "2026-06-12")
-      "eventName": "Nome do Evento Astrológico (escrito em ${targetLanguage})",
-      "planet": "Nome do Planeta Principal em ${targetLanguage} (ex: 'Sol', 'Lua', 'Mercúrio', 'Vênus', 'Marte', 'Júpiter', 'Saturno', 'Urano', 'Netuno', 'Plutão')",
-      "description": "Explicação poética e astrológica detalhada escrita em ${targetLanguage} sobre o impacto coletivo ou pessoal deste trânsito...",
-      "influence": "Positive" | "Challenging" | "Neutral" | "Transformative"
+      "date": "YYYY-MM-DD",
+      "eventName": "...",
+      "planet": "...",
+      "description": "Texto poético, sábio e místico em ${targetLanguage}, explicando os mistérios profundos desse trânsito especificamente focado na casa astrológica ativada do usuário...",
+      "influence": "...",
+      "aspect": "...",
+      "degree": "...",
+      "house": "...",
+      "orb": "...",
+      "element": "...",
+      "safetyTip": "Conselho prático, sutil e sábio em ${targetLanguage} de como o usuário pode se harmonizar com esta energia do cosmos..."
     }
   ]
 }
-Retorne somente o JSON limpo, sem markdown ou textos explicativos ao redor. Todos os textos internos no JSON DEVEM estar traduzidos na língua correspondente à ${targetLanguage}.`;
+
+Retorne exclusivamente o JSON limpo, sem marcações markdown de código ou textos introdutórios/conclusivos.`;
 
     const response = await generateContentWithFallback({
       contents: prompt,
@@ -2213,18 +2828,16 @@ Retorne somente o JSON limpo, sem markdown ou textos explicativos ao redor. Todo
 
     const parsedData = cleanAndParseJSON(response.text || "{}");
     if (parsedData && Array.isArray(parsedData.events)) {
-      const result = parsedData;
-      setCachedResponse(cacheKey, result);
-      return res.json(result);
+      setCachedResponse(cacheKey, parsedData);
+      return res.json(parsedData);
     }
-    const result = fallbackTransits;
-    setCachedResponse(cacheKey, result);
-    res.json(result);
+    
+    setCachedResponse(cacheKey, finalFallbackResult);
+    res.json(finalFallbackResult);
   } catch (err) {
-    console.warn("Transits month API failed, serving fallback:", err);
-    const result = fallbackTransits;
-    setCachedResponse(cacheKey, result);
-    res.json(result);
+    console.warn("Dynamic transits month API failed, serving fallback calculated transits:", err);
+    setCachedResponse(cacheKey, finalFallbackResult);
+    res.json(finalFallbackResult);
   }
 });
 
@@ -2237,13 +2850,96 @@ app.post("/api/astrology/moon-tip", async (req, res) => {
   const userName = name || "Buscador";
   const userSunSign = birthDate ? getAscendedAstrologicalSign(birthDate, 0) : "Aquário";
 
-  const phaseListMap: Record<string, string[]> = {
-    pt: ["Lua Crescente 🌓", "Lua Cheia 🌕", "Lua Minguante 🌙", "Lua Nova 🌑"],
-    en: ["Waxing Crescent Moon 🌓", "Full Moon 🌕", "Waning Crescent Moon 🌙", "New Moon 🌑"],
-    es: ["Luna Creciente 🌓", "Luna Llena 🌕", "Luna Menguante 🌙", "Luna Nueva 🌑"],
-    de: ["Zunehmender Mond 🌓", "Vollmond 🌕", "Abnehmender Mond 🌙", "Neumond 🌑"],
-    fr: ["Lune Croissante 🌓", "Pleine Lune 🌕", "Lune Décroissante 🌙", "Nouvelle Lune 🌑"]
-  };
+  const targetLang = ["pt", "en", "es", "de", "fr"].includes(currentLang) ? currentLang : "pt";
+
+  // Calculate the actual current Moon phase and Moon sign mathematically using performAstroCalculation
+  let todayCalc;
+  try {
+    todayCalc = performAstroCalculation(todayStr, "12:00");
+  } catch (err) {
+    console.error("Failed to calculate today's astro placements:", err);
+  }
+
+  const currentMoon = todayCalc?.astros?.find((a: any) => a.name === "Lua");
+  const currentSun = todayCalc?.astros?.find((a: any) => a.name === "Sol");
+
+  let pickedPhase = "Lua Cheia 🌕";
+  let percent = 0.5;
+
+  if (currentMoon && currentSun) {
+    const moonLong = currentMoon.longitude;
+    const sunLong = currentSun.longitude;
+    const diffLong = (moonLong - sunLong + 360) % 360;
+    percent = diffLong / 360; // 0.0 to 1.0
+
+    if (percent < 0.03 || percent > 0.97) {
+      pickedPhase = {
+        pt: "Lua Nova 🌑",
+        es: "Luna Nueva 🌑",
+        de: "Neumond 🌑",
+        fr: "Nouvelle Lune 🌑",
+        en: "New Moon 🌑"
+      }[targetLang] || "Lua Nova 🌑";
+    } else if (percent < 0.22) {
+      pickedPhase = {
+        pt: "Lua Crescente Minguante 🌒",
+        es: "Luna Creciente Menguante 🌒",
+        de: "Zunehmender Sichelmond 🌒",
+        fr: "Croissant de Lune 🌒",
+        en: "Waxing Crescent 🌒"
+      }[targetLang] || "Lua Crescente Minguante 🌒";
+    } else if (percent < 0.28) {
+      pickedPhase = {
+        pt: "Quarto Crescente 🌓",
+        es: "Cuarto Creciente 🌓",
+        de: "Erstes Viertel 🌓",
+        fr: "Premier Quartier 🌓",
+        en: "First Quarter 🌓"
+      }[targetLang] || "Quarto Crescente 🌓";
+    } else if (percent < 0.47) {
+      pickedPhase = {
+        pt: "Lua Gibosa Crescente 🌔",
+        es: "Luna Gibosa Creciente 🌔",
+        de: "Zunehmender Dreiviertelmond 🌔",
+        fr: "Lune Gibbeuse Croissante 🌔",
+        en: "Waxing Gibbous 🌔"
+      }[targetLang] || "Lua Gibosa Crescente 🌔";
+    } else if (percent < 0.53) {
+      pickedPhase = {
+        pt: "Lua Cheia 🌕",
+        es: "Luna Llena 🌕",
+        de: "Vollmond 🌕",
+        fr: "Pleine Lune 🌕",
+        en: "Full Moon 🌕"
+      }[targetLang] || "Lua Cheia 🌕";
+    } else if (percent < 0.72) {
+      pickedPhase = {
+        pt: "Lua Gibosa Minguante 🌖",
+        es: "Luna Gibosa Menguante 🌖",
+        de: "Abnehmender Dreiviertelmond 🌖",
+        fr: "Lune Gibbeuse Décroissante 🌖",
+        en: "Waning Gibbous 🌖"
+      }[targetLang] || "Lua Gibosa Minguante 🌖";
+    } else if (percent < 0.78) {
+      pickedPhase = {
+        pt: "Quarto Minguante 🌗",
+        es: "Cuarto Menguante 🌗",
+        de: "Letztes Viertel 🌗",
+        fr: "Dernier Quartier 🌗",
+        en: "Last Quarter 🌗"
+      }[targetLang] || "Quarto Minguante 🌗";
+    } else {
+      pickedPhase = {
+        pt: "Lua Minguante 🌘",
+        es: "Luna Menguante 🌘",
+        de: "Abnehmender Sichelmond 🌘",
+        fr: "Lune Décroissante 🌘",
+        en: "Waning Crescent 🌘"
+      }[targetLang] || "Lua Minguante 🌘";
+    }
+  }
+
+  const ptMoonSign = currentMoon?.sign || "Aquário";
 
   const signsListMap: Record<string, string[]> = {
     pt: ["Áries", "Touro", "Gêmeos", "Câncer", "Leão", "Virgem", "Libra", "Escorpião", "Sagitário", "Capricórnio", "Aquário", "Peixes"],
@@ -2253,18 +2949,9 @@ app.post("/api/astrology/moon-tip", async (req, res) => {
     fr: ["Bélier", "Taureau", "Gémeaux", "Cancer", "Lion", "Vierge", "Balance", "Scorpion", "Sagittaire", "Capricorne", "Verseau", "Poissons"]
   };
 
-  const targetLang = ["pt", "en", "es", "de", "fr"].includes(currentLang) ? currentLang : "pt";
-  const phaseList = phaseListMap[targetLang];
-  const signsList = signsListMap[targetLang];
-  
-  // Deterministic seed based on date + user data for stable but daily shifting personalized wisdom
-  let seed = 0;
-  const compositeString = `${userName}-${birthDate || '1990-01-01'}-${todayStr}`;
-  for (let i = 0; i < compositeString.length; i++) {
-    seed += compositeString.charCodeAt(i);
-  }
-  const pickedPhase = phaseList[seed % phaseList.length];
-  const pickedSign = signsList[(seed + 3) % signsList.length];
+  const ptSigns = signsListMap.pt;
+  const moonSignIdx = ptSigns.indexOf(ptMoonSign);
+  const pickedSign = moonSignIdx !== -1 ? signsListMap[targetLang][moonSignIdx] : ptMoonSign;
   
   const fallbackTips: Record<string, string> = {
     pt: `${userName}, sob a influência da astrológica ${pickedPhase} transitando pelo signo de ${pickedSign}, a vibração cósmica atual se conecta intimamente ao seu Sol em ${userSunSign}. Este é o momento ideal para silenciar os ruídos mentais, canalizar suas intenções mais nobres e permitir que o poder lunar guie as decisões que sua alma tem amadurecido nas últimas semanas.`,
@@ -2637,8 +3324,18 @@ app.post("/api/astrology/rare-notifications", async (req, res) => {
     }
 
     try {
+      const monthNamesMap: Record<string, string[]> = {
+        pt: ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"],
+        en: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+        es: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
+        de: ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Octobre", "November", "Dezember"],
+        fr: ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]
+      };
+      const currentMonthName = monthNamesMap[activeLang]?.[today.getMonth()] || monthNamesMap.pt[today.getMonth()];
+      const currentYearNum = today.getFullYear();
+
       const prompt = `Gere uma lista de 3 a 4 "Alertas Astrológicos Raros / Alinhamentos Planetários Excepcionalmente Raros" em ${targetLangName} adaptados especificamente para o mapa natal do usuário abaixo.
-      Os alertas devem refletir trânsitos celestes reais ou altamente plausíveis ocorrendo em Junho de 2026 e seus impactos calculados nos planetas de nascimento do usuário.
+      Os alertas devem refletir trânsitos celestes reais ou altamente plausíveis ocorrendo em ${currentMonthName} de ${currentYearNum} e seus impactos calculados nos planetas de nascimento do usuário.
       
       DADOS DE NASCIMENTO DO USUÁRIO:
       - Nome: ${name || "Buscador Celestial"}
@@ -2652,13 +3349,13 @@ app.post("/api/astrology/rare-notifications", async (req, res) => {
     "notifications": [
       {
         "id": "string-id-unico",
-        "title": "Título Curto do Alerta (ex: 'Grande Oposição de Marte kármica')",
-        "message": "Explicação astrológica densa, poética e altamente personalizada de 2 a 3 frases em ${targetLangName} sobre este trânsito celeste (ex: Júpiter em trânsito de oposição ao seu Sol em ${solSign}) e como isso atua como um raro chamado energético em sua vida.",
+        "title": "Título Curto do Alerta em ${targetLangName}",
+        "message": "Explicação astrológica densa, poética e altamente personalizada de 2 a 3 frases em ${targetLangName} sobre este trânsito celeste (ex: Júpiter em trânsito de oposição ao seu Sol natal) e como isso atua como um raro chamado energético em sua vida.",
         "severity": "high" | "medium" | "low",
-        "date": "2026-06-09",
+        "date": "Uma data real no formato YYYY-MM-DD próxima à data atual de hoje: ${todayStr}",
         "read": false,
-        "planet": "O planeta em trânsito preponderante (ex: 'Plutão', 'Saturno', 'Júpiter', 'Marte', 'Netuno')",
-        "aspect": "O aspecto astrológico exato (ex: 'Conjunção', 'Trígono', 'Oposição', 'Quadratura')",
+        "planet": "O planeta em trânsito preponderante - deve ser obrigatoriamente um destes valores fixos para correta tradução: 'Plutão', 'Saturno', 'Júpiter', 'Marte', 'Netuno', 'Urano', 'Mercúrio', 'Vênus', 'Sol', 'Lua'",
+        "aspect": "O aspecto astrológico exato - deve ser obrigatoriamente um destes valores fixos para correta tradução: 'Conjunção', 'Trígono', 'Oposição', 'Quadratura'",
         "category": "alignment" | "eclipse" | "retrograde" | "node"
       }
     ]
@@ -3834,7 +4531,7 @@ app.post("/api/osiris/dashboard", async (req, res) => {
   }
 
   try {
-    const activeLang = lang || 'pt';
+    const activeLang = (lang || 'pt').toLowerCase();
     const languageNames: Record<string, string> = {
       pt: "Português",
       en: "English (Inglês)",
@@ -3843,6 +4540,15 @@ app.post("/api/osiris/dashboard", async (req, res) => {
       fr: "French (Francês)"
     };
     const targetLanguage = languageNames[activeLang] || "Português";
+
+    const promptStringMap: Record<string, string> = {
+      pt: `${name}, posso mostrar tudo que está favorável para você hoje. Basta me perguntar.`,
+      en: `${name}, I can show you everything that is favorable for you today. Just ask me.`,
+      es: `${name}, puedo mostrarte todo lo que te favorece hoy. Solo pregúntame.`,
+      de: `${name}, ich kann Ihnen alles zeigen, was heute günstig für Sie ist. Fragen Sie mich einfach.`,
+      fr: `${name}, je peux vous montrer tout ce qui vous est favorable aujourd'hui. Demandez-moi.`
+    };
+    const exactPromptValue = promptStringMap[activeLang] || promptStringMap.pt;
 
     const contextPrompt = `O usuário chama-se "${name}", seu signo é ${zodiac}, nascido em ${birthDate}.
 Dados Atuais:
@@ -3854,7 +4560,7 @@ Dados Atuais:
 Como o conselheiro genial "OSÍRIS", gere um objeto JSON EXCLUSIVAMENTE em ${targetLanguage}, sem qualquer explicação fora dele ou tags adicionais. Ele deve conter os pontos exatos pedidos no Felert.txt:
 
 1. 'prioridadeDia': insights extraordinários, precisos e poéticos focados na categoria "${selectedCategory}". O conselho e significado devem refletir o clima físico de ${weather?.temperature}°C, o biorritmo atual e as marcas do Sol em ${zodiac}, tudo escrito inteiramente em ${targetLanguage}.
-2. 'contextMessage': uma mensagem para quando o usuário está online de teor contextual, amigável e refinado, terminando exatamente com a String "[PrimeiroNome], posso mostrar tudo que está favorável para você hoje. Basta me perguntar." (substitua [PrimeiroNome] pelo nome real dele: ${name}, mas adaptado para o idioma ${targetLanguage} se necessário).
+2. 'contextMessage': uma mensagem para quando o usuário está online de teor contextual, amigável e refinado, terminando exatamente com a String "${exactPromptValue}".
 3. 'offlineNotifications': 3 notificações de teor realístico de canais push úteis e personalizadas sobre trânsitos kármicos, lunações e missões, escritas em ${targetLanguage}.
 
 Retorne no formato JSON exato em ${targetLanguage}:
@@ -3868,7 +4574,7 @@ Retorne no formato JSON exato em ${targetLanguage}:
   },
   "contextMessage": {
     "sentence": "Breve frase mística convidativa contextualizada de Osiris baseada no clima ou dia em ${targetLanguage}",
-    "prompt": "${name}, posso mostrar tudo que está favorável para você hoje. Basta me perguntar."
+    "prompt": "${exactPromptValue}"
   },
   "offlineNotifications": [
     {
@@ -4299,214 +5005,56 @@ function generateOfflineTarotReading(type: string, cards: any[], question: strin
   
   const mainCardsLine = cards && Array.isArray(cards)
     ? cards.map((c: any) => c.cardName).join(", ")
-    : (
-      activeLang === 'en' ? "subtle forces" :
-      activeLang === 'es' ? "fuerzas sutiles" :
-      activeLang === 'de' ? "subtile Kräfte" :
-      activeLang === 'fr' ? "forces subtiles" :
-      "forças sutis"
-    );
+    : "uma carta misteriosa";
 
-  const guidanceMantras: Record<string, string[]> = {
-    pt: [
-      "Respire fundo. A força do cosmo habita no seu silêncio divino hoje.",
-      "Abra-se para o novo caminho com fé sincera, sabedoria e pés no chão.",
-      "Afaste-se de fofocas e ruídos externos; silencie sua mente e blinde seu lar.",
-      "Consagre suas finanças à sabedoria e aja com prudência nas parcerias.",
-      "Blindagem cósmica ativada: confie no seu brilho interior único.",
-      "O amor verdadeiro e sincero flui no respeito ao próprio tempo sagrado."
-    ],
-    en: [
-      "Take a deep breath. The strength of the cosmos dwells in your divine silence today.",
-      "Open yourself to the new path with sincere faith, wisdom, and feet on the ground.",
-      "Stay away from gossip and external noise; silence your mind and shield your home.",
-      "Consecrate your finances to wisdom and act with prudence in partnerships.",
-      "Cosmic shield activated: trust in your unique inner brilliance.",
-      "True and sincere love flows in respect of its own sacred time."
-    ],
-    es: [
-      "Respire hondo. La fuerza del cosmos habita en su silencio divino hoy.",
-      "Ábrase al nuevo camino con fe sincera, sabiduría y los pies en la tierra.",
-      "Aléjese de los chismes y el ruido externo; silencie su mente y proteja su hogar.",
-      "Consagre sus finanzas a la sabiduría y actúe con prudencia en las asociaciones.",
-      "Escudo cósmico activado: confíe en su brillo interior único.",
-      "El amor verdadero y sincero fluye con respecto a su propio tiempo sagrado."
-    ],
-    de: [
-      "Atmen Sie tief durch. Die Kraft des Kosmos wohnt heute in Ihrem göttlichen Schweigen.",
-      "Öffnen Sie sich dem neuen Weg mit aufrichtigem Glauben, Weisheit und festem Boden unter den Füßen.",
-      "Halten Sie sich von Klatsch und externem Lärm fern; Beruhigen Sie Ihren Geist und schützen Sie Ihr Zuhause.",
-      "Weihen Sie Ihre Finanzen der Weisheit und handeln Sie in Partnerschaften mit Vorsicht.",
-      "Kosmischer Schutzschild aktiviert: Vertrauen Sie auf Ihre einzigartige innere Brillanz.",
-      "Wahre und aufrichtige Liebe fließt im Respekt vor der eigenen heiligen Zeit."
-    ],
-    fr: [
-      "Respirez profondément. La force du cosmos réside aujourd'hui dans votre silence divin.",
-      "Ouvrez-vous au nouveau chemin avec une foi sincère, de la sagesse et les pieds sur terre.",
-      "Éloignez-vous des commérages et des bruits extérieurs ; calmez votre esprit et protégez votre foyer.",
-      "Consacrez vos finances à la sagesse et agissez avec prudence dans vos partenariats.",
-      "Bouclier cosmique activé : ayez confiance en votre éclat intérieur unique.",
-      "L'amour vrai et sincère coule dans le respect de son propre temps sacré."
-    ]
+  const randomGuidanceArray = [
+    "Cultive a paciência; o universo opera em seu próprio tempo sagrado.",
+    "A verdade oculta será revelada no momento certo. Confie na sua intuição.",
+    "Abra seu coração para as mudanças necessárias, pois elas trazem evolução espiritual.",
+    "Mantenha os pés no chão e a cabeça erguida diante das provações temporárias.",
+    "O equilíbrio entre o dar e o receber é a chave para a verdadeira harmonia."
+  ];
+  const randomGuidance = randomGuidanceArray[Math.floor(Math.random() * randomGuidanceArray.length)];
+
+  const templates: Record<string, any> = {
+    pt: {
+      p1: `Consulente ${userDisplay}, a sua tiragem clássica de cartas tradicionais traz a emanação profunda de: ${mainCardsLine}. Cada arquétipo reflete forças milenares e nos ensina lições vivenciais indispensáveis para harmonizar nossa rotina.`,
+      p2: `Em relação à sua questão ou dúvida: "${question || "Conselho geral"}", o oráculo adverte que fofocas ou desequilíbrios momentâneos no ambiente laboral e familiar devem ser combatidos com prudência e retidão. Não responda à discórdia com a mesma vibração; conserve seu silêncio curativo e seu autodirecionamento maduro.`,
+      p3: `Aproveite as oportunidades e sintonize seu coração com os sinais que o universo envia no silêncio do seu lar. A colheita de seus esforços será muito rica no tempo certo do cosmo.`,
+      g: `Conselho dos Arcanos Clássicos: ${randomGuidance}`
+    },
+    en: {
+      p1: `Querist ${userDisplay}, your classic spread of traditional cards brings the deep emanation of: ${mainCardsLine}. Each archetype reflects ancient forces and teaches us indispensable life lessons to harmonize our routine.`,
+      p2: `Regarding your question or concern: "${question || "General advice"}", the oracle warns that gossip or temporary imbalances in the work and family environment must be combated with prudence and rectitude. Do not respond to discord with the same vibration; preserve your healing silence and your mature self-direction.`,
+      p3: `Seize the opportunities and tune your heart with the signs that the universe sends in the silence of your home. The harvest of your efforts will be very rich in the right cosmic time.`,
+      g: `Advice of the Classic Arcana: ${randomGuidance}`
+    },
+    es: {
+      p1: `Consultante ${userDisplay}, tu tirada clásica de cartas tradicionales trae la profunda emanación de: ${mainCardsLine}. Cada arquetipo refleja fuerzas milenarias y nos enseña lecciones de vida indispensables para armonizar nuestra rutina.`,
+      p2: `Con respecto a tu pregunta o inquietud: "${question || "Consejo general"}", el oráculo advierte que los chismes o desequilibrios temporales en el entorno laboral y familiar deben ser combatidos con prudencia y rectitud. No respondas a la discordia con la misma vibración; conserva tu silencio curativo y tu maduro autodireccionamiento.`,
+      p3: `Aprovecha las oportunidades y sintoniza tu coração con las señales que el universo envía en el silencio de tu hogar. La cosecha de tus esfuerzos será muy rica en el momento cósmico adecuado.`,
+      g: `Consejo de los Arcanos Clásicos: ${randomGuidance}`
+    },
+    de: {
+      p1: `Frager ${userDisplay}, Ihr klassisches Spread traditioneller Karten bringt die tiefe Ausstrahlung von: ${mainCardsLine}. Jedes Archetyp spiegelt jahrtausendealte Kräfte wider und lehrt uns unverzichtbare Lebenslektionen, um unseren Alltag zu harmonisieren.`,
+      p2: `Bezüglich Ihrer Frage oder Sorge: "${question || "Allgemeiner Rat"}" warnt das Orakel, dass Klatsch oder vorübergehende Ungleichgewichte im Arbeits- und Familienumfeld mit Vorsicht und Rechtschaffenheit bekämpft werden müssen. Antworten Sie não responda à discórdia com a mesma vibração; conserve seu silêncio curativo e seu autodirecionamento maduro.`,
+      p3: `Nutzen Sie die Gelegenheiten und sintonise Ihr Herz auf die Zeichen, die das Universum in der Stille Ihres Heims sendet. Die Ernte Ihrer Bemühungen wird zur richtigen kosmischen Zeit sehr reich sein.`,
+      g: `Rat der klassischen Arkana: ${randomGuidance}`
+    },
+    fr: {
+      p1: `Consultant ${userDisplay}, votre tirage classique de cartas traditionnelles apporte la profunda emanation de : ${mainCardsLine}. Chaque archétype reflète des forces millénaires et nous enseigne des leçons de vie indispensables pour harmoniser notre routine.`,
+      p2: `Concernant votre question ou doute : "${question || "Conseil général"}", l'oracle avertit que les commérages ou déséquilibres temporaires dans l'environnement de travail et familial doivent être combattus avec prudence et rectitude. Ne répondez pas à la discorde par la même vibration ; conservez votre silence réparateur et votre direction personnelle mature.`,
+      p3: `Saisissez les opportunités e accordez seu coração aos sinais que o universo envia no silêncio do seu lar. A colheita de seus esforços será muito rica no tempo certo do cosmo.`,
+      g: `Conseil des Arcanes Classiques : ${randomGuidance}`
+    }
   };
-
-  const list = guidanceMantras[activeLang] || guidanceMantras["pt"];
-  const randomGuidance = list[Math.floor(Math.random() * list.length)];
-
-  if (type === "amor") {
-    const templates: Record<string, { p1: string, p2: string, p3: string, g: string }> = {
-      pt: {
-        p1: `Olá, ${userDisplay}. Sinto aqui, ao sintonizar com as cartas ${mainCardsLine}, uma vibração profunda que toca diretamente o seu campo afetivo. Como uma taróloga real com anos de experiência, vejo que sua alma procura clareza absoluta sobre sentimentos. Suas cartas revelam que o momento atual pede para você respirar fundo e se desfazer de expectativas pesadas que o passado deixou em seu coração. Há fofocas ou possíveis invejas camufladas ao seu redor; blinde o seu amor contra essas energias negativas.`,
-        p2: `Se a sua dúvida central é "${question || "Qual o conselho do Tarot para minha vida amorosa no momento?"}", as cartas mostram a necessidade urgente de reciprocidade sã. Evite ciladas do apego inconsciente ou o medo da rejeição. As cartas aconselham a dialogar com tranquilidade e colocar limites éticos respeitáveis.`,
-        p3: `Nas próximas semanas, espere por uma renovação sutil de sentimentos. A alquimia do coração cura suas dores quando você aceita sua própria dignidade e valor sagrado.`,
-        g: `Sinal espiritual de Orbia: ${randomGuidance}`
-      },
-      en: {
-        p1: `Hello, ${userDisplay}. I feel here, when tuning in to the cards ${mainCardsLine}, a deep vibration that directly touches your emotional field. As a real tarot reader with years of experience, I see that your soul is seeking absolute clarity about your feelings. Your cards reveal that the current moment asks you to take a deep breath and let go of the heavy expectations that the past has left in your heart. There is gossip or possible jealousy hidden around you; shield your love against these negative energies.`,
-        p2: `If your central question is "${question || "What is the Tarot's advice for my love life right now?"}", the cards show an urgent need for healthy reciprocity. Avoid traps of unconscious attachment or the fear of rejection. The cards advise you to talk calmly and set respectable ethical boundaries.`,
-        p3: `In the coming weeks, expect a subtle renewal of feelings. The alchemy of the heart heals your pain when you accept your own dignity and sacred value.`,
-        g: `Spiritual sign of Orbia: ${randomGuidance}`
-      },
-      es: {
-        p1: `Hola, ${userDisplay}. Siento aquí, al sintonizar con las cartas ${mainCardsLine}, una profunda vibración que toca directamente tu campo afectivo. Como una tarotista real con años de experiencia, veo que tu alma busca claridad absoluta sobre tus sentimientos. Tus cartas revelan que el momento actual te pide respirar hondo y desprenderte de las pesadas expectativas que el pasado dejó en tu corazón. Hay chismes o posibles envidias camufladas a tu alrededor; protege tu amor de estas energías negativas.`,
-        p2: `Si tu pregunta central es "${question || "¿Cuál es el consejo del Tarot para mi vida amorosa en este momento?"}", las cartas muestran una necesidad urgente de reciprocidad sana. Evita las trampas del apego inconsciente o el miedo al rechazo. Las cartas aconsejan dialogar con tranquilidad y establecer límites éticos respetables.`,
-        p3: `En las próximas semanas, espera una sutil renovación de sentimientos. La alquimia del corazón cura tus dolores cuando aceptas tu propia dignidad y valor sagrado.`,
-        g: `Señal espiritual de Orbia: ${randomGuidance}`
-      },
-      de: {
-        p1: `Hallo, ${userDisplay}. Ich spüre hier bei der Einstimmung auf die Karten ${mainCardsLine} eine tiefe Schwingung, die Ihr emotionales Feld direkt berührt. Als echte Tarot-Leserin mit jahrelanger Erfahrung sehe ich, dass Ihre Seele absolute Klarheit über Ihre Gefühle sucht. Ihre Karten zeigen, dass der gegenwärtige Moment Sie auffordert, tief durchzuatmen und die schweren Erwartungen loszulassen, die die Vergangenheit in Ihrem Herzen hinterlassen hat. In Ihrer Umgebung gibt es Klatsch oder mögliche Eifersucht; Schützen Sie Ihre Liebe vor diesen negativen Energien.`,
-        p2: `Wenn Ihre zentrale Frage "${question || "Was ist der Rat des Tarots für mein Liebesleben im Moment?"}" lautet, zeigen die Karten ein dringendes Bedürfnis nach gesunder Gegenseitigkeit. Vermeiden Sie Fallen unbewusster Bindung oder die Angst vor Zurückweisung. Die Karten raten dazu, ruhig zu sprechen und respektable ethische Grenzen zu setzen.`,
-        p3: `Erwarten Sie in den kommenden Wochen eine subtile Erneuerung der Gefühle. Die Alchemie des Herzens heilt Ihren Schmerz, wenn Sie Ihre eigene Würde und Ihren heiligen Wert akzeptieren.`,
-        g: `Spirituelles Zeichen von Orbia: ${randomGuidance}`
-      },
-      fr: {
-        p1: `Bonjour, ${userDisplay}. Je ressens ici, en me connectant aux cartes ${mainCardsLine}, une vibration profonde qui touche directement votre domaine affectif. En tant que tarologue professionnelle avec des années d'expérience, je vois que votre âme cherche une clarté absolue sur vos sentiments. Vos cartes révèlent que le moment actuel vous demande de respirer profondément et de vous détacher des attentes lourdes que le passé a laissées dans votre cœur. Il y a des commérages ou des jalousies potentielles cachées autour de vous ; protégez votre amour contre ces énergies négatives.`,
-        p2: `Si votre question centrale est "${question || "Quel est le conseil du Tarot pour ma vie amoureuse en ce moment ?"}", les cartes montrent un besoin urgent de réciprocité saine. Évitez les pièges de l'attachement inconscient ou la peur du rejet. Les cartes conseillent de dialoguer calmement et de fixer des limites éthiques respectables.`,
-        p3: `Dans les semaines à venir, attendez-vous à un subtil renouveau des sentiments. L'alchimie du cœur guérit vos blessures lorsque vous acceptez votre propre dignité et votre valeur sacrée.`,
-        g: `Signe spirituel d'Orbia : ${randomGuidance}`
-      }
-    };
-    const t = templates[activeLang] || templates["pt"];
-    return { reading: `${t.p1}\n\n${t.p2}\n\n${t.p3}`, guidance: t.g };
-
-  } else if (type === "semanal") {
-    const templates: Record<string, { p1: string, p2: string, p3: string, p4: string, g: string }> = {
-      pt: {
-        p1: `Querido(a) ${userDisplay}, a Leitura Profunda das 10 cartas consagradas (${mainCardsLine}) revela um poderoso panorama espiritual focado em sua sintonização semanal. Este é um ciclo de merecido destaque e extrema importância para sua jornada!`,
-        p2: `No Trabalho, negócios e caminhos profissionais, os arcanos trazem um potencial fecundo de manifestação se você estruturar suas prioridades de forma firme. Tenha muita paciência com fofocas ou mal olhado oculto no ambiente corporativo; evite partilhar todas as suas vitórias. A proteção espiritual indica que suas ações limpas triunfarão contra quaisquer artimanhas alheias.`,
-        p3: `No Amor e convívio social, as conexões pedem um olhar equilibrado de cura e afeto generoso. Alerte-se contra dores do subconsciente profundo que perturbam sua rotina. Uma atitude sábia e prudente no seu lar trará paz para os seus familiares e entes queridos nesta semana sagrada.`,
-        p4: `O resultado alquímico para a sua semana aconselha a dar o passo de fé necessário sem medo do amanhã, pois sua estrela guia está brilhando forte no firmamento.`,
-        g: `Decreto Sagrado de Blindagem Semanal: As correntes falsas caem e a sabedoria divina blinda minha alma e meus caminhos.`
-      },
-      en: {
-        p1: `Dear ${userDisplay}, the Deep Reading of the 10 consecrated cards (${mainCardsLine}) reveals a powerful spiritual landscape focused on your weekly tuning. This is a cycle of well-deserved prominence and extreme importance for your journey!`,
-        p2: `In Work, business, and professional paths, the arcana bring a fertile potential of manifestation if you structure your priorities firmly. Be very patient with gossip or hidden evil eye in the corporate environment; avoid sharing all your victories. Spiritual protection indicates that your clean actions will triumph over any outside tricks.`,
-        p3: `In Love and social interaction, connections ask for a balanced look of healing and generous affection. Watch out for deep subconscious pains that disrupt your routine. A wise and prudent attitude in your home will bring peace to your family and loved ones in this sacred week.`,
-        p4: `The alchemical result for your week advises taking the necessary step of faith without fear of tomorrow, for your guiding star is shining bright in the firmament.`,
-        g: `Sacred Decree of Weekly Shielding: The false chains fall and divine wisdom shields my soul and my paths.`
-      },
-      es: {
-        p1: `Querido(a) ${userDisplay}, la Lectura Profunda de las 10 cartas consagradas (${mainCardsLine}) revela un poderoso panorama espiritual enfocado en tu sintonización semanal. ¡Este es un ciclo de merecido protagonismo y extrema importancia para tu viaje!`,
-        p2: `En el Trabajo, negocios y caminos profesionales, los arcanos traen un potencial fértil de manifestación si estructuras tus prioridades firmemente. Ten mucha paciencia con los chismes o el mal de ojo oculto en el ambiente corporativo; evita compartir todas tus victorias. La protección espiritual indica que tus acciones limpias triunfarán sobre cualquier truco ajeno.`,
-        p3: `En el Amor y la convivencia social, las conexiones piden una mirada equilibrada de curación y afecto generoso. Alértate contra los dolores del subconsciente profundo que perturban tu rutina. Una actitud sabia y prudente en tu hogar traerá paz a tus familiares y seres queridos en esta semana sagrada.`,
-        p4: `El resultado alquímico para tu semana aconseja dar el paso de fe necesario sin miedo al mañana, pues tu estrella guía brilla con fuerza en el firmamento.`,
-        g: `Decreto Sagrado de Blindaje Semanal: Las falsas cadenas caen y la sabiduría divina protege mi alma y mis caminos.`
-      },
-      de: {
-        p1: `Liebe(r) ${userDisplay}, die tiefe Lesung der 10 geweihten Karten (${mainCardsLine}) enthüllt ein kraftvolles spirituelles Panorama, das auf Ihre wöchentliche Einstimmung ausgerichtet ist. Dies ist ein Zyklus wohlverdienter Prominenz und von äußerster Bedeutung für Ihre Reise!`,
-        p2: `Im Bereich Arbeit, Geschäft und Karriere bringen die Arkana ein fruchtbares Manifestationspotenzial mit sich, wenn Sie Ihre Prioritäten fest strukturieren. Seien Sie sehr geduldig mit Klatsch oder verstecktem bösen Blick im Unternehmensumfeld; Vermeiden Sie es, alle Ihre Erfolge zu teilen. Spiritueller Schutz zeigt an, dass Ihre reinen Handlungen über alle Tricks von außen triumphieren werden.`,
-        p3: `In der Liebe und im sozialen Umgang erfordern Verbindungen einen ausgewogenen Blick auf Heilung und großzügige Zuneigung. Achten Sie auf tiefe unbewusste Schmerzen, die Ihren Alltag stören. Eine weise und kluge Haltung in Ihrem Zuhause wird Ihren Angehörigen und Lieben in dieser heiligen Woche Frieden bringen.`,
-        p4: `Das alchemistische Ergebnis für Ihre Woche rät dazu, den notwendigen Schritt des Glaubens ohne Angst vor dem Morgen zu tun, da Ihr Leitstern am Firmament hell leuchtet.`,
-        g: `Heiliges Dekret zur wöchentlichen Abschirmung: Die falschen Ketten fallen und die göttliche Weisheit schirmt meine Seele und meine Wege ab.`
-      },
-      fr: {
-        p1: `Cher(e) ${userDisplay}, la Lecture Profonde des 10 cartes consacrées (${mainCardsLine}) révèle un paysage spirituel puissant axé sur votre accordage hebdomadaire. C'est un cycle de premier plan bien mérité et d'une importance extrême pour votre voyage !`,
-        p2: `Dans le Travail, les affaires et les voies professionnelles, les arcanes apportent un potentiel fertile de manifestation si vous structurez fermement vos priorités. Soyez très patient face aux commérages ou au mauvais œil caché dans l'environnement de l'entreprise ; évitez de partager toutes vos victoires. La protection spirituelle indique que vos actions honnêtes triompheront de toutes les ruses extérieures.`,
-        p3: `Dans l'Amour et les relations sociales, les connexions demandent un regard équilibré de guérison et d'affection généreuse. Méfiez-vous des douleurs inconscientes profondes qui perturbent votre routine. Une attitude sage et prudente au sein de votre foyer apportera la paix à votre famille et à vos proches en cette semaine sacrée.`,
-        p4: `Le résultat alchimique pour votre semaine conseille de faire le pas de foi nécessaire sans craindre le lendemain, car votre bonne étoile brille fort au firmament.`,
-        g: `Décret Sacré de Blindage Hebdomadaire : Les fausses chaînes tombent et la sagesse divine protège mon âme et mes chemins.`
-      }
-    };
-    const t = templates[activeLang] || templates["pt"];
-    return { reading: `${t.p1}\n\n${t.p2}\n\n${t.p3}\n\n${t.p4}`, guidance: t.g };
-
-  } else if (type === "inteligente") {
-    const templates: Record<string, { p1: string, p2: string, p3: string, g: string }> = {
-      pt: {
-        p1: `Olá, ${userDisplay}. Unindo a sintonização do seu momento com a força dos arquétipos sorteados (${mainCardsLine}), as cartas expressam o seu momento de vida com grande riqueza de detalhes e sentimentos humanos. Vejo uma força pessoal de autodomínio clamando por ordem e maturidade espiritual para vencer desafios diários.`,
-        p2: `Sobre sua questão de autoconhecimento: "${question || "Conselho geral sobre meu momento atual"}", as cartas apontam fendas abertas que se curam através do recolhimento saudável e da reflexão equilibrada. Evite fofocas, preocupações com opiniões alheias e afaste-se do convívio com pessoas de baixa vibração energética.`,
-        p3: `Mantenha sua concentração afiada e canalize seus recursos na sua carreira e bem-estar prático. Você possui os dons necessários para prosperar e manter a cabeça erguida diante do fluxo universal.`,
-        g: `Mantra de Poder de Orbia: ${randomGuidance}`
-      },
-      en: {
-        p1: `Hello, ${userDisplay}. Uniting the tuning of your moment with the strength of the drawn archetypes (${mainCardsLine}), the cards express your moment of life with great richness of detail and human feelings. I see a personal force of self-mastery calling for order and spiritual maturity to overcome daily challenges.`,
-        p2: `Regarding your self-knowledge question: "${question || "General advice about my current moment"}", the cards point to open gaps that heal through healthy retreat and balanced reflection. Avoid gossip, worries about other people's opinions, and stay away from socializing with low-vibration people.`,
-        p3: `Keep your concentration sharp and channel your resources into your career and practical well-being. You possess the necessary gifts to prosper and keep your head held high before the universal flow.`,
-        g: `Power Mantra of Orbia: ${randomGuidance}`
-      },
-      es: {
-        p1: `Hola, ${userDisplay}. Uniendo la sintonización de tu momento con la fuerza de los arquetipos dibujados (${mainCardsLine}), las cartas expresan tu momento de vida con gran riqueza de detalles y sentimientos humanos. Veo una fuerza personal de autodominio que clama por orden y madurez espiritual para superar los desafíos diarios.`,
-        p2: `Sobre tu pregunta de autoconocimiento: "${question || "Consejo general sobre mi momento actual"}", las cartas apuntan a brechas abiertas que se curan a través del retiro saludable y la reflexión equilibrada. Evita los chismes, las preocupaciones sobre las opiniones de los demás y aléjate de socializar con personas de baja vibración.`,
-        p3: `Mantén tu concentración aguda y canaliza tus recursos hacia tu carrera y bienestar práctico. Posees los dones necesarios para prosperar y mantener la cabeza en alto ante el flujo universal.`,
-        g: `Mantra de Poder de Orbia: ${randomGuidance}`
-      },
-      de: {
-        p1: `Hallo, ${userDisplay}. Indem wir die Abstimmung Ihres Augenblicks mit der Stärke der gezeichneten Archetypen (${mainCardsLine}) vereinen, drücken die Karten Ihren Lebensmoment mit großem Detailreichtum und menschlichen Gefühlen aus. Ich sehe eine persönliche Kraft der Selbstbeherrschung, die nach Ordnung und spiritueller Reife ruft, um tägliche Herausforderungen zu meistern.`,
-        p2: `Zu Ihrer Frage der Selbsterkenntnis: "${question || "Allgemeiner Rat zu meinem aktuellen Moment"}" weisen die Karten auf offene Lücken hin, die durch gesunden Rückzug und ausgewogene Reflexion heilen. Vermeiden Sie Klatsch, Sorgen über die Meinungen anderer Menschen und halten Sie sich vom Umgang mit Menschen mit geringer Schwingung fern.`,
-        p3: `Halten Sie Ihre Konzentration scharf und kanalisieren Sie Ihre Ressourcen in Ihre Karriere und Ihr praktisches Wohlbefinden. Sie besitzen die notwendigen Gaben, um erfolgreich zu sein und angesichts des universellen Flusses Ihren Kopf hochzuhalten.`,
-        g: `Machtmantra von Orbia: ${randomGuidance}`
-      },
-      fr: {
-        p1: `Bonjour, ${userDisplay}. En unissant l'accordage de votre moment à la force des archétypes tirés (${mainCardsLine}), les cartes expriment votre moment de vie avec une grande richesse de détails et de sentiments humains. Je vois une force personnelle de maîtrise de soi appelant à l'ordre et à la maturité spirituelle pour surmonter les défis quotidiens.`,
-        p2: `Concernant votre question sur la connaissance de soi : "${question || "Conseil général sur mon moment actuel"}", les cartes indiquent des brèches ouvertes qui se guérissent par une retraite saine et une réflexion équilibrée. Évitez les commérages, les soucis liés aux opinions des autres et éloignez-vous de la fréquentation des personnes à basse vibration.`,
-        p3: `Gardez votre concentration aiguisée et canalisez vos ressources dans votre carrière et votre bien-être pratique. Vous possédez les dons nécessaires pour prospérer et garder la tête haute face au flux universel.`,
-        g: `Mantra de Pouvoir d'Orbia : ${randomGuidance}`
-      }
-    };
-    const t = templates[activeLang] || templates["pt"];
-    return { reading: `${t.p1}\n\n${t.p2}\n\n${t.p3}`, guidance: t.g };
-
-  } else {
-    const templates: Record<string, { p1: string, p2: string, p3: string, g: string }> = {
-      pt: {
-        p1: `Consulente ${userDisplay}, a sua tiragem clássica de cartas tradicionais traz a emanação profunda de: ${mainCardsLine}. Cada arquétipo reflete forças milenares e nos ensina lições vivenciais indispensáveis para harmonizar nossa rotina.`,
-        p2: `Em relação à sua questão ou dúvida: "${question || "Conselho geral"}", o oráculo adverte que fofocas ou desequilíbrios momentâneos no ambiente laboral e familiar devem ser combatidos com prudência e retidão. Não responda à discórdia com a mesma vibração; conserve seu silêncio curativo e seu autodirecionamento maduro.`,
-        p3: `Aproveite as oportunidades e sintonize seu coração com os sinais que o universo envia no silêncio do seu lar. A colheita de seus esforços será muito rica no tempo certo do cosmo.`,
-        g: `Conselho dos Arcanos Clássicos: ${randomGuidance}`
-      },
-      en: {
-        p1: `Querist ${userDisplay}, your classic spread of traditional cards brings the deep emanation of: ${mainCardsLine}. Each archetype reflects ancient forces and teaches us indispensable life lessons to harmonize our routine.`,
-        p2: `Regarding your question or concern: "${question || "General advice"}", the oracle warns that gossip or temporary imbalances in the work and family environment must be combated with prudence and rectitude. Do not respond to discord with the same vibration; preserve your healing silence and your mature self-direction.`,
-        p3: `Seize the opportunities and tune your heart with the signs that the universe sends in the silence of your home. The harvest of your efforts will be very rich in the right cosmic time.`,
-        g: `Advice of the Classic Arcana: ${randomGuidance}`
-      },
-      es: {
-        p1: `Consultante ${userDisplay}, tu tirada clásica de cartas tradicionales trae la profunda emanación de: ${mainCardsLine}. Cada arquetipo refleja fuerzas milenarias y nos enseña lecciones de vida indispensables para armonizar nuestra rutina.`,
-        p2: `Con respecto a tu pregunta o inquietud: "${question || "Consejo general"}", el oráculo advierte que los chismes o desequilibrios temporales en el entorno laboral y familiar deben ser combatidos con prudencia y rectitud. No respondas a la discordia con la misma vibración; conserva tu silencio curativo y tu maduro autodireccionamiento.`,
-        p3: `Aprovecha las oportunidades y sintoniza tu corazón con las señales que el universo envía en el silencio de tu hogar. La cosecha de tus esfuerzos será muy rica en el momento cósmico adecuado.`,
-        g: `Consejo de los Arcanos Clásicos: ${randomGuidance}`
-      },
-      de: {
-        p1: `Frager ${userDisplay}, Ihr klassisches Spread traditioneller Karten bringt die tiefe Ausstrahlung von: ${mainCardsLine}. Jedes Archetyp spiegelt jahrtausendealte Kräfte wider und lehrt uns unverzichtbare Lebenslektionen, um unseren Alltag zu harmonisieren.`,
-        p2: `Bezüglich Ihrer Frage oder Sorge: "${question || "Allgemeiner Rat"}" warnt das Orakel, dass Klatsch oder vorübergehende Ungleichgewichte im Arbeits- und Familienumfeld mit Vorsicht und Rechtschaffenheit bekämpft werden müssen. Antworten Sie nicht auf Zwietracht mit derselben Schwingung; Bewahren Sie Ihr heilendes Schweigen und Ihre reife Selbstführung.`,
-        p3: `Nutzen Sie die Gelegenheiten und stimmen Sie Ihr Herz auf die Zeichen ein, die das Universum in der Stille Ihres Heims sendet. Die Ernte Ihrer Bemühungen wird zur richtigen kosmischen Zeit sehr reich sein.`,
-        g: `Rat der klassischen Arkana: ${randomGuidance}`
-      },
-      fr: {
-        p1: `Consultant ${userDisplay}, votre tirage classique de cartes traditionnelles apporte la profonde émanation de : ${mainCardsLine}. Chaque archétype reflète des forces millénaires et nous enseigne des leçons de vie indispensables pour harmoniser notre routine.`,
-        p2: `Concernant votre question ou doute : "${question || "Conseil général"}", l'oracle avertit que les commérages ou déséquilibres temporaires dans l'environnement de travail et familial doivent être combattus avec prudence et rectitude. Ne répondez pas à la discorde par la même vibration ; conservez votre silence réparateur et votre direction personnelle mature.`,
-        p3: `Saisissez les opportunités et accordez votre cœur aux signes que l'univers envoie dans le silence de votre foyer. La récolte de vos efforts sera très riche au bon moment cosmique.`,
-        g: `Conseil des Arcanes Classiques : ${randomGuidance}`
-      }
-    };
-    const t = templates[activeLang] || templates["pt"];
-    return { reading: `${t.p1}\n\n${t.p2}\n\n${t.p3}`, guidance: t.g };
-  }
+  const t = templates[activeLang] || templates["pt"];
+  return { reading: `${t.p1}\n\n${t.p2}\n\n${t.p3}`, guidance: t.g };
 }
 
 // API: Interpretação de cartas sintonizadas por IA
 app.post("/api/tarot/interpret", async (req, res) => {
-  const { type, cards, question, userName, lang } = req.body;
+  const { type, cards, question, userName, birthDate, birthTime, latitude, longitude, lang } = req.body;
   const userDisplay = userName || "Buscador de Sabedoria";
 
   const cardsListStr = cards && Array.isArray(cards)
@@ -4514,7 +5062,7 @@ app.post("/api/tarot/interpret", async (req, res) => {
     : "uma carta misteriosa";
 
   const activeLang = (lang || "pt").toLowerCase();
-  const langNames: Record<string, string> = {
+  const langNames = {
     pt: "Português",
     en: "English (Inglês)",
     es: "Spanish (Espanhol)",
@@ -4522,6 +5070,36 @@ app.post("/api/tarot/interpret", async (req, res) => {
     fr: "French (Francês)"
   };
   const targetLangName = langNames[activeLang] || "Português";
+
+  let astroContextLine = "";
+  if (birthDate) {
+    try {
+      const bTime = birthTime || "12:00";
+      const lat = latitude !== undefined ? latitude : -23.5505;
+      const lon = longitude !== undefined ? longitude : -46.6333;
+      const chart = performAstroCalculation(birthDate, bTime, lat, lon, undefined, activeLang);
+      if (chart && chart.astros) {
+        const solPlacement = chart.astros.find(a => a.name === "Sol" || a.name === "Sun");
+        const luaPlacement = chart.astros.find(a => a.name === "Lua" || a.name === "Moon");
+        const ascPlacement = chart.astros.find(a => a.name === "Ascendente" || a.name === "Ascendant");
+        
+        const solSign = solPlacement ? solPlacement.sign : "";
+        const luaSign = luaPlacement ? luaPlacement.sign : "";
+        const ascSign = ascPlacement ? ascPlacement.sign : "";
+        
+        const parts = [];
+        if (solSign) parts.push(`Signo Solar: ${solSign}`);
+        if (luaSign) parts.push(`Signo Lunar: ${luaSign}`);
+        if (ascSign) parts.push(`Ascendente: ${ascSign}`);
+        
+        if (parts.length > 0) {
+          astroContextLine = `\n[IMPORTANTE - Perfil Astrológico Natal do Consulente: ${parts.join(", ")}]. Cruze de forma sutil os arquétipos das cartas de Tarot com esse signo solar e/ou ascendente (ex: "Sendo você nativo de ${solSign}..." ou "Com seu ascendente em ${ascSign}..."). Caso apareça uma carta marcante ou desafiadora (como A Torre, A Morte, O Diabo ou A Lua), faça uma correlação direta com a energia planetária de regência (ex: se for Escorpião, relacione com Plutão; se for Áries, com Marte; se for Leão, com o Sol), tornando a interpretação única, autêntica e inesquecível.`;
+        }
+      }
+    } catch (e) {
+      console.error("[Tarot Astro Context Error]", e);
+    }
+  }
 
   let systemPrompt = `Você é Orbia, uma taróloga profissional de verdade, extremamente sensitiva, acolhedora e profundamente humana com anos de experiência em leituras espirituais presenciais. 
 
@@ -4534,6 +5112,7 @@ Nas suas leituras, você deve obrigatoriamente trazer e explorar elementos prát
 - O convívio social e relacionamentos (amigos, pessoas próximas, possíveis tramas).
 - Trabalho, carreira, finanças e caminhos de prosperidade.
 - Energias ao redor: se atentar contra invejas, fofocas, má vibração ou mal olhado oculto no ambiente se cartas mais pesadas ou espirituais surgirem (como Diabo, Torre, Sacerdotisa, Lua), ensinando formas de se proteger ou manter a cabeça erguida.
+${astroContextLine}
 
 Escreva em parágrafos envolventes, fluidos e repletos de sabedoria ancestral em ${targetLangName}.`;
 
@@ -4594,7 +5173,7 @@ Gere um JSON exato em ${targetLangName} com este formato de chaves:
 {
   "reading": "A leitura e correlação clássica detalhada pela taróloga, rica em significados humanos, máximo 280 palavras...",
   "guidance": "Um mantra de sintonização ou conselho clássico..."
-}`;
+}...`; // Wait, let's make sure it's valid JSON format
   }
 
   try {
@@ -4611,7 +5190,7 @@ Gere um JSON exato em ${targetLangName} com este formato de chaves:
       reading: parsed.reading || generateOfflineTarotReading(type, cards, question, userName, activeLang).reading,
       guidance: parsed.guidance || generateOfflineTarotReading(type, cards, question, userName, activeLang).guidance
     });
-  } catch (err: any) {
+  } catch (err) {
     const errMsg = err?.message || String(err);
     const isRateLimit = errMsg.includes("Limite de requisições excedido") || 
                         errMsg.includes("429") || 
@@ -4631,7 +5210,6 @@ Gere um JSON exato em ${targetLangName} com este formato de chaves:
     res.json(fallbackResult);
   }
 });
-
 
 
 // ====================================================
@@ -4956,7 +5534,7 @@ function getBackendDb() {
   return firebaseBackendDb;
 }
 
-async function activatePremiumForUser(email: string, planId: string, subscriptionId?: string, subscriptionEndDate?: string) {
+async function activatePremiumForUser(email: string, planId: string, subscriptionId?: string, subscriptionEndDate?: string, stripeCustomerId?: string) {
   const db = getBackendDb();
   if (!db) {
     console.error("[Billing] Database not initialized for premium activation");
@@ -4979,7 +5557,14 @@ async function activatePremiumForUser(email: string, planId: string, subscriptio
       subscriptionId: subscriptionId || "",
       subscriptionEndDate: endDate,
       isSubscribed: true,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      
+      // New required subscription fields
+      plan: planId,
+      subscriptionStatus: "active",
+      stripeCustomerId: stripeCustomerId || "",
+      stripeSubscriptionId: subscriptionId || "",
+      subscriptionUpdatedAt: new Date().toISOString()
     };
     
     if (!snap.empty) {
@@ -5065,10 +5650,25 @@ app.post("/api/stripe/webhook", async (req: any, res) => {
     switch (eventType) {
       case 'checkout.session.completed': {
         const session = event.data.object;
-        const email = session.metadata?.email || session.customer_details?.email || session.customer_email;
+        let email = session.metadata?.email || (session.customer_details && session.customer_details.email) || session.customer_email;
         const planId = session.metadata?.planId || "premium";
         const subscriptionId = session.subscription || "";
+        const stripeCustomerId = typeof session.customer === 'string' ? session.customer : "";
         
+        if (!email && stripeCustomerId) {
+          try {
+            const stripe = getStripeClient();
+            if (stripe) {
+              const customer = await stripe.customers.retrieve(stripeCustomerId);
+              if (customer && !(customer as any).deleted) {
+                email = (customer as any).email;
+              }
+            }
+          } catch (e) {
+            console.error("[Webhook completed] Error fetching customer email:", e);
+          }
+        }
+
         let subscriptionEndDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
         if (subscriptionId && getStripeClient()) {
           try {
@@ -5079,7 +5679,7 @@ app.post("/api/stripe/webhook", async (req: any, res) => {
         }
 
         if (email) {
-          await activatePremiumForUser(email, planId, subscriptionId, subscriptionEndDate);
+          await activatePremiumForUser(email, planId, subscriptionId, subscriptionEndDate, stripeCustomerId);
           await logBillingEvent(email, "ACTIVATION", planId, { session_id: session.id, subscriptionId });
         }
         break;
@@ -5087,9 +5687,24 @@ app.post("/api/stripe/webhook", async (req: any, res) => {
       case 'invoice.payment_succeeded': {
         const _invoice = event.data.object;
         const subscriptionId = _invoice.subscription;
-        const email = _invoice.customer_email || _invoice.customer_details?.email;
+        let email = _invoice.customer_email || (_invoice.customer_details && _invoice.customer_details.email);
         const planId = _invoice.lines?.data?.[0]?.metadata?.planId || "premium";
+        const stripeCustomerId = typeof _invoice.customer === 'string' ? _invoice.customer : "";
         
+        if (!email && stripeCustomerId) {
+          try {
+            const stripe = getStripeClient();
+            if (stripe) {
+              const customer = await stripe.customers.retrieve(stripeCustomerId);
+              if (customer && !(customer as any).deleted) {
+                email = (customer as any).email;
+              }
+            }
+          } catch (e) {
+            console.error("[Webhook payment_succeeded] Error fetching customer email:", e);
+          }
+        }
+
         let subscriptionEndDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
         if (subscriptionId && getStripeClient()) {
           try {
@@ -5100,7 +5715,7 @@ app.post("/api/stripe/webhook", async (req: any, res) => {
         }
 
         if (email) {
-          await activatePremiumForUser(email, planId, subscriptionId, subscriptionEndDate);
+          await activatePremiumForUser(email, planId, subscriptionId, subscriptionEndDate, stripeCustomerId);
           await logBillingEvent(email, "RENEWAL_SUCCESS", planId, { invoice_id: _invoice.id, subscriptionId });
         }
         break;
@@ -5108,8 +5723,23 @@ app.post("/api/stripe/webhook", async (req: any, res) => {
       case 'customer.subscription.deleted': {
         const sub = event.data.object;
         const subscriptionId = sub.id;
-        const email = sub.metadata?.email || sub.customer_details?.email;
+        let email = sub.metadata?.email || (sub.customer_details && sub.customer_details.email);
+        const stripeCustomerId = typeof sub.customer === 'string' ? sub.customer : "";
         
+        if (!email && stripeCustomerId) {
+          try {
+            const stripe = getStripeClient();
+            if (stripe) {
+              const customer = await stripe.customers.retrieve(stripeCustomerId);
+              if (customer && !(customer as any).deleted) {
+                email = (customer as any).email;
+              }
+            }
+          } catch (e) {
+            console.error("[Webhook deleted] Error fetching customer email:", e);
+          }
+        }
+
         if (email) {
           const db = getBackendDb();
           if (db) {
@@ -5120,11 +5750,104 @@ app.post("/api/stripe/webhook", async (req: any, res) => {
               await setDoc(doc(db, "users", d.id), {
                 isPremium: false,
                 isSubscribed: false,
+                plan: "none",
+                subscriptionStatus: "cancelled",
+                stripeCustomerId: stripeCustomerId,
+                stripeSubscriptionId: "",
+                subscriptionUpdatedAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
               }, { merge: true });
             }
           }
           await logBillingEvent(email, "CANCELLATION", "none", { subscriptionId });
+        }
+        break;
+      }
+      case 'customer.subscription.updated': {
+        const sub = event.data.object;
+        const subscriptionId = sub.id;
+        let email = sub.metadata?.email || (sub.customer_details && sub.customer_details.email);
+        const stripeCustomerId = typeof sub.customer === 'string' ? sub.customer : "";
+        const status = sub.status; // e.g. "active", "past_due", "unpaid", "canceled", "incomplete"
+        
+        if (!email && stripeCustomerId) {
+          try {
+            const stripe = getStripeClient();
+            if (stripe) {
+              const customer = await stripe.customers.retrieve(stripeCustomerId);
+              if (customer && !(customer as any).deleted) {
+                email = (customer as any).email;
+              }
+            }
+          } catch (e) {
+            console.error("[Webhook updated] Error fetching customer email:", e);
+          }
+        }
+
+        if (email) {
+          const db = getBackendDb();
+          if (db) {
+            const usersRef = collection(db, "users");
+            const q = query(usersRef, where("email", "==", email.toLowerCase().trim()));
+            const snap = await getDocs(q);
+            const isNowActive = (status === 'active' || status === 'trialing');
+            
+            for (const d of snap.docs) {
+              await setDoc(doc(db, "users", d.id), {
+                isPremium: isNowActive,
+                isSubscribed: isNowActive,
+                subscriptionStatus: status,
+                plan: isNowActive ? (d.data().plan || "monthly") : "none",
+                stripeCustomerId: stripeCustomerId,
+                stripeSubscriptionId: subscriptionId,
+                subscriptionUpdatedAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              }, { merge: true });
+            }
+          }
+          await logBillingEvent(email, `SUBSCRIPTION_UPDATED_${status.toUpperCase()}`, "none", { subscriptionId, status });
+        }
+        break;
+      }
+      case 'invoice.payment_failed': {
+        const _invoice = event.data.object;
+        const subscriptionId = _invoice.subscription;
+        let email = _invoice.customer_email || (_invoice.customer_details && _invoice.customer_details.email);
+        const stripeCustomerId = typeof _invoice.customer === 'string' ? _invoice.customer : "";
+        
+        if (!email && stripeCustomerId) {
+          try {
+            const stripe = getStripeClient();
+            if (stripe) {
+              const customer = await stripe.customers.retrieve(stripeCustomerId);
+              if (customer && !(customer as any).deleted) {
+                email = (customer as any).email;
+              }
+            }
+          } catch (e) {
+            console.error("[Webhook payment_failed] Error fetching customer email:", e);
+          }
+        }
+
+        if (email) {
+          const db = getBackendDb();
+          if (db) {
+            const usersRef = collection(db, "users");
+            const q = query(usersRef, where("email", "==", email.toLowerCase().trim()));
+            const snap = await getDocs(q);
+            for (const d of snap.docs) {
+              await setDoc(doc(db, "users", d.id), {
+                isPremium: false,
+                isSubscribed: false,
+                subscriptionStatus: "unpaid",
+                stripeCustomerId: stripeCustomerId,
+                stripeSubscriptionId: subscriptionId || "",
+                subscriptionUpdatedAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              }, { merge: true });
+            }
+          }
+          await logBillingEvent(email, "PAYMENT_FAILED", "none", { subscriptionId, invoice_id: _invoice.id });
         }
         break;
       }
@@ -5215,6 +5938,12 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
         },
       ],
       mode: 'subscription',
+      subscription_data: {
+        metadata: {
+          planId,
+          email,
+        }
+      },
       metadata: {
         planId,
         email,
@@ -5246,8 +5975,9 @@ app.get("/api/stripe/verify-session", async (req, res) => {
     if (session_id.startsWith("mock_session_")) {
       const email = (req.query.email || "usuario@exemplo.com").toString();
       const planId = (req.query.plan_id || "premium").toString();
+      const mockCustomerId = `mock_cus_${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
       
-      await activatePremiumForUser(email, planId, session_id);
+      await activatePremiumForUser(email, planId, session_id, undefined, mockCustomerId);
       await logBillingEvent(email, "VERIFIED_SIMULATED_SESSION", planId, { session_id });
 
       return res.json({
@@ -5276,9 +6006,11 @@ app.get("/api/stripe/verify-session", async (req, res) => {
       });
     }
 
-    const email = session.metadata?.email || session.customer_details?.email || session.customer_email;
-    const planId = session.metadata?.planId || "premium";
+    const queryEmail = (req.query.email || "").toString().trim().toLowerCase();
+    const email = (session.metadata?.email || session.customer_details?.email || session.customer_email || queryEmail).toLowerCase().trim();
+    const planId = session.metadata?.planId || (req.query.plan_id || "premium").toString();
     const subscriptionId = typeof session.subscription === 'string' ? session.subscription : "";
+    const stripeCustomerId = typeof session.customer === 'string' ? session.customer : "";
 
     if (email) {
       let subscriptionEndDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -5288,7 +6020,7 @@ app.get("/api/stripe/verify-session", async (req, res) => {
           subscriptionEndDate = new Date((sub as any).current_period_end * 1000).toISOString();
         } catch {}
       }
-      await activatePremiumForUser(email, planId, subscriptionId, subscriptionEndDate);
+      await activatePremiumForUser(email, planId, subscriptionId, subscriptionEndDate, stripeCustomerId);
       await logBillingEvent(email, "VERIFIED_REAL_SESSION_BACKUP", planId, { session_id, subscriptionId });
     }
 

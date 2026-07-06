@@ -221,12 +221,16 @@ import { TRANSLATIONS_WORLD } from './tarot';
 
 interface TarotSystemProps {
   userName?: string;
+  birthDate?: string;
+  birthTime?: string;
+  latitude?: number;
+  longitude?: number;
   lang?: Language;
 }
 
 type TarotMode = 'inteligente' | 'amor' | 'tradicional' | 'semanal';
 
-export default function TarotSystem({ userName, lang }: TarotSystemProps) {
+export default function TarotSystem({ userName, birthDate, birthTime, latitude, longitude, lang }: TarotSystemProps) {
   const { t: i18nT } = useTranslation();
   const t = (text: string) => {
     if (!text) return "";
@@ -688,6 +692,10 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
           cards: tempDrawnCards,
           question: finalQuestion,
           userName: userName,
+          birthDate,
+          birthTime,
+          latitude,
+          longitude,
           lang
         }),
       });
@@ -785,7 +793,7 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
               {t("Tarot Taróloga de Verdade")}
             </h2>
             <p className="text-slate-400 text-xs font-sans max-w-2xl leading-relaxed">
-              {t("Conselhos vivos e canalizações profundas sobre sua vida amorosa, trabalho, relacionamentos e blindagem contra mal olhado e invejas. Uma experiência sensitiva realista inspirada em consultas consultas presenciais.")}
+              {t("Conselhos vivos e canalizações profundas sobre sua vida amorosa, trabalho, relacionamentos e blindagem contra mal olhado e invejas. Uma experiência sensitiva realista inspirada em consultas presenciais.")}
             </p>
           </div>
           
@@ -818,7 +826,7 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
               {activeMode === 'semanal' && <span className="w-2 h-2 rounded-full bg-amber-450 animate-ping" />}
             </div>
             <div className="space-y-0.5">
-              <h4 className="text-xs font-black tracking-tight font-sans uppercase text-white">✨ {t("Tarot Semanal Profundo")}</h4>
+              <h4 className="text-xs font-black tracking-tight font-sans uppercase text-white">{t("✨ Tarot Semanal Profundo")}</h4>
               <p className="text-[9px] leading-snug text-slate-400">
                 {t("Tiragem de 10 Cartas com leitura espiritual completa de trânsitos, invejas e trabalho. Uma consulta por semana.")}
               </p>
@@ -905,14 +913,20 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
                 <Compass className={`w-4.5 h-4.5 shrink-0 ${
                   activeMode === 'semanal' ? 'text-amber-400' : activeMode === 'amor' ? 'text-rose-400' : activeMode === 'tradicional' ? 'text-purple-400' : 'text-amber-500'
                 }`} />
-                {activeMode === 'semanal' ? t('Tiragem Profunda Semanal (10 Cartas)') : `${t("Sua Consulta de Tarot")} ${activeMode === 'inteligente' ? t('Inteligente') : activeMode === 'amor' ? t('do Amor') : t('Tradicional')}`}
+                {activeMode === 'semanal' 
+                  ? t('Tiragem Profunda Semanal (10 Cartas)') 
+                  : activeMode === 'inteligente' 
+                    ? t('Sua Consulta de Tarot Inteligente') 
+                    : activeMode === 'amor' 
+                      ? t('Sua Consulta de Tarot do Amor') 
+                      : t('Sua Consulta de Tarot Tradicional')}
               </h3>
 
               {/* Status Limit label */}
               <div className="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-full border border-slate-800 text-[10px] font-mono">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                 <span className="text-slate-400 uppercase font-semibold">
-                  {t("Limite: 1x por")} {activeMode === 'semanal' ? t('semana') : t('dia')}
+                  {activeMode === 'semanal' ? t("Limite: 1x por semana") : t("Limite: 1x por dia")}
                 </span>
               </div>
             </div>
@@ -961,7 +975,7 @@ export default function TarotSystem({ userName, lang }: TarotSystemProps) {
                       <HelpCircle className="w-4 h-4 text-slate-600 absolute right-3.5 top-3.5" />
                     </div>
                     <p className="text-[9px] text-slate-500 font-sans italic">
-                      {t("* Orbia unirá a efeméride às cartas para formular uma resposta de taróloga real sobre tramas cotidianas, energias e focos.")}
+                      * {t("Orbia unirá a efeméride às cartas para formular uma resposta de taróloga real sobre tramas cotidianas, energias e focos.")}
                     </p>
                   </div>
                 )}

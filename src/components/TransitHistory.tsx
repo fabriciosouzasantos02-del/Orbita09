@@ -11,11 +11,20 @@ interface AstroEvent {
   planet: string;
   description: string;
   influence: 'Positive' | 'Challenging' | 'Neutral' | 'Transformative';
+  aspect?: string;
+  degree?: string;
+  house?: string;
+  orb?: string;
+  element?: string;
+  safetyTip?: string;
 }
 
 interface TransitHistoryProps {
   userName?: string;
   birthDate?: string;
+  birthTime?: string;
+  latitude?: number;
+  longitude?: number;
   lang?: string;
 }
 
@@ -267,7 +276,7 @@ const LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
   }
 };
 
-export default function TransitHistory({ userName, birthDate, lang }: TransitHistoryProps) {
+export default function TransitHistory({ userName, birthDate, birthTime, latitude, longitude, lang }: TransitHistoryProps) {
   const { t: i18nT } = useTranslation();
   const t = (text: string) => {
     if (!text) return "";
@@ -328,7 +337,14 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
       const res = await fetch('/api/astrology/transits-month', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: userName, birthDate: birthDate, lang: lang || 'pt' }),
+        body: JSON.stringify({
+          name: userName,
+          birthDate: birthDate,
+          birthTime: birthTime,
+          latitude: latitude,
+          longitude: longitude,
+          lang: lang || 'pt'
+        }),
       });
       if (!res.ok) {
         throw new Error('Falha ao obter histórico de trânsitos celestes.');
@@ -352,7 +368,7 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
 
   useEffect(() => {
     fetchTransits();
-  }, [userName, birthDate, lang]);
+  }, [userName, birthDate, birthTime, latitude, longitude, lang]);
 
   // Extract unique planets from events for filters
   const uniquePlanets = Array.from(new Set(events.map((e) => e.planet))).filter(Boolean);
@@ -518,81 +534,14 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
                 const symbol = getPlanetSymbol(evt.planet);
                 const isExpanded = expandedIndex === idx;
 
-                const getTechnicalDetails = (p: string, name: string) => {
-                  const pLower = p.toLowerCase();
-                  let house = "Casa 8 (Transmutação e Mistérios)";
-                  let element = "Água 🌊";
-                  let aspect = "Sextil";
-                  let delayTip = "Tempo de analisar medos internos e transmutá-los em sabedoria sutil.";
-
-                  if (pLower.includes('sol')) {
-                    house = "Casa 1 (Vitalidade e Expressão Pessoal)";
-                    element = "Fogo 🔥";
-                    aspect = "Conjunção";
-                    delayTip = "Ótimo momento para expor seus talentos, realizar autoafirmação e liderar iniciativas.";
-                  } else if (pLower.includes('lua')) {
-                    house = "Casa 4 (Lar, Sentimentos e Raízes)";
-                    element = "Água 🌊";
-                    aspect = "Trígono";
-                    delayTip = "Acolha sua vulnerabilidade, reconecte-se com ancestrais e cuide do seu templo interno.";
-                  } else if (pLower.includes('merc')) {
-                    house = "Casa 3 (Comunicação, Escrita e Viagens)";
-                    element = "Ar 💨";
-                    aspect = "Conjunção";
-                    delayTip = "Escreva seus pensamentos, atualize planilhas e evite discussões impulsivas.";
-                  } else if (pLower.includes('ven')) {
-                    house = "Casa 5 (Criatividade, Romance e Lazer) ou Casa 2 (Recursos)";
-                    element = "Terra 🌱";
-                    aspect = "Trígono";
-                    delayTip = "Harmonize relações, invista em conforto sensorial e expresse amor generosamente.";
-                  } else if (pLower.includes('marte')) {
-                    house = "Casa 6 (Rotina, Trabalho e Energia Biológica)";
-                    element = "Fogo 🔥";
-                    aspect = "Oposição";
-                    delayTip = "Canalize energia em exercícios físicos para evitar conflitos estéreis com pessoas próximas.";
-                  } else if (pLower.includes('jup')) {
-                    house = "Casa 9 (Filosofia, Expansão e Sabedoria)";
-                    element = "Fogo 🔥";
-                    aspect = "Trígono";
-                    delayTip = "Amplie sua mente com leituras inspiradoras e dê saltos de fé confiando no Universo.";
-                  } else if (pLower.includes('sat')) {
-                    house = "Casa 10 (Carreira, Autoridade e Legado)";
-                    element = "Terra 🌱";
-                    aspect = "Quadratura";
-                    delayTip = "Estabeleça limites firmes, planeje com prazos realistas e assuma responsabilidades com seriedade.";
-                  } else if (pLower.includes('uran')) {
-                    house = "Casa 11 (Comunidade, Ideais e Tecnologia)";
-                    element = "Ar 💨";
-                    aspect = "Oposição";
-                    delayTip = "Espere o inesperado. Rompa amarras rígidas e abrace de bom grado o fluxo do novo.";
-                  } else if (pLower.includes('net')) {
-                    house = "Casa 12 (Espiritualidade e Subconsciente)";
-                    element = "Água 🌊";
-                    aspect = "Trígono";
-                    delayTip = "Medite, registre seus sonhos noturnos e confie nos insights do seu eu superior.";
-                  } else if (pLower.includes('plut')) {
-                    house = "Casa 8 (Crises, Regeneração e Poder Pessoal)";
-                    element = "Água 🌊";
-                    aspect = "Conjunção";
-                    delayTip = "Conclua ciclos antigos com coragem absoluta, aceitando que o novo precisa nascer.";
-                  }
-
-                  const charSum = p.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) + name.length;
-                  const degree = (charSum % 29) + 1;
-                  const minute = charSum % 60;
-                  const orb = ((charSum % 14) / 10 + 0.2).toFixed(1);
-
-                  return {
-                    house,
-                    element,
-                    aspect,
-                    degree: `${degree}° ${minute}'`,
-                    orb: `${orb}°`,
-                    safetyTip: delayTip
-                  };
+                const tech = {
+                  aspect: evt.aspect || "Conjunção",
+                  degree: evt.degree || "15° de Gêmeos",
+                  house: evt.house || "Casa 1 (Vitalidade e Expressão Pessoal)",
+                  orb: evt.orb || "1.0°",
+                  element: evt.element || "Ar 💨",
+                  safetyTip: evt.safetyTip || "Sintonize com a sabedoria cósmica do momento."
                 };
-
-                const tech = getTechnicalDetails(evt.planet, evt.eventName);
 
                 return (
                   <div 

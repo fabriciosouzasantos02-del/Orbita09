@@ -327,10 +327,6 @@ export default function LunarCycle({
   const { idioma } = useIdioma();
   const { t: i18nT } = useTranslation();
   const activeL = (idioma || lang || 'pt') as Language;
-  const t = (text: string) => {
-    if (!text) return "";
-    return i18nT(text);
-  };
 
   const tLocal = (ptText: string) => {
     if (activeL === 'pt') return ptText;
@@ -341,6 +337,11 @@ export default function LunarCycle({
       return item[activeL];
     }
     return i18nT(ptText);
+  };
+
+  const t = (text: string) => {
+    if (!text) return "";
+    return tLocal(text);
   };
   
   // Temporal States

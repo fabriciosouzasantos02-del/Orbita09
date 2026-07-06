@@ -19,10 +19,12 @@ export interface ProsperityMapData {
   opportunities: string[];
   challenges: string[];
   strategicAdvice: string;
+  lang?: string;
 }
 
-function getActiveLanguage(): 'pt' | 'en' | 'es' | 'de' | 'fr' {
-  const lang = (i18next.language || 'pt').toLowerCase().split('-')[0];
+function getActiveLanguage(overrideLang?: string): 'pt' | 'en' | 'es' | 'de' | 'fr' {
+  const raw = overrideLang || i18next.language || 'pt';
+  const lang = raw.toLowerCase().split('-')[0];
   if (['pt', 'en', 'es', 'de', 'fr'].includes(lang)) {
     return lang as 'pt' | 'en' | 'es' | 'de' | 'fr';
   }
@@ -496,11 +498,12 @@ export function generatePersonalizedProsperityMap(
   birthDate: string,
   userSunSign: string,
   userName: string,
-  targetDate: Date
+  targetDate: Date,
+  overrideLang?: string
 ): ProsperityMapData {
   const currentMonthIdx = targetDate.getMonth() + 1; // 1 to 12
   const currentYear = targetDate.getFullYear();
-  const lang = getActiveLanguage();
+  const lang = getActiveLanguage(overrideLang);
   
   // Calculate Life Path Number
   const lifePath = calculateLifePathNumber(birthDate);
@@ -762,7 +765,8 @@ export function generatePersonalizedProsperityMap(
     attentionLifeArea: info.attentionLifeArea,
     opportunities,
     challenges,
-    strategicAdvice
+    strategicAdvice,
+    lang
   };
 }
 

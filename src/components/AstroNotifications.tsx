@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Bell, Sparkles, Check, Info, Calendar, AlertTriangle, Eye, ChevronRight, X, Compass, Globe } from 'lucide-react';
 import { Language } from '../lib/translations';
@@ -273,93 +274,107 @@ export default function AstroNotifications({ userName, birthDate, userEmail, onR
       )}
 
       {/* Astro Alert Modal / Details Card Backdrop */}
-      {selectedNotification && (
-        <div id="astro-notification-modal-backdrop" className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4 z-60 animate-in fade-in duration-200">
-          <div 
-            id="astro-notification-modal-container"
-            className="w-full max-w-md bg-slate-950 border-2 border-amber-500/25 rounded-3xl p-6 shadow-3xl text-left space-y-5 animate-in zoom-in-95 duration-200 relative overflow-hidden"
-          >
-            {/* Ambient background accent based on severity */}
-            <div className="absolute top-0 right-0 w-44 h-44 bg-amber-500/5 rounded-full blur-3xl -z-10" />
+      {selectedNotification && typeof document !== 'undefined' && createPortal(
+        <div 
+          id="astro-notification-modal-backdrop" 
+          onClick={() => setSelectedNotification(null)}
+          className="fixed inset-0 bg-slate-950/95 backdrop-blur-md overflow-y-auto z-[9999] animate-in fade-in duration-200"
+        >
+          {/* Centering wrapper using flex and min-h-full. Allows modal to scroll naturally on overflow. */}
+          <div className="flex min-h-full items-center justify-center p-4 sm:p-6 text-center">
+            <div 
+              id="astro-notification-modal-container"
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md transform rounded-3xl border-2 border-amber-500/25 bg-slate-950 p-6 text-left shadow-[0_0_50px_rgba(0,0,0,0.9)] transition-all space-y-5 animate-in zoom-in-95 duration-200 relative my-8"
+            >
+              {/* Ambient background accent based on severity */}
+              <div className="absolute top-0 right-0 w-44 h-44 bg-amber-500/5 rounded-full blur-3xl -z-10" />
 
-            {/* Modal Header */}
-            <div className="flex justify-between items-start gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">{getPlanetEmoji(selectedNotification.planet)}</span>
-                <div>
-                  <h4 className="text-sm font-bold text-slate-205 font-sans">
-                    {selectedNotification.title}
-                  </h4>
-                  <p className="text-[9px] font-mono text-slate-500">
-                    {t("Trânsito do Planeta")}: {selectedNotification.planet} ({selectedNotification.aspect})
-                  </p>
+              {/* Modal Header */}
+              <div className="flex justify-between items-start gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{getPlanetEmoji(selectedNotification.planet)}</span>
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-205 font-sans">
+                      {selectedNotification.title}
+                    </h4>
+                    <p className="text-[9px] font-mono text-slate-500">
+                      {t("Trânsito do Planeta")}: {t(selectedNotification.planet)} ({t(selectedNotification.aspect)})
+                    </p>
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => setSelectedNotification(null)}
+                  className="p-2 rounded-full bg-slate-900 hover:bg-slate-850 text-slate-450 hover:text-slate-200 transition duration-150 border border-slate-800 cursor-pointer flex items-center justify-center"
+                  title={t("Fechar")}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="space-y-4">
+                {/* Alert Badge info */}
+                <div className="flex flex-wrap gap-2 items-center">
+                  <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-[9px] font-mono text-amber-400 font-bold uppercase rounded">
+                    {t("Alinhamento Raro Natal")}
+                  </span>
+                  <span className="text-[9px] font-mono text-slate-500 flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    {t("Alcança pico em")}: {formatDate(selectedNotification.date)}
+                  </span>
+                </div>
+
+                {/* Message */}
+                <p className="text-xs text-slate-300 leading-relaxed font-sans bg-slate-900/40 p-4 rounded-2xl border border-slate-900">
+                  {selectedNotification.message}
+                </p>
+
+                {/* Suggestions Box / Cosmic Ritual instructions */}
+                <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-905 space-y-1.5">
+                  <h5 className="text-[10px] font-mono uppercase text-amber-450 flex items-center gap-1.5">
+                    <Compass className="w-3.5 h-3.5 text-amber-400" />
+                    {t("Instruções de Sintonização Sagrada:")}
+                  </h5>
+                  <ul className="text-[10px] text-slate-400 font-sans space-y-1 pl-4 list-disc">
+                    <li>{t("Medite de costas para o Sol durante o pico do alinhamento celeste.")}</li>
+                    <li>{t("Invoque as forças arquetípicas de")} {t(selectedNotification.planet)} {t("para harmonização.")}</li>
+                    <li>{t("Consuma chás correspondentes e registre sonhos em seu jornal sagrado.")}</li>
+                  </ul>
                 </div>
               </div>
-              
-              <button
-                onClick={() => setSelectedNotification(null)}
-                className="p-1 rounded bg-slate-900 hover:bg-slate-850 text-slate-450 hover:text-slate-200 transition cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
 
-            {/* Body */}
-            <div className="space-y-4">
-              {/* Alert Badge info */}
-              <div className="flex flex-wrap gap-2 items-center">
-                <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-[9px] font-mono text-amber-400 font-bold uppercase rounded">
-                  {t("Alinhamento Raro Natal")}
-                </span>
-                <span className="text-[9px] font-mono text-slate-500 flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
-                  {t("Alcança pico em")}: {formatDate(selectedNotification.date)}
-                </span>
-              </div>
-
-              {/* Message */}
-              <p className="text-xs text-slate-300 leading-relaxed font-sans bg-slate-900/40 p-4 rounded-2xl border border-slate-900">
-                {selectedNotification.message}
-              </p>
-
-              {/* Suggestions Box / Cosmic Ritual instructions */}
-              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-905 space-y-1.5">
-                <h5 className="text-[10px] font-mono uppercase text-amber-450 flex items-center gap-1.5">
-                  <Compass className="w-3.5 h-3.5 text-amber-400" />
-                  {t("Instruções de Sintonização Sagrada:")}
-                </h5>
-                <ul className="text-[10px] text-slate-400 font-sans space-y-1 pl-4 list-disc">
-                  <li>{t("Medite de costas para o Sol durante o pico do alinhamento celeste.")}</li>
-                  <li>{t("Invoque as forças arquetípicas de")} {selectedNotification.planet} {t("para harmonização.")}</li>
-                  <li>{t("Consuma chás correspondentes e registre sonhos em seu jornal sagrado.")}</li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Actions for Gamified Experience */}
-            <div className="pt-3 border-t border-slate-900 flex justify-between items-center gap-4">
-              <span className="text-[8px] font-mono text-slate-500 uppercase">
-                {t("Conexão Astral Ativa")}
-              </span>
-
-              {claimedBlessings.includes(selectedNotification.id) ? (
-                <span className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500/5 text-emerald-400 text-xs font-mono font-bold rounded-xl border border-emerald-500/20">
-                  <Check className="w-3 h-3" />
-                  {t("Alinhamento Sintonizado!")} (+200 pts)
-                </span>
-              ) : (
+              {/* Actions for Gamified Experience */}
+              <div className="pt-4 border-t border-slate-900 flex items-center justify-between gap-3 flex-wrap">
                 <button
-                  onClick={() => handleClaimBlessing(selectedNotification)}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-amber-500 to-rose-600 font-mono font-bold text-slate-950 rounded-xl hover:from-amber-450 hover:to-rose-550 transition text-xs cursor-pointer shadow-lg hover:shadow-rose-500/10 active:scale-95"
+                  onClick={() => setSelectedNotification(null)}
+                  className="px-3.5 py-2 bg-slate-900 hover:bg-slate-850 text-slate-300 hover:text-slate-100 font-sans font-bold text-xs rounded-xl border border-slate-800 transition cursor-pointer flex items-center gap-1.5"
                 >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  {t("Venerar & Sintonizar")} (+200 pts)
+                  <X className="w-3.5 h-3.5" />
+                  {t("Fechar")}
                 </button>
-              )}
-            </div>
 
+                {claimedBlessings.includes(selectedNotification.id) ? (
+                  <span className="flex items-center gap-1 px-3 py-2 bg-emerald-500/10 text-emerald-400 text-xs font-mono font-bold rounded-xl border border-emerald-500/20">
+                    <Check className="w-3 h-3" />
+                    {t("Alinhamento Sintonizado!")} (+200 pts)
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => handleClaimBlessing(selectedNotification)}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-amber-500 to-rose-600 font-mono font-bold text-slate-950 rounded-xl hover:from-amber-450 hover:to-rose-550 transition text-xs cursor-pointer shadow-lg hover:shadow-rose-500/10 active:scale-95"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    {t("Venerar & Sintonizar")} (+200 pts)
+                  </button>
+                )}
+              </div>
+
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

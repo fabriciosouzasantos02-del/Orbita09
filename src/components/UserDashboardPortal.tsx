@@ -5,11 +5,11 @@ import {
   DollarSign, Heart, Users, Star, Moon, Home, Eye, Sliders,
   Compass, AlertCircle, TrendingUp, Sparkle, ArrowRight, Check, 
   Clock, Zap, Smile, Flame, Shield, HelpCircle, MessageSquare, Send, Bell, X,
-  Search, Smartphone, Download, Share2, Copy
+  Search, Smartphone, Download, Share2, Copy, ChevronDown, ChevronRight
 } from 'lucide-react';
 import SocialCompatibility from './SocialCompatibility';
 import SocialNetworkView from './SocialNetworkView';
-import { generatePersonalizedProsperityMap } from './prosperityEngine';
+import { generatePersonalizedProsperityMap } from '../prosperityEngine';
 import { generateDailyPrediction } from './dailyPredictionsEngine';
 import { SIGNS_ZODIAC_LIST, BLOG_ARTICLES_LIST } from '../data';
 import { loadCalculationCache, saveCalculationCache } from '../lib/firebase';
@@ -87,6 +87,7 @@ interface UserDashboardPortalProps {
   setAreaSubTab?: any;
   onUpdateCurrentUser?: (updated: any) => void;
   lang?: Language;
+  mapData?: any;
 }
 
 const localPortalTranslations: Record<string, Record<string, string>> = {
@@ -374,7 +375,17 @@ const localPortalTranslations: Record<string, Record<string, string>> = {
     "Área focada": "Focused area",
     "Conselho Especial Hoje": "Special Advice Today",
     "Foco Ativo": "Active Focus",
-    "Coloque um guardanapo azul no bolso esquerdo ou use caneta de tinta preta para fixar as ações tomadas agora sob a influência desta vibração.": "Place a blue napkin in your left pocket or use a black ink pen to anchor actions taken now under the influence of this vibration."
+    "Coloque um guardanapo azul no bolso esquerdo ou use caneta de tinta preta para fixar as ações tomadas agora sob a influência desta vibração.": "Place a blue napkin in your left pocket or use a black ink pen to anchor actions taken now under the influence of this vibration.",
+    "Organização": "Organization",
+    "Bem-estar": "Well-being",
+    "Calendário Interativo de Tendências (30 Dias)": "Interactive Trend Calendar (30 Days)",
+    "Portal Ativo Sincronizado": "Active Synchronized Portal",
+    "Acelere Seus Objetivos, Navegue pelos Portais Ativos": "Accelerate Your Goals, Navigate the Active Portals",
+    "Veja o que o universo quer te mostrando": "See what the universe wants to show you",
+    "Painel do mês e orientações cósmicas.": "Monthly panel and cosmic guidance.",
+    "Ver tudo →": "See all →",
+    "Intuição Harmoniosa & Foco Singular (Sol e Mercúrio em Trígono)": "Harmonious Intuition & Singular Focus (Sun and Mercury in Trine)",
+    "Navegação Cósmica": "Cosmic Navigation"
   },
   "es": {
     "Olá, meu caro buscador stelar! Eu sou OSÍRIS, seu mentor astrológico supremo e guia de cura energética. Estou em plena sintonia com suas frequências cósmicas de hoje para alinhar seu dharma e afastar de forma precisa as negatividades kármicas. O que você gostaria de desvendar no momento? Me pergunte sobre o clima, biorritmo celular ou seus sonhos profundos.": "¡Hola, mi querido buscador estelar! Soy OSIRIS, tu mentor astrológico supremo y guía de sanación energética. Estoy en plena sintonía con tus frecuencias cósmicas de hoy para alinear tu dharma y alejar de forma precisa las negatividades kármicas. ¿Qué te gustaría desvelar en este momento? Pregúntame sobre el clima, biorritmo celular o tus sueños profundos.",
@@ -660,7 +671,17 @@ const localPortalTranslations: Record<string, Record<string, string>> = {
     "Área focada": "Área enfocada",
     "Conselho Especial Hoje": "Consejo Especial Hoy",
     "Foco Ativo": "Foco Activo",
-    "Coloque um guardanapo azul no bolso esquerdo ou use caneta de tinta preta para fixar as ações tomadas agora sob a influência desta vibração.": "Coloque una servilleta azul en su bolsillo izquierdo o use un bolígrafo de tinta negra para fijar las acciones tomadas ahora bajo la influencia de esta vibración."
+    "Coloque um guardanapo azul no bolso esquerdo ou use caneta de tinta preta para fixar as ações tomadas agora sob a influência desta vibração.": "Coloque una servilleta azul en su bolsillo izquierdo o use un bolígrafo de tinta negra para fijar las acciones tomadas ahora bajo la influencia de esta vibración.",
+    "Organização": "Organización",
+    "Bem-estar": "Bienestar",
+    "Calendário Interativo de Tendências (30 Dias)": "Calendario Interactivo de Tendencias (30 Días)",
+    "Portal Ativo Sincronizado": "Portal Activo Sincronizado",
+    "Acelere Seus Objetivos, Navegue pelos Portais Ativos": "Acelera tus Objetivos, Navega por los Portales Activos",
+    "Veja o que o universo quer te mostrando": "Ve lo que el universo quiere mostrarte",
+    "Painel do mês e orientações cósmicas.": "Panel del mes y orientaciones cósmicas.",
+    "Ver tudo →": "Ver todo →",
+    "Intuição Harmoniosa & Foco Singular (Sol e Mercúrio em Trígono)": "Intuición Armoniosa y Enfoque Singular (Sol y Mercurio en Trígono)",
+    "Navegação Cósmica": "Navegación Cósmica"
   },
   "fr": {
     "Você": "Vous",
@@ -947,7 +968,17 @@ const localPortalTranslations: Record<string, Record<string, string>> = {
     "Conselho Especial Hoje": "Conseil Spécial du Jour",
     "Foco Ativo": "Focalisation Active",
     "Coloque um guardanapo azul no bolso esquerdo ou use caneta de tinta preta para fixar as ações tomadas agora sob a influência desta vibração.": "Placez une serviette bleue dans votre poche gauche ou utilisez un stylo à encre noire pour ancrer les actions entreprises sous l'influence de cette vibration.",
-    "Sendo uma plataforma de sabedoria avançada e criptografia astro-quântica, o APK do <strong>Portal Órbita</strong> é distribuído de forma independente e segura fora das lojas oficiais corporativas. Isso garante absoluta privacidade dos seus dados e integridade de suas consultas com os arcanos do Tarot e a IA Orbia. Ao ativar o APK, lembre-se de habilitar e autorizar o parâmetro \"Instalação de Fontes Desconhecidas\" nas configurações de segurança do seu dispositivo. É totalmente seguro e livre de vírus.": "En tant que plateforme de sagesse avancée et de cryptographie astro-quantique, l'APK du <strong>Portal Órbita</strong> est distribué de manière indépendante et sécurisée en dehors des magasins officiels d'entreprises. Cela garantit une confidentialité absolue de vos données et l'intégrité de vos consultations avec les arcanes du Tarot et l'IA Orbia. Lors de l'activation de l'APK, n'oubliez pas d'activer et d'autoriser le paramètre \"Installation de sources inconnues\" dans les paramètres de sécurité de votre appareil. C'est totalement sûr et sans virus."
+    "Sendo uma plataforma de sabedoria avançada e criptografia astro-quântica, o APK do <strong>Portal Órbita</strong> é distribuído de forma independente e segura fora das lojas oficiais corporativas. Isso garante absoluta privacidade dos seus dados e integridade de suas consultas com os arcanos do Tarot e a IA Orbia. Ao ativar o APK, lembre-se de habilitar e autorizar o parâmetro \"Instalação de Fontes Desconhecidas\" nas configurações de segurança do seu dispositivo. É totalmente seguro e livre de vírus.": "En tant que plateforme de sagesse avancée et de cryptographie astro-quantique, l'APK du <strong>Portal Órbita</strong> est distribué de manière indépendante et sécurisée en dehors des magasins officiels d'entreprises. Cela garantit une confidentialité absolue de vos données et l'intégrité de vos consultations avec les arcanes du Tarot et l'IA Orbia. Lors de l'activation de l'APK, n'oubliez pas d'activer et d'autoriser le paramètre \"Installation de sources inconnues\" dans les paramètres de sécurité de votre appareil. C'est totalement sûr et sans virus.",
+    "Organização": "Organisation",
+    "Bem-estar": "Bien-être",
+    "Calendário Interativo de Tendências (30 Dias)": "Calendrier Interactif des Tendances (30 Jours)",
+    "Portal Ativo Sincronizado": "Portail Actif Synchronisé",
+    "Acelere Seus Objetivos, Navegue pelos Portais Ativos": "Accélérez vos Objectifs, Naviguez dans les Portails Actifs",
+    "Veja o que o universo quer te mostrando": "Découvrez ce que l'univers veut vous montrer",
+    "Painel do mês e orientações cósmicas.": "Tableau du mois et orientations cosmiques.",
+    "Ver tudo →": "Voir tout →",
+    "Intuição Harmoniosa & Foco Singular (Sol e Mercúrio em Trígono)": "Intuition Harmonieuse & Concentration Singulière (Soleil et Mercure en Trigone)",
+    "Navegação Cósmica": "Navigation Cosmique"
   },
   "de": {
     "Você": "Du",
@@ -1234,7 +1265,17 @@ const localPortalTranslations: Record<string, Record<string, string>> = {
     "Conselho Especial Hoje": "Besonderer Rat des Tages",
     "Foco Ativo": "Aktiver Fokus",
     "Coloque um guardanapo azul no bolso esquerdo ou use caneta de tinta preta para fixar as ações tomadas agora sob a influência desta vibração.": "Legen Sie eine blaue Serviette in Ihre linke Tasche oder verwenden Sie einen Kugelschreiber mit schwarzer Tinte, um die jetzt unter dem Einfluss dieser Schwingung ergriffenen Maßnahmen zu verankern.",
-    "Sendo uma plataforma de sabedoria avançada e criptografia astro-quântica, o APK do <strong>Portal Órbita</strong> é distribuído de forma independente e segura fora das lojas oficiais corporativas. Isso garante absoluta privacidade dos seus dados e integridade de suas consultas com os arcanos do Tarot e a IA Orbia. Ao ativar o APK, lembre-se de habilitar e autorizar o parâmetro \"Instalação de Fontes Desconhecidas\" nas configurações de segurança do seu dispositivo. É totalmente seguro e livre de vírus.": "Als Plattform für fortgeschrittene Weisheit und astro-quanten-Verschlüsselung wird die APK von <strong>Portal Órbita</strong> unabhängig und sicher außerhalb der offiziellen Unternehmens-Stores vertrieben. Dies garantiert die absolute Privatsphäre Ihrer Daten und die Integrität Ihrer Konsultationen mit den Tarot-Arkanen und der Orbia-KI. Denken Sie bei der Aktivierung der APK daran, den Parameter \"Installation unbekannter Quellen\" in den Sicherheitseinstellungen Ihres Geräts zu aktivieren und zu autorisieren. Es ist absolut sicher und virenfrei."
+    "Sendo uma plataforma de sabedoria avançada e criptografia astro-quântica, o APK do <strong>Portal Órbita</strong> é distribuído de forma independente e segura fora das lojas oficiais corporativas. Isso garante absoluta privacidade dos seus dados e integridade de suas consultas com os arcanos do Tarot e a IA Orbia. Ao ativar o APK, lembre-se de habilitar e autorizar o parâmetro \"Instalação de Fontes Desconhecidas\" nas configurações de segurança do seu dispositivo. É totalmente seguro e livre de vírus.": "Als Plattform für fortgeschrittene Weisheit und astro-quanten-Verschlüsselung wird die APK von <strong>Portal Órbita</strong> unabhängig und sicher außerhalb der offiziellen Unternehmens-Stores vertrieben. Dies garantiert die absolute Privatsphäre Ihrer Daten und die Integrität Ihrer Konsultationen mit den Tarot-Arkanen und der Orbia-KI. Denken Sie bei der Aktivierung der APK daran, den Parameter \"Installation unbekannter Quellen\" in den Sicherheitseinstellungen Ihres Geräts zu aktivieren und zu autorisieren. Es ist absolut sicher und virenfrei.",
+    "Organização": "Organisation",
+    "Bem-estar": "Wohlbefinden",
+    "Calendário Interativo de Tendências (30 Dias)": "Interaktiver Trendkalender (30 Tage)",
+    "Portal Ativo Sincronizado": "Aktives synchronisiertes Portal",
+    "Acelere Seus Objetivos, Navegue pelos Portais Ativos": "Beschleunige deine Ziele, navigiere durch die aktiven Portale",
+    "Veja o que o universo quer te mostrando": "Sieh was das Universum dir zeigen möchte",
+    "Painel do mês e orientações cósmicas.": "Monatspanel und kosmische Orientierungen.",
+    "Ver tudo →": "Alles sehen →",
+    "Intuição Harmoniosa & Foco Singular (Sol e Mercúrio em Trígono)": "Harmonische Intuition & Einzigartiger Fokus (Sonne und Merkur im Trigon)",
+    "Navegação Cósmica": "Kosmische Navigation"
   }
 };;
 
@@ -1249,7 +1290,8 @@ export default function UserDashboardPortal({
   areaSubTab: propAreaSubTab,
   setAreaSubTab: propSetAreaSubTab,
   onUpdateCurrentUser,
-  lang
+  lang,
+  mapData
 }: UserDashboardPortalProps) {
   const { idioma } = useIdioma();
   const activeLang = idioma || lang || 'pt';
@@ -1273,7 +1315,8 @@ export default function UserDashboardPortal({
     user?.hasCreatedMap ? user.birthDate : "1997-02-11",
     getZodiacSign(user?.birthDate),
     user?.hasCreatedMap ? user.name : "",
-    new Date()
+    new Date(),
+    idioma
   );
 
   // Interactive states
@@ -1281,16 +1324,84 @@ export default function UserDashboardPortal({
 
   const selectedDayPrediction = generateDailyPrediction(
     user?.hasCreatedMap ? user.birthDate : "1997-02-11",
-    getZodiacSign(user?.birthDate),
+    mapData?.astros?.find((a: any) => a.name === "Sol")?.sign || getZodiacSign(user?.birthDate),
     user?.hasCreatedMap ? user?.name : "",
     selectedCalendarDay - 1,
-    new Date()
+    new Date(),
+    idioma,
+    mapData
   );
 
   // Navigation tabs inside User Portal - synced securely with parent Context
   const [localAreaSubTab, setLocalAreaSubTab] = useState<any>('universo_mostrando');
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const areaSubTab = propAreaSubTab !== undefined ? propAreaSubTab : localAreaSubTab;
   const setAreaSubTab = propSetAreaSubTab !== undefined ? propSetAreaSubTab : setLocalAreaSubTab;
+
+  const navigationGroups = useMemo(() => [
+    {
+      group: "Oráculo de Entrada",
+      items: [
+        { id: 'universo_mostrando', label: 'Elias & Sinais', icon: Eye, color: 'text-purple-400', bg: 'hover:bg-purple-500/5' }
+      ]
+    },
+    {
+      group: "Práticas & Evolução",
+      items: [
+        { id: 'missao', label: 'Missões do Portal', icon: Award, color: 'text-indigo-400', bg: 'hover:bg-indigo-500/5' },
+        { id: 'amuletos', label: 'Símbolos & Amuletos', icon: ShieldCheck, color: 'text-emerald-400', bg: 'hover:bg-emerald-500/5' }
+      ]
+    },
+    {
+      group: "Estatísticas Diárias",
+      items: [
+        { id: 'radar', label: 'Radar do Dia', icon: Activity, color: 'text-rose-400', bg: 'hover:bg-rose-500/5' },
+        { id: 'oportunidades_hoje', label: 'Radar Oportunidades', icon: Compass, color: 'text-amber-400', bg: 'hover:bg-amber-500/5' }
+      ]
+    },
+    {
+      group: "Planejamento Astrológico",
+      items: [
+        { id: 'painel_mes', label: 'Painel do Mês', icon: Calendar, color: 'text-teal-400', bg: 'hover:bg-teal-500/5' },
+        { id: 'calendario', label: 'Calendário Inteligente', icon: Calendar, color: 'text-sky-400', bg: 'hover:bg-sky-500/5' },
+        { id: 'cores', label: 'Cores do Mês', icon: Sparkles, color: 'text-indigo-400', bg: 'hover:bg-indigo-500/5' },
+        { id: 'mensagem', label: 'Mensagem & Alertas', icon: BookOpen, color: 'text-pink-400', bg: 'hover:bg-pink-500/5' }
+      ]
+    },
+    {
+      group: "Pilares do Destino",
+      items: [
+        { id: 'prosperidade', label: 'Prosperidade e Capital', icon: DollarSign, color: 'text-emerald-400', bg: 'hover:bg-emerald-505/5' },
+        { id: 'amor', label: 'Amor & Intimidade', icon: Heart, color: 'text-red-400', bg: 'hover:bg-red-500/5' },
+        { id: 'compatibilidade_social', label: 'Sinergia Social', icon: Users, color: 'text-amber-400', bg: 'hover:bg-amber-500/5' },
+        { id: 'relacionamentos', label: 'Relacionamentos', icon: Users, color: 'text-cyan-400', bg: 'hover:bg-cyan-500/5' },
+        { id: 'desenvolvimento', label: 'Desenv. Pessoal', icon: Star, color: 'text-yellow-405', bg: 'hover:bg-yellow-500/5' },
+        { id: 'energia_casa', label: 'Energia da Casa', icon: Home, color: 'text-indigo-405', bg: 'hover:bg-indigo-505/5' },
+        { id: 'sonhos', label: 'Centro de Sonhos', icon: Moon, color: 'text-pink-400', bg: 'hover:bg-pink-500/5' }
+      ]
+    },
+    {
+      group: "Aplicativo Celular",
+      items: [
+        { id: 'baixar_app', label: 'Instalar APK / PWA', icon: Smartphone, color: 'text-rose-450', bg: 'hover:bg-rose-500/5' }
+      ]
+    }
+  ], []);
+
+  const activeTabItem = useMemo(() => {
+    for (const group of navigationGroups) {
+      const found = group.items.find(item => item.id === areaSubTab);
+      if (found) return found;
+    }
+    return null;
+  }, [areaSubTab, navigationGroups]);
+
+  const activeMobileLabel = useMemo(() => {
+    if (areaSubTab === 'universo_mostrando') {
+      return t("Veja o que o universo quer te mostrando");
+    }
+    return activeTabItem ? t(activeTabItem.label) : t("Navegação Cósmica");
+  }, [areaSubTab, activeTabItem, t]);
 
   const [activeCalendarFilter, setActiveCalendarFilter] = useState<string>('todos');
   const [selectedOpportunityArea, setSelectedOpportunityArea] = useState<string>('dinheiro');
@@ -1886,10 +1997,10 @@ export default function UserDashboardPortal({
         <div className="text-left space-y-1 z-10 max-w-xl">
           <span className="text-[10px] font-mono font-bold text-amber-500 uppercase tracking-widest flex items-center gap-1.5 animate-pulse">
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            {activeLang === 'de' ? 'Aktives synchronisiertes Portal' : activeLang === 'en' ? 'Active Synchronized Portal' : activeLang === 'es' ? 'Portal Activo Sincronizado' : 'Portal Ativo Sincronizado'}
+            {t('Portal Ativo Sincronizado')}
           </span>
           <h2 className="text-base sm:text-lg font-black text-slate-100 tracking-tight leading-snug">
-            {activeLang === 'de' ? 'Beschleunige deine Ziele, navigiere durch die aktiven Portale' : activeLang === 'en' ? 'Accelerate Your Goals, Navigate the Active Portals' : activeLang === 'es' ? 'Acelera tus Objetivos, Navega por los Portales Activos' : 'Acelere Seus Objetivos, Navegue pelos Portais Ativos'}
+            {t('Acelere Seus Objetivos, Navegue pelos Portais Ativos')}
           </h2>
         </div>
 
@@ -1905,13 +2016,13 @@ export default function UserDashboardPortal({
             </div>
             <div className="space-y-0.5 min-w-0">
               <span className="text-[10px] sm:text-[11px] font-extrabold text-amber-400 tracking-wide uppercase flex items-center gap-1 flex-wrap font-sans">
-                🪐 {activeLang === 'de' ? 'Sieh was das Universum dir zeigen möchte' : activeLang === 'en' ? 'See what the universe wants to show you' : activeLang === 'es' ? 'Ve lo que el universo quiere mostrarte' : 'Veja o que o universo quer te mostrando'}
+                🪐 {t('Veja o que o universo quer te mostrando')}
               </span>
-              <p className="text-[9px] text-slate-400 font-medium">{activeLang === 'de' ? 'Monatspanel und kosmische Orientierungen.' : activeLang === 'en' ? 'Monthly panel and cosmic guidance.' : activeLang === 'es' ? 'Panel del mes y orientaciones cósmicas.' : 'Painel do mês e orientações cósmicas.'}</p>
+              <p className="text-[9px] text-slate-400 font-medium">{t('Painel do mês e orientações cósmicas.')}</p>
             </div>
           </div>
           <span className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-wider self-end sm:self-center shrink-0 transition shadow-md hover:shadow-amber-500/10 hover:scale-102">
-            {activeLang === 'de' ? 'Alles sehen →' : activeLang === 'en' ? 'See all →' : activeLang === 'es' ? 'Ver todo →' : 'Ver tudo →'}
+            {t('Ver tudo →')}
           </span>
         </button>
       </div>
@@ -1921,144 +2032,81 @@ export default function UserDashboardPortal({
         {/* 1. LEFT SIDEBAR NAVIGATION OR MOBILE DROPDOWN */}
         <div className="lg:col-span-4 xl:col-span-3 space-y-4">
 
-          {/* Mobile Dropdown Category Selector */}
+          {/* Mobile Category Selector */}
           <div className="lg:hidden animate-in fade-in duration-300">
             <label className="block text-[10px] font-mono text-slate-500 mb-1.5 uppercase font-black tracking-wide">
               {t("Acelere Seus Objetivos, Navegue pelos Portais Ativos")}
             </label>
-            <div className="relative">
-              <select
-                value={areaSubTab}
-                onChange={(e) => setAreaSubTab(e.target.value as any)}
-                className="w-full px-4 py-3 rounded-2xl bg-slate-900 border border-slate-800 text-[11px] font-black text-slate-200 tracking-wider focus:outline-hidden cursor-pointer"
-              >
-                <optgroup label={`🌌 ${t("Revelação Semanal")}`}>
-                  <option value="universo_mostrando">🪐 {t("Veja o que o universo quer te mostrando")}</option>
-                </optgroup>
-                <optgroup label={`🏆 ${t("Práticas & Evolução")}`}>
-                  <option value="missao">🏅 {t("Missões do Portal")}</option>
-                  <option value="amuletos">🔮 {t("Símbolos & Amuletos")}</option>
-                </optgroup>
-                <optgroup label={`📈 ${t("Sinais & Oportunidades do Dia")}`}>
-                  <option value="radar">⚡ {t("Radar do Dia")}</option>
-                  <option value="oportunidades_hoje">🎯 {t("Radar de Oportunidades (0-100)")}</option>
-                </optgroup>
-                <optgroup label={`🗓️ ${t("Previsões & Ciclos do Mês")}`}>
-                  <option value="painel_mes">🌙 {t("Painel do Mês")}</option>
-                  <option value="calendario">📅 {t("Calendário Inteligente")}</option>
-                  <option value="cores">🎨 {t("Cores do Mês")}</option>
-                  <option value="mensagem">✉️ {t("Mensagem e Avisos")}</option>
-                </optgroup>
-                <optgroup label={`💎 ${t("Áreas de Foco")}`}>
-                  <option value="prosperidade">💸 {t("Prosperidade & Dinheiro")}</option>
-                  <option value="amor">💖 {t("Amor & Romance")}</option>
-                  <option value="compatibilidade_social">👥 {t("Sinergia Social & Compatibilidade")}</option>
-                  <option value="relacionamentos">👥 {t("Relacionamentos Sociais")}</option>
-                  <option value="desenvolvimento">🌱 {t("Desenvolvimento Pessoal")}</option>
-                </optgroup>
-                <optgroup label={`🌱 ${t("Campo Energético")}`}>
-                  <option value="energia_casa">🏡 {t("Energia da Casa")}</option>
-                  <option value="sonhos">🌙 {t("Centro de Sonhos")}</option>
-                </optgroup>
-                <optgroup label={`📱 ${t("Aplicativo Mobile")}`}>
-                  <option value="baixar_app">📱 {t("Instalar APK / PWA")}</option>
-                </optgroup>
-              </select>
-            </div>
+            <button
+              type="button"
+              onClick={() => setIsMobileNavOpen(true)}
+              className="w-full px-4 py-3.5 rounded-2xl bg-slate-900 border border-slate-800 text-left flex items-center justify-between cursor-pointer group hover:border-slate-700 hover:bg-slate-850/60 transition-all duration-300 shadow-md"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500/10 to-indigo-500/20 border border-amber-500/25 flex items-center justify-center text-amber-400 group-hover:scale-105 transition-transform shrink-0">
+                  {activeTabItem ? (
+                    <activeTabItem.icon className={`w-4 h-4 ${activeTabItem.color}`} />
+                  ) : (
+                    <Eye className="w-4 h-4 animate-pulse text-purple-400" />
+                  )}
+                </div>
+                <div className="space-y-0.5 min-w-0">
+                  <span className="text-[11px] font-extrabold text-slate-200 tracking-wide uppercase flex items-center gap-1.5 flex-wrap font-sans">
+                    {activeMobileLabel}
+                  </span>
+                  <p className="text-[9px] text-slate-400 font-medium">{t("Navegue pelos Portais Ativos")}</p>
+                </div>
+              </div>
+              <ChevronDown className="w-4 h-4 text-slate-400" />
+            </button>
           </div>
 
-        {/* Desktop Styled Sidebar Navigation inside a bento container */}
-        <div className="hidden lg:block space-y-4 sticky top-6">
-          <div className="p-4 bg-slate-950/60 rounded-3xl border border-slate-850/80 space-y-4">
-            <div className="flex justify-between items-center border-b border-slate-900 pb-2">
-              <span className="text-[10px] font-mono font-black text-slate-500 uppercase tracking-wider block">
-                {activeLang === 'de' ? 'Kosmische Navigation' : activeLang === 'en' ? 'Cosmic Navigation' : activeLang === 'es' ? 'Navegación Cósmica' : 'Navegação Cósmica'}
-              </span>
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            </div>
+          {/* Desktop Styled Sidebar Navigation inside a bento container */}
+          <div className="hidden lg:block space-y-4 sticky top-6">
+            <div className="p-4 bg-slate-950/60 rounded-3xl border border-slate-850/80 space-y-4">
+              <div className="flex justify-between items-center border-b border-slate-900 pb-2">
+                <span className="text-[10px] font-mono font-black text-slate-500 uppercase tracking-wider block">
+                  {t('Navegação Cósmica')}
+                </span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              </div>
 
-            <div className="space-y-4">
-              {[
-                {
-                  group: "Oráculo de Entrada",
-                  items: [
-                    { id: 'universo_mostrando', label: 'Elias & Sinais', icon: Eye, color: 'text-purple-400', bg: 'hover:bg-purple-500/5' }
-                  ]
-                },
-                {
-                  group: "Práticas & Evolução",
-                  items: [
-                    { id: 'missao', label: 'Missões do Portal', icon: Award, color: 'text-indigo-400', bg: 'hover:bg-indigo-500/5' },
-                    { id: 'amuletos', label: 'Símbolos & Amuletos', icon: ShieldCheck, color: 'text-emerald-400', bg: 'hover:bg-emerald-500/5' }
-                  ]
-                },
-                {
-                  group: "Estatísticas Diárias",
-                  items: [
-                    { id: 'radar', label: 'Radar do Dia', icon: Activity, color: 'text-rose-400', bg: 'hover:bg-rose-500/5' },
-                    { id: 'oportunidades_hoje', label: 'Radar Oportunidades', icon: Compass, color: 'text-amber-400', bg: 'hover:bg-amber-500/5' }
-                  ]
-                },
-                {
-                  group: "Planejamento Astrológico",
-                  items: [
-                    { id: 'painel_mes', label: 'Painel do Mês', icon: Calendar, color: 'text-teal-400', bg: 'hover:bg-teal-500/5' },
-                    { id: 'calendario', label: 'Calendário Inteligente', icon: Calendar, color: 'text-sky-400', bg: 'hover:bg-sky-500/5' },
-                    { id: 'cores', label: 'Cores do Mês', icon: Sparkles, color: 'text-indigo-400', bg: 'hover:bg-indigo-500/5' },
-                    { id: 'mensagem', label: 'Mensagem & Alertas', icon: BookOpen, color: 'text-pink-400', bg: 'hover:bg-pink-500/5' }
-                  ]
-                },
-                {
-                  group: "Pilares do Destino",
-                  items: [
-                    { id: 'prosperidade', label: 'Prosperidade e Capital', icon: DollarSign, color: 'text-emerald-400', bg: 'hover:bg-emerald-505/5' },
-                    { id: 'amor', label: 'Amor & Intimidade', icon: Heart, color: 'text-red-400', bg: 'hover:bg-red-500/5' },
-                    { id: 'compatibilidade_social', label: 'Sinergia Social', icon: Users, color: 'text-amber-400', bg: 'hover:bg-amber-500/5' },
-                    { id: 'relacionamentos', label: 'Relacionamentos', icon: Users, color: 'text-cyan-400', bg: 'hover:bg-cyan-500/5' },
-                    { id: 'desenvolvimento', label: 'Desenv. Pessoal', icon: Star, color: 'text-yellow-405', bg: 'hover:bg-yellow-500/5' },
-                    { id: 'energia_casa', label: 'Energia da Casa', icon: Home, color: 'text-indigo-405', bg: 'hover:bg-indigo-505/5' },
-                    { id: 'sonhos', label: 'Centro de Sonhos', icon: Moon, color: 'text-pink-400', bg: 'hover:bg-pink-500/5' }
-                  ]
-                },
-                {
-                  group: "Aplicativo Celular",
-                  items: [
-                    { id: 'baixar_app', label: 'Instalar APK / PWA', icon: Smartphone, color: 'text-rose-450', bg: 'hover:bg-rose-500/5' }
-                  ]
-                }
-              ].map((group, groupIdx) => (
-                <div key={groupIdx} className="space-y-1">
-                  <span className="text-[8px] font-mono font-black text-slate-600 block uppercase px-2 tracking-widest leading-none mb-1">{t(group.group)}</span>
-                  <div className="space-y-0.5">
-                    {group.items.map((sub) => {
-                      const Icon = sub.icon;
-                      const isSelected = areaSubTab === sub.id;
-                      return (
-                        <button
-                          key={sub.id}
-                          type="button"
-                          onClick={() => setAreaSubTab(sub.id as any)}
-                          className={`w-full px-3 py-1.5 rounded-xl text-[10.5px] font-bold tracking-wide transition-all duration-300 flex items-center justify-between cursor-pointer ${
-                            isSelected
-                              ? 'bg-slate-900 border border-slate-800 text-slate-100 shadow-xs scale-102 font-black'
-                              : `text-slate-400 border border-transparent ${sub.bg} hover:text-slate-205`
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <Icon className={`w-3.5 h-3.5 ${sub.color}`} />
-                            <span>{t(sub.label)}</span>
-                          </div>
-                          {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />}
-                        </button>
-                      );
-                    })}
+              <div className="space-y-4">
+                {navigationGroups.map((group, groupIdx) => (
+                  <div key={groupIdx} className="space-y-1">
+                    <span className="text-[8px] font-mono font-black text-slate-600 block uppercase px-2 tracking-widest leading-none mb-1">
+                      {t(group.group)}
+                    </span>
+                    <div className="space-y-0.5">
+                      {group.items.map((sub) => {
+                        const Icon = sub.icon;
+                        const isSelected = areaSubTab === sub.id;
+                        return (
+                          <button
+                            key={sub.id}
+                            type="button"
+                            onClick={() => setAreaSubTab(sub.id as any)}
+                            className={`w-full px-3 py-1.5 rounded-xl text-[10.5px] font-bold tracking-wide transition-all duration-300 flex items-center justify-between cursor-pointer ${
+                              isSelected
+                                ? 'bg-slate-900 border border-slate-800 text-slate-100 shadow-xs scale-102 font-black'
+                                : `text-slate-400 border border-transparent ${sub.bg} hover:text-slate-202`
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Icon className={`w-3.5 h-3.5 ${sub.color}`} />
+                              <span>{t(sub.label)}</span>
+                            </div>
+                            {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
         {/* 2. MAIN DASHBOARD CONTENT AREA */}
         <div className="lg:col-span-8 xl:col-span-9 min-h-[500px]">
@@ -2220,7 +2268,7 @@ export default function UserDashboardPortal({
                         <span>•</span>
                         <span>{t('Agora')}</span>
                       </div>
-                      <p className="whitespace-pre-line">{msg.text}</p>
+                      <p className="whitespace-pre-line">{t(msg.text)}</p>
                     </div>
                   ))}
                   {osirisChatSending && (
@@ -2276,7 +2324,7 @@ export default function UserDashboardPortal({
                   <div className="bg-slate-950 p-4 rounded-2xl border border-slate-850/60">
                     <span className="text-[9px] font-mono text-slate-500 block uppercase font-bold">{t("Frequência Dominante Celular")}</span>
                     <span className="text-xs font-black text-rose-455 block tracking-wide mt-1">
-                      Intuição Harmoniosa & Foco Singular (Sol e Mercúrio em Trígono)
+                      {t("Intuição Harmoniosa & Foco Singular (Sol e Mercúrio em Trígono)")}
                     </span>
                   </div>
 
@@ -2314,7 +2362,7 @@ export default function UserDashboardPortal({
                   <div>
                     <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
                       <Compass className="w-4 h-4 text-amber-500" />
-                      Radar de oportunidades diárias
+                      {t("Radar de oportunidades diárias")}
                     </h3>
                     <p className="text-[10px] text-slate-500 mt-0.5">{t('Clique em cada área para obter direcionamento astrológico de aproveitamento das tendências hoje.')}</p>
                   </div>
@@ -2601,7 +2649,7 @@ export default function UserDashboardPortal({
                       </span>
                     </div>
                     <span className={`px-2.5 py-0.5 rounded-md text-[9px] font-mono border ${selectedDayPrediction.tagColorClass}`}>
-                      {t('Vibração')}: {t(selectedDayPrediction.tagText)}
+                      {t('Vibração:')} {t(selectedDayPrediction.tagText)}
                     </span>
                   </div>
 
@@ -2625,11 +2673,11 @@ export default function UserDashboardPortal({
 
                       <div className="flex items-center gap-4 p-2 bg-slate-900/50 rounded-xl border border-slate-850">
                         <div className="flex-1">
-                          <span className="text-[8px] font-mono text-slate-500 uppercase block">{t('Energia Predominante')}</span>
+                          <span className="text-[8px] font-mono text-slate-500 uppercase block">{t('Energia Predominante:')}</span>
                           <span className="text-[10px] font-bold text-slate-200">{t(selectedDayPrediction.predominantEnergy)}</span>
                         </div>
                         <div className="text-right">
-                          <span className="text-[8px] font-mono text-slate-500 block">{t('Nível Energético')}</span>
+                          <span className="text-[8px] font-mono text-slate-500 block">{t('Nível Energético:')}</span>
                           <span className="text-xs font-bold font-mono text-amber-400">{selectedDayPrediction.energyLevel}%</span>
                         </div>
                       </div>
@@ -3950,6 +3998,81 @@ export default function UserDashboardPortal({
               className="px-4 py-2 bg-purple-500 text-slate-950 hover:bg-purple-400 text-xs font-black uppercase rounded-xl transition cursor-pointer"
             >
               {t("Concluiu")}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Mobile Navigation Modal */}
+    {isMobileNavOpen && (
+      <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[200] flex flex-col justify-end p-4 lg:hidden">
+        <div className="absolute inset-0" onClick={() => setIsMobileNavOpen(false)} />
+        <div className="bg-slate-900 border border-slate-800 w-full rounded-3xl p-5 relative overflow-hidden text-left shadow-2xl animate-in slide-in-from-bottom duration-300 max-h-[85vh] flex flex-col z-10">
+          <div className="flex justify-between items-center pb-3.5 border-b border-slate-800 shrink-0">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              <span className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-widest block">
+                {t('Navegação Cósmica')}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsMobileNavOpen(false)}
+              className="p-1.5 bg-slate-850 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto py-4 space-y-5 pr-1 my-2">
+            {navigationGroups.map((group, groupIdx) => (
+              <div key={groupIdx} className="space-y-1.5">
+                <span className="text-[8px] font-mono font-black text-slate-500 block uppercase px-2 tracking-widest leading-none">
+                  {t(group.group)}
+                </span>
+                <div className="grid grid-cols-1 gap-1">
+                  {group.items.map((sub) => {
+                    const Icon = sub.icon;
+                    const isSelected = areaSubTab === sub.id;
+                    return (
+                      <button
+                        key={sub.id}
+                        type="button"
+                        onClick={() => {
+                          setAreaSubTab(sub.id as any);
+                          setIsMobileNavOpen(false);
+                        }}
+                        className={`w-full min-h-[44px] px-3 py-2 rounded-xl text-[10.5px] font-bold tracking-wide transition-all duration-300 flex items-center justify-between cursor-pointer ${
+                          isSelected
+                            ? 'bg-slate-800 border border-amber-500/20 text-amber-400 font-black'
+                            : `text-slate-400 bg-slate-950/20 border border-transparent ${sub.bg} hover:text-slate-202`
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Icon className={`w-3.5 h-3.5 ${sub.color}`} />
+                          <span className="text-left leading-tight">{t(sub.label)}</span>
+                        </div>
+                        {isSelected ? (
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                        ) : (
+                          <ChevronRight className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="pt-3 border-t border-slate-800 shrink-0 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setIsMobileNavOpen(false)}
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-750 text-slate-200 text-[10px] font-black uppercase rounded-xl transition cursor-pointer"
+            >
+              {t("Fechar")}
             </button>
           </div>
         </div>

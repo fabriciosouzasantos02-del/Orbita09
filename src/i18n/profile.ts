@@ -37,7 +37,30 @@ export const profileTranslations: Record<Language, Record<string, string>> = {
     "Cidade": "Cidade",
     "Visualizar": "Visualizar",
     "Remover": "Remover",
-    "Limites": "Limites de mapas extras atingido (máx. 2)."
+    "Limites": "Limites de mapas extras atingido (máx. 2).",
+
+    // Personal Protection and Edit Social Profile keys
+    "Amuletos & Símbolos de Proteção Pessoais": "Amuletos & Símbolos de Proteção Pessoais",
+    "Seu Elemento Ativo: Ar": "Seu Elemento Ativo: Ar",
+    "Pedras de Filtro": "Pedras de Filtro",
+    "Editar Dados do Perfil Social": "Editar Dados do Perfil Social",
+    "Adicione suas mídias sociais e bio para os outros visualizadores.": "Adicione suas mídias sociais e bio para os outros visualizadores.",
+    "Bio Curta": "Bio Curta",
+    "Escreva algo curto sobre você...": "Escreva algo curto sobre você...",
+    "Instagram (@usuario)": "Instagram (@usuario)",
+    "@seu_perfil": "@seu_perfil",
+    "Facebook (usuário ou link)": "Facebook (usuário ou link)",
+    "link_do_facebook": "link_do_facebook",
+    "Cancelar": "Cancelar",
+    "Salvar Perfil": "Salvar Perfil",
+
+    // Map Sync keys
+    "MAPA SINCRONIZADO": "MAPA SINCRONIZADO",
+    "Seu mapa astral principal foi protegido e sincronizado com sua conta.": "Seu mapa astral principal foi protegido e sincronizado com sua conta.",
+    "A partir de agora você receberá atualizações contínuas sobre trânsitos, ciclos, frequências energéticas e movimentações celestes relacionadas ao seu mapa.": "A partir de agora você receberá atualizações contínuas sobre trânsitos, ciclos, frequências energéticas e movimentações celestes relacionadas ao seu mapa.",
+    "SINCRONIZAÇÃO ATIVA": "SINCRONIZAÇÃO ATIVA",
+    "Salve seu mapa para receber atualizações personalizadas de trânsitos, energias, previsões e movimentos astrológicos em tempo real.": "Salve seu mapa para receber atualizações personalizadas de trânsitos, energias, previsões e movimentos astrológicos em tempo real.",
+    "SALVAR MAPA": "SALVAR MAPA"
   },
   en: {
     "Inspecione as chaves criptográficas locais de seu mapa astral místico e gerencie as configurações de privacidade.": "Inspect the local cryptographic keys of your mystical birth chart and manage privacy settings.",
@@ -74,7 +97,30 @@ export const profileTranslations: Record<Language, Record<string, string>> = {
     "Cidade": "City",
     "Visualizar": "View",
     "Remover": "Remove",
-    "Limites": "Extra charts limit reached (max 2)."
+    "Limites": "Extra charts limit reached (max 2).",
+
+    // Personal Protection and Edit Social Profile keys
+    "Amuletos & Símbolos de Proteção Pessoais": "Personal Protection Amulets & Symbols",
+    "Seu Elemento Ativo: Ar": "Your Active Element: Air",
+    "Pedras de Filtro": "Filter Stones",
+    "Editar Dados do Perfil Social": "Edit Social Profile Data",
+    "Adicione suas mídias sociais e bio para os outros visualizadores.": "Add your social media and bio for other viewers.",
+    "Bio Curta": "Short Bio",
+    "Escreva algo curto sobre você...": "Write something short about yourself...",
+    "Instagram (@usuario)": "Instagram (@username)",
+    "@seu_perfil": "@your_profile",
+    "Facebook (usuário ou link)": "Facebook (username or link)",
+    "link_do_facebook": "facebook_link",
+    "Cancelar": "Cancel",
+    "Salvar Perfil": "Save Profile",
+
+    // Map Sync keys
+    "MAPA SINCRONIZADO": "CHART SYNCHRONIZED",
+    "Seu mapa astral principal foi protegido e sincronizado com sua conta.": "Your main birth chart has been protected and synchronized with your account.",
+    "A partir de agora você receberá atualizações contínuas sobre trânsitos, ciclos, frequências energéticas e movimentações celestes relacionadas ao seu mapa.": "From now on you will receive continuous updates about transits, cycles, energy frequencies, and celestial movements related to your chart.",
+    "SINCRONIZAÇÃO ATIVA": "ACTIVE SYNCHRONIZATION",
+    "Salve seu mapa para receber atualizações personalizadas de trânsitos, energias, previsões e movimentos astrológicos em tempo real.": "Save your chart to receive personalized updates on transits, energies, predictions, and astrological movements in real time.",
+    "SALVAR MAPA": "SAVE CHART"
   },
   es: {
     "Inspecione as chaves criptográficas locais de seu mapa astral místico e gerencie as configurações de privacidade.": "Inspeccione las claves criptográficas locales de su carta astral mística y gestione la configuración de privacidad.",
@@ -111,7 +157,30 @@ export const profileTranslations: Record<Language, Record<string, string>> = {
     "Cidade": "Ciudad",
     "Visualizar": "Visualizar",
     "Remover": "Eliminar",
-    "Limites": "Límite de cartas extras alcanzado (máx. 2)."
+    "Limites": "Límite de cartas extras alcanzado (máx. 2).",
+
+    // Personal Protection and Edit Social Profile keys
+    "Amuletos & Símbolos de Proteção Pessoais": "Amuletos y Símbolos de Protección Personales",
+    "Seu Elemento Ativo: Ar": "Tu Elemento Activo: Aire",
+    "Pedras de Filtro": "Piedras de Filtro",
+    "Editar Dados do Perfil Social": "Editar Datos del Perfil Social",
+    "Adicione suas mídias sociais e bio para os outros visualizadores.": "Agregue sus redes sociales y biografía para los demás espectadores.",
+    "Bio Curta": "Biografía Corta",
+    "Escreva algo curto sobre você...": "Escribe algo corto sobre ti...",
+    "Instagram (@usuario)": "Instagram (@usuario)",
+    "@seu_perfil": "@tu_perfil",
+    "Facebook (usuário ou link)": "Facebook (usuario o enlace)",
+    "link_do_facebook": "enlace_de_facebook",
+    "Cancelar": "Cancelar",
+    "Salvar Perfil": "Guardar Perfil",
+
+    // Map Sync keys
+    "MAPA SINCRONIZADO": "CARTA SINCRONIZADA",
+    "Seu mapa astral principal foi protegido e sincronizado com sua conta.": "Tu carta astral principal ha sido protegida y sincronizada con tu cuenta.",
+    "A partir de agora você receberá atualizações contínuas sobre trânsitos, ciclos, frequências energéticas e movimentações celestes relacionadas ao seu mapa.": "A partir de ahora recibirás actualizaciones continuas sobre tránsitos, ciclos, frecuencias energéticas y movimientos celestes relacionados con tu carta.",
+    "SINCRONIZAÇÃO ATIVA": "SINCRONIZACIÓN ACTIVA",
+    "Salve seu mapa para receber atualizações personalizadas de trânsitos, energias, previsões e movimentos astrológicos em tempo real.": "Guarda tu carta para recibir actualizaciones personalizadas de tránsitos, energías, predicciones y movimientos astrológicos en tiempo real.",
+    "SALVAR MAPA": "GUARDAR CARTA"
   },
   de: {
     "Inspecione as chaves criptográficas locais de seu mapa astral místico e gerencie as configurações de privacidade.": "Überprüfen Sie die lokalen kryptografischen Schlüssel Ihres mystischen Geburtshoroskops und verwalten Sie die Datenschutzeinstellungen.",
@@ -148,7 +217,30 @@ export const profileTranslations: Record<Language, Record<string, string>> = {
     "Cidade": "Stadt",
     "Visualizar": "Anzeigen",
     "Remover": "Entfernen",
-    "Limites": "Limit für Zusatzhoroskope erreicht (max. 2)."
+    "Limites": "Limit für Zusatzhoroskope erreicht (max. 2).",
+
+    // Personal Protection and Edit Social Profile keys
+    "Amuletos & Símbolos de Proteção Pessoais": "Persönliche Schutzamulette & Symbole",
+    "Seu Elemento Ativo: Ar": "Dein aktives Element: Luft",
+    "Pedras de Filtro": "Filtersteine",
+    "Editar Dados do Perfil Social": "Sozialprofildaten bearbeiten",
+    "Adicione suas mídias sociais e bio para os outros visualizadores.": "Fügen Sie Ihre sozialen Medien und Ihre Biografie für andere Betrachter hinzu.",
+    "Bio Curta": "Kurze Biografie",
+    "Escreva algo curto sobre você...": "Schreiben Sie etwas Kurzes über sich selbst...",
+    "Instagram (@usuario)": "Instagram (@benutzername)",
+    "@seu_perfil": "@dein_profil",
+    "Facebook (usuário ou link)": "Facebook (Benutzername oder Link)",
+    "link_do_facebook": "facebook_link",
+    "Cancelar": "Abbrechen",
+    "Salvar Perfil": "Profil speichern",
+
+    // Map Sync keys
+    "MAPA SINCRONIZADO": "HOROSKOP SYNCHRONISIERT",
+    "Seu mapa astral principal foi protegido e sincronizado com sua conta.": "Ihr Hauptgeburtshoroskop wurde geschützt und mit Ihrem Konto synchronisiert.",
+    "A partir de agora você receberá atualizações contínuas sobre trânsitos, ciclos, frequências energéticas e movimentações celestes relacionadas ao seu mapa.": "Ab sofort erhalten Sie kontinuierliche Updates über Transite, Zyklen, Energiefrequenzen und Himmelsbewegungen im Zusammenhang mit Ihrem Horoskop.",
+    "SINCRONIZAÇÃO ATIVA": "AKTIVE SYNCHRONISIERUNG",
+    "Salve seu mapa para receber atualizações personalizadas de trânsitos, energias, previsões e movimentos astrológicos em tempo real.": "Speichern Sie Ihr Horoskop, um personalisierte Updates zu Transiten, Energien, Vorhersagen und astrologischen Bewegungen in Echtzeit zu erhalten.",
+    "SALVAR MAPA": "HOROSKOP SPEICHERN"
   },
   fr: {
     "Inspecione as chaves criptográficas locais de seu mapa astral místico e gerencie as configurações de privacidade.": "Inspectez les clés cryptographiques locales de votre carte du ciel mystique et gérez les paramètres de confidentialité.",
@@ -185,6 +277,29 @@ export const profileTranslations: Record<Language, Record<string, string>> = {
     "Cidade": "Ville",
     "Visualizar": "Visualiser",
     "Remover": "Supprimer",
-    "Limites": "Limite de cartes extras atteinte (max 2)."
+    "Limites": "Limite de cartes extras atteinte (max 2).",
+
+    // Personal Protection and Edit Social Profile keys
+    "Amuletos & Símbolos de Proteção Pessoais": "Amulettes et Symboles de Protection Personnels",
+    "Seu Elemento Ativo: Ar": "Votre Élément Actif : Air",
+    "Pedras de Filtro": "Pierres de Filtre",
+    "Editar Dados do Perfil Social": "Modifier les Données du Profil Social",
+    "Adicione suas mídias sociais e bio para os outros visualizadores.": "Ajoutez vos réseaux sociaux et votre biographie pour les autres visiteurs.",
+    "Bio Curta": "Biographie Courte",
+    "Escreva algo curto sobre você...": "Écrivez quelque chose de court sur vous...",
+    "Instagram (@usuario)": "Instagram (@utilisateur)",
+    "@seu_perfil": "@votre_profil",
+    "Facebook (usuário ou link)": "Facebook (utilisateur ou lien)",
+    "link_do_facebook": "lien_facebook",
+    "Cancelar": "Annuler",
+    "Salvar Perfil": "Enregistrer le profil",
+
+    // Map Sync keys
+    "MAPA SINCRONIZADO": "CARTE SYNCHRONISÉE",
+    "Seu mapa astral principal foi protegido e sincronizado com sua conta.": "Votre carte du ciel principale a été protégée et synchronisée avec votre compte.",
+    "A partir de agora você receberá atualizações contínuas sobre trânsitos, ciclos, frequências energéticas e movimentações celestes relacionadas ao seu mapa.": "À partir de maintenant, vous recevrez des thèmes mis à jour continuellement sur les transits, les cycles, les fréquences énergétiques et les mouvements célestes liés à votre carte.",
+    "SINCRONIZAÇÃO ATIVA": "SYNCHRONISATION ACTIVE",
+    "Salve seu mapa para receber atualizações personalizadas de trânsitos, energias, previsões e movimentos astrológicos em tempo real.": "Enregistrez votre carte pour recevoir des mises à jour personnalisées sur les transits, les énergies, les prévisions et les mouvements astrologiques en temps réel.",
+    "SALVAR MAPA": "ENREGISTRER LA CARTE"
   }
 };

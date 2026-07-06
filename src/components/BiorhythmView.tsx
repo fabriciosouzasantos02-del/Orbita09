@@ -63,6 +63,21 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
   const [showTheory, setShowTheory] = useState<boolean>(false);
   const [expandedCycle, setExpandedCycle] = useState<string | null>('emocional'); // Default expand Emotional as requested
 
+  const [synthesis, setSynthesis] = useState<string>('');
+  const [loadingSynthesis, setLoadingSynthesis] = useState<boolean>(false);
+
+  const getLifePathNumber = (dateStr: string): number => {
+    if (!dateStr) return 8;
+    const digits = dateStr.replace(/\D/g, '');
+    let sum = digits.split('').reduce((acc, d) => acc + parseInt(d, 10), 0);
+    while (sum > 9 && sum !== 11 && sum !== 22 && sum !== 33) {
+      sum = sum.toString().split('').reduce((acc, d) => acc + parseInt(d, 10), 0);
+    }
+    return sum;
+  };
+
+  const cvNumber = useMemo(() => getLifePathNumber(birthDate), [birthDate]);
+
   // Format first name
   const displayFirstName = userName ? userName.split(' ')[0] : '';
 
@@ -126,10 +141,45 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
     return res;
   }, [todayDaysElapsed]);
 
+  React.useEffect(() => {
+    if (!birthDate) return;
+    
+    const fetchSynthesis = async () => {
+      setLoadingSynthesis(true);
+      try {
+        const res = await fetch("/api/astrology/vibrational-synthesis", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: userName,
+            birthDate,
+            biorhythm: {
+              physical: todayMetrics.fisico?.value,
+              emotional: todayMetrics.emocional?.value,
+              intellectual: todayMetrics.intelectual?.value
+            },
+            caminhoDeVida: cvNumber,
+            lang: activeL
+          })
+        });
+        const data = await res.json();
+        if (data && data.synthesis) {
+          setSynthesis(data.synthesis);
+        }
+      } catch (err) {
+        console.error("Error fetching vibrational synthesis:", err);
+      } finally {
+        setLoadingSynthesis(false);
+      }
+    };
+    
+    fetchSynthesis();
+  }, [birthDate, todayMetrics, userName, activeL, cvNumber]);
+
   // Get weekday name in target language
   const getWeekdayName = (date: Date) => {
     try {
-      return new Intl.DateTimeFormat(lang || 'pt', { weekday: 'long' }).format(date);
+      return new Intl.DateTimeFormat(activeL || 'pt', { weekday: 'long' }).format(date);
     } catch {
       const daysPt = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
       return t(daysPt[date.getDay()]);
@@ -139,7 +189,7 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
   // Get month name in target language
   const getMonthName = (date: Date) => {
     try {
-      return new Intl.DateTimeFormat(lang || 'pt', { month: 'long' }).format(date);
+      return new Intl.DateTimeFormat(activeL || 'pt', { month: 'long' }).format(date);
     } catch {
       const monthsPt = [
         'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
@@ -397,15 +447,39 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
 
           </div>
 
-          {/* Sintonização dynamic advice alert */}
-          <div className="p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10 text-xs text-slate-300 leading-relaxed space-y-1.5">
-            <div className="flex gap-2 items-center text-[11px] font-mono font-bold text-indigo-305">
-              <span>★</span>
-              <span>{t("SINTONIA SINDICAL ATIVA AMARA")}</span>
+          {/* Unified Daily Vibrational Synthesis (AI Powered) */}
+          <div className="p-5 bg-gradient-to-r from-slate-950 via-indigo-950/20 to-slate-950 rounded-2xl border border-indigo-500/20 text-xs text-slate-300 leading-relaxed space-y-3 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/[0.03] rounded-full blur-xl pointer-events-none" />
+            <div className="flex justify-between items-center">
+              <div className="flex gap-2 items-center text-[11px] font-mono font-bold text-indigo-350">
+                <Sparkles className="w-4 h-4 text-indigo-400 animate-pulse" />
+                <span>
+                  {activeL === 'de' ? "TÄGLICHE SCHWINGUNGSSYNTHESE" : 
+                   activeL === 'en' ? "DAILY VIBRATIONAL SYNTHESIS" : 
+                   activeL === 'es' ? "SÍNTESIS VIBRACIONAL DIARIA" : 
+                   activeL === 'fr' ? "SYNTHÈSE VIBRATOIRE QUOTIDIENNE" : 
+                   "SÍNTESE VIBRACIONAL DIÁRIA"}
+                </span>
+              </div>
+              <span className="px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 text-[8px] font-mono font-extrabold text-indigo-400 rounded uppercase tracking-wider">
+                AI Oracle
+              </span>
             </div>
-            <p>
-              <strong>{t("Sabedoria e confiança!")}</strong> {t("No momento, há uma sintonia benéfica entre seu ciclo intelectual e emocional, algo que pode te influenciar a tomar as decisões cruciais de longo prazo com muito mais clareza, harmonia e estabilidade de alma.")}
-            </p>
+            {loadingSynthesis ? (
+              <div className="space-y-2 animate-pulse py-2">
+                <div className="h-3 bg-slate-800 rounded w-full"></div>
+                <div className="h-3 bg-slate-800 rounded w-5/6"></div>
+                <div className="h-3 bg-slate-800 rounded w-4/5"></div>
+              </div>
+            ) : synthesis ? (
+              <p className="font-sans text-[11.5px] leading-relaxed text-slate-200">
+                {synthesis}
+              </p>
+            ) : (
+              <p className="font-sans text-[11.5px] leading-relaxed text-slate-200">
+                <strong>{t("Sabedoria e confiança!")}</strong> {t("No momento, há uma sintonia benéfica entre seu ciclo intelectual e emocional, algo que pode te influenciar a tomar as decisões cruciais de longo prazo com muito mais clareza, harmonia e estabilidade de alma.")}
+              </p>
+            )}
           </div>
 
         </div>
@@ -485,7 +559,7 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
                             
                             <p className="leading-relaxed font-sans">
                               {key === 'emocional' ? (
-                                t("Com o ciclo emocional em alta (+100%), há um aumento do potential para se sentir mais de bem com a vida, consigo mesmo e com os outros, algo que afeta positivamente sua sensibilidade, seu lado sentimental, carismático e empático. Por isso, é importante aproveitar para fortalecer seus relacionamentos e demais vínculos sadios de alma.")
+                                t("Com o ciclo emocional em alta (+100%), há um aumento do potencial para se sentir mais de bem com a vida, consigo mesmo e com os outros, algo que afeta positivamente sua sensibilidade, seu lado sentimental, carismático e empático. Por isso, é importante aproveitar para fortalecer seus relacionamentos e demais vínculos sadios de alma.")
                               ) : key === 'fisico' ? (
                                 t("Seu ciclo físico está em recuperação energética. Evite sobrecargas exaustivas musculares, mas aproveite para caminhadas leves contemplativas e alongamentos regulares ao alvorecer.")
                               ) : (

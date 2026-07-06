@@ -78,6 +78,66 @@ const NumerologyView = memo(function NumerologyView({ numerology, user, lang }: 
     description: string;
   } | null>(null);
 
+  const [synthesis, setSynthesis] = useState<string>('');
+  const [loadingSynthesis, setLoadingSynthesis] = useState<boolean>(false);
+
+  // Compute Biorhythm on the fly for the daily synthesis integration
+  const todayMetrics = useMemo(() => {
+    const parseDateLocal = (dStr: string) => {
+      const parts = dStr.split('-');
+      if (parts.length === 3) {
+        return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      }
+      return new Date();
+    };
+    const targetDateObj = new Date();
+    const birthDateObj = parseDateLocal(userBirthDate);
+    const diffTime = targetDateObj.getTime() - birthDateObj.getTime();
+    const daysElapsed = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    const getBiorhythmVal = (days: number, period: number) => {
+      const val = Math.sin((2 * Math.PI * days) / period) * 100;
+      return Math.round(val);
+    };
+    
+    return {
+      physical: getBiorhythmVal(daysElapsed, 23),
+      emotional: getBiorhythmVal(daysElapsed, 28),
+      intellectual: getBiorhythmVal(daysElapsed, 33)
+    };
+  }, [userBirthDate]);
+
+  React.useEffect(() => {
+    if (!userBirthDate) return;
+    
+    const fetchSynthesis = async () => {
+      setLoadingSynthesis(true);
+      try {
+        const res = await fetch("/api/astrology/vibrational-synthesis", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: userName,
+            birthDate: userBirthDate,
+            biorhythm: todayMetrics,
+            caminhoDeVida: cVidaNum,
+            lang: idiomaAtual
+          })
+        });
+        const data = await res.json();
+        if (data && data.synthesis) {
+          setSynthesis(data.synthesis);
+        }
+      } catch (err) {
+        console.error("Error fetching vibrational synthesis:", err);
+      } finally {
+        setLoadingSynthesis(false);
+      }
+    };
+    
+    fetchSynthesis();
+  }, [userBirthDate, todayMetrics, userName, idiomaAtual, cVidaNum]);
+
   // Active aspect metadata
   const activeAspectData = useMemo(() => {
     switch (selectedAspect) {
@@ -251,6 +311,47 @@ const NumerologyView = memo(function NumerologyView({ numerology, user, lang }: 
             {t("Seu projeto quântico decodificado. O nome e a data de nascimento funcionam como uma assinatura de frequências eternas. Explore as 5 principais camadas do seu mapa numerológico cabalístico.")}
           </p>
         </div>
+      </div>
+
+      {/* Unified Daily Vibrational Synthesis Section (AI-Powered) */}
+      <div className="p-6 rounded-3xl bg-linear-to-r from-slate-950 via-indigo-950/20 to-slate-950 border border-indigo-500/25 shadow-lg relative overflow-hidden text-left animate-in fade-in slide-in-from-top-4 duration-300">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/[0.03] rounded-full blur-2xl pointer-events-none" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-900 pb-4 mb-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-indigo-400 animate-pulse" />
+              <h2 className="text-sm font-black text-slate-100 tracking-wider uppercase font-mono">
+                {idiomaAtual === 'de' ? "TÄGLICHE SCHWINGUNGSSYNTHESE" : 
+                 idiomaAtual === 'en' ? "DAILY VIBRATIONAL SYNTHESIS" : 
+                 idiomaAtual === 'es' ? "SÍNTESIS VIBRACIONAL DIARIA" : 
+                 idiomaAtual === 'fr' ? "SYNTHÈSE VIBRATOIRE QUOTIDIENNE" : 
+                 "SÍNTESE VIBRACIONAL DIÁRIA"}
+              </h2>
+            </div>
+            <p className="text-[10px] text-slate-400 leading-none">
+              {t("Fusão de Biorritmo Dinâmico, Caminho de Vida e Trânsitos Planetários")}
+            </p>
+          </div>
+          <span className="px-2.5 py-1 bg-indigo-500/10 border border-indigo-500/20 text-[9px] font-mono font-extrabold text-indigo-400 rounded-lg uppercase tracking-wider self-start md:self-center">
+            ★ Cosmic AI Core
+          </span>
+        </div>
+
+        {loadingSynthesis ? (
+          <div className="space-y-2 animate-pulse py-4">
+            <div className="h-4 bg-slate-850 rounded w-2/3"></div>
+            <div className="h-3 bg-slate-850 rounded w-full"></div>
+            <div className="h-3 bg-slate-850 rounded w-5/6"></div>
+          </div>
+        ) : synthesis ? (
+          <p className="font-sans text-[12.5px] leading-relaxed text-slate-200">
+            {synthesis}
+          </p>
+        ) : (
+          <p className="font-sans text-[12.5px] leading-relaxed text-slate-300">
+            {t("Hoje, com seu Biorritmo Físico em")} {todayMetrics.physical}% {t("e seu Emocional em")} {todayMetrics.emotional}%, {t("a poderosa energia do seu Caminho de Vida")} {cVidaNum} {t("se sintoniza com as influências planetárias ativas de hoje. Essa combinação convida você a agir com sabedoria, canalizando seus picos de discernimento intelectual")} ({todayMetrics.intellectual}%) {t("para harmonizar seus relacionamentos e clarear suas escolhas práticas.")}
+          </p>
+        )}
       </div>
 
       {/* 2. Interactive Navigation Panels */}

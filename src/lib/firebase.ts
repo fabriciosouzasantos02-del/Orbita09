@@ -117,6 +117,24 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   }
 }
 
+export function sanitizeFirestoreData(data: any): any {
+  if (data === undefined) return null;
+  if (data === null) return null;
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeFirestoreData(item));
+  }
+  if (typeof data === 'object') {
+    const cleaned: any = {};
+    for (const key of Object.keys(data)) {
+      if (data[key] !== undefined) {
+        cleaned[key] = sanitizeFirestoreData(data[key]);
+      }
+    }
+    return cleaned;
+  }
+  return data;
+}
+
 // Lazy-loaded or optionally fallback firebase configuration
 import firebaseAppletConfig from "../../firebase-applet-config.json";
 
@@ -223,6 +241,13 @@ export interface UserProfileData {
   trialUsed?: boolean;
   trialStartDate?: string;
   trialEndDate?: string;
+  plan?: string;
+  subscriptionStatus?: string;
+  trialStart?: string;
+  trialEnds?: string;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  subscriptionUpdatedAt?: string;
   deviceFingerprint?: string;
   deviceId?: string;
   lastLoginAt?: string;
@@ -323,7 +348,7 @@ export async function saveProfileToDatabase(email: string, profile: UserProfileD
         authUid: auth?.currentUser?.uid,
         authEmail: auth?.currentUser?.email
       });
-      await setDoc(userRef, enrichedProfile, { merge: true });
+      await setDoc(userRef, sanitizeFirestoreData(enrichedProfile), { merge: true });
       console.log(`[FIRESTORE_WRITE_DEBUG] [saveProfileToDatabase] setDoc SUCCESS for path: ${path}`);
     } catch (e: any) {
       console.error(`[FIRESTORE_WRITE_DEBUG] [saveProfileToDatabase] setDoc FAILED for path: ${path}`, {
@@ -496,6 +521,50 @@ export async function saveCalculationCache(email: string, cacheId: string, data:
   }
 }
 
+// Automatic Cache Expiration Check Helper
+function isCacheExpired(cacheId: string, updatedAtStr: string): boolean {
+  if (!updatedAtStr) return true;
+  try {
+    const updatedAt = new Date(updatedAtStr);
+    const now = new Date();
+    
+    // Daily cache matches
+    if (
+      cacheId.includes('daily') || 
+      cacheId.includes('day') || 
+      cacheId.includes('moontip') || 
+      cacheId.includes('mission') || 
+      cacheId.includes('dashboard') ||
+      cacheId.match(/\d{4}-\d{2}-\d{2}/) // Any key containing a date string like YYYY-MM-DD
+    ) {
+      return updatedAt.getDate() !== now.getDate() ||
+             updatedAt.getMonth() !== now.getMonth() ||
+             updatedAt.getFullYear() !== now.getFullYear();
+    }
+    
+    // Weekly cache matches
+    if (cacheId.includes('weekly') || cacheId.includes('week')) {
+      const getWeekNumber = (d: Date) => {
+        const start = new Date(d.getFullYear(), 0, 1);
+        const diff = d.getTime() - start.getTime();
+        const oneDay = 24 * 60 * 60 * 1000;
+        return Math.ceil((diff / oneDay + start.getDay() + 1) / 7);
+      };
+      return getWeekNumber(updatedAt) !== getWeekNumber(now) ||
+             updatedAt.getFullYear() !== now.getFullYear();
+    }
+    
+    // Monthly cache matches
+    if (cacheId.includes('monthly') || cacheId.includes('month') || cacheId.includes('prosperity')) {
+      return updatedAt.getMonth() !== now.getMonth() ||
+             updatedAt.getFullYear() !== now.getFullYear();
+    }
+  } catch (e) {
+    return true;
+  }
+  return false;
+}
+
 export async function loadCalculationCache(email: string, cacheId: string): Promise<any | null> {
   const mailKey = email.toLowerCase().trim();
   if (!mailKey || !cacheId) return null;
@@ -510,11 +579,22 @@ export async function loadCalculationCache(email: string, cacheId: string): Prom
       if (snap.exists()) {
         const docData = snap.data();
         if (docData && docData.data) {
+          const updatedAtStr = docData.updatedAt || new Date().toISOString();
+          
+          if (isCacheExpired(cacheId, updatedAtStr)) {
+            console.log(`[Cache Invalidation] Firestore cache '${cacheId}' is expired. Recalculating...`);
+            // Delete expired cache from Firestore asynchronously to keep database tidy
+            deleteDoc(cacheRef).catch(console.warn);
+            const storageKey = `orbi_calc_cache_${mailKey}_${cacheId}`;
+            localStorage.removeItem(storageKey);
+            return null;
+          }
+
           // Warm up local storage
           const storageKey = `orbi_calc_cache_${mailKey}_${cacheId}`;
           localStorage.setItem(storageKey, JSON.stringify({
             data: docData.data,
-            updatedAt: docData.updatedAt || new Date().toISOString()
+            updatedAt: updatedAtStr
           }));
           return docData.data;
         }
@@ -531,6 +611,12 @@ export async function loadCalculationCache(email: string, cacheId: string): Prom
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
+      const updatedAtStr = parsed?.updatedAt || new Date().toISOString();
+      if (isCacheExpired(cacheId, updatedAtStr)) {
+        console.log(`[Cache Invalidation] Local cache '${cacheId}' is expired. Clearing...`);
+        localStorage.removeItem(storageKey);
+        return null;
+      }
       return parsed?.data || null;
     } catch {}
   }
@@ -877,12 +963,12 @@ export async function saveNatalChartToDatabase(email: string, chartId: string, c
         authUid: auth?.currentUser?.uid,
         authEmail: auth?.currentUser?.email
       });
-      await setDoc(docRef, {
+      await setDoc(docRef, sanitizeFirestoreData({
         id: chartId,
         userId: docKey,
         ...chartData,
         updatedAt: new Date().toISOString()
-      }, { merge: true });
+      }), { merge: true });
       console.log(`[FIRESTORE_WRITE_DEBUG] [saveNatalChartToDatabase] setDoc SUCCESS for path: ${path}`);
     } catch (e: any) {
       console.error(`[FIRESTORE_WRITE_DEBUG] [saveNatalChartToDatabase] setDoc FAILED for path: ${path}`, {
