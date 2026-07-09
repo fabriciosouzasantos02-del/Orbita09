@@ -91,7 +91,10 @@ export const translationDict: Record<Language, Record<string, string>> = {
     sub_manage: 'Gerenciar Cobrança',
     sub_created_at: 'Membro desde',
     trial_remaining: 'Seu período de sintonia inicial gratuita está ativo de forma ilimitada.',
-    sub_sim_pay_success: 'Acesso Premium renovado com sucesso via Stripe!'
+    sub_sim_pay_success: 'Acesso Premium renovado com sucesso via Stripe!',
+    warn_active_map_title: 'Você já possui um mapa principal ativo.',
+    warn_active_map_body: 'Ao gerar um novo mapa, todas informações sera completamente resetados e gerado do zero  conectando ao motor softwares da NASA/JPL. que calcula posições planetárias, casas e trânsitos em tempo real as novas informações e conteúdos serão gerados aparti dos cálculos do novo mapa.',
+    warn_active_map_footer: '(Alterações do Mapa Principal)'
   },
   en: {
     // Custom requested i18n keys
@@ -151,7 +154,10 @@ export const translationDict: Record<Language, Record<string, string>> = {
     sub_manage: 'Manage Billing',
     sub_created_at: 'Member since',
     trial_remaining: 'Your initial free synchronization is fully active with unlimited access.',
-    sub_sim_pay_success: 'Premium access successfully activated via Stripe!'
+    sub_sim_pay_success: 'Premium access successfully activated via Stripe!',
+    warn_active_map_title: 'You already have an active primary chart.',
+    warn_active_map_body: 'When generating a new chart, all information will be completely reset and generated from scratch by connecting to NASA/JPL software engines. These calculate planetary positions, houses, and transits in real time, and new information and content will be generated from the calculations of the new chart.',
+    warn_active_map_footer: '(Primary Chart Modifications)'
   },
   es: {
     // Custom requested i18n keys
@@ -211,7 +217,10 @@ export const translationDict: Record<Language, Record<string, string>> = {
     sub_manage: 'Gestionar Facturación',
     sub_created_at: 'Miembro desde',
     trial_remaining: 'Tu sintonización inicial gratuita está activa con acceso ilimitado.',
-    sub_sim_pay_success: '¡Acceso Premium activado con éxito vía Stripe!'
+    sub_sim_pay_success: '¡Acceso Premium activado con éxito vía Stripe!',
+    warn_active_map_title: 'Ya tienes una carta principal activa.',
+    warn_active_map_body: 'Al generar una nueva carta, toda la información será completamente restablecida y generada desde cero conectándose al motor de software de la NASA/JPL. Este calcula las posiciones planetarias, casas y tránsitos en tiempo real, y la nueva información y contenidos se generarán a partir de los cálculos de la nueva carta.',
+    warn_active_map_footer: '(Modificaciones de la Carta Principal)'
   },
   de: {
     // Custom requested i18n keys
@@ -271,7 +280,10 @@ export const translationDict: Record<Language, Record<string, string>> = {
     sub_manage: 'Abrechnung Verwalten',
     sub_created_at: 'Mitglied seit',
     trial_remaining: 'Ihre kostenlose Einführungsphase ist aktiv mit uneingeschränktem Zugriff.',
-    sub_sim_pay_success: 'Premium-Zugang erfolgreich über Stripe freigeschaltet!'
+    sub_sim_pay_success: 'Premium-Zugang erfolgreich über Stripe freigeschaltet!',
+    warn_active_map_title: 'Sie haben bereits ein aktives Haupt-Horoskop.',
+    warn_active_map_body: 'Beim Generieren eines neuen Horoskops werden alle Informationen vollständig zurückgesetzt und durch die Verbindung mit den Software-Engines der NASA/JPL von Grund auf neu generiert. Diese berechnen Planetenpositionen, Häuser und Transite in Echtzeit, und neue Informationen und Inhalte werden basierend auf den Berechnungen des neuen Horoskops erstellt.',
+    warn_active_map_footer: '(Änderungen des Haupt-Horoskops)'
   },
   fr: {
     // Custom requested i18n keys
@@ -331,7 +343,10 @@ export const translationDict: Record<Language, Record<string, string>> = {
     sub_manage: 'Gérer la Facturation',
     sub_created_at: 'Membre depuis',
     trial_remaining: 'Votre synchronisation gratuite initiale est pleinement active avec un accès illimité.',
-    sub_sim_pay_success: 'Accès Premium activé avec succès via Stripe !'
+    sub_sim_pay_success: 'Accès Premium activé avec succès via Stripe !',
+    warn_active_map_title: 'Vous avez déjà un thème principal actif.',
+    warn_active_map_body: 'Lors de la génération d\'un nouveau thème, toutes les informations seront complètement réinitialisées et générées à partir de zéro en se connectant aux moteurs logiciels de la NASA/JPL. Ceux-ci calculent les positions planétaires, les maisons et les transits en temps réel, et les nouvelles informations et contenus seront générés à partir des calculs du nouveau thème.',
+    warn_active_map_footer: '(Modifications du Thème Principal)'
   }
 };
 
@@ -349,6 +364,13 @@ export function getTranslation(lang: Language, key: string, fallback?: string): 
 // Master translation dictionary mapping default Portuguese UI strings to selected system languages
 export const uiTranslations: Record<Exclude<Language, 'pt'>, Record<string, string>> = {
   en: {
+    "Calcular Novo Mapa Astral Principal": "Calculate New Primary Birth Chart",
+    "Insira os dados corretos de nascimento para recalcular as posições planetárias, casas astrológicas e os trânsitos sob o sistema Placidus.": "Enter the correct birth data to recalculate the planetary positions, astrological houses, and transits under the Placidus system.",
+    "Data de nascimento": "Date of birth",
+    "Hora (HH:MM)": "Time (HH:MM)",
+    "Cidade / Estado": "City / State",
+    "Substituir e Gerar Novo Mapa Principal": "Replace and Generate New Primary Chart",
+    "Gerar e Salvar Meu Mapa Principal": "Generate and Save My Primary Chart",
     "1. Seu Momento Atual": "1. Your Current Moment",
     "Módulo Sistemas Ativos e Consultas": "Active Systems and Consultations Module",
     "Sistemas Astros Ativos": "Active Astral Systems",
@@ -1306,6 +1328,13 @@ export const uiTranslations: Record<Exclude<Language, 'pt'>, Record<string, stri
     "Dia": "Day"
   },
   es: {
+    "Calcular Novo Mapa Astral Principal": "Calcular Nueva Carta Astral Principal",
+    "Insira os dados corretos de nascimento para recalcular as posições planetárias, casas astrológicas e os trânsitos sob o sistema Placidus.": "Introduce los datos de nacimiento correctos para volver a calcular las posiciones planetarias, las casas astrológicas y los tránsitos bajo el sistema Placidus.",
+    "Data de nascimento": "Fecha de nacimiento",
+    "Hora (HH:MM)": "Hora (HH:MM)",
+    "Cidade / Estado": "Ciudad / Estado",
+    "Substituir e Gerar Novo Mapa Principal": "Reemplazar y Generar Nueva Carta Principal",
+    "Gerar e Salvar Meu Mapa Principal": "Generar y Guardar Mi Carta Principal",
     "1. Seu Momento Atual": "1. Tu Momento Actual",
     "Módulo Sistemas Ativos e Consultas": "Módulo de Sistemas Activos y Consultas",
     "Sistemas Astros Ativos": "Sistemas Astros Activos",
@@ -2183,6 +2212,13 @@ export const uiTranslations: Record<Exclude<Language, 'pt'>, Record<string, stri
     "Dia": "Día"
   },
   de: {
+    "Calcular Novo Mapa Astral Principal": "Neues Haupt-Horoskop berechnen",
+    "Insira os dados corretos de nascimento para recalcular as posições planetárias, casas astrológicas e os trânsitos sob o sistema Placidus.": "Geben Sie die korrekten Geburtsdaten ein, um die Planetenpositionen, astrologischen Häuser und Transite nach dem Placidus-System neu zu berechnen.",
+    "Data de nascimento": "Geburtsdatum",
+    "Hora (HH:MM)": "Uhrzeit (HH:MM)",
+    "Cidade / Estado": "Stadt / Bundesland",
+    "Substituir e Gerar Novo Mapa Principal": "Ersetzen und neues Haupt-Horoskop generieren",
+    "Gerar e Salvar Meu Mapa Principal": "Mein Haupt-Horoskop generieren und speichern",
     "1. Seu Momento Atual": "1. Dein aktueller Moment",
     "Módulo Sistemas Ativos e Consultas": "Modul Aktive Systeme und Konsultationen",
     "Sistemas Astros Ativos": "Aktive Astrosysteme",
@@ -3059,6 +3095,13 @@ export const uiTranslations: Record<Exclude<Language, 'pt'>, Record<string, stri
     "Dia": "Tag"
   },
   fr: {
+    "Calcular Novo Mapa Astral Principal": "Calculer un Nouveau Thème Astral Principal",
+    "Insira os dados corretos de nascimento para recalcular as posições planetárias, casas astrológicas e os trânsitos sob o sistema Placidus.": "Saisissez les données de naissance correctes pour recalculer les positions planétaires, les maisons astrologiques et les transits sous le système Placidus.",
+    "Data de nascimento": "Date de naissance",
+    "Hora (HH:MM)": "Heure (HH:MM)",
+    "Cidade / Estado": "Ville / État",
+    "Substituir e Gerar Novo Mapa Principal": "Remplacer et Générer un Nouveau Thème Principal",
+    "Gerar e Salvar Meu Mapa Principal": "Générer et Enregistrer Mon Thème Principal",
     "1. Seu Momento Atual": "1. Votre Moment Actuel",
     "Módulo Sistemas Ativos e Consultas": "Module Systèmes Actifs et Consultations",
     "Sistemas Astros Ativos": "Systèmes Astros Actifs",

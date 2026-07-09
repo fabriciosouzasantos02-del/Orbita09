@@ -23,6 +23,7 @@ import {
   getZodiacSignInfo, 
   performAstroCalculation 
 } from './astroMath';
+import ephemeris from 'ephemeris';
 import { useTranslation } from 'react-i18next';
 import { Language } from '../lib/translations';
 import { LUNAR_PHASES_TRANSLATIONS, SIGN_MEDICAL_TRANSLATED, LOCAL_UI_TRANSLATIONS } from '../lib/lunarTranslations';
@@ -37,7 +38,7 @@ function calculateSunLongitude(T: number): number {
   return (lambda + 360) % 360;
 }
 
-// Full astronomical status resolver for a given date-time
+// Full astronomical status resolver for a given date-time using ephemeris and fallbacks
 function computeMoonState(date: Date) {
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
@@ -45,10 +46,34 @@ function computeMoonState(date: Date) {
   const hour = date.getHours();
   const minute = date.getMinutes();
   
+  let moonLong = 0;
+  let sunLong = 0;
+  
+  try {
+    // Standard coordinates (São Paulo) for real astronomical calculations
+    const ephemResult = ephemeris.getAllPlanets(date, -46.6333, -23.5505);
+    if (ephemResult && ephemResult.observed) {
+      if (ephemResult.observed.moon) {
+        moonLong = ephemResult.observed.moon.apparentLongitudeDd;
+      }
+      if (ephemResult.observed.sun) {
+        sunLong = ephemResult.observed.sun.apparentLongitudeDd;
+      }
+    }
+  } catch (e) {
+    console.warn("[LunarEphem] Ephemeris calculation failed, falling back to analytical formulas:", e);
+  }
+
   const JD = getJulianDate(year, month, day, hour, minute);
   const T = (JD - 2451545.0) / 36525.0;
-  const moonLong = calculateMoonLongitude(T);
-  const sunLong = calculateSunLongitude(T);
+  
+  if (moonLong === 0) {
+    moonLong = calculateMoonLongitude(T);
+  }
+  if (sunLong === 0) {
+    sunLong = calculateSunLongitude(T);
+  }
+  
   const elongation = (moonLong - sunLong + 360) % 360;
   
   const moonInfo = getZodiacSignInfo(moonLong);

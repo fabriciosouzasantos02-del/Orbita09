@@ -2,6 +2,7 @@ import React, { useState, useMemo, memo } from 'react';
 import { Language } from '../lib/translations';
 import { useIdioma } from '../context/IdiomaContext';
 import { NumerologyCycle } from '../types';
+import { calculateAstronomicalBiorhythms } from './astroMath';
 import { 
   numerologyInterpretationsMultilang, 
   uiTranslationsMultilang 
@@ -83,29 +84,16 @@ const NumerologyView = memo(function NumerologyView({ numerology, user, lang }: 
 
   // Compute Biorhythm on the fly for the daily synthesis integration
   const todayMetrics = useMemo(() => {
-    const parseDateLocal = (dStr: string) => {
-      const parts = dStr.split('-');
-      if (parts.length === 3) {
-        return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-      }
-      return new Date();
-    };
-    const targetDateObj = new Date();
-    const birthDateObj = parseDateLocal(userBirthDate);
-    const diffTime = targetDateObj.getTime() - birthDateObj.getTime();
-    const daysElapsed = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
-    const getBiorhythmVal = (days: number, period: number) => {
-      const val = Math.sin((2 * Math.PI * days) / period) * 100;
-      return Math.round(val);
-    };
-    
+    const todayStr = new Date().toISOString().split('T')[0];
+    const bDate = userBirthDate || "1997-02-11";
+    const astro = calculateAstronomicalBiorhythms(bDate, "12:00", todayStr);
     return {
-      physical: getBiorhythmVal(daysElapsed, 23),
-      emotional: getBiorhythmVal(daysElapsed, 28),
-      intellectual: getBiorhythmVal(daysElapsed, 33)
+      physical: astro.fisico !== undefined ? astro.fisico : 0,
+      emotional: astro.emocional !== undefined ? astro.emocional : 0,
+      intellectual: astro.intelectual !== undefined ? astro.intelectual : 0
     };
   }, [userBirthDate]);
+
 
   React.useEffect(() => {
     if (!userBirthDate) return;
@@ -136,7 +124,7 @@ const NumerologyView = memo(function NumerologyView({ numerology, user, lang }: 
     };
     
     fetchSynthesis();
-  }, [userBirthDate, todayMetrics, userName, idiomaAtual, cVidaNum]);
+  }, [userBirthDate, todayMetrics.physical, todayMetrics.emotional, todayMetrics.intellectual, userName, idiomaAtual, cVidaNum]);
 
   // Active aspect metadata
   const activeAspectData = useMemo(() => {

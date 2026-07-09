@@ -99,6 +99,7 @@ export interface AstroAspect {
 }
 
 export interface AstrologyMap {
+  chartId?: string;
   welcomeMessage: string;
   is_dst?: boolean;
   timezone?: string;
@@ -120,6 +121,7 @@ export interface AstrologyMap {
 }
 
 export interface NumerologyCycle {
+  chartId?: string;
   caminhoDeVida: number;
   expressao: number;
   motivacao: number;
@@ -180,6 +182,7 @@ export interface OracleDreamInterpretation {
 
 export interface OracleDreamEntry {
   id: string;
+  chartId?: string;
   date: string;
   time?: string;
   title?: string;

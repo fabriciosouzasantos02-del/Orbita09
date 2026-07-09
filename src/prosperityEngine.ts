@@ -787,16 +787,261 @@ function getZodiacSignInfoByString(sign: string) {
 // Maps any translated sign name back to its canonical Portuguese name to ensure dictionary compatibility
 function canonicalSignName(sign: string): string {
   if (!sign) return "Touro";
-  const trimmed = sign.trim();
+  const normalized = sign.toLowerCase().trim();
+  
+  const ptSigns = ["Áries", "Touro", "Gêmeos", "Câncer", "Leão", "Virgem", "Libra", "Escorpião", "Sagitário", "Capricórnio", "Aquário", "Peixes"];
+  
+  // Try exact or substring match in Portuguese first
+  for (const pts of ptSigns) {
+    if (normalized.includes(pts.toLowerCase())) {
+      return pts;
+    }
+  }
+
+  // Check translated dictionary
   for (const lang of ['pt', 'en', 'es', 'de', 'fr'] as const) {
     const signsMap = TRANSLATED_SIGNS[lang];
     if (signsMap) {
       for (const [canonical, translated] of Object.entries(signsMap)) {
-        if (translated.toLowerCase() === trimmed.toLowerCase() || canonical.toLowerCase() === trimmed.toLowerCase()) {
+        if (normalized.includes(translated.toLowerCase()) || normalized.includes(canonical.toLowerCase())) {
           return canonical;
         }
       }
     }
   }
-  return trimmed;
+  return "Touro";
 }
+
+export interface FavorableColorItem {
+  title: string;
+  name: string;
+  hex: string;
+  bgClass: string;
+  text: string;
+}
+
+export function generatePersonalizedColorsList(
+  birthDate: string,
+  userSunSign: string,
+  overrideLang?: string
+): FavorableColorItem[] {
+  const lang = getActiveLanguage(overrideLang);
+  const canonicalSign = canonicalSignName(userSunSign);
+  const signInfo = getZodiacSignInfoByString(canonicalSign);
+  const element = signInfo.element; // Fogo, Terra, Ar, Água
+
+  // Translate sign for insertion
+  const translatedSign = TRANSLATED_SIGNS[lang]?.[canonicalSign] || canonicalSign;
+  const lifePath = calculateLifePathNumber(birthDate);
+
+  // 1. Cor Principal do Mês
+  let mainColorHex = "#1e3a8a";
+  let mainColorBg = "bg-[#1e3a8a]";
+  let mainColorName = "Azul Cobalto Real";
+
+  if (element === "Fogo") {
+    mainColorHex = "#b91c1c";
+    mainColorBg = "bg-[#b91c1c]";
+    mainColorName = lang === "en" ? "Crimson Red" : lang === "es" ? "Rojo Carmín" : lang === "de" ? "Karminrot" : lang === "fr" ? "Rouge Carmin" : "Vermelho Carmim";
+  } else if (element === "Terra") {
+    mainColorHex = "#059669";
+    mainColorBg = "bg-[#059669]";
+    mainColorName = lang === "en" ? "Emerald Green" : lang === "es" ? "Verde Esmeralda" : lang === "de" ? "Smaragdgrün" : lang === "fr" ? "Vert Émeraude" : "Verde Esmeralda";
+  } else if (element === "Ar") {
+    mainColorHex = "#1e3a8a";
+    mainColorBg = "bg-[#1e3a8a]";
+    mainColorName = lang === "en" ? "Royal Cobalt Blue" : lang === "es" ? "Azul Cobalto Real" : lang === "de" ? "Königliches Kobaltblau" : lang === "fr" ? "Bleu Cobalt Royal" : "Azul Cobalto Real";
+  } else if (element === "Água") {
+    mainColorHex = "#4338ca";
+    mainColorBg = "bg-[#4338ca]";
+    mainColorName = lang === "en" ? "Deep Indigo" : lang === "es" ? "Índigo Profundo" : lang === "de" ? "Tiefes Indigo" : lang === "fr" ? "Indigo Profond" : "Índigo Profundo";
+  }
+
+  const mainColorTitle = lang === "en" ? "Main Color of the Month" : lang === "es" ? "Color Principal del Mes" : lang === "de" ? "Hauptfarbe des Monats" : lang === "fr" ? "Couleur Principale du Mois" : "Cor Principal do Mês";
+  const mainColorText = lang === "en" ? `Activates the rational mind of ${translatedSign}, eliminating the stress of cosmic Jupiter transits.` :
+                        lang === "es" ? `Activa la mente racional de ${translatedSign}, eliminando el estrés de los tránsitos cósmicos de Júpiter.` :
+                        lang === "de" ? `Aktiviert den rationalen Geist von ${translatedSign} und eliminiert den Stress der kosmischen Jupiter-Transite.` :
+                        lang === "fr" ? `Active l'esprit rationnel de ${translatedSign}, éliminant le stress des transits cosmiques de Jupiter.` :
+                        `Ativa sua mente racional de ${translatedSign}, eliminando o estresse dos trânsitos cósmicos de Júpiter.`;
+
+  // 2. Cor de Transcendência
+  const transColorHex = "#6366f1";
+  const transColorBg = "bg-[#6366f1]";
+  const transColorName = lang === "en" ? "Stellar Violet" : lang === "es" ? "Violeta Estelar" : lang === "de" ? "Sternenviolett" : lang === "fr" ? "Violet Stellaire" : "Violeta Estelar";
+  const transColorTitle = lang === "en" ? "Transcendence Color" : lang === "es" ? "Color de Trascendencia" : lang === "de" ? "Farbe der Transzendenz" : lang === "fr" ? "Couleur de Transcendance" : "Cor de Transcendência";
+  const transColorText = lang === "en" ? `Stimulates intuitive receptions in dreams and connects the mind meridians of ${translatedSign}.` :
+                         lang === "es" ? `Estimula las recepciones intuitivas en los sueños y conecta los meridianos de la mente de ${translatedSign}.` :
+                         lang === "de" ? `Fördert intuitive Wahrnehmungen in Träumen und verbindet die Gedankenmeridiane von ${translatedSign}.` :
+                         lang === "fr" ? `Stimule les réceptions intuitives dans les rêves et connecte les méridiens de l'esprit de ${translatedSign}.` :
+                         `Estimula recepções intuitivas nos sonhos e conecta os meridianos da mente de ${translatedSign}.`;
+
+  // 3. Cor para Prosperidade
+  let prosColorHex = "#eab308";
+  let prosColorBg = "bg-[#eab308]";
+  let prosColorName = "Dourado Solar";
+
+  if (lifePath === 1 || lifePath === 8) {
+    prosColorHex = "#eab308";
+    prosColorBg = "bg-[#eab308]";
+    prosColorName = lang === "en" ? "Solar Gold" : lang === "es" ? "Dorado Solar" : lang === "de" ? "Sonnengold" : lang === "fr" ? "Or Solaire" : "Dourado Solar";
+  } else if (lifePath === 2 || lifePath === 6) {
+    prosColorHex = "#ea580c";
+    prosColorBg = "bg-[#ea580c]";
+    prosColorName = lang === "en" ? "Coral Orange" : lang === "es" ? "Naranja Coral" : lang === "de" ? "Korallenorange" : lang === "fr" ? "Orange Corail" : "Laranja Coral";
+  } else if (lifePath === 3 || lifePath === 5) {
+    prosColorHex = "#ca8a04";
+    prosColorBg = "bg-[#ca8a04]";
+    prosColorName = lang === "en" ? "Bright Citrine" : lang === "es" ? "Citrino Brillante" : lang === "de" ? "Strahlendes Zitrin" : lang === "fr" ? "Citrine Éclatante" : "Citrino Brilhante";
+  } else if (lifePath === 4 || lifePath === 7) {
+    prosColorHex = "#16a34a";
+    prosColorBg = "bg-[#16a34a]";
+    prosColorName = lang === "en" ? "Malachite Green" : lang === "es" ? "Verde Malaquita" : lang === "de" ? "Malachitgrün" : lang === "fr" ? "Vert Malachite" : "Malaquita Verde";
+  } else {
+    prosColorHex = "#db2777";
+    prosColorBg = "bg-[#db2777]";
+    prosColorName = lang === "en" ? "Quartz Rose" : lang === "es" ? "Rosa Cuarzo" : lang === "de" ? "Quarzrosa" : lang === "fr" ? "Rose Quartz" : "Rosa Quartzo";
+  }
+
+  const prosColorTitle = lang === "en" ? "Color for Prosperity" : lang === "es" ? "Color para la Prosperidad" : lang === "de" ? "Farbe für Wohlstand" : lang === "fr" ? "Couleur pour la Prospérité" : "Cor para Prosperidade";
+  const prosColorText = lang === "en" ? `Amplifies the material magnetism of Life Path ${lifePath}. Use in your wallet or bank accounts.` :
+                        lang === "es" ? `Amplifica el magnetismo material de tu Camino de Vida ${lifePath}. Úsalo en la billetera o cuentas bancarias.` :
+                        lang === "de" ? `Verstärkt die materielle Anziehungskraft des Lebenswegs ${lifePath}. In der Brieftasche oder auf Bankkonten verwenden.` :
+                        lang === "fr" ? `Amplifie le magnétisme matériel de votre Chemin de Vie ${lifePath}. Utilisez-le dans votre portefeuille ou vos comptes bancaires.` :
+                        `Amplifica o magnetismo material do Caminho de Vida ${lifePath}. Use na carteira ou contas bancárias.`;
+
+  // 4. Cor para Afeto
+  const loveColorHex = "#f43f5e";
+  const loveColorBg = "bg-[#f43f5e]";
+  const loveColorName = lang === "en" ? "Subtle Quartz Pink" : lang === "es" ? "Rosa Cuarzo Sutil" : lang === "de" ? "Sanftes Quarzrosa" : lang === "fr" ? "Rose Quartz Subtil" : "Rosa Quartzo Sutil";
+  const loveColorTitle = lang === "en" ? "Color for Affection" : lang === "es" ? "Color para el Afecto" : lang === "de" ? "Farbe für Zuneigung" : lang === "fr" ? "Couleur pour l'Affection" : "Cor para Afeto";
+  const loveColorText = lang === "en" ? `Softens defenses in favor of loving acceptance for ${translatedSign} through the Venus transit.` :
+                        lang === "es" ? `Suaviza las defensas a favor de la acogida amorosa de ${translatedSign} a través del tránsito de Venus.` :
+                        lang === "de" ? `Mildert Abwehrmechanismen zugunsten einer liebevollen Annahme für ${translatedSign} durch den Venus-Transit.` :
+                        lang === "fr" ? `Adoucit les défenses au profit d'un accueil chaleureux pour ${translatedSign} grâce au transit de Vénus.` :
+                        `Suaviza as defesas em prol do acolhimento amoroso de ${translatedSign} através do trânsito de Vênus.`;
+
+  // 5. Cor para Trabalho
+  const workColorHex = "#334155";
+  const workColorBg = "bg-[#334155]";
+  const workColorName = lang === "en" ? "Saturn Slate Gray" : lang === "es" ? "Gris Pizarra Saturno" : lang === "de" ? "Saturn-Schiefergrau" : lang === "fr" ? "Gris Ardoise Saturne" : "Cinza Slate Saturno";
+  const workColorTitle = lang === "en" ? "Color for Work" : lang === "es" ? "Color para el Trabajo" : lang === "de" ? "Farbe für Arbeit" : lang === "fr" ? "Couleur pour le Travail" : "Cor para Trabalho";
+  const workColorText = lang === "en" ? `Fosters operational discipline to consolidate the purposes of Life Path ${lifePath}.` :
+                        lang === "es" ? `Fomenta la disciplina operativa para consolidar los propósitos del Camino de Vida ${lifePath}.` :
+                        lang === "de" ? `Fördert die operative Disziplin, um die Ziele des Lebenswegs ${lifePath} zu festigen.` :
+                        lang === "fr" ? `Favorise la discipline opérationnelle pour consolider les objectifs de votre Chemin de Vie ${lifePath}.` :
+                        `Fomenta disciplina operacional para consolidar os propósitos do Caminho de Vida ${lifePath}.`;
+
+  // 6. Cor de Proteção
+  const protColorHex = "#f8fafc";
+  const protColorBg = "bg-[#f8fafc]";
+  const protColorName = lang === "en" ? "Pearl Off-White" : lang === "es" ? "Blanco Perla" : lang === "de" ? "Perlmutt-Off-White" : lang === "fr" ? "Blanc Perle" : "Off-White Pérola";
+  const protColorTitle = lang === "en" ? "Protection Color" : lang === "es" ? "Color de Protección" : lang === "de" ? "Schutzfarbe" : lang === "fr" ? "Couleur de Protection" : "Cor de Proteção";
+  const protColorText = lang === "en" ? `Ideal for purifying dense vibrations and shielding the energy field of ${translatedSign}.` :
+                        lang === "es" ? `Ideal para purificar vibraciones densas y blindar el campo energético de ${translatedSign}.` :
+                        lang === "de" ? `Ideal zur Reinigung dichter Schwingungen und zur Abschirmung des Energiefeldes von ${translatedSign}.` :
+                        lang === "fr" ? `Idéal pour purifier les vibrations denses et blinder le champ énergétique de ${translatedSign}.` :
+                        `Ideal para purificar vibrações densas e blindar o campo energético de ${translatedSign}.`;
+
+  return [
+    { title: mainColorTitle, name: mainColorName, hex: mainColorHex, bgClass: mainColorBg, text: mainColorText },
+    { title: transColorTitle, name: transColorName, hex: transColorHex, bgClass: transColorBg, text: transColorText },
+    { title: prosColorTitle, name: prosColorName, hex: prosColorHex, bgClass: prosColorBg, text: prosColorText },
+    { title: loveColorTitle, name: loveColorName, hex: loveColorHex, bgClass: loveColorBg, text: loveColorText },
+    { title: workColorTitle, name: workColorName, hex: workColorHex, bgClass: workColorBg, text: workColorText },
+    { title: protColorTitle, name: protColorName, hex: protColorHex, bgClass: protColorBg, text: protColorText }
+  ];
+}
+
+export function generateDynamicElementInfo(
+  userSunSign: string,
+  overrideLang?: string
+): { title: string; text: string } {
+  const lang = getActiveLanguage(overrideLang);
+  const canonicalSign = canonicalSignName(userSunSign);
+  const signInfo = getZodiacSignInfoByString(canonicalSign);
+  const element = signInfo.element; // Fogo, Terra, Ar, Água
+  const translatedSign = TRANSLATED_SIGNS[lang]?.[canonicalSign] || canonicalSign;
+
+  let title = "Seu Elemento Ativo: Ar";
+  let text = "";
+
+  if (lang === "en") {
+    title = `Your Active Element: ${element === "Fogo" ? "Fire" : element === "Terra" ? "Earth" : element === "Ar" ? "Air" : "Water"}`;
+    if (element === "Fogo") {
+      text = `Fire governs your ${translatedSign} matrix. It brings passion, active energy, and creative impulses for new initiatives and businesses. Align your element by using dynamic colors or lighting an amber candle in the morning.`;
+    } else if (element === "Terra") {
+      text = `Earth governs your ${translatedSign} matrix. It brings material stability, practical persistence, and determination to structure your projects. Align your element by maintaining direct contact with plants or keeping physical crystals close.`;
+    } else if (element === "Ar") {
+      text = `Air governs your ${translatedSign} matrix. It brings speed of reasoning, open intuition, and ease in proposing business solutions and fluid communication. Align your element by lighting sandalwood in the morning and opening windows.`;
+    } else {
+      text = `Water governs your ${translatedSign} matrix. It brings deep intuition, psychic sensitivity, and emotional magnetism to unlock paths and heal feelings. Align your element by keeping hydrated and taking purifying baths.`;
+    }
+  } else if (lang === "es") {
+    title = `Tu Elemento Activo: ${element === "Fogo" ? "Fuego" : element === "Terra" ? "Tierra" : element === "Ar" ? "Aire" : "Agua"}`;
+    if (element === "Fogo") {
+      text = `El Fuego gobierna tu matriz de ${translatedSign}. Trae pasión, energía activa e impulsos creativos para nuevas iniciativas y negocios. Alinea tu elemento usando colores dinámicos o encendiendo una vela ámbar por la mañana.`;
+    } else if (element === "Terra") {
+      text = `La Tierra gobierna tu matriz de ${translatedSign}. Trae estabilidad material, persistencia práctica y determinación para estructurar tus proyectos. Alinea tu elemento manteniendo contacto directo con plantas o llevando cristales físicos.`;
+    } else if (element === "Ar") {
+      text = `El Aire gobierna tu matriz de ${translatedSign}. Trae velocidad de razonamiento, intuición abierta y facilidad para proponer soluciones comerciales y comunicación fluida. Alinea tu elemento encendiendo sándalo por la mañana y abriendo ventanas.`;
+    } else {
+      text = `El Agua gobierna tu matriz de ${translatedSign}. Trae intuición profunda, sensibilidad psíquica y magnetismo emocional para desvelar caminos y sanar sentimientos. Alinea tu elemento bebiendo suficiente agua y tomando baños purificadores.`;
+    }
+  } else if (lang === "de") {
+    title = `Dein aktives Element: ${element === "Fogo" ? "Feuer" : element === "Terra" ? "Erde" : element === "Ar" ? "Luft" : "Wasser"}`;
+    if (element === "Fogo") {
+      text = `Feuer regiert deine ${translatedSign}-Matrix. Es bringt Leidenschaft, aktive Energie und kreative Impulse für neue Initiativen und Unternehmen. Richte dein Element aus, indem du dynamische Farben trägst oder morgens eine bernsteinfarbene Kerze anzündest.`;
+    } else if (element === "Terra") {
+      text = `Erde regiert deine ${translatedSign}-Matrix. Sie bringt materielle Stabilität, praktische Beharrlichkeit und Entschlossenheit, deine Projekte zu strukturieren. Richte dein Element aus, indem du direkten Kontakt mit Pflanzen pflegst oder physische Kristalle aufbewahrst.`;
+    } else if (element === "Ar") {
+      text = `Luft regiert deine ${translatedSign}-Matrix. Sie bringt Schnelligkeit im Denken, offene Intuition und Leichtigkeit bei der Formulierung von Geschäftslösungen und flüssiger Kommunikation. Richte dein Element aus, indem du morgens Sandelholz anzündest und Fenster öffnest.`;
+    } else {
+      text = `Wasser regiert deine ${translatedSign}-Matrix. Es bringt tiefe Intuition, psychische Sensibilität und emotionalen Magnetismus, um Wege zu ebnen und Gefühle zu heilen. Richte dein Element aus, indem du ausreichend Wasser trinkst und reinigende Bäder nimmst.`;
+    }
+  } else if (lang === "fr") {
+    title = `Votre Élément Actif: ${element === "Fogo" ? "Feu" : element === "Terra" ? "Terre" : element === "Ar" ? "Air" : "Eau"}`;
+    if (element === "Fogo") {
+      text = `Le Feu régit votre matrice de ${translatedSign}. Il apporte passion, énergie active et impulsions créatrices pour de nouvelles initiatives et entreprises. Alignez votre élément en utilisant des couleurs dynamiques ou en allumant une bougie d'ambre le matin.`;
+    } else if (element === "Terra") {
+      text = `La Terre régit votre matrice de ${translatedSign}. Elle apporte stabilité matérielle, persistance pratique et détermination pour structurer vos projets. Alignez votre élément en gardant un contact direct avec les plantes ou en portant des cristaux.`;
+    } else if (element === "Ar") {
+      text = `L'Air régit votre matrice de ${translatedSign}. Il apporte rapidité de raisonnement, intuition ouverte et facilité à proposer des solutions commerciales et une communication fluide. Alignez votre élément en faisant brûler du santal le matin et en ouvrant les fenêtres.`;
+    } else {
+      text = `L'Eau régit votre matrice de ${translatedSign}. Elle apporte une intuition profonde, une sensibilité psychique et un magnétisme émotionnel pour ouvrir des voies et guérir les sentiments. Alignez votre élément en restant hydraté et en prenant des bains purificateurs.`;
+    }
+  } else {
+    title = `Seu Elemento Ativo: ${element === "Fogo" ? "Fogo" : element === "Terra" ? "Terra" : element === "Ar" ? "Ar" : "Água"}`;
+    if (element === "Fogo") {
+      text = `O Fogo governa sua matriz de ${translatedSign}. Traz paixão, energia ativa e impulsos criativos para novas iniciativas e negócios. Alinhe seu elemento utilizando cores dinâmicas ou acendendo uma vela âmbar pela manhã.`;
+    } else if (element === "Terra") {
+      text = `A Terra governa sua matriz de ${translatedSign}. Traz estabilidade material, persistência prática e determinação para estruturar seus projetos. Alinhe seu elemento mantendo contato direto com plantas ou portando cristais físicos próximos.`;
+    } else if (element === "Ar") {
+      text = `O Ar governa sua matriz de ${translatedSign}. Traz velocidade de raciocínio, intuição aberta e facilidade para propor soluções de negócios e comunicação fluida. Alinhe seu elemento acendendo sândalo logo pela manhã e abrindo as janelas do quarto.`;
+    } else {
+      text = `A Água governa sua matriz de ${translatedSign}. Traz intuição profunda, sensibilidade psíquica e magnetismo emocional para desvendar caminhos e curar sentimentos. Alinhe seu elemento mantendo-se sempre bem hidratado e fazendo banhos purificadores.`;
+    }
+  }
+
+  return { title, text };
+}
+
+export function generateDynamicAmuletText(
+  birthDate: string,
+  overrideLang?: string
+): string {
+  const lang = getActiveLanguage(overrideLang);
+  const lifePath = calculateLifePathNumber(birthDate);
+
+  if (lang === "en") {
+    return `Use a tuning stone or amulet (such as a Citrine or Tiger's Eye) placed in your wallet or investment purse to guide your practical actions toward consolidating Life Path ${lifePath}.`;
+  } else if (lang === "es") {
+    return `Usa una piedra de sintonización o amuleto (como un Citrino o de Ojo de Tigre) colocado en tu billetera o bolso de inversión para guiar tus acciones prácticas hacia la consolidación del Camino ${lifePath}.`;
+  } else if (lang === "de") {
+    return `Verwende einen Stimmstein oder ein Amulett (wie einen Citrin oder Tigerauge) in deiner Brieftasche oder Anlagetasche, um deine praktischen Handlungen auf die Konsolidierung des Lebenswegs ${lifePath} auszurichten.`;
+  } else if (lang === "fr") {
+    return `Utilisez une pierre d'accordage ou un amulette (tel qu'une Citrine ou un Œil de Tigre) placé dans votre portefeuille ou sac d'investissement pour guider vos actions pratiques vers la consolidation de votre Chemin de Vie ${lifePath}.`;
+  } else {
+    return `Use uma pedra de sintonização ou amuleto (como Citrino ou Olho de Tigre) posicionado na bolsa ou carteira de investimentos para guiar suas ações práticas rumo à consolidação do Caminho de Vida ${lifePath}.`;
+  }
+}
+

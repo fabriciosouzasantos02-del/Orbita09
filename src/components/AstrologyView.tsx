@@ -812,41 +812,12 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
     }
   }, [mapData]);
 
-  // Extra Maps state 
-  const [extraMaps, setExtraMaps] = useState<ExtraMap[]>([]);
   const [showWarning, setShowMainMapWarning] = useState<boolean>(false);
-  const [newExtraName, setNewExtraName] = useState('');
-  const [newExtraDate, setNewExtraDate] = useState('');
-  const [newExtraTime, setNewExtraTime] = useState('');
-  const [newExtraCity, setNewExtraCity] = useState('');
 
   // Main Map overwrite form state
   const [overwriteDate, setOverwriteDate] = useState(user.birthDate);
   const [overwriteTime, setOverwriteTime] = useState(user.birthTime);
   const [overwriteCity, setOverwriteCity] = useState(user.birthCity);
-
-  const handleCreateExtraMap = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newExtraName || !newExtraDate) return;
-    if (extraMaps.length >= 2) {
-      alert(t("Você atingiu o limite de 2 mapas extras permitidos na conta premium."));
-      return;
-    }
-    setExtraMaps([...extraMaps, {
-      name: newExtraName,
-      birthDate: newExtraDate,
-      birthTime: newExtraTime || "12:00",
-      birthCity: newExtraCity || "Desconhecida"
-    }]);
-    setNewExtraName('');
-    setNewExtraDate('');
-    setNewExtraTime('');
-    setNewExtraCity('');
-  };
-
-  const handleDeleteExtra = (index: number) => {
-    setExtraMaps(extraMaps.filter((_, i) => i !== index));
-  };
 
   const handleOverwriteMainMap = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1004,15 +975,6 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
         >
           <MessageSquare className="w-3.5 h-3.5" />
           <span>{t("Aspectos Planetários")}</span>
-        </button>
-        <button
-          onClick={() => setActiveSubTab('extras')}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium transition-all shrink-0 ${
-            activeSubTab === 'extras' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/30' : 'text-slate-400 hover:text-slate-100'
-          }`}
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>{t("Mapas Extras")} ({extraMaps.length}/2)</span>
         </button>
       </div>
 
@@ -1591,122 +1553,6 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
                 </div>
               );
             })}
-          </div>
-        </div>
-      )}
-
-      {activeSubTab === 'extras' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Creation Form */}
-          <div className="lg:col-span-5 bg-slate-900/40 p-6 rounded-3xl border border-slate-800 space-y-4">
-            <div className="space-y-1">
-              <h3 className="text-sm font-semibold text-slate-200">{t("Cadastrar Novo Mapa Extra")}</h3>
-              <p className="text-[11px] text-slate-500">{t("Crie o mapa de amigos, companheiros ou familiares importante para você.")}</p>
-            </div>
-
-            <form onSubmit={handleCreateExtraMap} className="space-y-3">
-              <div>
-                <label className="block text-[10px] font-mono text-slate-400 mb-1">{t("NOME DA PESSOA")}</label>
-                <input 
-                  type="text" 
-                  required
-                  placeholder="e.g. Maria Silva"
-                  value={newExtraName}
-                  onChange={(e) => setNewExtraName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-mono text-slate-400 mb-1">{t("DATA DE NASCIMENTO")}</label>
-                <input 
-                  type="date" 
-                  required
-                  value={newExtraDate}
-                  onChange={(e) => setNewExtraDate(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-200 focus:outline-hidden"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] font-mono text-slate-400 mb-1">{t("HORA (HH:MM)")}</label>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. 18:45"
-                    value={newExtraTime}
-                    onChange={(e) => setNewExtraTime(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-200 focus:outline-hidden"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-mono text-slate-400 mb-1">{t("CIDADE")}</label>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. Rio de Janeiro"
-                    value={newExtraCity}
-                    onChange={(e) => setNewExtraCity(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-200 focus:outline-hidden"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={extraMaps.length >= 2}
-                className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-sans font-bold text-xs uppercase transition-all duration-300"
-              >
-                {t("Gerar & Adicionar")} {extraMaps.length >= 2 ? t("(Limite Atingido)") : ''}
-              </button>
-            </form>
-          </div>
-
-          {/* List of extras slots */}
-          <div className="lg:col-span-7 bg-slate-900/20 p-6 rounded-3xl border border-slate-800/80 space-y-4">
-            <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-wider">{t("Mapas extras cadastrados")}</h3>
-            
-            {extraMaps.length === 0 ? (
-              <div className="flex flex-col items-center justify-center p-12 text-slate-650 bg-slate-950/40 rounded-2xl border border-slate-850 border-dashed">
-                <Compass className="w-10 h-10 text-slate-800 animate-pulse" />
-                <p className="text-[11px] text-slate-500 mt-3 text-center max-w-xs leading-relaxed">
-                  {t("Nenhum mapa extra criado ainda. Você pode gerir até 2 mapas adicionais de forma premium.")}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {extraMaps.map((map, idx) => (
-                  <div key={idx} className="flex justify-between items-center p-4 rounded-2xl bg-slate-900 border border-slate-850">
-                    <div className="space-y-1">
-                      <span className="text-[8px] font-mono text-cyan-400 bg-cyan-400/10 px-1.5 py-0.5 rounded uppercase">
-                        {t("Slot")} {idx + 1} / {t("Mapa Secundário")}
-                      </span>
-                      <h4 className="text-xs font-bold text-slate-200">{map.name}</h4>
-                      <p className="text-[10px] text-slate-400">
-                        {map.birthDate.split('-').reverse().join('/')} {t("às")} {map.birthTime} · {map.birthCity}
-                      </p>
-                    </div>
-
-                    <div className="flex gap-2">
-                       <button
-                         onClick={() => {
-                           // Instantly calculate/visualize them!
-                           onUpdateMainMap(map);
-                         }}
-                         className="px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500 hover:text-slate-950 text-amber-500 rounded-lg text-[10px] font-semibold transition"
-                       >
-                         {t("Visualizar Como Principal")}
-                       </button>
-                       <button
-                         onClick={() => handleDeleteExtra(idx)}
-                         className="p-1 text-slate-600 hover:text-rose-400 text-xs transition"
-                       >
-                         {t("Excluir")}
-                       </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </div>
       )}

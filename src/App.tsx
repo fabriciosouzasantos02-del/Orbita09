@@ -23,7 +23,6 @@ import {
   AstroAspect
 } from './types';
 import CompatibilityView from './components/CompatibilityView';
-import { calculateNatalChart } from './astrology';
 import { performAstroCalculation } from './components/astroMath';
 import { calculateNumerology } from './numerology';
 // Lazy load heavy computational views for faster initial loading
@@ -38,6 +37,7 @@ import LunarNodes from './components/LunarNodes';
 import LunarCycle from './components/LunarCycle';
 import BiorhythmView from './components/BiorhythmView';
 import UserDashboardPortal from './components/UserDashboardPortal';
+import { PremiumConversionScreen } from './components/PremiumConversionScreen';
 import AdminPanel from './components/AdminPanel';
 import OrbiaAIAndOracle from './components/OrbiaAIAndOracle';
 import OraculoDosSonhosCard from './components/OraculoDosSonhosCard';
@@ -55,6 +55,9 @@ import {
   subscribeToUserProfile,
   subscribeToExtraMaps,
   subscribeToDreams,
+  subscribeToNatalCharts,
+  subscribeToTransits,
+  subscribeToNumerology,
   registerWithEmailFirebase,
   loginWithEmailFirebase,
   loginWithGoogleFirebase,
@@ -72,24 +75,27 @@ import {
   saveNatalChartToDatabase,
   loadNatalChartFromDatabase,
   loadAllNatalCharts,
-  saveTransitToDatabase,
-  saveDailyInsightToDatabase,
-  saveWeeklyInsightToDatabase,
   saveMissionToDatabase,
   loadMissionsFromDatabase,
   saveTarotReadingToDatabase,
   saveNumerologyToDatabase,
   saveProsperityMapToDatabase,
-  saveBiorhythmToDatabase,
-  saveLunarNodesToDatabase,
-  saveNotificationToDatabase,
-  saveSubscriptionToDatabase
+  saveBiorhythmToDatabase
 } from './lib/firebase';
 import { generatePersonalizedProsperityMap } from './prosperityEngine';
 import { generateDailyPrediction } from './components/dailyPredictionsEngine';
-import { PremiumConversionScreen } from './components/PremiumConversionScreen';
 import { Language } from './lib/translations';
 import { useIdioma } from './context/IdiomaContext';
+
+export function cleanStringForChartId(val: string): string {
+  if (!val) return "";
+  return val
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]/g, "_");
+}
 
 // High-end Elite Celestial Logo Component
 export const OrbitaLogo = ({ className = "w-8 h-8" }: { className?: string }) => {
@@ -153,25 +159,13 @@ import {
   Hash,
   Users,
   Home,
-  Eye,
   Sliders,
   Camera,
   ExternalLink
 } from 'lucide-react';
 
 export function isPostTrialLocked(user: UserProfile): boolean {
-  if (!user) return false;
-  if (user.subscriptionStatus === 'active' || user.isPremium === true || user.isSubscribed === true) {
-    return false;
-  }
-  const tEnds = user.trialEnds || user.trialEndDate;
-  if (tEnds) {
-    const trialEndsTime = new Date(tEnds).getTime();
-    if (Date.now() < trialEndsTime) {
-      return false;
-    }
-  }
-  return true;
+  return false;
 }
 
 // Helper functions for user profile metadata
@@ -853,11 +847,9 @@ export default function App() {
 
   const [showWelcome, setShowWelcome] = useState<boolean>(false);
 
-
   const hasUserCreatedMap = (u: any): boolean => {
     return !!u && (u.hasCreatedMap || (!!u.birthDate && !!u.birthCity));
   };
-
 
   // UI Navigation states
   const currentLang = idioma as Language;
@@ -867,12 +859,45 @@ export default function App() {
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState<boolean>(false);
 
   // User navigation journey sub-tabs under the Map tab:
-  // 'area_usuario' | 'meu_mapa' | 'criar_meu_mapa' | 'mapas_extras'
-  const [mapSubTab, setMapSubTab] = useState<'area_usuario' | 'meu_mapa' | 'criar_meu_mapa' | 'mapas_extras'>('area_usuario');
+  // 'area_usuario' | 'meu_mapa' | 'criar_meu_mapa'
+  const [mapSubTab, setMapSubTab] = useState<'area_usuario' | 'meu_mapa' | 'criar_meu_mapa'>('area_usuario');
 
   // Sub-tab selection inside the "Área do Usuário" itself:
   // 'radar' | 'missao' | 'calendario' | 'cores' | 'amuletos' | 'mensagem' | 'painel_mes' | 'prosperidade' | 'amor' | 'relacionamentos' | 'desenvolvimento' | 'sonhos' | 'oportunidades_hoje' | 'energia_casa' | 'universo_mostrando'
   const [areaSubTab, setAreaSubTab] = useState<'radar' | 'missao' | 'calendario' | 'cores' | 'amuletos' | 'mensagem' | 'painel_mes' | 'prosperidade' | 'amor' | 'relacionamentos' | 'desenvolvimento' | 'sonhos' | 'oportunidades_hoje' | 'energia_casa' | 'universo_mostrando'>('universo_mostrando'); // Start with the premium "O que o universo quer te mostrar" tab active!
+
+  // PREMIUM SYSTEM ARCHITECTURE STATES
+  const [showPremiumModal, setShowPremiumModal] = useState<boolean>(false);
+  const [trialTimeRemaining, setTrialTimeRemaining] = useState<number>(0);
+
+  const isPremiumActive = 
+    user?.subscriptionStatus === 'active' || 
+    (!!user?.trialEnds && new Date(user.trialEnds).getTime() > Date.now());
+
+  useEffect(() => {
+    if (!user?.trialEnds) return;
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, new Date(user.trialEnds).getTime() - Date.now());
+      setTrialTimeRemaining(remaining);
+      if (remaining === 0) {
+        clearInterval(interval);
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [user?.trialEnds]);
+
+  useEffect(() => {
+    if (!isPremiumActive && isAuthInitialized) {
+      const isRestrictedTab = activeTab === 'constelacoes' || activeTab === 'planetas' || activeTab === 'tarot';
+      const isRestrictedSubTab = activeTab === 'mapa' && (mapSubTab === 'area_usuario');
+      
+      if (isRestrictedTab || isRestrictedSubTab) {
+        setActiveTab('mapa');
+        setMapSubTab('meu_mapa');
+        setShowPremiumModal(true);
+      }
+    }
+  }, [isPremiumActive, activeTab, mapSubTab, isAuthInitialized]);
 
   // Active day selection for the smart 30-day calendar map
   const [selectedCalendarDay, setSelectedCalendarDay] = useState<number>(new Date().getDate()); // Defaults to current day dynamically!
@@ -971,25 +996,6 @@ export default function App() {
     setHighContrast(prev => !prev);
   };
 
-  // Automatic trial lock enforcer timer
-  useEffect(() => {
-    if (!isLoggedIn || !user) return;
-    const tEnds = user.trialEnds || user.trialEndDate;
-    if (!tEnds) return;
-    
-    const trialEndsTime = new Date(tEnds).getTime();
-    const timeLeft = trialEndsTime - Date.now();
-    if (timeLeft <= 0) return;
-    
-    console.log(`[Trial Enforcer] Trial ending in ${timeLeft / 1000} seconds. Enforcer armed.`);
-    const timer = setTimeout(() => {
-      console.log("[Trial Enforcer] Trial period expired! Locking features.");
-      setUser(prev => ({ ...prev }));
-    }, timeLeft + 500); // 500ms safety buffer
-    
-    return () => clearTimeout(timer);
-  }, [isLoggedIn, user?.trialEnds, user?.trialEndDate]);
-
 
 
   // Social login and password reset handler integrations
@@ -1012,7 +1018,7 @@ export default function App() {
 
           const forceTrialUsed = (!checkStatus.isAllowed && !existingProfile.isSubscribed);
 
-          const rawName = createMainName.trim() || existingProfile.displayName || existingProfile.profileName || existingProfile.birthName || existingProfile.name || firebaseUser.displayName || "Viajante Estelar";
+          const rawName = createMainName.trim() || existingProfile.name || existingProfile.displayName || existingProfile.profileName || existingProfile.birthName || firebaseUser.displayName || "Viajante Estelar";
           const finalName = (rawName === "Viajante Estelar") ? "Buscador" : rawName;
 
           targetUser = {
@@ -1020,9 +1026,9 @@ export default function App() {
             userId: firebaseUser.uid,
             uid: firebaseUser.uid,
             name: finalName,
-            displayName: existingProfile.displayName || finalName,
-            birthName: existingProfile.birthName || finalName,
-            profileName: existingProfile.profileName || finalName,
+            displayName: (existingProfile.displayName && existingProfile.displayName !== "Viajante Estelar" && existingProfile.displayName !== "Buscador") ? existingProfile.displayName : finalName,
+            birthName: (existingProfile.birthName && existingProfile.birthName !== "Viajante Estelar" && existingProfile.birthName !== "Buscador") ? existingProfile.birthName : finalName,
+            profileName: (existingProfile.profileName && existingProfile.profileName !== "Viajante Estelar" && existingProfile.profileName !== "Buscador") ? existingProfile.profileName : finalName,
             avatarId: existingProfile.avatarId || existingProfile.profilePhoto || "",
             profilePhoto: existingProfile.avatarId || existingProfile.profilePhoto || firebaseUser.photoURL || "",
             preferredLanguage: existingProfile.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
@@ -1066,7 +1072,7 @@ export default function App() {
         } else {
           // New Google account flow
           const blockTrial = !checkStatus.isAllowed;
-          const rawNameToUse = createMainName.trim() || user.displayName || user.profileName || user.birthName || user.name || firebaseUser.displayName || "Viajante Estelar";
+          const rawNameToUse = createMainName.trim() || user.name || user.displayName || user.profileName || user.birthName || firebaseUser.displayName || "Viajante Estelar";
           const finalNameToUse = (rawNameToUse === "Viajante Estelar") ? "Buscador" : rawNameToUse;
           const birthDateToUse = createMainDate || "";
           const birthTimeToUse = timeIsUnknown ? "12:00" : (createMainTime || "12:00");
@@ -1078,9 +1084,9 @@ export default function App() {
             userId: firebaseUser.uid,
             uid: firebaseUser.uid,
             name: finalNameToUse,
-            displayName: user.displayName || finalNameToUse,
-            birthName: user.birthName || finalNameToUse,
-            profileName: user.profileName || finalNameToUse,
+            displayName: (user.displayName && user.displayName !== "Viajante Estelar" && user.displayName !== "Buscador") ? user.displayName : finalNameToUse,
+            birthName: (user.birthName && user.birthName !== "Viajante Estelar" && user.birthName !== "Buscador") ? user.birthName : finalNameToUse,
+            profileName: (user.profileName && user.profileName !== "Viajante Estelar" && user.profileName !== "Buscador") ? user.profileName : finalNameToUse,
             avatarId: user.avatarId || user.profilePhoto || "",
             profilePhoto: user.avatarId || user.profilePhoto || firebaseUser.photoURL || "",
             preferredLanguage: user.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
@@ -1120,16 +1126,79 @@ export default function App() {
             subscriptionEndDate: user.subscriptionEndDate || ""
           };
 
-          await saveProfileToDatabase(emailLower, targetUser as any);
+          let chartId = "";
+          let clientMap: any = null;
+          let clientNum: any = null;
+
+          if (hasProvidedData) {
+            const birthDateClean = cleanStringForChartId(birthDateToUse);
+            const birthTimeClean = cleanStringForChartId(birthTimeToUse);
+            const birthCityClean = cleanStringForChartId(birthCityToUse);
+            chartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
+
+            clientMap = mapLocalChartToAstrologyMap(
+              finalNameToUse,
+              birthDateToUse,
+              birthTimeToUse,
+              birthCityToUse,
+              targetUser.preferredLanguage as any
+            );
+            clientNum = calculateNumerology(
+              finalNameToUse,
+              birthDateToUse
+            );
+          }
+
+          try {
+            if (hasProvidedData) {
+              await saveNatalChartToDatabase(emailLower, chartId, {
+                name: finalNameToUse,
+                birthDate: birthDateToUse,
+                birthTime: birthTimeToUse,
+                birthCity: birthCityToUse,
+                isUnknownTime: isUnknownTimeToUse,
+                mapData: clientMap,
+                numerology: clientNum,
+                lang: targetUser.preferredLanguage || "pt"
+              });
+              targetUser.currentChartId = chartId;
+              targetUser.hasCreatedMap = true;
+            }
+
+            await saveProfileToDatabase(emailLower, targetUser as any);
+          } catch (saveErr: any) {
+            console.error("[Google Auth] Failed to save Google registration data to Firestore:", saveErr);
+            try {
+              await firebaseUser.delete();
+            } catch (delErr) {
+              console.warn("[Google Auth Cleanup] Failed to delete orphan Google auth user:", delErr);
+            }
+            triggerGlobalNotification(
+              t("Erro de Conexão"), 
+              t("Falha ao salvar seus dados astronômicos na nuvem. O login foi cancelado para garantir a integridade da sua conta."), 
+              "alert"
+            );
+            return;
+          }
+
           if (blockTrial) {
             triggerGlobalNotification(t("Aviso de Período de Teste"), t("Este dispositivo já utilizou o período gratuito anteriormente."), "alert");
           } else {
             triggerGlobalNotification(t("Portal Órbita"), t("Sua Conta Google foi conectada e seu mapa astral foi criado com sucesso!"), "success");
           }
+
+          if (clientMap) localStorage.setItem("orbi_map_data", JSON.stringify(clientMap));
+          if (clientNum) localStorage.setItem("orbi_numerology_data", JSON.stringify(clientNum));
+          if (clientMap) setMapData(clientMap);
+          if (clientNum) setNumerology(clientNum);
         }
 
         localStorage.setItem("orbi_logged_email", emailLower);
         localStorage.setItem("orbi_user_profile", JSON.stringify(targetUser));
+        if (targetUser.preferredLanguage) {
+          mudarIdioma(targetUser.preferredLanguage as any);
+          localStorage.setItem('orbi_preferred_language', targetUser.preferredLanguage);
+        }
         setLoggedEmail(emailLower);
         setUser(targetUser);
         setIsLoggedIn(true);
@@ -1166,7 +1235,7 @@ export default function App() {
           const finalBirthCity = loginBirthCity.trim() || existingProfile.birthCity || "";
           const forceTrialUsed = (!checkStatus.isAllowed && !existingProfile.isSubscribed);
 
-          const rawName = existingProfile.displayName || existingProfile.profileName || existingProfile.birthName || existingProfile.name || firebaseUser.displayName || "Viajante Estelar";
+          const rawName = existingProfile.name || existingProfile.displayName || existingProfile.profileName || existingProfile.birthName || firebaseUser.displayName || "Viajante Estelar";
           const finalName = (rawName === "Viajante Estelar") ? "Buscador" : rawName;
 
           targetUser = {
@@ -1174,9 +1243,9 @@ export default function App() {
             userId: firebaseUser.uid,
             uid: firebaseUser.uid,
             name: finalName,
-            displayName: existingProfile.displayName || finalName,
-            birthName: existingProfile.birthName || finalName,
-            profileName: existingProfile.profileName || finalName,
+            displayName: (existingProfile.displayName && existingProfile.displayName !== "Viajante Estelar" && existingProfile.displayName !== "Buscador") ? existingProfile.displayName : finalName,
+            birthName: (existingProfile.birthName && existingProfile.birthName !== "Viajante Estelar" && existingProfile.birthName !== "Buscador") ? existingProfile.birthName : finalName,
+            profileName: (existingProfile.profileName && existingProfile.profileName !== "Viajante Estelar" && existingProfile.profileName !== "Buscador") ? existingProfile.profileName : finalName,
             avatarId: existingProfile.avatarId || existingProfile.profilePhoto || "",
             profilePhoto: existingProfile.avatarId || existingProfile.profilePhoto || firebaseUser.photoURL || "",
             preferredLanguage: existingProfile.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
@@ -1217,16 +1286,16 @@ export default function App() {
           }
         } else {
           const blockTrial = !checkStatus.isAllowed;
-          const rawNameToUse = firebaseUser.displayName || user.displayName || user.profileName || user.birthName || user.name || "Viajante Estelar";
+          const rawNameToUse = user.name || firebaseUser.displayName || user.displayName || user.profileName || user.birthName || "Viajante Estelar";
           const finalNameToUse = (rawNameToUse === "Viajante Estelar") ? "Buscador" : rawNameToUse;
 
           targetUser = {
             userId: firebaseUser.uid,
             uid: firebaseUser.uid,
             name: finalNameToUse,
-            displayName: user.displayName || finalNameToUse,
-            birthName: user.birthName || finalNameToUse,
-            profileName: user.profileName || finalNameToUse,
+            displayName: (user.displayName && user.displayName !== "Viajante Estelar" && user.displayName !== "Buscador") ? user.displayName : finalNameToUse,
+            birthName: (user.birthName && user.birthName !== "Viajante Estelar" && user.birthName !== "Buscador") ? user.birthName : finalNameToUse,
+            profileName: (user.profileName && user.profileName !== "Viajante Estelar" && user.profileName !== "Buscador") ? user.profileName : finalNameToUse,
             avatarId: user.avatarId || user.profilePhoto || "",
             profilePhoto: user.avatarId || user.profilePhoto || firebaseUser.photoURL || "",
             preferredLanguage: user.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
@@ -1274,6 +1343,10 @@ export default function App() {
 
         localStorage.setItem("orbi_logged_email", emailLower);
         localStorage.setItem("orbi_user_profile", JSON.stringify(targetUser));
+        if (targetUser.preferredLanguage) {
+          mudarIdioma(targetUser.preferredLanguage as any);
+          localStorage.setItem('orbi_preferred_language', targetUser.preferredLanguage);
+        }
         setLoggedEmail(emailLower);
         setUser(targetUser);
         setIsLoggedIn(true);
@@ -1445,19 +1518,70 @@ export default function App() {
         lastLoginAt: new Date().toISOString()
       };
 
-      // 4. Send official verification link natively
+      // 4. Generate the map & numerology since we have a valid UID now
+      let chartId = "";
+      let clientMap: any = null;
+      let clientNum: any = null;
+
+      if (hasProvidedData) {
+        const birthDateClean = cleanStringForChartId(birthDateToUse);
+        const birthTimeClean = cleanStringForChartId(birthTimeToUse);
+        const birthCityClean = cleanStringForChartId(birthCityToUse);
+        chartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
+
+        clientMap = mapLocalChartToAstrologyMap(
+          finalNameToUse,
+          birthDateToUse,
+          birthTimeToUse,
+          birthCityToUse,
+          newUserProfile.preferredLanguage as any
+        );
+        clientNum = calculateNumerology(
+          finalNameToUse,
+          birthDateToUse
+        );
+      }
+
+      // 5. Store in Firestore DB (Natal Chart first, then Profile)
+      try {
+        if (hasProvidedData) {
+          await saveNatalChartToDatabase(mailLower, chartId, {
+            name: finalNameToUse,
+            birthDate: birthDateToUse,
+            birthTime: birthTimeToUse,
+            birthCity: birthCityToUse,
+            isUnknownTime: isUnknownTimeToUse,
+            mapData: clientMap,
+            numerology: clientNum,
+            lang: newUserProfile.preferredLanguage || "pt"
+          });
+          newUserProfile.currentChartId = chartId;
+          newUserProfile.hasCreatedMap = true;
+        }
+
+        await saveProfileToDatabase(mailLower, newUserProfile as any);
+      } catch (saveErr: any) {
+        console.error("[Auth] Failed to save registration data to Firestore:", saveErr);
+        // Delete newly created Firebase Auth user to prevent orphan account / inconsistency!
+        try {
+          await firebaseUser.delete();
+        } catch (delErr) {
+          console.warn("[Auth Cleanup] Failed to delete orphan auth user:", delErr);
+        }
+        triggerGlobalNotification(
+          t("Erro de Conexão"), 
+          t("Falha ao salvar seus dados astronômicos na nuvem. O cadastro foi cancelado para garantir a integridade da sua conta."), 
+          "alert"
+        );
+        return; // ABORT COMPLETELY!
+      }
+
+      // 6. Send official verification link natively in the background
       try {
         await sendNativeEmailVerification();
         console.log("[Auth] Native email verification link dispatched.");
       } catch (err: any) {
         console.warn("[Auth] Failed to dispatch native verification link on signup:", err);
-      }
-
-      // 5. Store in Firestore DB
-      try {
-        await saveProfileToDatabase(mailLower, newUserProfile as any);
-      } catch (saveErr) {
-        console.error("[Auth] Saved profile to database failed on registration:", saveErr);
       }
 
       // Modern local accounts cache sync
@@ -1467,8 +1591,8 @@ export default function App() {
         email: mailLower,
         password: authPassword,
         user: newUserProfile,
-        mapData: null,
-        numerology: null,
+        mapData: clientMap,
+        numerology: clientNum,
         extraMaps: []
       };
       if (existingIdx !== -1) {
@@ -1480,15 +1604,21 @@ export default function App() {
 
       localStorage.setItem("orbi_logged_email", mailLower);
       localStorage.setItem("orbi_user_profile", JSON.stringify(newUserProfile));
+      if (newUserProfile.preferredLanguage) {
+        mudarIdioma(newUserProfile.preferredLanguage as any);
+        localStorage.setItem('orbi_preferred_language', newUserProfile.preferredLanguage);
+      }
+      if (clientMap) localStorage.setItem("orbi_map_data", JSON.stringify(clientMap));
+      if (clientNum) localStorage.setItem("orbi_numerology_data", JSON.stringify(clientNum));
       
       setLoggedEmail(mailLower);
       setUser(newUserProfile);
+      if (clientMap) setMapData(clientMap);
+      if (clientNum) setNumerology(clientNum);
       setExtraMaps([]);
       setIsLoggedIn(true);
 
       triggerGlobalNotification(t("Portal Órbita"), t("Conta criada com sucesso! Enviamos um link de confirmação para o seu e-mail."), "success");
-
-      await migrateLocalDataToCloud(mailLower, firebaseUser?.uid || "", newUserProfile);
     } finally {
       setTimeout(() => {
         manualAuthActionRef.current = false;
@@ -1548,7 +1678,7 @@ export default function App() {
         const isVerified = nativeVerified || cloudUser.isEmailVerified || cloudUser.emailVerified || false;
         const forceTrialUsed = (!checkStatus.isAllowed && !cloudUser.isSubscribed);
 
-        const rawName = cloudUser.displayName || cloudUser.profileName || cloudUser.birthName || cloudUser.name || "Viajante Estelar";
+        const rawName = cloudUser.name || cloudUser.displayName || cloudUser.profileName || cloudUser.birthName || "Viajante Estelar";
         const finalName = (rawName === "Viajante Estelar") ? "Buscador" : rawName;
 
         targetUser = {
@@ -1556,9 +1686,9 @@ export default function App() {
           userId: firebaseUser ? firebaseUser.uid : (cloudUser.userId || cloudUser.uid || ""),
           uid: firebaseUser ? firebaseUser.uid : (cloudUser.userId || cloudUser.uid || ""),
           name: finalName,
-          displayName: cloudUser.displayName || finalName,
-          birthName: cloudUser.birthName || finalName,
-          profileName: cloudUser.profileName || finalName,
+          displayName: (cloudUser.displayName && cloudUser.displayName !== "Viajante Estelar" && cloudUser.displayName !== "Buscador") ? cloudUser.displayName : finalName,
+          birthName: (cloudUser.birthName && cloudUser.birthName !== "Viajante Estelar" && cloudUser.birthName !== "Buscador") ? cloudUser.birthName : finalName,
+          profileName: (cloudUser.profileName && cloudUser.profileName !== "Viajante Estelar" && cloudUser.profileName !== "Buscador") ? cloudUser.profileName : finalName,
           avatarId: cloudUser.avatarId || cloudUser.profilePhoto || "",
           profilePhoto: cloudUser.avatarId || cloudUser.profilePhoto || "",
           preferredLanguage: cloudUser.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
@@ -1604,16 +1734,16 @@ export default function App() {
         // Fallback create profile if missing in Firestore but logged in
         const forceTrialUsed = !checkStatus.isAllowed;
         
-        const rawName = user.displayName || user.profileName || user.birthName || user.name || "Viajante Estelar";
+        const rawName = user.name || user.displayName || user.profileName || user.birthName || "Viajante Estelar";
         const finalName = (rawName === "Viajante Estelar") ? "Buscador" : rawName;
 
         targetUser = {
           userId: firebaseUser ? firebaseUser.uid : "",
           uid: firebaseUser ? firebaseUser.uid : "",
           name: finalName,
-          displayName: user.displayName || finalName,
-          birthName: user.birthName || finalName,
-          profileName: user.profileName || finalName,
+          displayName: (user.displayName && user.displayName !== "Viajante Estelar" && user.displayName !== "Buscador") ? user.displayName : finalName,
+          birthName: (user.birthName && user.birthName !== "Viajante Estelar" && user.birthName !== "Buscador") ? user.birthName : finalName,
+          profileName: (user.profileName && user.profileName !== "Viajante Estelar" && user.profileName !== "Buscador") ? user.profileName : finalName,
           avatarId: user.avatarId || user.profilePhoto || "",
           profilePhoto: user.avatarId || user.profilePhoto || "",
           preferredLanguage: user.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
@@ -1675,6 +1805,10 @@ export default function App() {
 
       localStorage.setItem("orbi_logged_email", mailLower);
       localStorage.setItem("orbi_user_profile", JSON.stringify(targetUser));
+      if (targetUser.preferredLanguage) {
+        mudarIdioma(targetUser.preferredLanguage as any);
+        localStorage.setItem('orbi_preferred_language', targetUser.preferredLanguage);
+      }
       
       setLoggedEmail(mailLower);
       setUser(targetUser);
@@ -1750,7 +1884,9 @@ export default function App() {
   // Interactive Content states
   const [mapData, setMapData] = useState<AstrologyMap | null>(() => {
     try {
-      const saved = localStorage.getItem("orbi_map_data");
+      const email = localStorage.getItem("orbi_logged_email");
+      const keySuffix = email ? email.toLowerCase().trim() : "guest";
+      const saved = localStorage.getItem(`orbi_map_data_${keySuffix}`) || localStorage.getItem("orbi_map_data");
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
@@ -1758,24 +1894,70 @@ export default function App() {
   });
   const [numerology, setNumerology] = useState<NumerologyCycle | null>(() => {
     try {
-      const saved = localStorage.getItem("orbi_numerology_data");
+      const email = localStorage.getItem("orbi_logged_email");
+      const keySuffix = email ? email.toLowerCase().trim() : "guest";
+      const saved = localStorage.getItem(`orbi_numerology_data_${keySuffix}`) || localStorage.getItem("orbi_numerology_data");
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
     }
   });
 
+  // Synchronize map and numerology data based on current user / guest session
+  useEffect(() => {
+    const keySuffix = (isLoggedIn && loggedEmail) ? loggedEmail.toLowerCase().trim() : "guest";
+    const savedMap = localStorage.getItem(`orbi_map_data_${keySuffix}`);
+    const savedNum = localStorage.getItem(`orbi_numerology_data_${keySuffix}`);
+    
+    if (savedMap) {
+      setMapData(JSON.parse(savedMap));
+    } else {
+      if (isLoggedIn && loggedEmail) {
+        const accounts = getRegisteredAccounts();
+        const acc = accounts.find((a: any) => a.email.toLowerCase() === loggedEmail.toLowerCase());
+        if (acc && acc.mapData) {
+          setMapData(acc.mapData);
+        } else {
+          setMapData(null);
+        }
+      } else {
+        setMapData(null);
+      }
+    }
+    
+    if (savedNum) {
+      setNumerology(JSON.parse(savedNum));
+    } else {
+      if (isLoggedIn && loggedEmail) {
+        const accounts = getRegisteredAccounts();
+        const acc = accounts.find((a: any) => a.email.toLowerCase() === loggedEmail.toLowerCase());
+        if (acc && acc.numerology) {
+          setNumerology(acc.numerology);
+        } else {
+          setNumerology(null);
+        }
+      } else {
+        setNumerology(null);
+      }
+    }
+  }, [loggedEmail, isLoggedIn]);
+
   useEffect(() => {
     if (mapData) {
+      const keySuffix = (isLoggedIn && loggedEmail) ? loggedEmail.toLowerCase().trim() : "guest";
+      localStorage.setItem(`orbi_map_data_${keySuffix}`, JSON.stringify(mapData));
       localStorage.setItem("orbi_map_data", JSON.stringify(mapData));
     }
-  }, [mapData]);
+  }, [mapData, loggedEmail, isLoggedIn]);
 
   useEffect(() => {
     if (numerology) {
+      const keySuffix = (isLoggedIn && loggedEmail) ? loggedEmail.toLowerCase().trim() : "guest";
+      localStorage.setItem(`orbi_numerology_data_${keySuffix}`, JSON.stringify(numerology));
       localStorage.setItem("orbi_numerology_data", JSON.stringify(numerology));
     }
-  }, [numerology]);
+  }, [numerology, loggedEmail, isLoggedIn]);
+
 
   useEffect(() => {
     if (isLoggedIn && loggedEmail) {
@@ -1823,7 +2005,7 @@ export default function App() {
       if (updatedProfile) {
         setUser(prev => {
           const rawName = updatedProfile.name || updatedProfile.displayName || updatedProfile.profileName || updatedProfile.birthName || prev.name;
-          const finalName = (rawName === "Viajante Estelar") ? "Buscador" : rawName;
+          const finalName = (rawName === "Viajante Estelar" || rawName === "Buscador") ? (prev.name && prev.name !== "Buscador" && prev.name !== "Viajante Estelar" ? prev.name : "Buscador") : rawName;
           
           if (updatedProfile.preferredLanguage && updatedProfile.preferredLanguage !== lang) {
             mudarIdioma(updatedProfile.preferredLanguage as any);
@@ -1926,10 +2108,72 @@ export default function App() {
       ].slice(0, 10));
     });
 
+    // 4. Natal Charts Real-time Sync
+    const unsubNatalCharts = subscribeToNatalCharts(loggedEmail, (updatedCharts) => {
+      if (updatedCharts && updatedCharts.length > 0) {
+        const activeLang = idioma || lang || 'pt';
+        const targetChart = updatedCharts.find(c => c.id === user?.currentChartId) || 
+                            updatedCharts.find(c => c.birthDate === user?.birthDate && (c.lang === activeLang || c.mapData?.lang === activeLang)) ||
+                            updatedCharts[0];
+        if (targetChart && targetChart.mapData) {
+          const chartIdToInject = targetChart.id || targetChart.chartId || "";
+          setMapData({
+            ...targetChart.mapData,
+            chartId: chartIdToInject
+          });
+          if (targetChart.numerology) {
+            const numObj = targetChart.numerology;
+            setNumerology({
+              ...numObj,
+              caminhoDeVida: numObj.caminhoDeVida ?? numObj.lifePathNumber ?? numObj.lifePath ?? 7,
+              expressao: numObj.expressao ?? numObj.expressionNumber ?? numObj.expression ?? 3,
+              motivacao: numObj.motivacao ?? numObj.soulUrgeNumber ?? numObj.soulUrge ?? 5,
+              personalidade: numObj.personalidade ?? numObj.personalityNumber ?? numObj.personality ?? 7,
+              ciclos: numObj.ciclos ?? numObj.derivedCycles ?? [],
+              chartId: chartIdToInject
+            });
+          }
+        }
+      }
+    }, (error) => {
+      console.warn("Falha de sincronização real-time de natalCharts:", error);
+    });
+
+    // 5. Numerology Real-time Sync
+    const unsubNumerology = subscribeToNumerology(loggedEmail, (updatedNumerology) => {
+      // If we already have loaded mapData and rich numerology from the primary natalCharts subscription,
+      // we must NOT allow the separate, thin numerology collection to overwrite it and cause flickering or state corruption.
+      if (mapDataRef.current && numerologyRef.current && numerologyRef.current.chartId) {
+        console.log("[SnapSync] Skipping separate thin numerology sync because rich natalChart is already active.");
+        return;
+      }
+      if (updatedNumerology && updatedNumerology.length > 0) {
+        const activeLang = idioma || lang || 'pt';
+        const targetNum = updatedNumerology.find(n => n.lang === activeLang) || updatedNumerology[0];
+        if (targetNum) {
+          const mappedNum = {
+            ...targetNum,
+            caminhoDeVida: targetNum.caminhoDeVida ?? targetNum.lifePathNumber ?? targetNum.lifePath ?? 7,
+            expressao: targetNum.expressao ?? targetNum.expressionNumber ?? targetNum.expression ?? 3,
+            motivacao: targetNum.motivacao ?? targetNum.soulUrgeNumber ?? targetNum.soulUrge ?? 5,
+            personalidade: targetNum.personalidade ?? targetNum.personalityNumber ?? targetNum.personality ?? 7,
+            ciclos: targetNum.ciclos ?? targetNum.derivedCycles ?? [],
+            chartId: targetNum.chartId ?? user?.currentChartId ?? "",
+            lang: targetNum.lang ?? activeLang
+          };
+          setNumerology(mappedNum);
+        }
+      }
+    }, (error) => {
+      console.warn("Falha de sincronização real-time de numerology:", error);
+    });
+
     return () => {
       unsubProfile();
       unsubExtraMaps();
       unsubDreams();
+      unsubNatalCharts();
+      unsubNumerology();
     };
   }, [isLoggedIn, loggedEmail, isAuthInitialized, firebaseUid]);
 
@@ -1963,7 +2207,7 @@ export default function App() {
               try {
                 const parsed = JSON.parse(cachedUserProfile);
                 if (parsed && parsed.email) {
-                  baseUser = { ...parsed, ...baseUser };
+                  baseUser = { ...baseUser, ...parsed };
                 }
               } catch {}
             }
@@ -2024,6 +2268,18 @@ export default function App() {
 
   const profileLoadedRef = useRef(false);
   const manualAuthActionRef = useRef(false);
+  const lastSavedNumerologyRef = useRef<string>("");
+
+  const mapDataRef = useRef<any>(null);
+  const numerologyRef = useRef<any>(null);
+
+  useEffect(() => {
+    mapDataRef.current = mapData;
+  }, [mapData]);
+
+  useEffect(() => {
+    numerologyRef.current = numerology;
+  }, [numerology]);
 
   // Firebase Auth session observer hook
   useEffect(() => {
@@ -2069,8 +2325,8 @@ export default function App() {
               };
               await migrateLocalDataToCloud(emailLower, firebaseUser.uid, baseProfile);
             } else if (cloudProfile) {
-              let rawName = cloudProfile.displayName || cloudProfile.profileName || cloudProfile.birthName || cloudProfile.name || firebaseUser.displayName || "";
-              if (!rawName.trim() || rawName === "Viajante Estelar") {
+              let rawName = cloudProfile.name || cloudProfile.displayName || cloudProfile.profileName || cloudProfile.birthName || firebaseUser.displayName || "";
+              if (!rawName.trim() || rawName === "Viajante Estelar" || rawName === "Buscador") {
                 const emailPrefix = emailLower.split("@")[0];
                 rawName = emailPrefix
                   .replace(/[\._\-]/g, " ")
@@ -2080,9 +2336,9 @@ export default function App() {
                 userId: cloudProfile.userId || firebaseUser.uid || "",
                 uid: cloudProfile.uid || firebaseUser.uid || "",
                 name: rawName || "Buscador",
-                displayName: cloudProfile.displayName || rawName || "Buscador",
-                birthName: cloudProfile.birthName || rawName || "Buscador",
-                profileName: cloudProfile.profileName || rawName || "Buscador",
+                displayName: (cloudProfile.displayName && cloudProfile.displayName !== "Viajante Estelar" && cloudProfile.displayName !== "Buscador") ? cloudProfile.displayName : rawName,
+                birthName: (cloudProfile.birthName && cloudProfile.birthName !== "Viajante Estelar" && cloudProfile.birthName !== "Buscador") ? cloudProfile.birthName : rawName,
+                profileName: (cloudProfile.profileName && cloudProfile.profileName !== "Viajante Estelar" && cloudProfile.profileName !== "Buscador") ? cloudProfile.profileName : rawName,
                 avatarId: cloudProfile.avatarId || cloudProfile.profilePhoto || "",
                 preferredLanguage: cloudProfile.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
                 birthDate: cloudProfile.birthDate || "",
@@ -2153,7 +2409,7 @@ export default function App() {
               const defaultProfile: UserProfile = {
                 userId: firebaseUser.uid,
                 email: emailLower,
-                name: firebaseUser.displayName || "Viajante Estelar",
+                name: createMainName.trim() || firebaseUser.displayName || "Viajante Estelar",
                 birthDate: "",
                 birthTime: "",
                 birthCity: "",
@@ -2194,6 +2450,10 @@ export default function App() {
         }
       } else {
         setFirebaseUid("");
+        if (!manualAuthActionRef.current) {
+          setIsLoggedIn(false);
+          setLoggedEmail("");
+        }
       }
     });
 
@@ -2384,6 +2644,129 @@ export default function App() {
       });
     }
   }, [currentLang]);
+
+  // CENTRALIZED CELESTIAL DATA VALIDATION UTILITY
+  // Verifies if the rendered/cached data in all modules (Dreams, Oracle, Tarot, Numerology, My Map)
+  // matches the user's active map ID saved in Firestore. Forces recalculation if a discrepancy is found.
+  useEffect(() => {
+    if (!user || !user.birthDate) return;
+    if (isLoadingMain || isLoadingExtraMap || isInterpretingDream || isQueryingOracle || isSendingChat || isDrawingTarot) {
+      console.log("[Validation Utility] Validation suspended during active main calculation or background generation.");
+      return;
+    }
+
+    const birthDateClean = cleanStringForChartId(user.birthDate || "1997-02-11");
+    const birthTimeClean = cleanStringForChartId(user.birthTime || "12:00");
+    const birthCityClean = cleanStringForChartId(user.birthCity || "Sao_Paulo");
+    const expectedChartId = user.currentChartId || `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
+
+    let needsRecalculateMap = false;
+    let needsRecalculateNum = false;
+
+    // 1. Verify Meu Mapa (My Map)
+    if (mapData) {
+      const mapChartId = mapData.chartId;
+      if (!mapChartId || mapChartId !== expectedChartId) {
+        console.log(`[Validation Utility] My Map discrepancy detected (Expected: ${expectedChartId}, got: ${mapChartId}). Forcing recalculation using the official astro engine...`);
+        needsRecalculateMap = true;
+      }
+    }
+
+    // 2. Verify Numerologia (Numerology)
+    if (numerology) {
+      const numChartId = numerology.chartId;
+      if (!numChartId || numChartId !== expectedChartId) {
+        console.log(`[Validation Utility] Numerology discrepancy detected. Forcing recalculation using the official numerology engine...`);
+        needsRecalculateNum = true;
+      }
+    }
+
+    if (needsRecalculateMap || needsRecalculateNum) {
+      console.log(`[Validation Utility] Recalculating out-of-sync modules: ${needsRecalculateMap ? "Map " : ""}${needsRecalculateNum ? "Numerology" : ""}`);
+      triggerGenerateMainMap({
+        name: user.name,
+        birthDate: user.birthDate,
+        birthTime: user.birthTime,
+        birthCity: user.birthCity,
+        isUnknownTime: user.isUnknownTime,
+        latitude: user.latitude,
+        longitude: user.longitude,
+        currentChartId: expectedChartId
+      }, currentLang).then(() => {
+        // Enforce the current chart ID on the updated states to lock alignment
+        setMapData(prev => prev ? { ...prev, chartId: expectedChartId } : null);
+        setNumerology(prev => prev ? { ...prev, chartId: expectedChartId } : null);
+      });
+    }
+
+    // 3. Verify Tarot draw session discrepancy
+    const tarotSavedChartId = localStorage.getItem("tarot_saved_chart_id_semanal");
+    if (tarotSavedChartId && tarotSavedChartId !== expectedChartId) {
+      console.log(`[Validation Utility] Tarot discrepancy detected. Clearing outdated Tarot readings to force recalculation.`);
+      localStorage.removeItem("tarot_last_draw_semanal");
+      localStorage.removeItem("tarot_saved_reading_semanal");
+      localStorage.removeItem("tarot_saved_guidance_semanal");
+      localStorage.removeItem("tarot_saved_cards_semanal");
+      localStorage.removeItem("tarot_saved_map_semanal");
+      localStorage.removeItem("tarot_saved_indices_semanal");
+      localStorage.removeItem("tarot_saved_chart_id_semanal");
+    }
+
+    // 4. Verify Oráculo dos Sonhos (Dreams History)
+    if (dreamsHistory && dreamsHistory.length > 0) {
+      const mostRecentDream = dreamsHistory[0];
+      if (mostRecentDream.chartId && mostRecentDream.chartId !== expectedChartId && !isInterpretingDream) {
+        console.log(`[Validation Utility] Dreams discrepancy detected for map ${expectedChartId}. Re-interpreting most recent dream in the background using the official AI engine...`);
+        
+        const reinterpretMostRecentDream = async () => {
+          setIsInterpretingDream(true);
+          try {
+            const res = await fetch("/api/dreams/interpret", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                description: mostRecentDream.description,
+                lang: currentLang,
+                mapData: mapData
+              })
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data.interpretation) {
+                setDreamsHistory(prev => {
+                  const updated = [...prev];
+                  updated[0] = {
+                    ...mostRecentDream,
+                    interpretation: data.interpretation,
+                    title: data.interpretation.title || mostRecentDream.title,
+                    chartId: expectedChartId
+                  };
+                  return updated;
+                });
+                pushRealNotification("Seu sonho mais recente foi recalculado e sintonizado com o seu novo Mapa Astral! 🌀");
+              }
+            }
+          } catch (err) {
+            console.error("[Validation Utility] Failed to reinterpret dream:", err);
+          } finally {
+            setIsInterpretingDream(false);
+          }
+        };
+        reinterpretMostRecentDream();
+      }
+    }
+  }, [
+    user?.birthDate, 
+    user?.birthTime, 
+    user?.birthCity, 
+    user?.currentChartId, 
+    mapData?.chartId, 
+    numerology?.chartId, 
+    dreamsHistory?.length, 
+    dreamsHistory?.[0]?.chartId, 
+    isLoadingMain, 
+    currentLang
+  ]);
 
   const [weeklyMissions, setWeeklyMissions] = useState<DailyMission[]>(() => {
     const isEn = currentLang === 'en';
@@ -2716,9 +3099,9 @@ export default function App() {
       if (hasLocalMapParams && isCloudEmpty) {
         console.log("[Migration Engine] Cloud is empty or missing map. Initiating guest-to-cloud automatic migration!");
         
-        const birthDateClean = localProfile.birthDate.replace(/[^a-zA-Z0-9]/g, "_");
-        const birthTimeClean = (localProfile.birthTime || "12:00").replace(/[^a-zA-Z0-9]/g, "_");
-        const birthCityClean = (localProfile.birthCity || "Sao_Paulo").replace(/[^a-zA-Z0-9]/g, "_");
+        const birthDateClean = cleanStringForChartId(localProfile.birthDate);
+        const birthTimeClean = cleanStringForChartId(localProfile.birthTime || "12:00");
+        const birthCityClean = cleanStringForChartId(localProfile.birthCity || "Sao_Paulo");
         const chartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
         
         const activeLang = (i18n.language || 'pt').toLowerCase().split('-')[0] as 'pt' | 'en' | 'es' | 'de' | 'fr';
@@ -2823,9 +3206,9 @@ export default function App() {
 
     setIsLoadingMain(true);
     try {
-      const birthDateClean = (user.birthDate || "1997-02-11").replace(/[^a-zA-Z0-9]/g, "_");
-      const birthTimeClean = (user.birthTime || "12:00").replace(/[^a-zA-Z0-9]/g, "_");
-      const birthCityClean = (user.birthCity || "Sao_Paulo").replace(/[^a-zA-Z0-9]/g, "_");
+      const birthDateClean = cleanStringForChartId(user.birthDate || "1997-02-11");
+      const birthTimeClean = cleanStringForChartId(user.birthTime || "12:00");
+      const birthCityClean = cleanStringForChartId(user.birthCity || "Sao_Paulo");
       const chartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
 
       await saveNatalChartToDatabase(loggedEmail, chartId, {
@@ -2891,8 +3274,13 @@ export default function App() {
     );
 
     // Set high-precision map values instantly
-    setMapData(clientMap);
-    setNumerology(clientNum);
+    const birthDateCleanInst = cleanStringForChartId(defaultBirthDate);
+    const birthTimeCleanInst = cleanStringForChartId(defaultBirthTime);
+    const birthCityCleanInst = cleanStringForChartId(defaultBirthCity);
+    const expectedChartIdInst = details.currentChartId || user.currentChartId || `chart_${birthDateCleanInst}_${birthTimeCleanInst}_${birthCityCleanInst}`;
+
+    setMapData({ ...clientMap, chartId: expectedChartIdInst });
+    setNumerology({ ...clientNum, chartId: expectedChartIdInst });
     setIsLoadingMain(false);
 
     try {
@@ -2901,9 +3289,9 @@ export default function App() {
       let cachedMatch: any = null;
       if (email) {
         // High-Precision subcollection lookup via candidate IDs (robust and typo-tolerant)
-        const birthDateClean = (details.birthDate || user.birthDate || "1997-02-11").replace(/[^a-zA-Z0-9]/g, "_");
-        const birthTimeClean = (details.birthTime || user.birthTime || "12:00").replace(/[^a-zA-Z0-9]/g, "_");
-        const birthCityClean = (details.birthCity || user.birthCity || "Sao_Paulo").replace(/[^a-zA-Z0-9]/g, "_");
+        const birthDateClean = cleanStringForChartId(details.birthDate || user.birthDate || "1997-02-11");
+        const birthTimeClean = cleanStringForChartId(details.birthTime || user.birthTime || "12:00");
+        const birthCityClean = cleanStringForChartId(details.birthCity || user.birthCity || "Sao_Paulo");
         const dynamicChartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
         const typoChartId = `chart_${birthDateClean}_birthTimeClean_birthCityClean`;
 
@@ -2954,8 +3342,8 @@ export default function App() {
 
         if (dbChart && dbChart.mapData && dbChart.numerology && chartLang === activeLang) {
           console.log("[Astro DB] Natal chart successfully restored from Firestore Cloud!");
-          setMapData(dbChart.mapData);
-          setNumerology(dbChart.numerology);
+          setMapData({ ...dbChart.mapData, chartId: activeChartId });
+          setNumerology({ ...dbChart.numerology, chartId: activeChartId });
           pushRealNotification(`Você (${details.name || user.name || "Buscador"}) sintonizou seu Mapa Principal carregado da Nuvem Astrológica! 🪐`);
           return;
         }
@@ -2976,8 +3364,8 @@ export default function App() {
               cachedMatch = cached;
               if (p.lang === activeLang) {
                 console.log("[Intelligent Cache] Natal chart loaded from Firestore cache.");
-                setMapData(cached.map);
-                setNumerology(cached.numerology);
+                setMapData({ ...cached.map, chartId: activeChartId });
+                setNumerology({ ...cached.numerology, chartId: activeChartId });
                 pushRealNotification(`Você (${details.name || user.name || "Buscador"}) sintonizou seu novo Mapa Astral diretamente do Cache Celestial Inteligente! 🪐`);
                 return;
               }
@@ -3020,18 +3408,23 @@ export default function App() {
         data = { map: clientMap, numerology: clientNum };
       }
 
+      const birthDateCleanFinal = cleanStringForChartId(details.birthDate || "1997-02-11");
+      const birthTimeCleanFinal = cleanStringForChartId(details.birthTime || "12:00");
+      const birthCityCleanFinal = cleanStringForChartId(details.birthCity || "Sao_Paulo");
+      const chartIdFinal = details.currentChartId || user.currentChartId || `chart_${birthDateCleanFinal}_${birthTimeCleanFinal}_${birthCityCleanFinal}`;
+
       if (data && data.map) {
-        setMapData(data.map);
+        setMapData({ ...data.map, chartId: chartIdFinal });
       }
       if (data && data.numerology) {
-        setNumerology(data.numerology);
+        setNumerology({ ...data.numerology, chartId: chartIdFinal });
       }
 
       if (email && data && data.map && data.numerology) {
         const activeLang = forcedLang || idioma || lang || 'pt';
-        const birthDateClean = (details.birthDate || "1997-02-11").replace(/[^a-zA-Z0-9]/g, "_");
-        const birthTimeClean = (details.birthTime || "12:00").replace(/[^a-zA-Z0-9]/g, "_");
-        const birthCityClean = (details.birthCity || "Sao_Paulo").replace(/[^a-zA-Z0-9]/g, "_");
+        const birthDateClean = cleanStringForChartId(details.birthDate || "1997-02-11");
+        const birthTimeClean = cleanStringForChartId(details.birthTime || "12:00");
+        const birthCityClean = cleanStringForChartId(details.birthCity || "Sao_Paulo");
         const chartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
 
         if (data.map) {
@@ -3196,11 +3589,13 @@ export default function App() {
     setAreaSubTab('universo_mostrando');
     setMapSubTab(nextUser.hasCreatedMap ? 'meu_mapa' : 'area_usuario');
 
-    // Descarrega dados velhos do mapa principal anterior para evitar persistência indevida
-    setMapData(null);
-    setNumerology(null);
-    localStorage.removeItem("orbi_map_data");
-    localStorage.removeItem("orbi_numerology_data");
+    if (isBirthCoordinatesModified) {
+      // Descarrega dados velhos do mapa principal anterior para evitar persistência indevida
+      setMapData(null);
+      setNumerology(null);
+      localStorage.removeItem("orbi_map_data");
+      localStorage.removeItem("orbi_numerology_data");
+    }
 
     // Limpa profundamente todos os caches de cálculos do mapa anterior localmente
     const cachePrefixes = [
@@ -3389,7 +3784,8 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           description: newDreamDesc,
-          lang: currentLang
+          lang: currentLang,
+          mapData
         })
       });
       const data = await response.json();
@@ -3399,8 +3795,14 @@ export default function App() {
       const currentFormattedDate = now.toISOString().split('T')[0];
       const dreamTitle = data.interpretation?.title || newDreamDesc.slice(0, 30) + "...";
       
+      const birthDateClean = cleanStringForChartId(user?.birthDate || "1997-02-11");
+      const birthTimeClean = cleanStringForChartId(user?.birthTime || "12:00");
+      const birthCityClean = cleanStringForChartId(user?.birthCity || "Sao_Paulo");
+      const expectedChartId = user?.currentChartId || `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
+
       const newEntry: OracleDreamEntry = {
         id: nextId,
+        chartId: expectedChartId,
         date: currentFormattedDate,
         time: currentFormattedTime,
         title: dreamTitle,
@@ -3496,7 +3898,7 @@ export default function App() {
       const response = await fetch("/api/oraculo/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: oracleQuestion, lang: currentLang })
+        body: JSON.stringify({ question: oracleQuestion, lang: currentLang, mapData })
       });
       const data = await response.json();
       setOracleResponse(data);
@@ -3747,17 +4149,33 @@ export default function App() {
     if (numerology && user.hasCreatedMap) {
       const email = user.email || loggedEmail;
       if (isLoggedIn && email) {
+        // Build a unique signature of the current values to avoid redundant database writes and infinite update loops
+        const currentSig = `${numerology.caminhoDeVida}_${numerology.expressao}_${numerology.motivacao}_${numerology.personalidade}_${numerology.chartId || ''}`;
+        if (lastSavedNumerologyRef.current === currentSig) {
+          return;
+        }
+
+        lastSavedNumerologyRef.current = currentSig;
         const numId = "current_matrix";
         saveNumerologyToDatabase(email, numId, {
           lifePathNumber: numerology.caminhoDeVida,
           expressionNumber: numerology.expressao,
           soulUrgeNumber: numerology.motivacao,
           personalityNumber: numerology.personalidade,
-          derivedCycles: numerology.ciclos || []
+          derivedCycles: numerology.ciclos || [],
+          // Keep both PT and EN schema keys so that listeners don't break
+          caminhoDeVida: numerology.caminhoDeVida,
+          expressao: numerology.expressao,
+          motivacao: numerology.motivacao,
+          personalidade: numerology.personalidade,
+          ciclos: numerology.ciclos || [],
+          description: numerology.description || "",
+          chartId: numerology.chartId || "",
+          lang: currentLang
         }).catch(console.warn);
       }
     }
-  }, [numerology, user?.hasCreatedMap, isLoggedIn, loggedEmail]);
+  }, [numerology, user?.hasCreatedMap, isLoggedIn, loggedEmail, currentLang]);
 
   return (
     <div id="star-map-application" className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-amber-500/20 antialiased relative">
@@ -5527,8 +5945,12 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => {
-                      setMapSubTab('area_usuario');
-                      setActiveExtraMapData(null); // clear viewed extra map
+                      if (!isPremiumActive) {
+                        setShowPremiumModal(true);
+                      } else {
+                        setMapSubTab('area_usuario');
+                        setActiveExtraMapData(null); // clear viewed extra map
+                      }
                     }}
                     className={`px-4 py-2 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider transition-all duration-300 flex items-center gap-1.5 cursor-pointer ${
                       mapSubTab === 'area_usuario'
@@ -5571,22 +5993,9 @@ export default function App() {
                     <Plus className="w-3.5 h-3.5" />
                     <span>{tLocal('criar_meu_mapa')}</span>
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setMapSubTab('mapas_extras')}
-                    className={`px-4 py-2 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider transition-all duration-300 flex items-center gap-1.5 cursor-pointer ${
-                      mapSubTab === 'mapas_extras'
-                        ? 'bg-gradient-to-r from-amber-500 to-rose-600 text-slate-950 shadow-md'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
-                    }`}
-                  >
-                    <Orbit className="w-3.5 h-3.5" />
-                    <span>{tLocal('mapas_extras')}</span>
-                  </button>
                 </div>
 
-                {isLoadingMain && mapSubTab !== 'mapas_extras' ? (
+                {isLoadingMain ? (
                   <div className="flex flex-col items-center justify-center py-20 text-slate-500">
                     <RefreshCw className="w-10 h-10 animate-spin text-amber-500 mb-4" />
                     <p className="text-xs font-mono">Calculando Placidus em tempo real...</p>
@@ -5595,23 +6004,7 @@ export default function App() {
                   <>
                     {/* SUB-SECTION 1: ÁREA DO USUÁRIO */}
                     {mapSubTab === 'area_usuario' && (
-                      isLoggedIn && isPostTrialLocked(user) ? (
-                        <PremiumConversionScreen 
-                          currentLang={currentLang} 
-                          onUpgradeComplete={(isPremium) => {
-                            if (isPremium) {
-                              const nextUser = { ...user, isSubscribed: true, isPremium: true };
-                              setUser(nextUser);
-                            }
-                          }} 
-                          userEmail={loggedEmail} 
-                          updateUserProfileOnDb={async (email, patch) => {
-                            const nextUser = { ...user, ...patch };
-                            setUser(nextUser);
-                            await saveProfileToDatabase(email, nextUser);
-                          }} 
-                        />
-                      ) : !hasUserCreatedMap(user) ? (
+                      !hasUserCreatedMap(user) ? (
                         renderLockedSection(
                           "Área do Usuário Sintonizada",
                           "Seu painel pessoal de previsões diárias, missões, trânsitos em tempo real, caminhos numerológicos, afinidades de amor e relógio cósmico depende da inicialização do seu mapa de nascimento. Sintonize suas estrelas para habilitar."
@@ -6303,8 +6696,7 @@ export default function App() {
                         </div>
                         </>}
                       </div>
-                    )
-                  )}
+                    ))}
 
                     {/* SUB-SECTION 2: MEU MAPA */}
                     {mapSubTab === 'meu_mapa' && (
@@ -6406,7 +6798,7 @@ export default function App() {
                             )}
                           </React.Suspense>
 
-                          <CompatibilityView user={user} lang={currentLang} />
+                          {!isPostTrialLocked(user) && <CompatibilityView user={user} lang={currentLang} />}
 
 
                         </div>
@@ -6415,31 +6807,14 @@ export default function App() {
 
                     {/* SUB-SECTION 3: CRIAR MEU MAPA */}
                     {mapSubTab === 'criar_meu_mapa' && (
-                      isLoggedIn && isPostTrialLocked(user) ? (
-                        <PremiumConversionScreen 
-                          currentLang={currentLang} 
-                          onUpgradeComplete={(isPremium) => {
-                            if (isPremium) {
-                              const nextUser = { ...user, isSubscribed: true, isPremium: true };
-                              setUser(nextUser);
-                            }
-                          }} 
-                          userEmail={loggedEmail} 
-                          updateUserProfileOnDb={async (email, patch) => {
-                            const nextUser = { ...user, ...patch };
-                            setUser(nextUser);
-                            await saveProfileToDatabase(email, nextUser);
-                          }} 
-                        />
-                      ) : (
-                        <div className="max-w-2xl mx-auto bg-slate-900/40 p-6 md:p-8 rounded-3xl border border-slate-800 space-y-6 text-left animate-in fade-in duration-300">
+                      <div className="max-w-2xl mx-auto bg-slate-900/40 p-6 md:p-8 rounded-3xl border border-slate-800 space-y-6 text-left animate-in fade-in duration-300">
                           <div className="border-b border-slate-850 pb-4">
                             <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
                               <Plus className="w-5 h-5 text-amber-500" />
-                              Calcular Novo Mapa Astral Principal
+                              {t("Calcular Novo Mapa Astral Principal")}
                             </h2>
                             <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                              Insira os dados corretos de nascimento para recalcular as posições planetárias, casas astrológicas e os trânsitos sob o sistema Placidus.
+                              {t("Insira os dados corretos de nascimento para recalcular as posições planetárias, casas astrológicas e os trânsitos sob o sistema Placidus.")}
                             </p>
                           </div>
 
@@ -6449,15 +6824,9 @@ export default function App() {
                             <div className="flex items-start gap-3">
                               <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                               <div>
-                                <h4 className="font-bold text-amber-400 text-xs">Você já possui um mapa principal ativo.</h4>
-                                <p className="mt-1">Ao gerar um novo mapa, todas as informações antigas, caches, numerologia, tarot e oráculos serão completamente resetados e gerados novos do zero.</p>
-                                <p className="mt-1">Se deseja criar mapas de outras pessoas utilize a opção <span className="font-semibold text-rose-400 hover:underline cursor-pointer" onClick={() => setMapSubTab('mapas_extras')}>MAPAS EXTRAS</span>.</p>
+                                <h4 className="font-bold text-amber-400 text-xs">{tLocal('warn_active_map_title')}</h4>
+                                <p className="mt-1">{tLocal('warn_active_map_body')}</p>
                               </div>
-                            </div>
-
-                            <div className="pt-2 border-t border-slate-800/80 flex justify-between items-center text-xs">
-                              <span>Alterações do Mapa Principal:</span>
-                              <span className="font-mono font-bold text-amber-500">Ilimitadas (Premium Grátis)</span>
                             </div>
                           </div>
                         )}
@@ -6477,7 +6846,7 @@ export default function App() {
                         }} className="space-y-4 pt-2">
                           <fieldset className="space-y-4">
                             <div>
-                              <label className="block text-[10px] font-mono text-slate-400 mb-1 uppercase font-bold">Nome completo</label>
+                              <label className="block text-[10px] font-mono text-slate-400 mb-1 uppercase font-bold">{t("Nome completo")}</label>
                               <input
                                 type="text"
                                 required
@@ -6490,7 +6859,7 @@ export default function App() {
 
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                               <div>
-                                <label className="block text-[10px] font-mono text-slate-400 mb-1 uppercase font-bold">Data de nascimento</label>
+                                <label className="block text-[10px] font-mono text-slate-400 mb-1 uppercase font-bold">{t("Data de nascimento")}</label>
                                 <input
                                   type="date"
                                   required
@@ -6501,7 +6870,7 @@ export default function App() {
                               </div>
 
                               <div>
-                                <label className="block text-[10px] font-mono text-slate-400 mb-1 uppercase font-bold">Hora (HH:MM)</label>
+                                <label className="block text-[10px] font-mono text-slate-400 mb-1 uppercase font-bold">{t("Hora (HH:MM)")}</label>
                                 <input
                                   type="text"
                                   value={createMainTime}
@@ -6512,7 +6881,7 @@ export default function App() {
                               </div>
 
                               <div>
-                                <label className="block text-[10px] font-mono text-slate-400 mb-1 uppercase font-bold">Cidade / Estado</label>
+                                <label className="block text-[10px] font-mono text-slate-400 mb-1 uppercase font-bold">{t("Cidade / Estado")}</label>
                                 <CityAutocomplete
                                   value={createMainCity}
                                   onChange={(val) => setCreateMainCity(val)}
@@ -6530,340 +6899,13 @@ export default function App() {
                                 className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-rose-600 rounded-xl text-xs font-bold font-sans uppercase text-slate-950 transition-all cursor-pointer hover:shadow-lg opacity-90 hover:opacity-100 disabled:opacity-40 disabled:cursor-not-allowed"
                                 disabled={(user.mainMapChangesCount ?? 0) >= 2 && user.hasCreatedMap}
                               >
-                                {user.hasCreatedMap ? "Substituir e Gerar Novo Mapa Principal" : "Gerar e Salvar Meu Mapa Principal"}
+                                {user.hasCreatedMap ? t("Substituir e Gerar Novo Mapa Principal") : t("Gerar e Salvar Meu Mapa Principal")}
                               </button>
                             </div>
                           </fieldset>
                         </form>
                       </div>
-                      )
                     )}
-
-                    {/* SUB-SECTION 4: MAPAS EXTRAS */}
-                    {mapSubTab === 'mapas_extras' && (
-                      isLoggedIn && isPostTrialLocked(user) ? (
-                        <PremiumConversionScreen 
-                          currentLang={currentLang} 
-                          onUpgradeComplete={(isPremium) => {
-                            if (isPremium) {
-                              const nextUser = { ...user, isSubscribed: true, isPremium: true };
-                              setUser(nextUser);
-                            }
-                          }} 
-                          userEmail={loggedEmail} 
-                          updateUserProfileOnDb={async (email, patch) => {
-                            const nextUser = { ...user, ...patch };
-                            setUser(nextUser);
-                            await saveProfileToDatabase(email, nextUser);
-                          }} 
-                        />
-                      ) : !hasUserCreatedMap(user) ? (
-                        renderLockedSection(
-                          "Portal de Relacionamentos e Mapas Extras",
-                          "A comparação de sinastria social, relatórios de afinidade e registros paralelos para mapas de familiares e amigos necessitam que você primeiro crie seu próprio mapa de nascimento. Sintonize suas estrelas para habilitar."
-                        )
-                      ) : (
-                        <div className="max-w-4xl mx-auto space-y-6 text-left animate-in fade-in duration-300">
-                          
-                          {/* Header back button */}
-                          <div className="flex justify-between items-center flex-wrap gap-2">
-                          <div>
-                            <h2 className="text-lg font-bold text-slate-100 uppercase tracking-tight flex items-center gap-2">
-                              <Orbit className="w-5 h-5 text-rose-400" />
-                              Mapas Extras
-                            </h2>
-                            <p className="text-[11px] text-slate-400 mt-1">
-                              Gerencie mapas extras de familiares, contatos profissionais ou parceiros. Limite de <strong>até 2 mapas</strong> adicionais.
-                            </p>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setActiveExtraMapData(null);
-                              setMapSubTab('meu_mapa');
-                            }}
-                            className="px-4 py-2 bg-slate-950 hover:bg-slate-900 border border-slate-850 rounded-full text-xs font-bold text-amber-500 hover:text-amber-400 flex items-center gap-1.5 transition duration-300 cursor-pointer"
-                          >
-                            <span>Voltar para Meu Mapa</span>
-                          </button>
-                        </div>
-
-                        {/* Rendering single extra map report when active */}
-                        {activeExtraMapData ? (
-                          <div className="space-y-8 p-6 bg-slate-950/20 rounded-3xl border border-slate-850/60 animate-in fade-in duration-300">
-                            <div className="pb-3 border-b border-slate-850 flex items-center justify-between flex-wrap gap-2 bg-slate-950/80 p-4 rounded-2xl">
-                              <div>
-                                <span className="text-[9px] font-mono text-rose-400 uppercase tracking-widest font-bold">Visualização Ativa</span>
-                                <h3 className="text-base font-black text-slate-100">Mapa Astral Extra: {activeExtraMapName}</h3>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setActiveExtraMapData(null);
-                                  setActiveExtraMapNumerology(null);
-                                  setActiveExtraMapName('');
-                                }}
-                                className="px-3.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-bold uppercase transition duration-200 cursor-pointer"
-                              >
-                                Voltar para Lista de Mapas Extras
-                              </button>
-                            </div>
-
-                            <React.Suspense fallback={
-                              <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 space-y-3 animate-pulse text-xs text-slate-400">
-                                <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mx-auto" />
-                                <span>Renderizando coordenadas do mapa secundário...</span>
-                              </div>
-                            }>
-                              <AstrologyView 
-                                mapData={activeExtraMapData} 
-                                user={{
-                                  name: activeExtraMapName,
-                                  birthDate: "1990-01-01", 
-                                  birthTime: "12:00",
-                                  birthCity: "Desconhecida",
-                                  isUnknownTime: false,
-                                  isPremium: true
-                                }} 
-                                onUpdateMainMap={() => {}} 
-                                readOnly={true}
-                              />
-
-                              {activeExtraMapNumerology && (
-                                <NumerologyView 
-                                  numerology={activeExtraMapNumerology} 
-                                  user={{
-                                    name: activeExtraMapName,
-                                    birthDate: "1990-01-01",
-                                  }} 
-                                  lang={currentLang}
-                                />
-                              )}
-                            </React.Suspense>
-
-                            <div className="pt-2 text-center">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setActiveExtraMapData(null);
-                                  setMapSubTab('meu_mapa');
-                                }}
-                                className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-rose-600 rounded-xl text-xs font-bold uppercase text-slate-950 hover:shadow-lg transition cursor-pointer"
-                              >
-                                Voltar para Meu Mapa
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                            
-                            {/* Left: Extra Map Form and Permanent Rules */}
-                            <div className="md:col-span-5 bg-slate-900/40 p-5 rounded-3xl border border-slate-850 space-y-4 font-sans">
-                              <div>
-                                <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-wider">Novo Mapa de Terceiro</h3>
-                                <p className="text-[10px] text-slate-500 mt-0.5">Cadastre pessoas importantes para sinastria secundária.</p>
-                              </div>
-
-                               {/* Explicação transparente das regras de limitação permanente */}
-                               <div className="p-3.5 bg-slate-950 rounded-2xl border border-slate-850 text-[10.5px] text-slate-400 space-y-1.5 leading-relaxed">
-                                 <span className="font-bold text-amber-500 text-[11px] block">✨ Mapas Extras Liberados:</span>
-                                 <ul className="list-disc pl-3.5 space-y-1 text-slate-450">
-                                   <li><strong>Criação Ilimitada:</strong> Cadastre quantos mapas de amigos e familiares desejar, sem custos.</li>
-                                   <li><strong>Sincronização Cósmica:</strong> Os dados de novos mapas extras são salvos de forma segura em tempo real na nuvem do usuário.</li>
-                                 </ul>
-                               </div>
-                               
-                               <form onSubmit={(e) => {
-                                 e.preventDefault();
-                                 if (!extraName || !extraDate) return;
-                                 
-                                 const newExtraObj = {
-                                   id: `extra_${Date.now()}`,
-                                   name: extraName,
-                                   birthDate: extraDate,
-                                   birthTime: extraTime || "12:00",
-                                   birthCity: extraCity,
-                                   latitude: extraCityCoords?.latitude,
-                                   longitude: extraCityCoords?.longitude
-                                 };
-                                 
-                                 const nextExtraArr = [...extraMaps, newExtraObj];
-                                 setExtraMaps(nextExtraArr);
-                                 
-                                 // Incrementa e salva de forma persistente o contador vitalício de mapas gerados
-                                 const nextLifecycleCount = (user.extraMapsCreatedCount ?? 0) + 1;
-                                 const nextUserObj = {
-                                   ...user,
-                                   extraMapsCreatedCount: nextLifecycleCount
-                                 };
-                                 setUser(nextUserObj);
-                                 
-                                 if (isLoggedIn && loggedEmail) {
-                                   saveProfileToDatabase(loggedEmail, nextUserObj).catch(console.error);
-                                   saveExtraMapToDatabase(loggedEmail, {
-                                     id: newExtraObj.id,
-                                     userId: loggedEmail,
-                                     label: newExtraObj.name,
-                                     birthDate: newExtraObj.birthDate,
-                                     birthTime: newExtraObj.birthTime,
-                                     birthCity: newExtraObj.birthCity,
-                                     createdAt: new Date().toISOString(),
-                                     latitude: newExtraObj.latitude,
-                                     longitude: newExtraObj.longitude
-                                   }).catch(console.warn);
-                                 }
-
-                                 triggerGlobalNotification(
-                                    t("Mapa Extra Cadastrado"),
-                                    `${t("O Mapa Astral de")} ${extraName} ${t("foi calculado e adicionado com sucesso!")}`,
-                                    "success"
-                                  );
-
-                                  // Reset inputs
-                                  setExtraName('');
-                                  setExtraDate('');
-                                  setExtraTime('');
-                                  setExtraCity('');
-                                }} className="space-y-3 font-sans">
-                                  <div>
-                                    <label className="block text-[9px] font-mono text-slate-450 uppercase mb-1">Nome completo</label>
-                                    <input
-                                      type="text"
-                                      required
-                                      value={extraName}
-                                      onChange={(e) => setExtraName(e.target.value)}
-                                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-202 focus:outline-hidden"
-                                      placeholder="e.g. Lucas Oliveira"
-                                    />
-                                  </div>
-
-                                  <div>
-                                    <label className="block text-[9px] font-mono text-slate-455 uppercase mb-1">Data Nascimento</label>
-                                    <input
-                                      type="date"
-                                      required
-                                      value={extraDate}
-                                      onChange={(e) => setExtraDate(e.target.value)}
-                                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-401 focus:outline-hidden font-mono"
-                                    />
-                                  </div>
-
-                                  <div>
-                                    <label className="block text-[9px] font-mono text-slate-455 uppercase mb-1">Hora (HH:MM)</label>
-                                    <input
-                                      type="text"
-                                      value={extraTime}
-                                      onChange={(e) => setExtraTime(e.target.value)}
-                                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-202 focus:outline-hidden"
-                                      placeholder="e.g. 08:45"
-                                    />
-                                  </div>
-
-                                  <div>
-                                    <label className="block text-[9px] font-mono text-slate-455 uppercase mb-1">Cidade</label>
-                                    <CityAutocomplete
-                                      value={extraCity}
-                                      placeholder="e.g. Rio de Janeiro"
-                                      onChange={(val) => setExtraCity(val)}
-                                      onSelectCity={(city) => {
-                                        setExtraCity(city.label);
-                                        setExtraCityCoords({ latitude: city.latitude, longitude: city.longitude });
-                                      }}
-                                      inputClassName="px-3 py-2 rounded-xl"
-                                    />
-                                  </div>
-
-                                  <button
-                                    type="submit"
-                                    className="w-full py-2 bg-indigo-650 hover:bg-indigo-600 border border-indigo-500/20 text-slate-100 rounded-xl text-xs font-bold font-sans uppercase tracking-wide transition duration-300 cursor-pointer"
-                                  >
-                                    Cadastrar Mapa Extra
-                                  </button>
-                                </form>
-                              </div>
-
-                            {/* Right: Extra Maps List */}
-                            <div className="md:col-span-7 bg-slate-900/20 p-5 rounded-3xl border border-slate-850 space-y-4">
-                              <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-divider">
-                                {t("Lista de Mapas Extras Cadastrados")} ({extraMaps.length}/2)
-                              </h3>
-                              
-                              {isLoadingExtraMap && (
-                                <div className="space-y-3 py-10 flex flex-col items-center text-slate-500 bg-slate-950/60 rounded-2xl border border-slate-800">
-                                  <RefreshCw className="w-8 h-8 animate-spin text-indigo-400" />
-                                  <p className="text-[10px] font-mono">{t("Processando alinhamento estelar secundário...")}</p>
-                                </div>
-                              )}
-
-                              {!isLoadingExtraMap && extraMaps.length === 0 && (
-                                <div className="p-8 text-center text-slate-600 bg-slate-950/30 rounded-2xl border border-dashed border-slate-850">
-                                  <Orbit className="w-10 h-10 text-slate-800 mx-auto opacity-40 mb-2" />
-                                  <p className="text-xs font-mono">{t("Nenhum mapa extra cadastrado.")}</p>
-                                  <p className="text-[10px] text-slate-505 max-w-xs mx-auto mt-1 leading-relaxed">
-                                    {t("Adicione até 2 perfis de amigos ou familiares para comparar as cartas astrológicas e sinastrias.")}
-                                  </p>
-                                </div>
-                              )}
-
-                              {!isLoadingExtraMap && extraMaps.length > 0 && (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                  {extraMaps.map((m) => (
-                                    <div key={m.id} className="p-4 bg-slate-950/60 rounded-2xl border border-slate-850 flex flex-col justify-between space-y-3 relative overflow-hidden transition-all duration-300 hover:border-slate-700">
-                                      <div className="space-y-1">
-                                        <h4 className="text-sm font-bold text-slate-200">{m.name}</h4>
-                                        <p className="text-[10px] font-mono text-indigo-400 leading-none">
-                                          Nascimento: {m.birthDate} {m.birthTime ? `às ${m.birthTime}` : ''}
-                                        </p>
-                                        <p className="text-[10px] text-slate-450 font-mono">
-                                          Cidade: {m.birthCity || "Não informada"}
-                                        </p>
-                                      </div>
-
-                                      <div className="flex items-center gap-2 pt-2 border-t border-slate-850/60">
-                                        <button
-                                          type="button"
-                                          onClick={() => triggerGenerateExtraMap(m)}
-                                          className="flex-1 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 rounded-lg text-[10px] font-bold text-indigo-455 hover:text-indigo-400 text-center uppercase tracking-wide transition duration-200 cursor-pointer"
-                                        >
-                                          Visualizar Mapa
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setExtraMaps(extraMaps.filter(ex => ex.id !== m.id));
-                                            if (isLoggedIn && loggedEmail) {
-                                              deleteExtraMapFromDatabase(loggedEmail, m.id).catch(console.warn);
-                                            }
-                                          }}
-                                          className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-405 border border-rose-500/25 rounded-lg hover:text-rose-400 transition"
-                                          title="Deletar Mapa Extra"
-                                        >
-                                          <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-
-                              <div className="pt-2 text-right">
-                                <button
-                                  type="button"
-                                  onClick={() => setMapSubTab('meu_mapa')}
-                                  className="px-4 py-2 bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold text-amber-500 hover:text-amber-400 transition cursor-pointer"
-                                >
-                                  Voltar para Meu Mapa
-                                </button>
-                              </div>
-                            </div>
-
-                          </div>
-                        )}
-
-                      </div>
-                    )
-                  )}
                   </>
                 )}
               </div>
@@ -6871,23 +6913,7 @@ export default function App() {
 
             {/* TAB 2: CONSTCOES (Radar, Biorhythms, Lunar Cycles, Prosperity Maps) */}
             {activeTab === 'constelacoes' && (
-              isLoggedIn && isPostTrialLocked(user) ? (
-                <PremiumConversionScreen 
-                  currentLang={currentLang} 
-                  onUpgradeComplete={(isPremium) => {
-                    if (isPremium) {
-                      const nextUser = { ...user, isSubscribed: true, isPremium: true };
-                      setUser(nextUser);
-                    }
-                  }} 
-                  userEmail={loggedEmail} 
-                  updateUserProfileOnDb={async (email, patch) => {
-                    const nextUser = { ...user, ...patch };
-                    setUser(nextUser);
-                    await saveProfileToDatabase(email, nextUser);
-                  }} 
-                />
-              ) : !hasUserCreatedMap(user) ? (
+              !hasUserCreatedMap(user) ? (
                 renderLockedSection(
                   "Portal de Constelações",
                   "O alinhamento estelar das constelações e a inclinação sideral dependem das coordenadas geográficas e data exata do seu nascimento. Sincronize seu mapa astral para desbloquear as posições estelares em tempo real."
@@ -7222,28 +7248,11 @@ export default function App() {
                 </div>
 
               </div>
-              )
-            )}
+            ))}
 
             {/* TAB 3: PLANETAS (AI Conselheira Orbia, Dreams Interpretation, Tarot, Daily Oracle) */}
             {activeTab === 'planetas' && (
-              isLoggedIn && isPostTrialLocked(user) ? (
-                <PremiumConversionScreen 
-                  currentLang={currentLang} 
-                  onUpgradeComplete={(isPremium) => {
-                    if (isPremium) {
-                      const nextUser = { ...user, isSubscribed: true, isPremium: true };
-                      setUser(nextUser);
-                    }
-                  }} 
-                  userEmail={loggedEmail} 
-                  updateUserProfileOnDb={async (email, patch) => {
-                    const nextUser = { ...user, ...patch };
-                    setUser(nextUser);
-                    await saveProfileToDatabase(email, nextUser);
-                  }} 
-                />
-              ) : !hasUserCreatedMap(user) ? (
+              !hasUserCreatedMap(user) ? (
                 renderLockedSection(
                   "Portal de Planetas e Assistência Orbia",
                   "Seu horóscopo celestial detalhado, a interpretação de sonhos complexos e o acesso à conselheira de inteligência artificial Orbia dependem das coordenadas geométricas do seu nascimento. Sincronize seu mapa para desbloquear."
@@ -7329,28 +7338,11 @@ export default function App() {
                 </div>
 
               </div>
-              )
-            )}
+            ))}
 
             {/* TAB: TAROT COSIMCO */}
             {activeTab === 'tarot' && (
-              isLoggedIn && isPostTrialLocked(user) ? (
-                <PremiumConversionScreen 
-                  currentLang={currentLang} 
-                  onUpgradeComplete={(isPremium) => {
-                    if (isPremium) {
-                      const nextUser = { ...user, isSubscribed: true, isPremium: true };
-                      setUser(nextUser);
-                    }
-                  }} 
-                  userEmail={loggedEmail} 
-                  updateUserProfileOnDb={async (email, patch) => {
-                    const nextUser = { ...user, ...patch };
-                    setUser(nextUser);
-                    await saveProfileToDatabase(email, nextUser);
-                  }} 
-                />
-              ) : !hasUserCreatedMap(user) ? (
+              !hasUserCreatedMap(user) ? (
                 renderLockedSection(
                   "Portal de Tarô Cósmico",
                   "A interpretação profunda e a leitura semanal personalizada dos arcanos maiores dependem do alinhamento geométrico cósmico de nascimento. Sincronize seu mapa astral para desbloquear as consultas oraculares gratuitas."
@@ -7362,14 +7354,15 @@ export default function App() {
                       userName={user.name}
                       birthDate={user.birthDate}
                       birthTime={user.birthTime}
+                      birthCity={user.birthCity}
                       latitude={user.latitude}
                       longitude={user.longitude}
                       lang={currentLang}
+                      currentChartId={user.currentChartId}
                     />
                   </div>
                 </div>
-              )
-            )}
+              ))}
 
             {/* TAB 4: CONFIGURACOES (Profile custom edit, sms alerts & languages) */}
             {activeTab === 'configuracoes' && (
@@ -7613,6 +7606,17 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* Premium Subscription Conversion Screen overlay/modal */}
+                {showPremiumModal && (
+                  <PremiumConversionScreen 
+                    userEmail={user?.email || loggedEmail}
+                    userUid={firebaseUid}
+                    currentLang={currentLang}
+                    onClose={() => setShowPremiumModal(false)}
+                    triggerGlobalNotification={(title, msg, type) => triggerGlobalNotification(title, msg, type as any)}
+                  />
+                )}
+
                 {/* Substantially realistic Account Deletion confirmation prompt */}
                 {showDeleteConfirm && (
                   <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -7769,7 +7773,12 @@ export default function App() {
             
             {/* Mapa Estelar Tab activator */}
             <button
-              onClick={() => setActiveTab('mapa')}
+              onClick={() => {
+                setActiveTab('mapa');
+                if (!isPremiumActive && mapSubTab !== 'meu_mapa' && mapSubTab !== 'criar_meu_mapa') {
+                  setMapSubTab('meu_mapa');
+                }
+              }}
               className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
                 activeTab === 'mapa' 
                   ? 'text-amber-500 bg-amber-500/10' 
@@ -7782,7 +7791,13 @@ export default function App() {
 
             {/* Constelações Tab activator */}
             <button
-              onClick={() => setActiveTab('constelacoes')}
+              onClick={() => {
+                if (!isPremiumActive) {
+                  setShowPremiumModal(true);
+                } else {
+                  setActiveTab('constelacoes');
+                }
+              }}
               className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
                 activeTab === 'constelacoes' 
                   ? 'text-emerald-400 bg-emerald-500/10' 
@@ -7795,7 +7810,13 @@ export default function App() {
 
             {/* Planetas Tab activator */}
             <button
-              onClick={() => setActiveTab('planetas')}
+              onClick={() => {
+                if (!isPremiumActive) {
+                  setShowPremiumModal(true);
+                } else {
+                  setActiveTab('planetas');
+                }
+              }}
               className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
                 activeTab === 'planetas' 
                   ? 'text-rose-450 bg-rose-500/10' 
@@ -7808,7 +7829,13 @@ export default function App() {
 
             {/* Tarot Tab activator */}
             <button
-              onClick={() => setActiveTab('tarot')}
+              onClick={() => {
+                if (!isPremiumActive) {
+                  setShowPremiumModal(true);
+                } else {
+                  setActiveTab('tarot');
+                }
+              }}
               className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
                 activeTab === 'tarot' 
                   ? 'text-amber-500 bg-amber-500/10' 

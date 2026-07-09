@@ -19,6 +19,50 @@ import { translations, Language } from './translations';
 
 dotenv.config();
 
+function loadKeysConfig() {
+  try {
+    const filePath = path.join(process.cwd(), 'keys_config.json');
+    if (fs.existsSync(filePath)) {
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      if (data.STRIPE_WEBHOOK_SECRET) {
+        process.env.STRIPE_WEBHOOK_SECRET = data.STRIPE_WEBHOOK_SECRET;
+        console.log("[Keys Config] Loaded STRIPE_WEBHOOK_SECRET from keys_config.json");
+      }
+      if (data.FIREBASE_SERVICE_ACCOUNT) {
+        process.env.FIREBASE_SERVICE_ACCOUNT = data.FIREBASE_SERVICE_ACCOUNT;
+        console.log("[Keys Config] Loaded FIREBASE_SERVICE_ACCOUNT from keys_config.json");
+      }
+    }
+    
+    // Also check standard .env file if process.env values aren't set
+    const envPath = path.join(process.cwd(), '.env');
+    if (fs.existsSync(envPath)) {
+      const envContent = fs.readFileSync(envPath, 'utf8');
+      const lines = envContent.split('\n');
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+          const parts = trimmed.split('=');
+          const k = parts[0].trim();
+          let v = parts.slice(1).join('=').trim();
+          if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+            v = v.substring(1, v.length - 1);
+          }
+          if (k === 'STRIPE_WEBHOOK_SECRET' && !process.env.STRIPE_WEBHOOK_SECRET) {
+            process.env.STRIPE_WEBHOOK_SECRET = v;
+          }
+          if (k === 'FIREBASE_SERVICE_ACCOUNT' && !process.env.FIREBASE_SERVICE_ACCOUNT) {
+            process.env.FIREBASE_SERVICE_ACCOUNT = v;
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error("[Keys Config] Error loading keys:", err);
+  }
+}
+loadKeysConfig();
+
 let stripeInstance: Stripe | null = null;
 function getStripeClient(): Stripe | null {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -31,6 +75,16 @@ function getStripeClient(): Stripe | null {
     });
   }
   return stripeInstance;
+}
+
+export function cleanStringForChartId(val: string): string {
+  if (!val) return "";
+  return val
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]/g, "_");
 }
 
 const app = express();
@@ -287,19 +341,121 @@ function cleanAndParseJSON(text: string): any {
     cleaned = cleaned.replace(/\s*```$/, "");
   }
   cleaned = cleaned.trim();
-  
-  // Find the first '{' or '[' and its matching closing brace/bracket
+
+  // 1. Try direct parse first
+  try {
+    return JSON.parse(cleaned);
+  } catch (e) {
+    // Continue to repair
+  }
+
+  // Helper to repair common JSON issues (unescaped newlines, trailing commas)
+  const repairJSONString = (str: string): string => {
+    let repaired = "";
+    let inStr = false;
+    const len = str.length;
+    for (let i = 0; i < len; i++) {
+      const char = str[i];
+      if (inStr) {
+        if (char === '\\') {
+          repaired += char;
+          if (i + 1 < len) {
+            repaired += str[i + 1];
+            i++;
+          }
+        } else if (char === '"') {
+          inStr = false;
+          repaired += char;
+        } else if (char === '\n') {
+          repaired += '\\n';
+        } else if (char === '\r') {
+          repaired += '\\r';
+        } else if (char === '\t') {
+          repaired += '\\t';
+        } else {
+          repaired += char;
+        }
+      } else {
+        if (char === '"') {
+          inStr = true;
+          repaired += char;
+        } else if (char === ',') {
+          // Lookahead: skip trailing commas
+          let skipComma = false;
+          let lookAheadIndex = i + 1;
+          while (lookAheadIndex < len) {
+            const nextChar = str[lookAheadIndex];
+            if (nextChar === ' ' || nextChar === '\n' || nextChar === '\r' || nextChar === '\t') {
+              lookAheadIndex++;
+              continue;
+            }
+            if (nextChar === '}' || nextChar === ']') {
+              skipComma = true;
+            }
+            break;
+          }
+          if (!skipComma) {
+            repaired += char;
+          }
+        } else {
+          repaired += char;
+        }
+      }
+    }
+    return repaired;
+  };
+
+  // 2. Try parsing after repairing control characters and trailing commas
+  try {
+    const rep = repairJSONString(cleaned);
+    return JSON.parse(rep);
+  } catch (e) {
+    // Continue to next fallback
+  }
+
+  // 3. Try simple extraction of outer braces/brackets
   const firstBrace = cleaned.indexOf('{');
+  const lastBrace = cleaned.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    const candidate = cleaned.substring(firstBrace, lastBrace + 1);
+    try {
+      return JSON.parse(candidate);
+    } catch (e) {
+      try {
+        return JSON.parse(repairJSONString(candidate));
+      } catch (e) {
+        // Continue to complex extraction
+      }
+    }
+  }
+
   const firstBracket = cleaned.indexOf('[');
-  
+  const lastBracket = cleaned.lastIndexOf(']');
+  if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+    const candidate = cleaned.substring(firstBracket, lastBracket + 1);
+    try {
+      return JSON.parse(candidate);
+    } catch (e) {
+      try {
+        return JSON.parse(repairJSONString(candidate));
+      } catch (e) {
+        // Continue to complex extraction
+      }
+    }
+  }
+
+  // 4. Run character-by-character brace matching as a last resort
   let jsonStart = -1;
   let isObject = true;
   
-  if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
-    jsonStart = firstBrace;
+  const firstB = cleaned.indexOf('{');
+  const firstBr = cleaned.indexOf('[');
+  
+  if (firstB !== -1 && (firstBr === -1 || firstB < firstBr)) {
+    jsonStart = firstB;
     isObject = true;
-  } else if (firstBracket !== -1) {
-    jsonStart = firstBracket;
+  } else if (firstBr !== -1) {
+    jsonStart = firstBr;
     isObject = false;
   }
   
@@ -340,88 +496,23 @@ function cleanAndParseJSON(text: string): any {
     }
     
     if (jsonEnd !== -1) {
-      cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
-    } else {
-      // Fallback if bracket matching didn't finish
-      const lastBrace = cleaned.lastIndexOf('}');
-      const lastBracket = cleaned.lastIndexOf(']');
-      if (isObject && lastBrace !== -1) {
-        cleaned = cleaned.substring(jsonStart, lastBrace + 1);
-      } else if (!isObject && lastBracket !== -1) {
-        cleaned = cleaned.substring(jsonStart, lastBracket + 1);
-      }
-    }
-  }
-  
-  // Now, let's repair the JSON string before parsing
-  // 1. Unescaped control characters inside strings (like newlines, tabs)
-  // 2. Trailing commas before close-braces or close-brackets
-  let repaired = "";
-  let inStr = false;
-  const len = cleaned.length;
-  for (let i = 0; i < len; i++) {
-    const char = cleaned[i];
-    if (inStr) {
-      if (char === '\\') {
-        // Safe escape bypass to avoid double-escaping
-        repaired += char;
-        if (i + 1 < len) {
-          repaired += cleaned[i + 1];
-          i++;
+      const candidate = cleaned.substring(jsonStart, jsonEnd + 1);
+      try {
+        return JSON.parse(candidate);
+      } catch (e) {
+        try {
+          return JSON.parse(repairJSONString(candidate));
+        } catch (e) {
+          // Continue
         }
-      } else if (char === '"') {
-        inStr = false;
-        repaired += char;
-      } else if (char === '\n') {
-        repaired += '\\n';
-      } else if (char === '\r') {
-        repaired += '\\r';
-      } else if (char === '\t') {
-        repaired += '\\t';
-      } else {
-        repaired += char;
-      }
-    } else {
-      if (char === '"') {
-        inStr = true;
-        repaired += char;
-      } else if (char === ',') {
-        // Lookahead: if the next non-whitespace characters are } or ], we skip this comma!
-        let skipComma = false;
-        let lookAheadIndex = i + 1;
-        while (lookAheadIndex < len) {
-          const nextChar = cleaned[lookAheadIndex];
-          if (nextChar === ' ' || nextChar === '\n' || nextChar === '\r' || nextChar === '\t') {
-            lookAheadIndex++;
-            continue;
-          }
-          if (nextChar === '}' || nextChar === ']') {
-            skipComma = true;
-          }
-          break;
-        }
-        if (!skipComma) {
-          repaired += char;
-        }
-      } else {
-        repaired += char;
       }
     }
   }
 
-  try {
-    return JSON.parse(repaired);
-  } catch (err) {
-    try {
-      return JSON.parse(cleaned);
-    } catch {
-      console.error("[cleanAndParseJSON] Erro ao analisar o JSON limpo:", err);
-      console.error("[cleanAndParseJSON] Conteúdo original:", text);
-      console.error("[cleanAndParseJSON] Conteúdo limpo tentado:", cleaned);
-      console.error("[cleanAndParseJSON] Conteúdo reparado tentado:", repaired);
-      throw err;
-    }
-  }
+  // As a final diagnostic fallback, log details
+  console.error("[cleanAndParseJSON] Falha crítica de parsing do JSON. Conteúdo original:", text);
+  console.error("[cleanAndParseJSON] Conteúdo limpo tentado:", cleaned);
+  throw new Error("Não foi possível analisar o JSON retornado pela API Gemini.");
 }
 
 // Mock database in-memory for simple user sessions / history
@@ -1260,9 +1351,9 @@ app.post("/api/astrology/generate", async (req, res) => {
       if (db) {
         try {
           const mailKey = email.toLowerCase().trim();
-          const birthDateClean = safeBirthDate.replace(/[^a-zA-Z0-9]/g, "_");
-          const birthTimeClean = safeBirthTime.replace(/[^a-zA-Z0-9]/g, "_");
-          const birthCityClean = safeBirthCity.replace(/[^a-zA-Z0-9]/g, "_");
+          const birthDateClean = cleanStringForChartId(safeBirthDate);
+          const birthTimeClean = cleanStringForChartId(safeBirthTime);
+          const birthCityClean = cleanStringForChartId(safeBirthCity);
           const chartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
           
           const usersRef = collection(db, "users");
@@ -1466,12 +1557,52 @@ Responda APENAS com o JSON literal. Não inclua blocos de código adicionais for
 
 // API: Dream Interpretation using Gemini (New Oráculo dos Sonhos)
 app.post("/api/dreams/interpret", async (req, res) => {
-  const { title, description, lang } = req.body;
+  const { title, description, lang, mapData, userProfile } = req.body;
   if (!description) {
     return res.status(400).json({ error: (req as any).t('api.dreams.content_required') });
   }
 
   const activeLang = (lang || "pt").toLowerCase();
+
+  let userSunSign = "";
+  let userMoonSign = "Aquário";
+  let userAscSign = "Sagitário";
+  let elementsSummary = "Fogo 25%, Terra 25%, Ar 25%, Água 25%";
+  let chartContext = "";
+
+  if (mapData) {
+    const sun = mapData.astros?.find((a: any) => a.name === "Sol")?.sign;
+    const moon = mapData.astros?.find((a: any) => a.name === "Lua")?.sign;
+    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente")?.sign;
+    if (sun) userSunSign = sun;
+    if (moon) userMoonSign = moon;
+    if (asc) userAscSign = asc;
+    
+    const elements = mapData.distribution?.elements;
+    if (elements) {
+      elementsSummary = `Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%`;
+    }
+    
+    chartContext = `
+Informações Reais do Mapa Astral Natal do Usuário (Fonte Única da Verdade):
+- Sol em: ${userSunSign}
+- Lua em: ${userMoonSign}
+- Ascendente em: ${userAscSign}
+- Distribuição de Elementos: ${elementsSummary}
+`;
+    
+    const planets = mapData.astros?.filter((a: any) => ["Marte", "Vênus", "Mercúrio", "Saturno", "Júpiter"].includes(a.name));
+    if (planets && planets.length > 0) {
+      chartContext += `- Posicionamentos planetários adicionais: ` + planets.map((p: any) => `${p.name} em ${p.sign}`).join(", ") + "\n";
+    }
+  } else if (userProfile?.birthDate) {
+    const zodiac = getZodiacFromBirthDate(userProfile.birthDate);
+    userSunSign = zodiac;
+    chartContext = `
+Informações Astrológicas do Usuário:
+- Signo Solar estimado: ${userSunSign}
+`;
+  }
   const langNames: Record<string, string> = {
     pt: "Português",
     en: "English (Inglês)",
@@ -1691,7 +1822,7 @@ app.post("/api/dreams/interpret", async (req, res) => {
 
   const fallbackInterpretation = fallbackInterpretationMap[activeLang] || fallbackInterpretationMap["pt"];
 
-  const cacheKey = `oraculo_dreams:${description}:${activeLang}`;
+  const cacheKey = `oraculo_dreams:${description}:${activeLang}:${userSunSign}`;
   const cached = getCachedResponse(cacheKey);
   if (cached) {
     return res.json(cached);
@@ -1705,7 +1836,9 @@ app.post("/api/dreams/interpret", async (req, res) => {
 
   try {
     const prompt = `Você é o Oráculo dos Sonhos (Oráculo Celestial), assistente espiritual e terapeuta de sonhos profissional.
-Analise a descrição deste sonho e gere uma interpretação mágica, profunda, rica e detalhada escrita 100% no idioma ${targetLangName}.
+Analise a descrição deste sonho e gere uma interpretação mágica, profunda, rica e detalhada baseando-se e correlacionando-a com as energias astrológicas do mapa natal do usuário abaixo, estabelecendo o mapa astral como a única fonte oficial de verdade para todas as leituras personalizadas do usuário.
+
+${chartContext}
 
 Descrição do Sonho: "${description}"
 
@@ -1895,12 +2028,53 @@ Return ONLY the raw literal JSON without any markdown code blocks or secondary t
 
 // API: Daily Oracle limit checking + prompt calculation
 app.post("/api/oraculo/query", async (req, res) => {
-  const { question, lang } = req.body;
+  const { question, lang, mapData, userProfile } = req.body;
   if (!question) {
     return res.status(400).json({ error: (req as any).t('api.oraculo.question_required') });
   }
 
   const activeLang = (lang || "pt").toLowerCase();
+
+  let userSunSign = "";
+  let userMoonSign = "Aquário";
+  let userAscSign = "Sagitário";
+  let elementsSummary = "Fogo 25%, Terra 25%, Ar 25%, Água 25%";
+  let chartContext = "";
+
+  if (mapData) {
+    const sun = mapData.astros?.find((a: any) => a.name === "Sol")?.sign;
+    const moon = mapData.astros?.find((a: any) => a.name === "Lua")?.sign;
+    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente")?.sign;
+    if (sun) userSunSign = sun;
+    if (moon) userMoonSign = moon;
+    if (asc) userAscSign = asc;
+    
+    const elements = mapData.distribution?.elements;
+    if (elements) {
+      elementsSummary = `Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%`;
+    }
+    
+    chartContext = `
+Informações Reais do Mapa Astral Natal do Usuário (Fonte Única da Verdade):
+- Sol em: ${userSunSign}
+- Lua em: ${userMoonSign}
+- Ascendente em: ${userAscSign}
+- Distribuição de Elementos: ${elementsSummary}
+`;
+    
+    const planets = mapData.astros?.filter((a: any) => ["Marte", "Vênus", "Mercúrio", "Saturno", "Júpiter"].includes(a.name));
+    if (planets && planets.length > 0) {
+      chartContext += `- Posicionamentos planetários adicionais: ` + planets.map((p: any) => `${p.name} em ${p.sign}`).join(", ") + "\n";
+    }
+  } else if (userProfile?.birthDate) {
+    const zodiac = getZodiacFromBirthDate(userProfile.birthDate);
+    userSunSign = zodiac;
+    chartContext = `
+Informações Astrológicas do Usuário:
+- Signo Solar estimado: ${userSunSign}
+`;
+  }
+
   const fallbackOracleMap: Record<string, any> = {
     pt: {
       reflection: "Todo ciclo que se fecha é na verdade a preparação de um solo novo. Pare e observe o que realmente está demandando sua energia.",
@@ -1939,7 +2113,7 @@ app.post("/api/oraculo/query", async (req, res) => {
   };
   const targetLangName = langNames[activeLang] || "Português";
 
-  const cacheKey = `oraculo:${question}:${activeLang}`;
+  const cacheKey = `oraculo:${question}:${activeLang}:${userSunSign}`;
   const cached = getCachedResponse(cacheKey);
   if (cached) {
     return res.json(cached);
@@ -1953,7 +2127,8 @@ app.post("/api/oraculo/query", async (req, res) => {
 
   try {
     const prompt = `O usuário fez uma pergunta ao Oráculo do Dia: "${question}".
-Considere que as energias astrológicas regentes estimulam idealismo, independência e crescimento pessoal metódico.
+${chartContext}
+Considere as energias astrológicas regentes do mapa natal do usuário descritas acima para personalizar de forma íntima, profunda e única a resposta do Oráculo do Dia.
 Responda com um conselho meditativo e reflexivo escrito 100% em ${targetLangName} no seguinte formato JSON estrito:
 {
   "reflection": "Um parágrafo de profunda reflexão metafísica relacionada à pergunta escrito em ${targetLangName}...",
@@ -2071,8 +2246,7 @@ Guidelines:
     let synthesis = "";
     try {
       if (aiClient) {
-        const response = await aiClient.models.generateContent({
-          model: CHAT_MODEL,
+        const response = await generateContentWithFallback({
           contents: prompt,
           config: {
             systemInstruction: "You are an expert in biodynamic feedback, professional astrology, and Pythagorean numerology. Your task is to provide a single-paragraph unified cosmic report synthesizing the user's biorhythms, life path number, and current planetary transits. Keep it short (max 120 words), inspiring, fluid, and translated beautifully to the target language.",
@@ -2998,6 +3172,7 @@ Importante: O retorno DEVE ser um objeto JSON estrito com a seguinte estrutura d
   "moonPhase": "${pickedPhase}",
   "tip": "Uma dica direta, inspiradora e poética de 2-3 frases chamando o usuário pelo nome, orientando o que fazer psicologicamente ou espiritualmente hoje em face deste trânsito lunar e de seu signo solar escrito 100% em ${targetLangName}."
 }
+REQUISITO CRÍTICO DE SINTAXE: Não utilize aspas duplas (") dentro de nenhuma string JSON (ex: no valor de "tip"). Se precisar destacar termos ou incluir citações, use aspas simples ('). O JSON resultante deve ser 100% livre de aspas duplas internas para evitar falhas de parsing.
 Não coloque blocos markdown ou preâmbulos, retorne APENAS o JSON literal limpo em ${targetLangName}.`;
 
     const response = await generateContentWithFallback({
@@ -3693,14 +3868,14 @@ function translateCard(card: any, lang: string): any {
       en: { cups: "swift feelings, mystical alignment, subtle well-being, emotional harmony, and family care.", wands: "persistent action, professional vigor, burning enthusiasm, goal-oriented focus, and active progress.", swords: "logical evaluation, clear truths, new plans, intellectual battles, and overcoming ego pains.", pentacles: "solid material stability, abundant financial harvest, physical security, and persistent learning." },
       es: { cups: "sentimientos rápidos, sintonización mística, bienestar sutil, armonía afectiva y cariño familiar.", wands: "acción persistente, vigor profesional, entusiasmo ardiente, enfoque orientado a objetivos y progreso activo.", swords: "evaluación lógica, verdades claras, nuevos planos, batallas intelectuales y superación de dolores del ego.", pentacles: "estabilidad material sólida, cosecha financiera abundante, seguridad física y aprendizaje persistente." },
       de: { cups: "schnelle Gefühle, mystische Einstimmung, subtiles Wohlbefinden, emotionale Harmonie und familiäre Fürsorge.", wands: "hartnäckiges Handeln, professionelle Kraft, brennende Begeisterung, zielgerichteter Fokus und aktiver Fortschritt.", swords: "logische Auswertung, klare Wahrheiten, neue Pläne, intellektuelle Kämpfe und Überwindung von Ego-Schmerzen.", pentacles: "solide materielle Stabilität, reichliche finanzielle Ernte, physische Sicherheit und beharrliches Lernen." },
-      fr: { cups: "sentiments rapides, alignement mystique, bien-être subtil, harmonie affective et affection familiale.", wands: "action persistente, vigueur professionnelle, enthousiasme brûlant, concentration orientée vers les objectifs et progrès actif.", swords: "évaluation logique, vérités claires, nouveaux plans, batailles intellectuelles et dépassement des douleurs de l'ego.", pentacles: "stabilité matérielle solide, récolte financière abondante, sécurité physique et apprentissage persistant." }
+      fr: { cups: "sentiments rapides, alignement mystique, bien-être subtil, harmonie affective et affection familiale.", wands: "action persistente, vigueur professionnelle, enthousiasme brûlant, concentration orientée vers les objectifs et progrès actif.", swords: "évaluation logique, vérités claires, nouveaux plans, batailles intellectuelles et dépassement des douleurs de l'ego.", pentacles: "stabilité matérielle solide, récolte financière abondante, physique sécurité et apprentissage persistant." }
     };
 
     const advices: Record<string, Record<string, string>> = {
       en: { cups: "Follow your heart, listen to your subtle intuition, and celebrate real connections.", wands: "Be bold, take risks, and invest your full focus and energy in ideas.", swords: "Keep a cool head, use pure reason, and cut out toxic communications.", pentacles: "Practice pragmatic realism, control spending, and take care of your domestic well-being." },
       es: { cups: "Sigue tu corazón, escucha tu intuición sutil y celebra las conexiones reales.", wands: "Sé audaz, asume riesgos e invierte todo tu enfoque y energía en las ideas.", swords: "Mantén la cabeza fría, usa la razón pura y corta las comunicaciones tóxicas.", pentacles: "Practica el realismo pragmático, controla los gastos y cuida tu bienestar doméstico." },
       de: { cups: "Folgen Sie Ihrem Herzen, hören Sie auf Ihre subtile Intuition und feiern Sie echte Verbindungen.", wands: "Seien Sie mutig, gehen Sie Risiken ein und investieren Sie Ihren vollen Fokus und Ihre Energie in Ideen.", swords: "Behalten Sie einen kühlen Kopf, nutzen Sie die reine Vernunft und unterbinden Sie toxische Kommunikation.", pentacles: "Praktizieren Sie pragmatischen Realismus, kontrollieren Sie Ihre Ausgaben und kümmern Sie sich um Ihr häusliches Wohlbefinden." },
-      fr: { cups: "Suivez votre cœur, écoutez votre intuition subtile et célébrez les connexions réelles.", wands: "Soyez audacieux, prenez des risques et investissez tout votre intérêt et votre énergie dans les idées.", swords: "Gardez la tête froide, utilisez la raison pure et coupez les communications toxiques.", pentacles: "Pratiquez le réalisme pragmatique, contrôlez vos dépenses et prenez soin de votre bien-être domestique." }
+      fr: { cups: "Suivez votre cœur, écoutez votre intuition subtile et célébrez les connexions réelles.", wands: "Soyez audacieux, prenez des risques et investissez tout votre intérêt et votre énergie dans les idées.", swords: "Gardez la tête froide, utilisez la raison pure et coupez les communications toxiques.", pentacles: "Pratiquez le réalisme pragmatique, contrôlez vos dépenses et prenez soin de votre bien-être de famille." }
     };
 
     const sName = suitNames[targetLang]?.[suitKey] || suitKey;
@@ -3726,28 +3901,283 @@ function translateCard(card: any, lang: string): any {
 
 // NEW API: Dynamic, Astrological, Karmic & Dharmic Daily Missions (Osíris Engine)
 app.post("/api/astrology/daily-missions", async (req, res) => {
-  const { userProfile, lang } = req.body || {};
+  const { userProfile, lang, mapData } = req.body || {};
   const name = userProfile?.name ? userProfile.name.split(" ")[0] : "Buscador";
   const birthDate = userProfile?.birthDate || "1998-03-12";
   const zodiac = getZodiacFromBirthDate(birthDate);
 
   const todayStr = new Date().toISOString().split('T')[0];
-  const cacheKey = `osiris_missions_v3:${name}:${birthDate}:${todayStr}:${lang || 'pt'}`;
+  const cacheKey = `osiris_missions_v4:${name}:${birthDate}:${todayStr}:${lang || 'pt'}`;
   const cached = getCachedResponse(cacheKey);
   if (cached) {
     return res.json(cached);
+  }
+
+  let userSunSign = zodiac;
+  let userMoonSign = "Aquário";
+  let userAscSign = "Sagitário";
+  let elementsSummary = "Fogo 25%, Terra 25%, Ar 25%, Água 25%";
+  let chartContext = "";
+
+  if (mapData) {
+    const sun = mapData.astros?.find((a: any) => a.name === "Sol")?.sign;
+    const moon = mapData.astros?.find((a: any) => a.name === "Lua")?.sign;
+    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente")?.sign;
+    if (sun) userSunSign = sun;
+    if (moon) userMoonSign = moon;
+    if (asc) userAscSign = asc;
+    
+    const elements = mapData.distribution?.elements;
+    if (elements) {
+      elementsSummary = `Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%`;
+    }
+    
+    chartContext = `
+Informações Reais do Mapa Astral Natal do Usuário (Fonte Única da Verdade):
+- Sol em: ${userSunSign}
+- Lua em: ${userMoonSign}
+- Ascendente em: ${userAscSign}
+- Distribuição de Elementos: ${elementsSummary}
+`;
+    
+    const planets = mapData.astros?.filter((a: any) => ["Marte", "Vênus", "Mercúrio", "Saturno", "Júpiter"].includes(a.name));
+    if (planets && planets.length > 0) {
+      chartContext += `- Posicionamentos planetários adicionais: ` + planets.map((p: any) => `${p.name} em ${p.sign}`).join(", ") + "\n";
+    }
   }
 
   // Robust Dynamic Fallback Generator seeded with current date & user parameters
   const generateDynamicFallbacks = () => {
     const today = new Date();
     const seedVal = (today.getDate() + (today.getMonth() + 1) * 7 + (name.length * 3)) % 5;
-    
-    const fallbacksPool = [
-      [
+    const activeLang = (lang || 'pt').toLowerCase();
+
+    // Define standard fallback pools for each language
+    let dailyPool: any[] = [];
+    let weeklyPool: any[] = [];
+
+    if (activeLang === 'en') {
+      dailyPool = [
         {
           id: "dm_f1",
-          title: `Consagração de ${zodiac} para ${name}`,
+          title: `Consecration of ${userSunSign} for ${name}`,
+          description: `Spend exactly 4 minutes breathing rhythmically in a quiet environment. Imagine a lilac light entering your nerve cells, calming unconscious impulses.`,
+          points: 40,
+          benefit: "Anxiety Karma Dissipation",
+          benefitExplanation: "Calms the heart rate, recalibrates your bioenergetic channels, and dissolves traces of accumulated emotional tensions."
+        },
+        {
+          id: "dm_f2",
+          title: "Jupiter's Seal of Generosity",
+          description: "Send a short, sincere message of consideration to someone who crossed your path recently without looking for anything in return.",
+          points: 50,
+          benefit: "Active Dharma Activation",
+          benefitExplanation: "The energy of sharing generates reciprocal vibrations in the universe, opening the doors of your financial and social flow."
+        },
+        {
+          id: "dm_f3",
+          title: "Elemental Cellular Detox",
+          description: "Leave digital screens for 1 hour before going to bed or resting. Drink a glass of mineral water thinking about spiritual purification.",
+          points: 30,
+          benefit: "Auric Protection",
+          benefitExplanation: "Prevents disordered wear of the theta frequency during deep sleep, ensuring revealing and clear dreams."
+        }
+      ];
+
+      weeklyPool = [
+        {
+          id: "wm_dyn_1",
+          title: `Lunar Unlocking of ${userMoonSign}`,
+          description: `This week, perform a pending emotional task or express a sincere truth to harmonize the channels of your Moon in ${userMoonSign}.`,
+          points: 120,
+          benefit: `Break Emotional Blockage`,
+          benefitExplanation: `Aligns your instinctive reactions to the harmonic flow of your Sun in ${userSunSign}.`
+        },
+        {
+          id: "wm_dyn_2",
+          title: `Manifestation with Ascendant ${userAscSign}`,
+          description: `This week, take the first practical step towards a bold goal of personal evolution, channeling the natural courage of your Ascendant in ${userAscSign}.`,
+          points: 140,
+          benefit: `Destination Compass Activation`,
+          benefitExplanation: `Unlocks cosmic initiative channels and attracts ideal mentors.`
+        },
+        {
+          id: "wm_dyn_3",
+          title: `Alchemical Balance of Elements`,
+          description: `This week, dedicate 1 hour to study or focus on activities linked to the elements of your chart (${elementsSummary}), balancing excesses or lacks.`,
+          points: 100,
+          benefit: `Total Auric Stabilization`,
+          benefitExplanation: `Reduces emotional and physical fluctuations by aligning your biology with natal sacred geometry.`
+        }
+      ];
+    } else if (activeLang === 'es') {
+      dailyPool = [
+        {
+          id: "dm_f1",
+          title: `Consagración de ${userSunSign} para ${name}`,
+          description: `Dedica exactamente 4 minutos a respirar rítmicamente en un ambiente silencioso. Imagina una luz lila entrando en tus células nervosas, calmando impulsos inconscientes.`,
+          points: 40,
+          benefit: "Disipación de Karma de Ansiedad",
+          benefitExplanation: "Calma el ritmo cardíaco, recalibra tus canales bioenergéticos y disuelve rastros de tensiones emocionales acumuladas."
+        },
+        {
+          id: "dm_f2",
+          title: "Sello de Generosidad de Júpiter",
+          description: "Envía un mensaje corto y sincero de consideración a alguien que se haya cruzado en tu camino recientemente sin buscar nada a cambio.",
+          points: 50,
+          benefit: "Activación de Dharma Activo",
+          benefitExplanation: "La energía de compartir genera vibraciones recíprocas en el universo, abriendo las puertas de tu flujo financiero y social."
+        },
+        {
+          id: "dm_f3",
+          title: "Desintoxicación Celular Elemental",
+          description: "Deja las pantallas digitales durante 1 hora antes de dormir. Bebe un vaso de agua mineral pensando en la purificación espiritual.",
+          points: 30,
+          benefit: "Protección Áurica",
+          benefitExplanation: "Evita el desgaste desordenado de la frecuencia theta durante el sueño profundo, asegurando sueños reveladores y limpios."
+        }
+      ];
+
+      weeklyPool = [
+        {
+          id: "wm_dyn_1",
+          title: `Desbloqueo Lunar de ${userMoonSign}`,
+          description: `Esta semana, realiza una tarea emocional pendiente o expresa una verdad sincera para armonizar los canales de tu Luna en ${userMoonSign}.`,
+          points: 120,
+          benefit: `Romper Bloqueo Emocional`,
+          benefitExplanation: `Alinea tus reacciones instintivas al flujo armónico de tu Sol en ${userSunSign}.`
+        },
+        {
+          id: "wm_dyn_2",
+          title: `Manifestación con Ascendente ${userAscSign}`,
+          description: `Esta semana, da el primer paso práctico hacia una meta audaz de evolución personal, canalizando el coraje natural de tu Ascendente en ${userAscSign}.`,
+          points: 140,
+          benefit: `Activación de la Brújula de Destino`,
+          benefitExplanation: `Desbloquea los canales de iniciativa cósmica y atrae mentores ideales.`
+        },
+        {
+          id: "wm_dyn_3",
+          title: `Equilibrio Alquímico de los Elementos`,
+          description: `Esta semana, dedica 1 hora a estudiar o enfocarte en actividades vinculadas a los elementos de tu mapa (${elementsSummary}), equilibrando excesos o faltas.`,
+          points: 100,
+          benefit: `Estabilización Áurica Total`,
+          benefitExplanation: `Reduce las fluctuaciones emocionales y físicas al alinear tu biología con la geometría sagrada natal.`
+        }
+      ];
+    } else if (activeLang === 'de') {
+      dailyPool = [
+        {
+          id: "dm_f1",
+          title: `Weihe von ${userSunSign} für ${name}`,
+          description: `Atme genau 4 Minuten lang rhythmisch in einer ruhigen Umgebung. Stelle dir ein fliederfarbenes Licht vor, das in deine Nervenzellen eindringt und unbewusste Impulse beruhigt.`,
+          points: 40,
+          benefit: "Auflösung von Angst-Karma",
+          benefitExplanation: "Beruhigt die Herzfrequenz, kalibriert Ihre bioenergetischen Kanäle neu und löst Spuren angesammelter emotionaler Spannungen auf."
+        },
+        {
+          id: "dm_f2",
+          title: "Jupiters Siegel der Großzügigkeit",
+          description: "Sende eine kurze, aufrichtige Nachricht der Wertschätzung an jemanden, der dir kürzlich begegnet ist, ohne eine Gegenleistung zu erwarten.",
+          points: 50,
+          benefit: "Aktivierung von aktivem Dharma",
+          benefitExplanation: "Die Energie des Teilens erzeugt wechselseitige Schwingungen im Universum und öffnet die Türen für Ihren finanziellen und sozialen Fluss."
+        },
+        {
+          id: "dm_f3",
+          title: "Elementare zelluläre Entgiftung",
+          description: "Verzichte 1 Stunde vor dem Schlafengehen auf digitale Bildschirme. Trinke ein Glas Mineralwasser und denke an spirituelle Reinigung.",
+          points: 30,
+          benefit: "Aurischer Schutz",
+          benefitExplanation: "Verhindert ungeordneten Verschleiß der Theta-Frequenz im Tiefschlaf und sorgt für aufschlussreiche und klare Träume."
+        }
+      ];
+
+      weeklyPool = [
+        {
+          id: "wm_dyn_1",
+          title: `Mondfreischaltung von ${userMoonSign}`,
+          description: `Führen Sie diese Woche eine ausstehende emotionale Aufgabe aus oder drücken Sie eine aufrichtige Wahrheit aus, um die Kanäle Ihres Mondes in ${userMoonSign} zu harmonisieren.`,
+          points: 120,
+          benefit: `Emotionalen Blockaden durchbrechen`,
+          benefitExplanation: `Richtet Ihre instinktiven Reaktionen am harmonischen Fluss Ihrer Sonne in ${userSunSign} aus.`
+        },
+        {
+          id: "wm_dyn_2",
+          title: `Manifestation mit Aszendent ${userAscSign}`,
+          description: `Machen Sie diese Woche den ersten praktischen Schritt zu einem kühnen Ziel der persönlichen Entwicklung und kanalisieren Sie den natürlichen Mut Ihres Aszendenten in ${userAscSign}.`,
+          points: 140,
+          benefit: `Aktivierung des Zielkompasses`,
+          benefitExplanation: `Schaltet Kanäle für kosmische Initiativen frei und zieht ideale Mentoren an.`
+        },
+        {
+          id: "wm_dyn_3",
+          title: `Alchemistisches Gleichgewicht der Elemente`,
+          description: `Widmen Sie diese Woche 1 Stunde dem Studium oder der Konzentration auf Aktivitäten, die mit den Elementen Ihres Horoskops (${elementsSummary}) verbunden sind, um Exzesse oder Mängel auszugleichen.`,
+          points: 100,
+          benefit: `Totale aurische Stabilisierung`,
+          benefitExplanation: `Reduziert emotionale und physische Schwankungen, indem Ihre Biologie auf die heilige Geburtsgeometrie ausgerichtet wird.`
+        }
+      ];
+    } else if (activeLang === 'fr') {
+      dailyPool = [
+        {
+          id: "dm_f1",
+          title: `Consécration de ${userSunSign} pour ${name}`,
+          description: `Passez exactement 4 minutes à respirer en rythme dans un environnement calme. Imaginez une lumière lilas pénétrant vos cellules nerveuses, calmant les impulsions inconscientes.`,
+          points: 40,
+          benefit: "Dissipation du Karma d'Anxiété",
+          benefitExplanation: "Calme le rythme cardiaque, recalibre vos canaux bioénergétiques et dissout les traces de tensions émotives accumulées."
+        },
+        {
+          id: "dm_f2",
+          title: "Sceau de Générosité de Jupiter",
+          description: "Envoyez un court message sincère de considération à quelqu'un qui a croisé votre chemin récemment sans rien attendre en retour.",
+          points: 50,
+          benefit: "Activation du Dharma Actif",
+          benefitExplanation: "L'énergie du partage génère des vibrations réciproques dans l'univers, ouvrant les portes de votre flux financier et social."
+        },
+        {
+          id: "dm_f3",
+          title: "Détoxification Cellulaire Élémentaire",
+          description: "Laissez les écrans digitaux pendant 1 heure avant de dormir. Buvez un verre d'eau minérale en pensant à la purification spirituelle.",
+          points: 30,
+          benefit: "Protection Aurique",
+          benefitExplanation: "Évite l'usure désordonnée de la fréquence thêta pendant le sommeil profond, garantissant des rêves révélateurs et clairs."
+        }
+      ];
+
+      weeklyPool = [
+        {
+          id: "wm_dyn_1",
+          title: `Déverrouillage Lunaire de ${userMoonSign}`,
+          description: `Cette semaine, accomplissez une tâche émotionnelle en attente ou exprimez une vérité sincère pour harmoniser les canaux de votre Lune en ${userMoonSign}.`,
+          points: 120,
+          benefit: `Briser le Blocage Émotionnel`,
+          benefitExplanation: `Aligne vos réactions instinctives sur le flux harmonique de votre Soleil en ${userSunSign}.`
+        },
+        {
+          id: "wm_dyn_2",
+          title: `Manifestation avec Ascendant ${userAscSign}`,
+          description: `Cette semaine, faites le premier pas pratique vers un objectif audacieux d'évolution personnelle, en canalisant le courage naturel de votre Ascendant en ${userAscSign}.`,
+          points: 140,
+          benefit: `Activation de la Boussole de Destination`,
+          benefitExplanation: `Déverrouille les canaux d'initiative cosmique et attire les mentors idéaux.`
+        },
+        {
+          id: "wm_dyn_3",
+          title: `Équilibre Alchimique des Éléments`,
+          description: `Cette semaine, consacrez 1 heure à l'étude ou concentrez-vous sur des activités liées aux éléments de votre carte (${elementsSummary}), en équilibrant les excès ou les manques.`,
+          points: 100,
+          benefit: `Stabilisation Aurique Totale`,
+          benefitExplanation: `Réduit les fluctuations émotionnelles et physiques en alignant votre biologie sur la géométrie sacrée natale.`
+        }
+      ];
+    } else {
+      // Default Portuguese Fallbacks
+      dailyPool = [
+        {
+          id: "dm_f1",
+          title: `Consagração de ${userSunSign} para ${name}`,
           description: `Dedique 4 minutos exatos respirando de forma ritmada em ambiente silencioso. Imagine uma luz lilás adentrando suas células nervosas, acalmando impulsos inconscientes.`,
           points: 40,
           benefit: "Dissipação de Karma de Ansiedade",
@@ -3767,115 +4197,39 @@ app.post("/api/astrology/daily-missions", async (req, res) => {
           description: "Abandone telas digitais por 1 hora antes de deitar ou repousar. Beba um copo de água mineral pensando em purificação espiritual.",
           points: 30,
           benefit: "Proteção Áurica",
-          benefitExplanation: "Evita o desgaste desordenado da frequência teta durante o sono profundo, garantindo sonhos reveladores e limpos."
+          benefitExplanation: "Evita o desgaste desordenado da frequência teta durante o sono profundo, gerando sonhos reveladores."
         }
-      ],
-      [
+      ];
+
+      weeklyPool = [
         {
-          id: "dm_f1",
-          title: `Libertação Kármica de ${zodiac}`,
-          description: "Organize uma gaveta de papéis ou e-mails importantes pendentes hoje. Descartar velhos acúmulos físicos ajuda a desbloquear a mente.",
-          points: 45,
-          benefit: "Combustão de Karma de Inércia",
-          benefitExplanation: "Liberta sua caminhada profissional da estagnação, substituindo velhos fardos por novas direções de produtividade prática."
+          id: "wm_dyn_1",
+          title: `Desbloqueio Lunar de ${userMoonSign}`,
+          description: `Esta semana, realize uma tarefa emocional pendente ou expresse uma verdade sincera para harmonizar os canais de sua Lua em ${userMoonSign}.`,
+          points: 120,
+          benefit: `Quebra de Bloqueio Emocional`,
+          benefitExplanation: `Alinha suas reações instintivas ao fluxo harmônico do seu Sol em ${userSunSign}.`
         },
         {
-          id: "dm_f2",
-          title: "Oração Vibracional Silenciosa",
-          description: "Mentalize paz profunda e emita sentimentos de compaixão por três pessoas que passarem por seus pensamentos hoje.",
-          points: 45,
-          benefit: "Expansão de Dharma Celestial",
-          benefitExplanation: "Eleva seu espectro áurico a frequências superiores de proteção cósmica, blindando seu coração de invejas e cobiças."
+          id: "wm_dyn_2",
+          title: `Manifestação com Ascendente ${userAscSign}`,
+          description: `Esta semana, dê o primeiro passo prático em direção a um objetivo audacioso de evolução pessoal, canalizando a coragem natural do seu Ascendente em ${userAscSign}.`,
+          points: 140,
+          benefit: `Ativação de Bússola de Destino`,
+          benefitExplanation: `Desbloqueia os canais de iniciativa cósmica e atrai mentores ideais.`
         },
         {
-          id: "dm_f3",
-          title: "Banho de Sal & Sintonização",
-          description: "Consagre seu amparo ancestral passando as mãos molhadas nos ombros ou pescoço enquanto repete mentalmente: 'Estou seguro'.",
-          points: 35,
-          benefit: "Conexão de Sol e Lua",
-          benefitExplanation: "Harmoniza as polaridades masculina e feminina do seu corpo astral, despertando intuição refinada perante escolhas urgentes."
+          id: "wm_dyn_3",
+          title: `Equilíbrio Alquímico dos Elementos`,
+          description: `Esta semana, dedique 1 hora para estudar ou focar em atividades ligadas aos elementos do seu mapa (${elementsSummary}), equilibrando excessos ou faltas.`,
+          points: 100,
+          benefit: `Estabilização Áurica Total`,
+          benefitExplanation: `Reduz oscilações emocionais e físicas ao alinhar sua biologia com a geometria sagrada natal.`
         }
-      ],
-      [
-        {
-          id: "dm_f1",
-          title: "Cura Psíquica de Vênus",
-          description: `Olhe-se no espelho por 1 minuto sintonizando compaixão e auto-aceitação para seu brilho astral de ${zodiac}. Declare seu mérito.`,
-          points: 40,
-          benefit: "Cura de Laços Sentimentais",
-          benefitExplanation: "Purifica bloqueios de rejeição no chakra cardíaco, permitindo que as relações íntimas fluam com lealdade mútua."
-        },
-        {
-          id: "dm_f2",
-          title: "Doação Elemental Consciente",
-          description: "Partilhe ou separe dois pertences ou roupas sem uso em seu lar para fluxo e circulação de energias materiais.",
-          points: 50,
-          benefit: "Dharma de Desprendimento",
-          benefitExplanation: "Ativa as leis ocultas da prosperidade recíproca. Dar espaço para o novo limpa medos primitivos da escassez terrena."
-        },
-        {
-          id: "dm_f3",
-          title: "Respirar Profundo Cósmico",
-          description: "Sente-se ereto por 3 minutos e faça respiração quadrada (inspira em 4s, segura 4s, expira 4s, segura vazio 4s) alinhando as vértebras.",
-          points: 35,
-          benefit: "Aterramento Orgânico",
-          benefitExplanation: "Elimina picos de cansaço mental estéril, devolvendo o foco e a precisão intelectual nas tarefas diárias."
-        }
-      ],
-      [
-        {
-          id: "dm_f1",
-          title: `Alinhamento de ${zodiac} com Saturno`,
-          description: "Assuma total responsabilidade por uma conversa delicada ou pendência burocrática hoje. Faça o de forma calma e firme.",
-          points: 50,
-          benefit: "Queima de Karma de Omissão",
-          benefitExplanation: "Equilibra a balança com Saturno retrógrado, transformando velhos atritos insolúveis em autoridade interna exemplar."
-        },
-        {
-          id: "dm_f2",
-          title: "Sopro de Vitalidade Crística",
-          description: "Pratique um exercício físico leve, alongamento ou caminhada pisando de forma firme e agradecendo mentalmente à Terra profunda.",
-          points: 40,
-          benefit: "Estabilidade de Dharma Físico",
-          benefitExplanation: "Desperta as mitocôndrias e remove bloqueios articulares energéticos onde o estresse costuma se densificar."
-        },
-        {
-          id: "dm_f3",
-          title: "Escudo do Silêncio Provedor",
-          description: "Silencie queixas por 3 horas seguidas hoje. Quando vier um impulso de queixar-se, respire fundo e enxergue o aprendizado oculto.",
-          points: 40,
-          benefit: "Fortalecimento do Corpo Sutil",
-          benefitExplanation: "Seu magnetismo pessoal é poupado da drenagem astral rotineira, mantendo seu brilho intacto para oportunidades."
-        }
-      ],
-      [
-        {
-          id: "dm_f1",
-          title: `Conexão Cósmica do Sol em ${zodiac}`,
-          description: "Escreva em um diário ou papel uma meta ousada de evolução que deseja manifestar nos próximos 30 dias. Dobre o papel e consagre.",
-          points: 45,
-          benefit: "Ativação do Foco Solar",
-          benefitExplanation: "Sintoniza sua intenção direta com a bússola das estrelas, catalisando sincronicidades para que mentores te encontrem."
-        },
-        {
-          id: "dm_f2",
-          title: "Ritual Elemental de Limpeza",
-          description: "Limpe uma superfície do seu quarto ou e escrivaninha borrifando água com algumas gotas de aroma ou limão, mentalizando clareza.",
-          points: 40,
-          benefit: "Dharma de Harmonia Doméstica",
-          benefitExplanation: "Expulsa vibrações remanescentes de cansaço, abrindo caminhos para pensamentos lúcidos e sono tranquilo."
-        },
-        {
-          id: "dm_f3",
-          title: "Contemplação do Ar Livre",
-          description: "Olhe para as nuvens, árvores ou céu por 5 minutos observando o fluxo da natureza sem julgar. Integre-se ao agora cósmico.",
-          points: 35,
-          benefit: "Descanso da Mente Egoica",
-          benefitExplanation: "Restaura os receptores de bem-estar orgânico, gerando paz íntima e renovando seu nível de otimismo."
-        }
-      ]
-    ];
-    return { missions: fallbacksPool[seedVal % fallbacksPool.length] };
+      ];
+    }
+
+    return { missions: dailyPool, weeklyMissions: weeklyPool };
   };
 
   if (!aiClient) {
@@ -3895,8 +4249,10 @@ app.post("/api/astrology/daily-missions", async (req, res) => {
     };
     const targetLanguage = languageNames[activeLang] || "Português";
 
-    const prompt = `Gere exatamente 3 missões diárias astrológicas interativas em ${targetLanguage} para o usuário de nome "${name}", signo ${zodiac} e nascido em ${birthDate}.
-O objetivo de cada missão deve ser o alto desenvolvimento espiritual, crescimento pessoal, bem-estar, libertação de karma (da vida presente ou vidas passadas) ou ativação de dharma ativo com os seus benefícios cósmicos claros.
+    const prompt = `Gere exatamente 3 missões diárias astrológicas interativas e exatamente 3 missões semanais astrológicas interativas em ${targetLanguage} para o usuário de nome "${name}", signo ${userSunSign} e nascido em ${birthDate}.
+${chartContext}
+
+O objetivo de cada missão deve ser o desenvolvimento espiritual, crescimento pessoal, bem-estar, libertação de karma (da vida presente ou vidas passadas) ou ativação de dharma ativo, sempre conectando com as características astrológicas reais encontradas no mapa do usuário fornecido acima.
 Cada missão deve ter um roteiro interativo e inspirador de se cumprir.
 
 Você deve retornar EXCLUSIVAMENTE um objeto JSON no seguinte formato estruturado, sem explicações externas, marcações extras ou tags markdown que não sejam JSON puro:
@@ -3904,12 +4260,23 @@ Você deve retornar EXCLUSIVAMENTE um objeto JSON no seguinte formato estruturad
 {
   "missions": [
     {
-      "id": "md1",
-      "title": "Título místico personalizado curto em ${targetLanguage}",
-      "description": "Instrução poética e detalhada com metas claras no idioma ${targetLanguage} (ex: respirar de forma profunda, alongar, silenciar queixas, desfazer e-mails acumulados, doar algo)",
+      "id": "dm1",
+      "title": "Título místico diário curto personalizado em ${targetLanguage}",
+      "description": "Instrução poética e detalhada com metas claras no idioma ${targetLanguage} relacionada ao mapa do usuário",
       "points": 45, // número entre 30 e 60
-      "benefit": "Categoria curta do benefício místico no idioma ${targetLanguage} (ex: 'Queima de Karma de Rejeição' ou 'Ativação de Dharma Prático')",
-      "benefitExplanation": "Explicação detalhada e profunda de qual benefício espiritual, emocional e consciencial o usuário receberá ao cumprir essa missão hoje, escrita inteiramente em ${targetLanguage}"
+      "benefit": "Categoria curta do benefício místico no idioma ${targetLanguage}",
+      "benefitExplanation": "Explicação detalhada de qual benefício espiritual e emocional o usuário receberá ao cumprir essa missão hoje, escrita inteiramente em ${targetLanguage}"
+    },
+    ...
+  ],
+  "weeklyMissions": [
+    {
+      "id": "wm1",
+      "title": "Título místico semanal curto personalizado em ${targetLanguage}",
+      "description": "Desafio de evolução profunda detalhado a ser cumprido ao longo da semana no idioma ${targetLanguage}, sintonizado com o mapa do usuário",
+      "points": 120, // número entre 100 e 150
+      "benefit": "Categoria curta do benefício místico no idioma ${targetLanguage}",
+      "benefitExplanation": "Explicação detalhada e profunda do impacto na evolução de longo prazo do usuário ao cumprir esse desafio, em ${targetLanguage}"
     },
     ...
   ]
@@ -3923,7 +4290,7 @@ Você deve retornar EXCLUSIVAMENTE um objeto JSON no seguinte formato estruturad
     });
 
     const parsed = JSON.parse(response.text || "{}");
-    if (parsed && Array.isArray(parsed.missions) && parsed.missions.length === 3) {
+    if (parsed && Array.isArray(parsed.missions) && parsed.missions.length === 3 && Array.isArray(parsed.weeklyMissions)) {
       setCachedResponse(cacheKey, parsed);
       return res.json(parsed);
     } else {
@@ -3939,7 +4306,7 @@ Você deve retornar EXCLUSIVAMENTE um objeto JSON no seguinte formato estruturad
 
 // NEW API: OSÍRIS Intelligent Assistant Chat Component
 app.post("/api/osiris/chat", async (req, res) => {
-  const { messages, userProfile, requestTopic, weather, biorhythm, location, dreams, lang } = req.body || {};
+  const { messages, userProfile, requestTopic, weather, biorhythm, location, dreams, lang, mapData } = req.body || {};
   
   if (!messages || messages.length === 0) {
     return res.status(400).json({ error: (req as any).t('api.osiris.messages_required') });
@@ -3951,12 +4318,42 @@ app.post("/api/osiris/chat", async (req, res) => {
   const userName = userProfile?.name || "Buscador";
   const activeLang = (lang || "pt").toLowerCase();
 
+  let userSunSign = solSign;
+  let userMoonSign = "Aquário";
+  let userAscSign = "Sagitário";
+  let chartContext = "";
+
+  if (mapData) {
+    const sun = mapData.astros?.find((a: any) => a.name === "Sol")?.sign;
+    const moon = mapData.astros?.find((a: any) => a.name === "Lua")?.sign;
+    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente")?.sign;
+    if (sun) userSunSign = sun;
+    if (moon) userMoonSign = moon;
+    if (asc) userAscSign = asc;
+    
+    chartContext = `
+Mapa Astral Real do Usuário (FONTE ÚNICA DA VERDADE):
+- Sol: ${userSunSign}
+- Lua: ${userMoonSign}
+- Ascendente: ${userAscSign}
+`;
+    const elements = mapData.distribution?.elements;
+    if (elements) {
+      chartContext += `- Balanço dos Elementos: Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%\n`;
+    }
+    
+    const planets = mapData.astros?.filter((a: any) => ["Marte", "Vênus", "Mercúrio", "Saturno", "Júpiter"].includes(a.name));
+    if (planets && planets.length > 0) {
+      chartContext += `- Outros posicionamentos planetários: ` + planets.map((p: any) => `${p.name} em ${p.sign}`).join(", ") + "\n";
+    }
+  }
+
   const getOsirisFallback = (msg: string) => {
-    const translatedSign = translateAstroSign(solSign, activeLang);
+    const translatedSign = translateAstroSign(userSunSign, activeLang);
     const fallbacks: Record<string, string> = {
       pt: `Olá, meu caro amigo ${userName}. Sinto a luz cintilante do seu Sol em ${translatedSign} guiando suas perguntas. `,
       en: `Hello, my dear friend ${userName}. I feel the shimmering light of your Sun in ${translatedSign} guiding your questions. `,
-      es: `Hola, mi querido amigo ${userName}. Siento la luz brillante de tu Sol en ${translatedSign} guiando tus preguntas. `,
+      es: `Hola, mi querido amigo ${userName}. Siento la luz brillante de tu Sol en ${translatedSign} guiando tus perguntas. `,
       de: `Hallo, mein lieber Freund ${userName}. Ich spüre das schimmernde Licht Ihrer Sonne in ${translatedSign}, das Ihre Fragen leitet. `,
       fr: `Bonjour, mon cher ami ${userName}. Je ressens la lumière scintillante de votre Soleil en ${translatedSign} guider vos questions. `
     };
@@ -3986,8 +4383,8 @@ app.post("/api/osiris/chat", async (req, res) => {
       const bioAdd: Record<string, string> = {
         pt: `Em sintonia com seu biorritmo de hoje, recomendo focar na resiliência mental e fazer pequenas meditações de centramento solar ao longo do dia para transmutar kármicas antigas. `,
         en: `In sync with your biorhythm today, I recommend focusing on mental resilience and doing small solar centering meditations throughout the day to transmute ancient karmics. `,
-        es: `En sintonía con tu biorritmo de hoy, te recomiendo concentrarte en la resiliência mental y hacer pequeñas meditaciones de centrado solar a lo largo del día para transmutar karmas antiguos. `,
-        de: `In Abstimmung mit Ihrem heutigen Biorhythmus empfehle ich Ihnen, sich auf mentale Widerstandskraft zu konzentrieren und über den Tag verteilt kleine solare Zentrierungsmeditationen durchzuführen, um alte Karmas umzuwandeln. `,
+        es: `En sintonía con tu biorritmo de hoy, te recomiendo concentrarte en la resiliencia mental y hacer pequeñas meditaciones de centrado solar a lo largo del día para transmutar karmas antiguos. `,
+        de: `In Abstimmung mit Ihrem heutigen Biorhythmus empfehlen eu Ihnen, sich auf mentale Widerstandskraft zu konzentrieren und über den Tag verteilt kleine solare Zentrierungsmeditationen durchzuführen, um alte Karmas umzuwandeln. `,
         fr: `En phase avec votre biorythme d'aujourd'hui, je vous recommande de vous concentrer sur la résilience mentale et de faire de petites méditations de centrage solaire tout au long de la journée pour transmuter les karmas anciens. `
       };
       text += bioAdd[activeLang] || bioAdd["pt"];
@@ -4002,7 +4399,7 @@ app.post("/api/osiris/chat", async (req, res) => {
         en: `The dream realms are channels of direct revelation from your wise subconscious. Each element represents a sign that we untie together. `,
         es: `Los reinos oníricos son canales de revelación directa de tu sabio subconsciente. Cada elemento representa una señal que desatamos juntos. `,
         de: `Die Traumwelten sind Kanäle der direkten Offenbarung aus Ihrem weisen Unterbewusstsein. Jedes Element stellt ein Zeichen dar, das wir gemeinsam entwirren. `,
-        fr: `Les royaumes des rêves sont des canaux de révélation directe de votre sage subconscient. Chaque élément représente un signe que nous dénouons ensemble. `
+        fr: `Les royaumes des rêves sont des canaux de révélation directe de votre sage sous-conscient. Chaque élément représente un signe que nous dénouons ensemble. `
       };
       text += dreamAdd[activeLang] || dreamAdd["pt"];
     }
@@ -4023,7 +4420,8 @@ app.post("/api/osiris/chat", async (req, res) => {
 Perfil Estelar do Usuário:
 Nome: ${userProfile.name}
 Nascido em: ${userProfile.birthDate} às ${userProfile.birthTime} na cidade ${userProfile.birthCity}
-Zodíaco Solar: ${solSign}
+Zodíaco Solar: ${userSunSign}
+${chartContext}
 ${biorhythm ? `Biorritmo Atual: Físico ${biorhythm.physical}%, Emocional ${biorhythm.emotional}%, Intelectual ${biorhythm.intellectual}%` : ""}
 ${location || weather ? `Localização & Clima: ${location || "Cidade Natal"} - ${weather?.temperature || "22"}°C, ${weather?.condition || "Céu Claro"}` : ""}
 ${dreams && dreams.length > 0 ? `Sonhos Recentes Interpretados: ${dreams.slice(0, 2).map((d: any) => `${d.description} (Interpretação: ${d.interpretation?.mainMeaning || ""})`).join("; ")}` : ""}
@@ -4063,10 +4461,42 @@ DIRETRIZES DE COMUNICAÇÃO DE ELITE (TRATAMENTO COM AMOR E INFECTUOSO CARINHO):
 });
 
 app.post("/api/osiris/dashboard", async (req, res) => {
-  const { userProfile, weather, biorhythm, location, lastDream, lang } = req.body || {};
+  const { userProfile, weather, biorhythm, location, lastDream, lang, mapData } = req.body || {};
   const birthDate = userProfile?.birthDate || "1998-03-12";
-  const zodiac = getZodiacFromBirthDate(birthDate);
+  const baseZodiac = getZodiacFromBirthDate(birthDate);
   const name = userProfile?.name ? userProfile.name.split(" ")[0] : "Buscador";
+
+  let userSunSign = baseZodiac;
+  let userMoonSign = "Aquário";
+  let userAscSign = "Sagitário";
+  let chartContext = "";
+
+  if (mapData) {
+    const sun = mapData.astros?.find((a: any) => a.name === "Sol")?.sign;
+    const moon = mapData.astros?.find((a: any) => a.name === "Lua")?.sign;
+    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente")?.sign;
+    if (sun) userSunSign = sun;
+    if (moon) userMoonSign = moon;
+    if (asc) userAscSign = asc;
+    
+    chartContext = `
+Mapa Astral Real do Usuário (FONTE ÚNICA DA VERDADE):
+- Sol: ${userSunSign}
+- Lua: ${userMoonSign}
+- Ascendente: ${userAscSign}
+`;
+    const elements = mapData.distribution?.elements;
+    if (elements) {
+      chartContext += `- Balanço dos Elementos: Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%\n`;
+    }
+    
+    const planets = mapData.astros?.filter((a: any) => ["Marte", "Vênus", "Mercúrio", "Saturno", "Júpiter"].includes(a.name));
+    if (planets && planets.length > 0) {
+      chartContext += `- Outros posicionamentos planetários: ` + planets.map((p: any) => `${p.name} em ${p.sign}`).join(", ") + "\n";
+    }
+  }
+
+  const zodiac = userSunSign;
 
   const today = new Date();
   const day = today.getDate();
@@ -4372,24 +4802,24 @@ app.post("/api/osiris/dashboard", async (req, res) => {
 
     const contextMap: Record<string, { sentence: string, prompt: string }> = {
       pt: {
-        sentence: `Olá ${name}, percebo que o clima em ${location || "sua área"} no momento está ${weather?.condition || "influenciando"} sua vibração pessoal.`,
-        prompt: `${name}, posso mostrar tudo que está favorável para você hoje. Basta me perguntar.`
+        sentence: `Olá ${name}, vejo que o clima está ${weather?.condition || "Céu Limpo"} com ${weather?.temperature || "23"}°C em ${location || "sua cidade"}. Os astros recomendam canalizar foco em ${selectedCategory}.`,
+        prompt: `Osíris está pronto para revelar sua sabedoria cósmica.`
       },
       en: {
-        sentence: `Hello ${name}, I notice that the weather in ${location || "your area"} at the moment is ${weather?.condition || "influencing"} your personal vibration.`,
-        prompt: `${name}, I can show you everything that is favorable for you today. Just ask me.`
+        sentence: `Hello ${name}, I see the weather is ${weather?.condition || "Clear Sky"} with ${weather?.temperature || "23"}°C in ${location || "your city"}. The stars recommend channeling focus in ${currentCategoryDisplay}.`,
+        prompt: `Osiris is ready to reveal your cosmic wisdom.`
       },
       es: {
-        sentence: `Hola ${name}, percibo que el clima en ${location || "tu zona"} en este momento está ${weather?.condition || "influyendo"} en tu vibración personal.`,
-        prompt: `${name}, puedo mostrarte todo lo que te favorece hoy. Solo pregúntame.`
+        sentence: `Hola ${name}, veo que el clima está ${weather?.condition || "Cielo Limpio"} con ${weather?.temperature || "23"}°C en ${location || "tu ciudad"}. Los astros recomiendan canalizar el enfoque en ${currentCategoryDisplay}.`,
+        prompt: `Osiris está listo para revelar su sabiduría cósmica.`
       },
       de: {
-        sentence: `Hallo ${name}, ich stelle fest, dass das Wetter in ${location || "Ihrer Gegend"} im Moment Ihre persönliche Schwingung ${weather?.condition || "beeinflusst"}.`,
-        prompt: `${name}, ich kann Ihnen alles zeigen, was heute günstig für Sie ist. Fragen Sie mich einfach.`
+        sentence: `Hallo ${name}, ich sehe das Wetter ist ${weather?.condition || "Klarer Himmel"} mit ${weather?.temperature || "23"}°C in ${location || "Ihrer Stadt"}. Die Sterne empfehlen, den Fokus auf ${currentCategoryDisplay} zu richten.`,
+        prompt: `Osiris ist bereit, seine kosmische Weisheit zu enthüllen.`
       },
       fr: {
-        sentence: `Bonjour ${name}, je remarque que la météo à ${location || "votre région"} en ce moment est en train d'${weather?.condition || "influencer"} votre vibration personnelle.`,
-        prompt: `${name}, je peux vous montrer tout ce qui vous est favorable aujourd'hui. Demandez-moi.`
+        sentence: `Bonjour ${name}, je vois que le temps est ${weather?.condition || "Ciel Clair"} avec ${weather?.temperature || "23"}°C à ${location || "votre ville"}. Les étoiles recommandent de canaliser l'attention sur ${currentCategoryDisplay}.`,
+        prompt: `Osiris est prêt à révéler sa sagesse cosmique.`
       }
     };
 
@@ -4397,22 +4827,22 @@ app.post("/api/osiris/dashboard", async (req, res) => {
       pt: [
         {
           id: `notif_u1_${day}`,
-          title: "🚨 Alerta do Osíris: Aspecto Crítico",
-          message: `Um trânsito celópte sutil faz quadratura importante com seu ascendente hoje. Pratique recuo e evite conflitos de ego.`,
-          time: "Há 2 horas",
+          title: "🌌 Alinhamento Cósmico Ativo",
+          message: `Sua geometria natal de ${zodiac} está em ressonância com os trânsitos lunares de hoje.`,
+          time: "Há 1 hora",
           type: "transit"
         },
         {
           id: `notif_u2_${day}`,
-          title: "🌙 Movimento Lunar e Renovação de Intenções",
-          message: `A Lua atual ingressa em sintonia fértil com seu signo solar ${translatedZodiac}. Período majestoso para iniciar ações silenciosas de dharma.`,
-          time: "Há 5 horas",
+          title: "🌙 Nova Fase Lunar",
+          message: `O portal lunar está aberto para potencializar rituais focados em ${selectedCategory}.`,
+          time: "Há 4 horas",
           type: "lune"
         },
         {
           id: `notif_u3_${day}`,
           title: "✨ Missão Kármica Ativa de Hoje",
-          message: `Osíris detectou que concluir sua missão espiritual de hoje ajudará a dissolver bloqueios de ansiedade acumulada. Complete-a para ganhar pontos!`,
+          message: `O Osiris detectou que realizar sua missão espiritual de hoje ajudará a dissolver bloqueios acumulados.`,
           time: "Há 9 horas",
           type: "mission"
         }
@@ -4420,22 +4850,22 @@ app.post("/api/osiris/dashboard", async (req, res) => {
       en: [
         {
           id: `notif_u1_${day}`,
-          title: "🚨 Osiris Alert: Critical Aspect",
-          message: `A subtle celestial transit makes an important square with your ascendant today. Practice retreat and avoid ego conflicts.`,
-          time: "2 hours ago",
+          title: "🌌 Active Cosmic Alignment",
+          message: `Your ${zodiac} natal geometry is in resonance with today's lunar transits.`,
+          time: "1 hour ago",
           type: "transit"
         },
         {
           id: `notif_u2_${day}`,
-          title: "🌙 Lunar Movement & Renewal of Intentions",
-          message: `The current Moon enters fertile harmony with your solar sign ${translatedZodiac}. A majestic period to initiate silent dharma actions.`,
-          time: "5 hours ago",
+          title: "🌙 Lunar Phase Gateway",
+          message: `The lunar portal is open to enhance rituals focused on ${currentCategoryDisplay}.`,
+          time: "4 hours ago",
           type: "lune"
         },
         {
           id: `notif_u3_${day}`,
           title: "✨ Active Karmic Mission of Today",
-          message: `Osiris detected that completing your spiritual mission today will help dissolve accumulated anxiety blocks. Complete it to earn points!`,
+          message: `Osiris detected that completing your spiritual mission today will help dissolve accumulated anxiety blocks.`,
           time: "9 hours ago",
           type: "mission"
         }
@@ -4443,22 +4873,22 @@ app.post("/api/osiris/dashboard", async (req, res) => {
       es: [
         {
           id: `notif_u1_${day}`,
-          title: "🚨 Alerta de Osiris: Aspecto Crítico",
-          message: `Un tránsito celestial sutil forma una cuadratura importante con tu ascendente hoy. Practica el retiro y evita conflictos de ego.`,
-          time: "Hace 2 horas",
+          title: "🌌 Alineación Cósmica Activa",
+          message: `Tu geometría natal de ${zodiac} está en resonancia con los tránsitos lunares de hoy.`,
+          time: "Hace 1 hora",
           type: "transit"
         },
         {
           id: `notif_u2_${day}`,
-          title: "🌙 Movimiento Lunar y Renovación de Intenciones",
-          message: `La Luna actual entra en sintonía fértil con tu signo solar ${translatedZodiac}. Período majestuoso para iniciar acciones silenciosas de dharma.`,
-          time: "Hace 5 horas",
+          title: "🌙 Portal de Fase Lunar",
+          message: `El portal lunar está abierto para potenciar rituales centrados en ${currentCategoryDisplay}.`,
+          time: "Hace 4 horas",
           type: "lune"
         },
         {
           id: `notif_u3_${day}`,
           title: "✨ Misión Kármica Activa de Hoy",
-          message: `Osiris detectó que completar tu misión espiritual hoy ayudará a disolver los bloqueos de ansiedad acumulada. ¡Complétala para ganar puntos!`,
+          message: `Osiris detectó que completar tu misión espiritual de hoy ayudará a disolver bloqueios acumulados.`,
           time: "Hace 9 horas",
           type: "mission"
         }
@@ -4466,22 +4896,22 @@ app.post("/api/osiris/dashboard", async (req, res) => {
       de: [
         {
           id: `notif_u1_${day}`,
-          title: "🚨 Osiris-Warnung: Kritischer Aspekt",
-          message: `Ein subtiler himmlischer Transit bildet heute ein wichtiges Quadrat mit Ihrem Aszendenten. Üben Sie Rückzug und vermeiden Sie Ego-Konflikte.`,
-          time: "Vor 2 Stunden",
+          title: "🌌 Aktive kosmische Ausrichtung",
+          message: `Ihre ${zodiac}-Natalgeometrie steht in Resonanz mit den heutigen Mondtransiten.`,
+          time: "Vor 1 Stunde",
           type: "transit"
         },
         {
           id: `notif_u2_${day}`,
-          title: "🌙 Mondbewegung & Erneuerung der Absichten",
-          message: `Der aktuelle Mond tritt in fruchtbare Harmonie mit Ihrem Sonnenzeichen ${translatedZodiac}. Ein majestätischer Zeitraum, um stille Dharma-Aktionen einzuleiten.`,
-          time: "Vor 5 Stunden",
+          title: "🌙 Mondphasen-Portal",
+          message: `Das Mondportal ist geöffnet, um Rituale zu verstärken, die auf ${currentCategoryDisplay} ausgerichtet sind.`,
+          time: "Vor 4 Stunden",
           type: "lune"
         },
         {
           id: `notif_u3_${day}`,
-          title: "✨ Aktive karmische Mission von heute",
-          message: `Osiris hat festgestellt, dass der Abschluss Ihrer heutigen spirituellen Mission dazu beiträgt, aufgestaute Angstblockaden aufzulösen. Schließen Sie sie ab, um Punkte zu sammeln!`,
+          title: "✨ Heutige aktive karmische Mission",
+          message: `Osiris hat erkannt, dass das Abschließen Ihrer heutigen spirituellen Mission dazu beiträgt, blockierte Energie aufzulösen.`,
           time: "Vor 9 Stunden",
           type: "mission"
         }
@@ -4489,26 +4919,112 @@ app.post("/api/osiris/dashboard", async (req, res) => {
       fr: [
         {
           id: `notif_u1_${day}`,
-          title: "🚨 Alerte d'Osiris : Aspect Critique",
-          message: `Un transit céleste subtil forme un carré important avec votre ascendant aujourd'hui. Pratiquez le retrait et évitez les conflits d'ego.`,
-          time: "Il y a 2 heures",
+          title: "🌌 Alignement Cosmique Actif",
+          message: `Votre géométrie natale de ${zodiac} est en résonance avec les transits lunaires d'aujourd'hui.`,
+          time: "Il y a 1 heure",
           type: "transit"
         },
         {
           id: `notif_u2_${day}`,
-          title: "🌙 Mouvement Lunaire & Renouvellement des Intentions",
-          message: `La Lune actuelle entre en harmonie fertile avec votre signe solaire ${translatedZodiac}. Période majestueuse pour initier des actions silencieuses de dharma.`,
-          time: "Il y a 5 heures",
+          title: "🌙 Portail de Phase Lunaire",
+          message: `Le portail lunaire est ouvert pour améliorer les rituels axés sur ${currentCategoryDisplay}.`,
+          time: "Il y a 4 heures",
           type: "lune"
         },
         {
           id: `notif_u3_${day}`,
           title: "✨ Mission Karmique Active d'Aujourd'hui",
-          message: `Osiris a détecté que terminer votre mission spirituelle aujourd'hui aidera à dissoudre les blocages d'anxiété accumulée. Terminez-la pour gagner des points !`,
+          message: `Osiris a détecté que l'accomplissement de votre mission spirituelle aujourd'hui aidera à dissoudre les blocages.`,
           time: "Il y a 9 heures",
           type: "mission"
         }
       ]
+    };
+
+    const fallbackRadarDoDiaMap: Record<string, Array<{ key: string, label: string, status: string, statusColor: string, description: string, cosmicTip: string }>> = {
+      pt: [
+        { key: "energia", label: "Energia Vital", status: "Excelente", statusColor: "text-emerald-400", description: "Sua vitalidade molecular e disposição física estão alinhadas com sua regência estelar, favorecendo atividades físicas.", cosmicTip: "Aproveite a luz do dia para exercitar-se ao ar livre por pelo menos 15 minutos." },
+        { key: "produtividade", label: "Foco e Produtividade", status: "Elevado", statusColor: "text-indigo-400", description: "Sua retenção intelectual e foco singular de Mercúrio estão ativos, facilitando a resolução de pendências complexas.", cosmicTip: "Conclua as tarefas de maior exigência mental antes do entardecer." },
+        { key: "relacionamentos", label: "Relacionamentos", status: "Harmônico", statusColor: "text-pink-400", description: "Sua diplomacia e conexões áuricas com base em Vênus facilitam o diálogo empático e a reconciliação.", cosmicTip: "Envie uma mensagem de carinho a quem você não fala há algum tempo." },
+        { key: "organizacao", label: "Organização", status: "Estável", statusColor: "text-amber-400", description: "Sua capacidade de organizar afazeres práticos e rotinas sob o Caminho de Vida está estável.", cosmicTip: "Organize sua mesa de trabalho para liberar espaço físico e mental." },
+        { key: "bem_estar", label: "Bem-estar Geral", status: "Sereno", statusColor: "text-sky-400", description: "O centramento emocional e a quietude mental propiciam momentos de introspecção profunda e paz interior.", cosmicTip: "Faça um ritual de respiração de 3 minutos antes de deitar-se." }
+      ],
+      en: [
+        { key: "energia", label: "Vital Energy", status: "Excellent", statusColor: "text-emerald-400", description: "Your molecular vitality and physical disposition are aligned with your stellar rulership, favoring physical activities.", cosmicTip: "Take advantage of daylight to exercise outdoors for at least 15 minutes." },
+        { key: "produtividade", label: "Focus & Productivity", status: "High", statusColor: "text-indigo-400", description: "Your intellectual retention and singular Mercury focus are active, making it easy to resolve complex pending issues.", cosmicTip: "Complete tasks with higher mental demand before dusk." },
+        { key: "relacionamentos", label: "Relationships", status: "Harmonious", statusColor: "text-pink-400", description: "Your diplomacy and auric connections based on Venus facilitate empathetic dialogue and reconciliation.", cosmicTip: "Send a message of affection to someone you haven't spoken to in a while." },
+        { key: "organizacao", label: "Organization", status: "Stable", statusColor: "text-amber-400", description: "Your ability to organize practical chores and routines under your Life Path is stable.", cosmicTip: "Organize your desk to clear physical and mental space." },
+        { key: "bem_estar", label: "Overall Well-being", status: "Serene", statusColor: "text-sky-400", description: "Emotional centering and mental quietness foster moments of deep introspection and inner peace.", cosmicTip: "Perform a 3-minute breathing ritual before going to bed." }
+      ],
+      es: [
+        { key: "energia", label: "Energía Vital", status: "Excelente", statusColor: "text-emerald-400", description: "Tu vitalidad molecular y disposición física están alineadas con tu regencia estelar, favoreciendo las actividades físicas.", cosmicTip: "Aprovecha la luz del día para hacer ejercicio al aire libre durante al menos 15 minutos." },
+        { key: "produtividade", label: "Enfoque y Productividad", status: "Elevado", statusColor: "text-indigo-400", description: "Tu retención intelectual y enfoque singular de Mercurio están activos, facilitando la resolución de pendientes complejos.", cosmicTip: "Completa las tareas de mayor exigencia mental antes del atardecer." },
+        { key: "relacionamentos", label: "Relaciones", status: "Armonioso", statusColor: "text-pink-400", description: "Tu diplomacia y conexiones áuricas basadas en Venus facilitan el diálogo empático y la reconciliación.", cosmicTip: "Envía un mensaje de cariño a alguien con quien no hayas hablado en mucho tiempo." },
+        { key: "organizacao", label: "Organización", status: "Estable", statusColor: "text-amber-400", description: "Tu capacidad para organizar tareas prácticas y rutinas bajo tu Camino de Vida está estable.", cosmicTip: "Organiza tu escritorio para despejar espacio físico y mental." },
+        { key: "bem_estar", label: "Bienestar General", status: "Sereno", statusColor: "text-sky-400", description: "El centramiento emocional y la quietud mental propician momentos de profunda introspección y paz interior.", cosmicTip: "Realiza un ritual de respiración de 3 minutos antes de acostarte." }
+      ],
+      de: [
+        { key: "energia", label: "Vitalität", status: "Hervorragend", statusColor: "text-emerald-400", description: "Ihre molekulare Vitalität und körperliche Verfassung sind auf Ihre stellare Herrschaft abgestimmt, was körperliche Aktivitäten begünstigt.", cosmicTip: "Nutzen Sie das Tageslicht, um sich mindestens 15 Minuten lang im Freien zu bewegen." },
+        { key: "produtividade", label: "Fokus & Produktivität", status: "Hoch", statusColor: "text-indigo-400", description: "Ihre intellektuelle Merkfähigkeit und Ihr einzigartiger Merkur-Fokus sind aktiv, was die Lösung komplexer Aufgaben erleichtert.", cosmicTip: "Erledigen Sie Aufgaben mit hohem geistigen Anspruch vor der Dämmerung." },
+        { key: "relacionamentos", label: "Beziehungen", status: "Harmonisch", statusColor: "text-pink-400", description: "Ihre Diplomatie und Ihre auf Venus basierenden aurischen Verbindungen erleichtern den empathischen Dialog und die Versöhnung.", cosmicTip: "Senden Sie eine liebevolle Nachricht an jemanden, mit dem Sie länger nicht gesprochen haben." },
+        { key: "organizacao", label: "Organisation", status: "Stabil", statusColor: "text-amber-400", description: "Ihre Fähigkeit, praktische Pflichten und Routinen unter Ihrem Lebensweg zu organisieren, ist stabil.", cosmicTip: "Räumen Sie Ihren Schreibtisch auf, um physischen und mentalen Raum freizumachen." },
+        { key: "bem_estar", label: "Allgemeines Wohlbefinden", status: "Gelassen", statusColor: "text-sky-400", description: "Emotionale Zentrierung und geistige Ruhe fördern Momente tiefer Selbstbeobachtung und inneren Friedens.", cosmicTip: "Führen Sie vor dem Schlafengehen ein 3-minütiges Atemritual durch." }
+      ],
+      fr: [
+        { key: "energia", label: "Énergie Vitale", status: "Excellente", statusColor: "text-emerald-400", description: "Votre vitalité moléculaire et votre disposition physique sont alignées avec votre régence stellaire, favorisant les activités physiques.", cosmicTip: "Profitez de la lumière du jour pour faire de l'exercice en plein air pendant au moins 15 minutes." },
+        { key: "produtividade", label: "Concentration & Productivité", status: "Élevée", statusColor: "text-indigo-400", description: "Votre rétention intellectuelle et votre concentration singulière de Mercure sont actives, facilitant la résolution de dossiers complexes.", cosmicTip: "Terminez les tâches à forte demande mentale avant le crépuscule." },
+        { key: "relacionamentos", label: "Relations", status: "Harmonieuse", statusColor: "text-pink-400", description: "Votre diplomatie et vos connexions auriques basées sur Vénus facilitent le dialogue empathique et la réconciliation.", cosmicTip: "Envoyez un message d'affection à quelqu'un à qui vous n'avez pas parlé depuis un certain temps." },
+        { key: "organizacao", label: "Organisation", status: "Stable", statusColor: "text-amber-400", description: "Votre capacité à organiser les tâches pratiques et les routines sous votre Chemin de Vie est stable.", cosmicTip: "Organisez votre bureau pour libérer de l'espace physique et mental." },
+        { key: "bem_estar", label: "Bien-être Général", status: "Serein", statusColor: "text-sky-400", description: "Le centrage émotionnel et le calme mental favorisent des moments de profonde introspection et de paix intérieure.", cosmicTip: "Faites un rituel de respiration de 3 minutes avant de vous coucher." }
+      ]
+    };
+
+    const fallbackRadarOportunidadesMap: Record<string, Record<string, { status: string, statusColor: string, text: string, conselho: string, ritual: string }>> = {
+      pt: {
+        dinheiro: { status: "Favorável", statusColor: "text-emerald-400", text: "Oportunidades de ganhos secundários intelectuais sob ar ativo.", conselho: "O trânsito atual favorece a formatação de serviços de mentoria ou propostas comerciais rascunhadas hoje.", ritual: "Escreva suas metas econômicas em um papel com tinta preta para fixar as ações tomadas agora." },
+        amor: { status: "Ressonante", statusColor: "text-pink-400", text: "Magnetismo em alta, facilitando conexões profundas e românticas.", conselho: "Com Vênus emanando trígonos estelares, desfaça muros analíticos e compartilhe desejos sinceros hoje.", ritual: "Acenda uma vela rosa e mentalize a cura de conexões do passado ao entardecer." },
+        estudos: { status: "Excepcional", statusColor: "text-sky-400", text: "Retenção intelectual extraordinária e foco linear ativado.", conselho: "Sua mente possui facilidade única hoje para absorber conceitos metafísicos, matemáticos e científicos.", ritual: "Mantenha um cristal de quartzo transparente ou sodalita em sua mesa enquanto estuda." },
+        trabalho: { status: "Estável", statusColor: "text-indigo-400", text: "Capacidade de estruturação mecânica e conclusão de pendências.", conselho: "A influência do Caminho de Vida ressoa para estabilizar tarefas administrativas. Execute sem adiar.", ritual: "Organize seus e-mails e arquivos digitais prioritários para reordenar seu fluxo profissional." },
+        criatividade: { status: "Inspirado", statusColor: "text-amber-400", text: "Canal mental de ideias originais e soluções inovadoras fluido.", conselho: "Não filtre seus insights à primeira vista. Deixe as ideias fluírem sem compromisso no rascunho.", ritual: "Desenhe formas livres em uma folha branca e deixe seu subconsciente sugerir soluções de problemas práticos." },
+        networking: { status: "Promissor", statusColor: "text-teal-400", text: "Facilidade para gerar engajamento em causas sociais e projetos coletivos.", conselho: "Entre em contato com parceiros ou mentores adormecidos. Compartilhar ideais éticos traz forças.", ritual: "Escreva uma mensagem de gratidão a um mentor ou colega que contribuiu para sua jornada profissional." },
+        espiritualidade: { status: "Profundo", statusColor: "text-purple-400", text: "Frequência onírica aberta e trânsito favorável a rituais astrológicos.", conselho: "Suas conexões áuricas com esferas superiores estão extremamente receptivas sob a regência de Mercúrio.", ritual: "Sente-se em silêncio por 5 minutos à noite, focando no chakra frontal, visualizando uma luz azul-índigo." }
+      },
+      en: {
+        dinheiro: { status: "Favorable", statusColor: "text-emerald-400", text: "Opportunities for intellectual secondary gains under active air.", conselho: "The current transit favors formatting mentoring services or drafted business proposals today.", ritual: "Write your economic goals on a paper with black ink to anchor the actions taken now." },
+        amor: { status: "Resonant", statusColor: "text-pink-400", text: "Magnetism on the rise, facilitating deep and romantic connections.", conselho: "With Venus emanating stellar trines, break down analytical walls and share sincere desires today.", ritual: "Light a pink candle and visualize the healing of past connections at dusk." },
+        estudos: { status: "Exceptional", statusColor: "text-sky-400", text: "Extraordinary intellectual retention and linear focus activated.", conselho: "Your mind has a unique facility today to absorb metaphysical, mathematical, and scientific concepts.", ritual: "Keep a clear quartz or sodalite crystal on your desk while studying." },
+        trabalho: { status: "Stable", statusColor: "text-indigo-400", text: "Capacity for mechanical structuring and resolving pending tasks.", conselho: "The influence of the Life Path resonates to stabilize administrative tasks. Execute without delaying.", ritual: "Organize your priority emails and digital files to reorder your professional workflow." },
+        criatividade: { status: "Inspired", statusColor: "text-amber-400", text: "Mental channel of original ideas and innovative solutions is fluid.", conselho: "Do not filter your insights at first glance. Let ideas flow without commitment on the draft.", ritual: "Draw free-form shapes on a white sheet of paper and let your subconscious suggest solutions." },
+        networking: { status: "Promising", statusColor: "text-teal-400", text: "Ease of generating engagement in social causes and collective projects.", conselho: "Get in touch with sleeping partners or mentors. Sharing ethical ideals brings strength.", ritual: "Write a message of gratitude to a mentor or colleague who contributed to your career journey." },
+        espiritualidade: { status: "Deep", statusColor: "text-purple-400", text: "Open dream frequency and favorable transit for astrological rituals.", conselho: "Your auric connections with higher spheres are extremely receptive under the rulership of Mercury.", ritual: "Sit in silence for 5 minutes at night, focusing on the third eye chakra, visualizing an indigo light." }
+      },
+      es: {
+        dinheiro: { status: "Favorable", statusColor: "text-emerald-400", text: "Oportunidades de ganancias secundarias intelectuales bajo aire activo.", conselho: "El tránsito actual favorece el diseño de servicios de mentoría o propuestas comerciales borrador hoy.", ritual: "Escribe tus metas económicas en un papel con tinta negra para fijar las acciones tomadas ahora." },
+        amor: { status: "Resonante", statusColor: "text-pink-400", text: "Magnetismo en alza, facilitando conexiones profundas y románticas.", conselho: "Con Venus emanando trígonos estelares, deshaz muros analíticos y comparte deseos sinceros hoy.", ritual: "Enciende una vela rosa y mentaliza la sanación de conexiones del pasado al atardecer." },
+        estudos: { status: "Excepcional", statusColor: "text-sky-400", text: "Retención intelectual extraordinaria y enfoque lineal activado.", conselho: "Tu mente posee facilidad única hoy para absorber conceptos metafísicos, matemáticos y científicos.", ritual: "Mantén un cristal de cuarzo transparente o sodalita en tu escritorio mientras estudias." },
+        trabalho: { status: "Estable", statusColor: "text-indigo-400", text: "Capacidad de estructuración mecánica y conclusión de pendientes.", conselho: "La influencia del Camino de Vida resuena para estabilizar tareas administrativas. Ejecuta sin posponer.", ritual: "Organiza tus correos prioritarios y archivos digitales para reordenar tu flujo profesional." },
+        criatividade: { status: "Inspirado", statusColor: "text-amber-400", text: "Canal mental de ideas originales y soluciones innovadoras fluido.", conselho: "No filtres tus ideas a primera vista. Deja fluir las ideas sin compromiso en el borrador.", ritual: "Dibuja formas libres en una hoja blanca y deja que tu subconsciente sugiera soluciones de problemas." },
+        networking: { status: "Prometedor", statusColor: "text-teal-400", text: "Facilidad para generar compromiso en causas sociales y proyectos colectivos.", conselho: "Ponte en contacto con socios o mentores latentes. Compartir ideales éticos trae fuerzas.", ritual: "Escribe un mensaje de gratitud a un mentor o colega que contribuyó a tu trayectoria profesional." },
+        espiritualidade: { status: "Profundo", statusColor: "text-purple-400", text: "Frecuencia onírica abierta y tránsito favorable a rituales astrológicos.", conselho: "Tus conexiones áuricas con esferas superiores están extremadamente receptivas bajo la regencia de Mercurio.", ritual: "Siéntate en silencio durante 5 minutos por la noche, enfocándote en el chakra frontal." }
+      },
+      de: {
+        dinheiro: { status: "Günstig", statusColor: "text-emerald-400", text: "Chancen für intellektuelle Nebenerträge unter aktivem Lufteinfluss.", conselho: "Der aktuelle Transit begünstigt heute die Gestaltung von Mentoring-Diensten oder entworfenen Geschäftsvorschlägen.", ritual: "Schreiben Sie Ihre wirtschaftlichen Ziele mit schwarzer Tinte auf ein Blatt Papier, um die Handlungen zu verankern." },
+        amor: { status: "Resonant", statusColor: "text-pink-400", text: "Steigender Magnetismus erleichtert tiefe und romantische Verbindungen.", conselho: "Wenn die Venus stellare Trine ausstrahlt, bauen Sie heute analytische Mauern ab und teilen Sie aufrichtige Wünsche.", ritual: "Zünden Sie in der Abenddämmerung eine rosa Kerze an und visualisieren Sie die Heilung vergangener Beziehungen." },
+        estudos: { status: "Außergewöhnlich", statusColor: "text-sky-400", text: "Außergewöhnliche intellektuelle Merkfähigkeit und linearer Fokus aktiviert.", conselho: "Ihr Geist besitzt heute eine einzigartige Fähigkeit, metaphysische, mathematische und wissenschaftliche Konzepte aufzunehmen.", ritual: "Legen Sie während des Studiums einen klaren Bergkristall oder Sodalith auf Ihren Schreibtisch." },
+        trabalho: { status: "Stabil", statusColor: "text-indigo-400", text: "Fähigkeit zur mechanischen Strukturierung und Erledigung offener Aufgaben.", conselho: "Der Einfluss des Lebenswegs stabilisiert administrative Aufgaben. Ohne Verzögerung ausführen.", ritual: "Organisieren Sie Ihre wichtigsten E-Mails und digitalen Dateien, um Ihren Arbeitsablauf neu zu ordnen." },
+        criatividade: { status: "Inspiriert", statusColor: "text-amber-400", text: "Der mentale Kanal für originelle Ideen und innovative Lösungen fließt frei.", conselho: "Filtern Sie Ihre Erkenntnisse nicht auf den ersten Blick. Lassen Sie Ideen unverbindlich im Entwurf fließen.", ritual: "Zeichnen Sie freie Formen auf ein weißes Blatt Papier und lassen Sie Ihr Unterbewusstsein Lösungen vorschlagen." },
+        networking: { status: "Vielversprechend", statusColor: "text-teal-400", text: "Leichtigkeit, Engagement für soziale Anliegen und kollektive Projekte zu erzeugen.", conselho: "Kontaktieren Sie schlafende Partner oder Mentoren. Das Teilen ethischer Ideale bringt Kraft.", ritual: "Schreiben Sie eine Dankesnachricht an einen Mentor oder Kollegen, der zu Ihrer beruflichen Reise beigetragen hat." },
+        espiritualidade: { status: "Tief", statusColor: "text-purple-400", text: "Offene Traumfrequenz und günstiger Transit für astrologische Rituale.", conselho: "Ihre aurischen Verbindungen zu höheren Sphären sind unter der Herrschaft Merkurs äußerst empfänglich.", ritual: "Sitzen Sie nachts 5 Minuten lang in der Stille und konzentrieren Sie sich auf das Stirnchakra, während Sie sich ein indigoblaues Licht vorstellen." }
+      },
+      fr: {
+        dinheiro: { status: "Favorable", statusColor: "text-emerald-400", text: "Opportunités de gains secondaires intellectuels sous air actif.", conselho: "Le transit actuel favorise la création de services de mentorat ou de propositions commerciales ébauchées aujourd'hui.", ritual: "Écrivez vos objectifs économiques sur papier à l'encre noire pour fixer les actions engagées maintenant." },
+        amor: { status: "Résonnant", statusColor: "text-pink-400", text: "Magnétisme en hausse, facilitant des connexions profondes et romantiques.", conselho: "Avec Vénus émanant des trigones stellaires, brisez les barrières analytiques et partagez vos désirs sincères aujourd'hui.", ritual: "Allumez une bougie rose et méditez sur la guérison des relations du passé au crépuscule." },
+        estudos: { status: "Exceptionnel", statusColor: "text-sky-400", text: "Rétention intellectuelle extraordinaire et concentration linéaire activée.", conselho: "Votre esprit a une facilité unique aujourd'hui pour absorber les concepts métaphysiques, mathématiques et scientifiques.", ritual: "Gardez un cristal de quartz clair ou de sodalite sur votre bureau pendant vos études." },
+        trabalho: { status: "Stable", statusColor: "text-indigo-400", text: "Capacité de structuration mécanique et achèvement des tâches en attente.", conselho: "L'influence du Chemin de Vie résonne pour stabiliser les tâches administratives. Exécutez sans tarder.", ritual: "Organisez vos e-mails prioritaires et vos fichiers numériques pour réordonner votre flux professionnel." },
+        criatividade: { status: "Inspiré", statusColor: "text-amber-400", text: "Canal mental fluide pour les idées originales et les solutions innovantes.", conselho: "Ne filtrez pas vos intuitions au premier coup d'œil. Laissez couler les idées sans engagement sur un brouillon.", ritual: "Dessinez des formes libres sur une feuille blanche et laissez votre subconscient suggérer des solutions." },
+        networking: { status: "Prometteur", statusColor: "text-teal-400", text: "Facilité à susciter l'engagement pour des causes sociales et des projets collectifs.", conselho: "Prenez contact avec des partenaires ou mentors endormis. Partager des idéaux éthiques apporte de la force.", ritual: "Écrivez un message de gratitude à un mentor ou collègue qui a contribué à votre parcours professionnel." },
+        espiritualidade: { status: "Profond", statusColor: "text-purple-400", text: "Fréquence onirique ouverte et transit favorable aux rituels astrologiques.", conselho: "Vos connexions auriques avec les sphères supérieures sont extrêmement réceptives sous la régence de Mercure.", ritual: "Asseyez-vous en silence pendant 5 minutes le soir, en vous concentrant sur le chakra du troisième œil." }
+      }
     };
 
     return {
@@ -4520,7 +5036,9 @@ app.post("/api/osiris/dashboard", async (req, res) => {
         rating: 4.8
       },
       contextMessage: contextMap[activeLang] || contextMap["pt"],
-      offlineNotifications: notificationsMap[activeLang] || notificationsMap["pt"]
+      offlineNotifications: notificationsMap[activeLang] || notificationsMap["pt"],
+      radarDoDia: fallbackRadarDoDiaMap[activeLang] || fallbackRadarDoDiaMap["pt"],
+      radarOportunidades: fallbackRadarOportunidadesMap[activeLang] || fallbackRadarOportunidadesMap["pt"]
     };
   };
 
@@ -4550,42 +5068,76 @@ app.post("/api/osiris/dashboard", async (req, res) => {
     };
     const exactPromptValue = promptStringMap[activeLang] || promptStringMap.pt;
 
-    const contextPrompt = `O usuário chama-se "${name}", seu signo é ${zodiac}, nascido em ${birthDate}.
+    const contextPrompt = `O usuário chama-se "${name}", seu signo solar é ${zodiac}, nascido em ${birthDate}.
+${chartContext}
 Dados Atuais:
 - Biorritmo: Físico ${biorhythm?.physical}%, Emocional ${biorhythm?.emotional}%, Intelectual ${biorhythm?.intellectual}%
 - Clima e Temperatura: ${weather?.condition || "Céu Limpo"}, ${weather?.temperature || "23"}°C, localizado em ${location || "sua cidade"}
 - Categoria Sintonizada do Dia para Orientação Principal Única ("Prioridade do Dia"): "${selectedCategory}"
 - Último Sonho Relevante: ${lastDream ? `"${lastDream.description}"` : "Nenhum sonho recente registrado."}
 
-Como o conselheiro genial "OSÍRIS", gere um objeto JSON EXCLUSIVAMENTE em ${targetLanguage}, sem qualquer explicação fora dele ou tags adicionais. Ele deve conter os pontos exatos pedidos no Felert.txt:
+Como o conselheiro genial "OSÍRIS", gere um objeto JSON EXCLUSIVAMENTE em ${targetLanguage}, sem qualquer explicação fora dele ou tags adicionais.
+Você DEVE utilizar a GEOMETRIA NATAL do usuário apresentada no "Mapa Astral Real do Usuário" acima como ÚNICA FONTE DE VERDADE absoluta para todas as análises personalizadas. Não invente ou misture dados. Respeite rigorosamente o idioma solicitado: ${targetLanguage}.
 
-1. 'prioridadeDia': insights extraordinários, precisos e poéticos focados na categoria "${selectedCategory}". O conselho e significado devem refletir o clima físico de ${weather?.temperature}°C, o biorritmo atual e as marcas do Sol em ${zodiac}, tudo escrito inteiramente em ${targetLanguage}.
+O objeto deve conter:
+1. 'prioridadeDia': insights extraordinários, precisos e poéticos focados na categoria "${selectedCategory}". O conselho e significado devem refletir o clima físico de ${weather?.temperature || "22"}°C, o biorritmo atual e as marcas do Sol em ${zodiac}, tudo escrito inteiramente em ${targetLanguage}.
 2. 'contextMessage': uma mensagem para quando o usuário está online de teor contextual, amigável e refinado, terminando exatamente com a String "${exactPromptValue}".
 3. 'offlineNotifications': 3 notificações de teor realístico de canais push úteis e personalizadas sobre trânsitos kármicos, lunações e missões, escritas em ${targetLanguage}.
+4. 'radarDoDia': um array de 5 objetos detalhando as coordenadas para 'energia_vital', 'produtividade', 'relacionamentos', 'organizacao', 'bem_estar'. Cada objeto deve conter:
+   - 'key': string contendo a chave (energia_vital | produtividade | relacionamentos | organizacao | bem_estar)
+   - 'label': rótulo traduzido em ${targetLanguage} (ex: "Energia Vital", "Productivity", etc.)
+   - 'status': um estado cósmico místico e qualitativo em ${targetLanguage} (ex: "Soberano", "Fluxo Intenso", "Retração Alinhada", etc.) sem usar porcentagens, barras ou números!
+   - 'statusColor': classe css correspondente ao estado (use text-amber-400 para energia_vital, text-indigo-400 para produtividade, text-pink-400 para relacionamentos, text-emerald-400 para organizacao, text-sky-400 para bem_estar)
+   - 'description': uma explicação astrológica e biorrítmica altamente detalhada, poética e rica (mínimo de 3 frases completas) em ${targetLanguage} relacionando a geometria natal do usuário (Sol, Lua, Ascendente e posicionamentos) com as vibrações do dia.
+   - 'cosmicTip': conselho prático objetivo de como aproveitar ou harmonizar este aspecto hoje em ${targetLanguage}.
+5. 'radarOportunidades': um objeto onde as chaves são as seguintes 7 áreas exatas: 'dinheiro', 'amor', 'estudos', 'trabalho', 'criatividade', 'networking', 'espiritualidade'. Cada área deve conter:
+   - 'status': um estado cósmico místico em ${targetLanguage} (ex: "Auspicioso", "Sintonia de Ouro", "Maré Alta", "Desafio Kármico", etc.) sem usar progressão numérica, números ou porcentagens!
+   - 'statusColor': classe de cor css (ex: text-emerald-400, text-pink-400, text-sky-400, text-indigo-400, text-amber-400, text-teal-400, text-purple-400)
+   - 'text': texto de insight astrológico profundo, personalizado e rico em detalhes (mínimo de 3 frases) em ${targetLanguage}, sintonizando o mapa astral real do usuário com a área em questão.
+   - 'conselho': conselho prático detalhado de como proceder hoje em relação a essa área em ${targetLanguage}.
+   - 'ritual': um ritual de potencialização exclusivo e personalizado para hoje em ${targetLanguage} de teor sutil e refinado.
 
 Retorne no formato JSON exato em ${targetLanguage}:
 {
   "prioridadeDia": {
     "category": "${selectedCategory}",
-    "title": "Título poético curto da prioridade em ${targetLanguage}",
-    "description": "Texto rico e profundo em ${targetLanguage} que resume o insight único diário do usuário integrando os dados.",
-    "advice": "Instrução objetiva, compassiva e sincera de como agir em relação a isso em ${targetLanguage}",
+    "title": "...",
+    "description": "...",
+    "advice": "...",
     "rating": 4.9
   },
   "contextMessage": {
-    "sentence": "Breve frase mística convidativa contextualizada de Osiris baseada no clima ou dia em ${targetLanguage}",
+    "sentence": "...",
     "prompt": "${exactPromptValue}"
   },
   "offlineNotifications": [
     {
       "id": "not1",
-      "title": "Título impactante personalizado em ${targetLanguage}",
-      "message": "Mensagem útil personalizada única sem enrolação em ${targetLanguage}",
-      "time": "Há 1 hora",
-      "type": "transit|lune|mission"
-    },
-    ...
-  ]
+      "title": "...",
+      "message": "...",
+      "time": "...",
+      "type": "..."
+    }
+  ],
+  "radarDoDia": [
+    {
+      "key": "energia_vital",
+      "label": "...",
+      "status": "...",
+      "statusColor": "text-amber-400",
+      "description": "...",
+      "cosmicTip": "..."
+    }
+  ],
+  "radarOportunidades": {
+    "dinheiro": {
+      "status": "...",
+      "statusColor": "text-emerald-400",
+      "text": "...",
+      "conselho": "...",
+      "ritual": "..."
+    }
+  }
 }`;
 
     const response = await generateContentWithFallback({
@@ -4596,7 +5148,7 @@ Retorne no formato JSON exato em ${targetLanguage}:
     });
 
     const parsed = JSON.parse(response.text || "{}");
-    if (parsed && parsed.prioridadeDia && parsed.contextMessage && Array.isArray(parsed.offlineNotifications)) {
+    if (parsed && parsed.prioridadeDia && parsed.contextMessage && Array.isArray(parsed.offlineNotifications) && Array.isArray(parsed.radarDoDia) && parsed.radarOportunidades) {
       setCachedResponse(cacheKey, parsed);
       return res.json(parsed);
     } else {
@@ -4612,7 +5164,7 @@ Retorne no formato JSON exato em ${targetLanguage}:
 
 // API: Personal Counselor chat with memory integration
 app.post("/api/conselheira/chat", async (req, res) => {
-  const { messages, userProfile, requestTopic, lang } = req.body;
+  const { messages, userProfile, requestTopic, lang, mapData } = req.body;
   if (!messages || messages.length === 0) {
     return res.status(400).json({ error: "Mensagens são necessárias." });
   }
@@ -4620,16 +5172,30 @@ app.post("/api/conselheira/chat", async (req, res) => {
   const lastUserMessage = messages[messages.length - 1].text;
   const activeLang = (lang || "pt").toLowerCase();
 
-  const getFallbackResponse = (msg: string) => {
-    const userName = userProfile?.name || "Buscador";
+  let solSign = "Aquário";
+  let moonSign = "Aquário";
+  let ascSign = "Sagitário";
+
+  if (mapData) {
+    const sun = mapData.astros?.find((a: any) => a.name === "Sol" || a.name === "Sun")?.sign;
+    const moon = mapData.astros?.find((a: any) => a.name === "Lua" || a.name === "Moon")?.sign;
+    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente" || a.name === "Ascendant")?.sign;
+    if (sun) solSign = translateAstroSign(sun, activeLang);
+    if (moon) moonSign = translateAstroSign(moon, activeLang);
+    if (asc) ascSign = translateAstroSign(asc, activeLang);
+  } else {
     const birthDate = userProfile?.birthDate || "";
     const solSignRaw = birthDate ? getAscendedAstrologicalSign(birthDate, 0) : "Aquário";
     const moonSignRaw = birthDate ? getAscendedAstrologicalSign(birthDate, 5) : "Aquário";
     const ascSignRaw = birthDate ? getAscendedAstrologicalSign(birthDate, 8) : "Sagitário";
 
-    const solSign = translateAstroSign(solSignRaw, activeLang);
-    const moonSign = translateAstroSign(moonSignRaw, activeLang);
-    const ascSign = translateAstroSign(ascSignRaw, activeLang);
+    solSign = translateAstroSign(solSignRaw, activeLang);
+    moonSign = translateAstroSign(moonSignRaw, activeLang);
+    ascSign = translateAstroSign(ascSignRaw, activeLang);
+  }
+
+  const getFallbackResponse = (msg: string) => {
+    const userName = userProfile?.name || "Buscador";
 
     const lowerMsg = msg.toLowerCase();
 
@@ -4678,15 +5244,10 @@ app.post("/api/conselheira/chat", async (req, res) => {
   }
 
   try {
-    const birthDate = userProfile?.birthDate || "";
-    const solSign = birthDate ? getAscendedAstrologicalSign(birthDate, 0) : "Aquário";
-    const moonSign = birthDate ? getAscendedAstrologicalSign(birthDate, 5) : "Aquário";
-    const ascSign = birthDate ? getAscendedAstrologicalSign(birthDate, 8) : "Sagitário";
-
     const formattedProfile = userProfile ? `
 Nome do Usuário: ${userProfile.name}
 Nascido em: ${userProfile.birthDate} às ${userProfile.birthTime} na cidade ${userProfile.birthCity}
-Seu perfil combina Sol em ${solSign}, Ascendente em ${ascSign} e Lua em ${moonSign}.` : "Usuário anônimo buscando insights de autoconhecimento.";
+Seu perfil do Mapa Astral Natal Real (FONTE ÚNICA DA VERDADE): Sol em ${solSign}, Ascendente em ${ascSign} e Lua em ${moonSign}.` : "Usuário buscando insights de autoconhecimento.";
 
     const sysInstruction = `Você é "Orbia", a assistente astrológica inteligente, conselheira espiritual e mentor energético do portal Mapa Estelar.
 DIRETRIZES DE COMUNICAÇÃO DE ELITE (TRATAMENTO COM AMOR E INFECTUOSO CARINHO):
@@ -4890,8 +5451,43 @@ app.post("/api/tarot/draw", async (req, res) => {
     }
   }
 
-  const { lang } = req.body || {};
+  const { lang, mapData, userProfile } = req.body || {};
   const activeLang = (lang || "pt").toLowerCase();
+  
+  let userSunSign = "";
+  let userMoonSign = "Aquário";
+  let userAscSign = "Sagitário";
+  let elementsSummary = "Fogo 25%, Terra 25%, Ar 25%, Água 25%";
+  let chartContext = "";
+
+  if (mapData) {
+    const sun = mapData.astros?.find((a: any) => a.name === "Sol" || a.name === "Sun")?.sign;
+    const moon = mapData.astros?.find((a: any) => a.name === "Lua" || a.name === "Moon")?.sign;
+    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente" || a.name === "Ascendant")?.sign;
+    if (sun) userSunSign = sun;
+    if (moon) userMoonSign = moon;
+    if (asc) userAscSign = asc;
+    
+    const elements = mapData.distribution?.elements;
+    if (elements) {
+      elementsSummary = `Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%`;
+    }
+    
+    chartContext = `
+Informações Reais do Mapa Astral Natal do Usuário (Fonte Única da Verdade):
+- Sol em: ${userSunSign}
+- Lua em: ${userMoonSign}
+- Ascendente em: ${userAscSign}
+- Distribuição de Elementos: ${elementsSummary}
+`;
+  } else if (userProfile?.birthDate) {
+    const zodiac = getZodiacFromBirthDate(userProfile.birthDate);
+    userSunSign = zodiac;
+    chartContext = `
+Informações Astrológicas do Usuário:
+- Signo Solar estimado: ${userSunSign}
+`;
+  }
   
   const rawCard = shuffledDeck[0];
   const selectedCard = translateCard(rawCard, activeLang);
@@ -4939,6 +5535,10 @@ app.post("/api/tarot/draw", async (req, res) => {
   try {
     const prompt = `Gere uma leitura de tarô personalizada em ${targetLangName} para a carta sorteada: "${selectedCard.cardName}".
 O usuário quer saber sua previsão e conselho astrológico-tarótico com visual premium para esta semana.
+
+${chartContext}
+
+Considere as energias astrológicas regentes do mapa natal do usuário descritas acima (FONTE ÚNICA DA VERDADE) para sintonizar intimamente a leitura.
 Gere um JSON exato com as seguintes chaves de texto ricas e conselhos poéticos em ${targetLangName}:
 {
   "weeklyForecast": "Parágrafo detalhado de previsão de 100 a 150 palavras para a semana unindo a energia da carta e intuição astrológica...",
@@ -5054,7 +5654,7 @@ function generateOfflineTarotReading(type: string, cards: any[], question: strin
 
 // API: Interpretação de cartas sintonizadas por IA
 app.post("/api/tarot/interpret", async (req, res) => {
-  const { type, cards, question, userName, birthDate, birthTime, latitude, longitude, lang } = req.body;
+  const { type, cards, question, userName, birthDate, birthTime, latitude, longitude, lang, mapData, userProfile } = req.body;
   const userDisplay = userName || "Buscador de Sabedoria";
 
   const cardsListStr = cards && Array.isArray(cards)
@@ -5071,34 +5671,50 @@ app.post("/api/tarot/interpret", async (req, res) => {
   };
   const targetLangName = langNames[activeLang] || "Português";
 
-  let astroContextLine = "";
-  if (birthDate) {
+  let userSunSign = "";
+  let userMoonSign = "";
+  let userAscSign = "";
+  let chartContext = "";
+
+  if (mapData) {
+    const sun = mapData.astros?.find((a: any) => a.name === "Sol" || a.name === "Sun")?.sign;
+    const moon = mapData.astros?.find((a: any) => a.name === "Lua" || a.name === "Moon")?.sign;
+    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente" || a.name === "Ascendant")?.sign;
+    if (sun) userSunSign = sun;
+    if (moon) userMoonSign = moon;
+    if (asc) userAscSign = asc;
+    
+    chartContext = `Sol em ${userSunSign}, Lua em ${userMoonSign}, Ascendente em ${userAscSign}`;
+  } else if (birthDate || userProfile?.birthDate) {
     try {
+      const bDate = birthDate || userProfile?.birthDate;
       const bTime = birthTime || "12:00";
       const lat = latitude !== undefined ? latitude : -23.5505;
       const lon = longitude !== undefined ? longitude : -46.6333;
-      const chart = performAstroCalculation(birthDate, bTime, lat, lon, undefined, activeLang);
+      const chart = performAstroCalculation(bDate, bTime, lat, lon, undefined, activeLang);
       if (chart && chart.astros) {
         const solPlacement = chart.astros.find(a => a.name === "Sol" || a.name === "Sun");
         const luaPlacement = chart.astros.find(a => a.name === "Lua" || a.name === "Moon");
         const ascPlacement = chart.astros.find(a => a.name === "Ascendente" || a.name === "Ascendant");
         
-        const solSign = solPlacement ? solPlacement.sign : "";
-        const luaSign = luaPlacement ? luaPlacement.sign : "";
-        const ascSign = ascPlacement ? ascPlacement.sign : "";
+        userSunSign = solPlacement ? solPlacement.sign : "";
+        userMoonSign = luaPlacement ? luaPlacement.sign : "";
+        userAscSign = ascPlacement ? ascPlacement.sign : "";
         
         const parts = [];
-        if (solSign) parts.push(`Signo Solar: ${solSign}`);
-        if (luaSign) parts.push(`Signo Lunar: ${luaSign}`);
-        if (ascSign) parts.push(`Ascendente: ${ascSign}`);
-        
-        if (parts.length > 0) {
-          astroContextLine = `\n[IMPORTANTE - Perfil Astrológico Natal do Consulente: ${parts.join(", ")}]. Cruze de forma sutil os arquétipos das cartas de Tarot com esse signo solar e/ou ascendente (ex: "Sendo você nativo de ${solSign}..." ou "Com seu ascendente em ${ascSign}..."). Caso apareça uma carta marcante ou desafiadora (como A Torre, A Morte, O Diabo ou A Lua), faça uma correlação direta com a energia planetária de regência (ex: se for Escorpião, relacione com Plutão; se for Áries, com Marte; se for Leão, com o Sol), tornando a interpretação única, autêntica e inesquecível.`;
-        }
+        if (userSunSign) parts.push(`Sol em ${userSunSign}`);
+        if (userMoonSign) parts.push(`Lua em ${userMoonSign}`);
+        if (userAscSign) parts.push(`Ascendente em ${userAscSign}`);
+        chartContext = parts.join(", ");
       }
     } catch (e) {
       console.error("[Tarot Astro Context Error]", e);
     }
+  }
+
+  let astroContextLine = "";
+  if (chartContext) {
+    astroContextLine = `\n[IMPORTANTE - Perfil Astrológico Natal Real do Consulente (FONTE ÚNICA DA VERDADE): ${chartContext}]. Cruze de forma sutil os arquétipos das cartas de Tarot com esse mapa natal do usuário (ex: "Sendo você nativo de Sol em ${userSunSign}..." ou "Com seu ascendente em ${userAscSign}..."). Caso apareça uma carta marcante ou desafiadora (como A Torre, A Morte, O Diabo ou A Lua), faça uma correlação direta com a energia planetária de regência do signo/ascendente correspondente no mapa natal do usuário, tornando a interpretação única, autêntica, inesquecível e profundamente espiritual.`;
   }
 
   let systemPrompt = `Você é Orbia, uma taróloga profissional de verdade, extremamente sensitiva, acolhedora e profundamente humana com anos de experiência em leituras espirituais presenciais. 
@@ -5647,11 +6263,18 @@ app.post("/api/stripe/webhook", async (req: any, res) => {
   await logStripeWebhook(eventId, eventType, event);
 
   try {
+    const db = getBackendDb();
+    if (!db) {
+      console.error("[Webhook Error] Firestore db not available");
+      return res.status(500).send("Database not available");
+    }
+
     switch (eventType) {
       case 'checkout.session.completed': {
         const session = event.data.object;
         let email = session.metadata?.email || (session.customer_details && session.customer_details.email) || session.customer_email;
-        const planId = session.metadata?.planId || "premium";
+        const uid = session.metadata?.uid;
+        const planId = session.metadata?.planId || "monthly";
         const subscriptionId = session.subscription || "";
         const stripeCustomerId = typeof session.customer === 'string' ? session.customer : "";
         
@@ -5669,27 +6292,74 @@ app.post("/api/stripe/webhook", async (req: any, res) => {
           }
         }
 
-        let subscriptionEndDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-        if (subscriptionId && getStripeClient()) {
+        let subscriptionEndDate = new Date(Date.now() + 35 * 24 * 60 * 60 * 1000).toISOString();
+        let trialStart = "";
+        let trialEnds = "";
+        let status = "active";
+
+        if (subscriptionId) {
           try {
             const stripe = getStripeClient();
-            const sub = await stripe!.subscriptions.retrieve(subscriptionId);
-            subscriptionEndDate = new Date((sub as any).current_period_end * 1000).toISOString();
-          } catch {}
+            if (stripe) {
+              const sub = await stripe.subscriptions.retrieve(subscriptionId);
+              subscriptionEndDate = new Date((sub as any).current_period_end * 1000).toISOString();
+              status = (sub.status === "trialing" || sub.status === "active") ? "active" : sub.status;
+              if (sub.trial_start) trialStart = new Date(sub.trial_start * 1000).toISOString();
+              if (sub.trial_end) trialEnds = new Date(sub.trial_end * 1000).toISOString();
+            }
+          } catch (subErr) {
+            console.error("Error retrieving subscription detail:", subErr);
+          }
+        }
+
+        const updateData = {
+          isPremium: status === "active",
+          isSubscribed: status === "active",
+          planId: planId,
+          subscriptionId: subscriptionId,
+          subscriptionEndDate,
+          plan: planId,
+          subscriptionStatus: status,
+          stripeCustomerId,
+          stripeSubscriptionId: subscriptionId,
+          subscriptionUpdatedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          trialStart,
+          trialEnds
+        };
+
+        if (uid && uid.trim() !== "") {
+          await setDoc(doc(db, "users", uid), updateData, { merge: true });
+          console.log(`[Webhook] Real-time premium sync success for uid users/${uid}`);
         }
 
         if (email) {
-          await activatePremiumForUser(email, planId, subscriptionId, subscriptionEndDate, stripeCustomerId);
+          const mailKey = email.toLowerCase().trim();
+          const usersRef = collection(db, "users");
+          const q = query(usersRef, where("email", "==", mailKey));
+          const snap = await getDocs(q);
+          for (const d of snap.docs) {
+            if (d.id !== uid) {
+              await setDoc(doc(db, "users", d.id), updateData, { merge: true });
+              console.log(`[Webhook] Real-time email sync success for users/${d.id}`);
+            }
+          }
           await logBillingEvent(email, "ACTIVATION", planId, { session_id: session.id, subscriptionId });
         }
         break;
       }
-      case 'invoice.payment_succeeded': {
-        const _invoice = event.data.object;
-        const subscriptionId = _invoice.subscription;
-        let email = _invoice.customer_email || (_invoice.customer_details && _invoice.customer_details.email);
-        const planId = _invoice.lines?.data?.[0]?.metadata?.planId || "premium";
-        const stripeCustomerId = typeof _invoice.customer === 'string' ? _invoice.customer : "";
+
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated': {
+        const sub = event.data.object;
+        const subscriptionId = sub.id;
+        const stripeCustomerId = typeof sub.customer === 'string' ? sub.customer : "";
+        
+        let email = sub.metadata?.email;
+        let uid = sub.metadata?.uid;
+        
+        const priceId = sub.items?.data?.[0]?.price?.id || "";
+        const planId = sub.metadata?.planId || (priceId === 'price_1TjkNaLy2FLlsgZ1p832v8cB' ? 'annual' : 'monthly');
         
         if (!email && stripeCustomerId) {
           try {
@@ -5701,29 +6371,57 @@ app.post("/api/stripe/webhook", async (req: any, res) => {
               }
             }
           } catch (e) {
-            console.error("[Webhook payment_succeeded] Error fetching customer email:", e);
+            console.error("[Webhook updated] Error fetching customer email:", e);
           }
         }
 
-        let subscriptionEndDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-        if (subscriptionId && getStripeClient()) {
-          try {
-            const stripe = getStripeClient();
-            const sub = await stripe!.subscriptions.retrieve(subscriptionId);
-            subscriptionEndDate = new Date((sub as any).current_period_end * 1000).toISOString();
-          } catch {}
+        const status = (sub.status === 'active' || sub.status === 'trialing') ? 'active' : sub.status;
+        const subscriptionEndDate = new Date(sub.current_period_end * 1000).toISOString();
+        const trialStart = sub.trial_start ? new Date(sub.trial_start * 1000).toISOString() : "";
+        const trialEnds = sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : "";
+
+        const updateData = {
+          isPremium: status === 'active',
+          isSubscribed: status === 'active',
+          planId: planId,
+          subscriptionId: subscriptionId,
+          subscriptionEndDate,
+          subscriptionStatus: status,
+          plan: status === 'active' ? planId : 'none',
+          stripeCustomerId: stripeCustomerId,
+          stripeSubscriptionId: subscriptionId,
+          subscriptionUpdatedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          trialStart,
+          trialEnds
+        };
+
+        if (uid && uid.trim() !== "") {
+          await setDoc(doc(db, "users", uid), updateData, { merge: true });
+          console.log(`[Webhook] Direct sync for uid users/${uid} on event ${eventType}`);
         }
 
         if (email) {
-          await activatePremiumForUser(email, planId, subscriptionId, subscriptionEndDate, stripeCustomerId);
-          await logBillingEvent(email, "RENEWAL_SUCCESS", planId, { invoice_id: _invoice.id, subscriptionId });
+          const mailKey = email.toLowerCase().trim();
+          const usersRef = collection(db, "users");
+          const q = query(usersRef, where("email", "==", mailKey));
+          const snap = await getDocs(q);
+          for (const d of snap.docs) {
+            if (d.id !== uid) {
+              await setDoc(doc(db, "users", d.id), updateData, { merge: true });
+              console.log(`[Webhook] Email sync for users/${d.id} on event ${eventType}`);
+            }
+          }
+          await logBillingEvent(email, `SUBSCRIPTION_${eventType.replace('customer.subscription.', '').toUpperCase()}`, planId, { subscriptionId, status });
         }
         break;
       }
+
       case 'customer.subscription.deleted': {
         const sub = event.data.object;
         const subscriptionId = sub.id;
         let email = sub.metadata?.email || (sub.customer_details && sub.customer_details.email);
+        const uid = sub.metadata?.uid;
         const stripeCustomerId = typeof sub.customer === 'string' ? sub.customer : "";
         
         if (!email && stripeCustomerId) {
@@ -5740,35 +6438,44 @@ app.post("/api/stripe/webhook", async (req: any, res) => {
           }
         }
 
+        const updateData = {
+          isPremium: false,
+          isSubscribed: false,
+          plan: "none",
+          subscriptionStatus: "cancelled",
+          stripeCustomerId: stripeCustomerId,
+          stripeSubscriptionId: "",
+          subscriptionUpdatedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        if (uid && uid.trim() !== "") {
+          await setDoc(doc(db, "users", uid), updateData, { merge: true });
+          console.log(`[Webhook] Cancellation direct sync for users/${uid}`);
+        }
+
         if (email) {
-          const db = getBackendDb();
-          if (db) {
-            const usersRef = collection(db, "users");
-            const q = query(usersRef, where("email", "==", email.toLowerCase().trim()));
-            const snap = await getDocs(q);
-            for (const d of snap.docs) {
-              await setDoc(doc(db, "users", d.id), {
-                isPremium: false,
-                isSubscribed: false,
-                plan: "none",
-                subscriptionStatus: "cancelled",
-                stripeCustomerId: stripeCustomerId,
-                stripeSubscriptionId: "",
-                subscriptionUpdatedAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-              }, { merge: true });
+          const mailKey = email.toLowerCase().trim();
+          const usersRef = collection(db, "users");
+          const q = query(usersRef, where("email", "==", mailKey));
+          const snap = await getDocs(q);
+          for (const d of snap.docs) {
+            if (d.id !== uid) {
+              await setDoc(doc(db, "users", d.id), updateData, { merge: true });
+              console.log(`[Webhook] Cancellation email sync for users/${d.id}`);
             }
           }
           await logBillingEvent(email, "CANCELLATION", "none", { subscriptionId });
         }
         break;
       }
-      case 'customer.subscription.updated': {
-        const sub = event.data.object;
-        const subscriptionId = sub.id;
-        let email = sub.metadata?.email || (sub.customer_details && sub.customer_details.email);
-        const stripeCustomerId = typeof sub.customer === 'string' ? sub.customer : "";
-        const status = sub.status; // e.g. "active", "past_due", "unpaid", "canceled", "incomplete"
+
+      case 'invoice.payment_succeeded': {
+        const _invoice = event.data.object;
+        const subscriptionId = _invoice.subscription;
+        let email = _invoice.customer_email || (_invoice.customer_details && _invoice.customer_details.email);
+        let uid = _invoice.metadata?.uid;
+        const stripeCustomerId = typeof _invoice.customer === 'string' ? _invoice.customer : "";
         
         if (!email && stripeCustomerId) {
           try {
@@ -5780,39 +6487,75 @@ app.post("/api/stripe/webhook", async (req: any, res) => {
               }
             }
           } catch (e) {
-            console.error("[Webhook updated] Error fetching customer email:", e);
+            console.error("[Webhook payment_succeeded] Error fetching customer email:", e);
           }
         }
 
+        let subscriptionEndDate = new Date(Date.now() + 35 * 24 * 60 * 60 * 1000).toISOString();
+        let planId = "monthly";
+        let trialStart = "";
+        let trialEnds = "";
+
+        if (subscriptionId) {
+          try {
+            const stripe = getStripeClient();
+            if (stripe) {
+              const sub = await stripe!.subscriptions.retrieve(subscriptionId);
+              subscriptionEndDate = new Date((sub as any).current_period_end * 1000).toISOString();
+              const priceId = sub.items?.data?.[0]?.price?.id || "";
+              planId = sub.metadata?.planId || (priceId === 'price_1TjkNaLy2FLlsgZ1p832v8cB' ? 'annual' : 'monthly');
+              if (!uid) uid = sub.metadata?.uid;
+              if (!email) email = sub.metadata?.email;
+              if (sub.trial_start) trialStart = new Date(sub.trial_start * 1000).toISOString();
+              if (sub.trial_end) trialEnds = new Date(sub.trial_end * 1000).toISOString();
+            }
+          } catch (subErr) {
+            console.error("[Webhook payment_succeeded] Sub retrieve failed:", subErr);
+          }
+        }
+
+        const updateData = {
+          isPremium: true,
+          isSubscribed: true,
+          planId: planId,
+          subscriptionId: subscriptionId || "",
+          subscriptionEndDate,
+          plan: planId,
+          subscriptionStatus: "active",
+          stripeCustomerId: stripeCustomerId,
+          stripeSubscriptionId: subscriptionId || "",
+          subscriptionUpdatedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          trialStart,
+          trialEnds
+        };
+
+        if (uid && uid.trim() !== "") {
+          await setDoc(doc(db, "users", uid), updateData, { merge: true });
+          console.log(`[Webhook] Payment Succeeded direct sync for users/${uid}`);
+        }
+
         if (email) {
-          const db = getBackendDb();
-          if (db) {
-            const usersRef = collection(db, "users");
-            const q = query(usersRef, where("email", "==", email.toLowerCase().trim()));
-            const snap = await getDocs(q);
-            const isNowActive = (status === 'active' || status === 'trialing');
-            
-            for (const d of snap.docs) {
-              await setDoc(doc(db, "users", d.id), {
-                isPremium: isNowActive,
-                isSubscribed: isNowActive,
-                subscriptionStatus: status,
-                plan: isNowActive ? (d.data().plan || "monthly") : "none",
-                stripeCustomerId: stripeCustomerId,
-                stripeSubscriptionId: subscriptionId,
-                subscriptionUpdatedAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-              }, { merge: true });
+          const mailKey = email.toLowerCase().trim();
+          const usersRef = collection(db, "users");
+          const q = query(usersRef, where("email", "==", mailKey));
+          const snap = await getDocs(q);
+          for (const d of snap.docs) {
+            if (d.id !== uid) {
+              await setDoc(doc(db, "users", d.id), updateData, { merge: true });
+              console.log(`[Webhook] Payment Succeeded email sync for users/${d.id}`);
             }
           }
-          await logBillingEvent(email, `SUBSCRIPTION_UPDATED_${status.toUpperCase()}`, "none", { subscriptionId, status });
+          await logBillingEvent(email, "RENEWAL_SUCCESS", planId, { invoice_id: _invoice.id, subscriptionId });
         }
         break;
       }
+
       case 'invoice.payment_failed': {
         const _invoice = event.data.object;
         const subscriptionId = _invoice.subscription;
         let email = _invoice.customer_email || (_invoice.customer_details && _invoice.customer_details.email);
+        let uid = _invoice.metadata?.uid;
         const stripeCustomerId = typeof _invoice.customer === 'string' ? _invoice.customer : "";
         
         if (!email && stripeCustomerId) {
@@ -5829,28 +6572,50 @@ app.post("/api/stripe/webhook", async (req: any, res) => {
           }
         }
 
+        if (subscriptionId) {
+          try {
+            const stripe = getStripeClient();
+            if (stripe) {
+              const sub = await stripe.subscriptions.retrieve(subscriptionId);
+              if (!uid) uid = sub.metadata?.uid;
+              if (!email) email = sub.metadata?.email;
+            }
+          } catch (e) {
+            console.error("[Webhook payment_failed] Sub retrieval failed:", e);
+          }
+        }
+
+        const updateData = {
+          isPremium: false,
+          isSubscribed: false,
+          subscriptionStatus: "unpaid",
+          stripeCustomerId: stripeCustomerId,
+          stripeSubscriptionId: subscriptionId || "",
+          subscriptionUpdatedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        if (uid && uid.trim() !== "") {
+          await setDoc(doc(db, "users", uid), updateData, { merge: true });
+          console.log(`[Webhook] Payment Failed direct sync for users/${uid}`);
+        }
+
         if (email) {
-          const db = getBackendDb();
-          if (db) {
-            const usersRef = collection(db, "users");
-            const q = query(usersRef, where("email", "==", email.toLowerCase().trim()));
-            const snap = await getDocs(q);
-            for (const d of snap.docs) {
-              await setDoc(doc(db, "users", d.id), {
-                isPremium: false,
-                isSubscribed: false,
-                subscriptionStatus: "unpaid",
-                stripeCustomerId: stripeCustomerId,
-                stripeSubscriptionId: subscriptionId || "",
-                subscriptionUpdatedAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-              }, { merge: true });
+          const mailKey = email.toLowerCase().trim();
+          const usersRef = collection(db, "users");
+          const q = query(usersRef, where("email", "==", mailKey));
+          const snap = await getDocs(q);
+          for (const d of snap.docs) {
+            if (d.id !== uid) {
+              await setDoc(doc(db, "users", d.id), updateData, { merge: true });
+              console.log(`[Webhook] Payment Failed email sync for users/${d.id}`);
             }
           }
           await logBillingEvent(email, "PAYMENT_FAILED", "none", { subscriptionId, invoice_id: _invoice.id });
         }
         break;
       }
+
       default:
         console.log(`[Webhook] Evento não tratado explicitamente: ${eventType}`);
     }
@@ -5865,7 +6630,7 @@ app.post("/api/stripe/webhook", async (req: any, res) => {
 // Real Stripe Session Creation & Verification Handlers
 app.post("/api/stripe/create-checkout-session", async (req, res) => {
   try {
-    const { email, planId, planName, lang } = req.body;
+    const { email, planId, planName, lang, uid } = req.body;
     if (!email || !planId) {
       return res.status(400).json({ error: (req as any).t('api.stripe.email_plan_required') });
     }
@@ -5907,33 +6672,45 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
       const simulatedUrl = `${origin}?stripe_success=true&session_id=${mockSessionId}&simulated=true&plan_id=${planId}&email=${encodeURIComponent(email)}`;
       
       return res.json({
-        id: mockSessionId,
-        url: simulatedUrl,
-        simulated: true,
-        message: (req as any).t('api.stripe.simulator_active')
+         id: mockSessionId,
+         url: simulatedUrl,
+         simulated: true,
+         message: (req as any).t('api.stripe.simulator_active')
       });
+    }
+
+    // Customer creation or retrieval if it doesn't exist yet
+    let stripeCustomerId: string | undefined = undefined;
+    try {
+      const customers = await stripe.customers.list({ email: email.toLowerCase().trim(), limit: 1 });
+      if (customers.data.length > 0) {
+        stripeCustomerId = customers.data[0].id;
+        console.log(`[Stripe Checkout] Existing customer found: ${stripeCustomerId} for ${email}`);
+      } else {
+        const customer = await stripe.customers.create({
+          email: email.toLowerCase().trim(),
+          metadata: {
+            app: "Orbita",
+            uid: uid || ""
+          }
+        });
+        stripeCustomerId = customer.id;
+        console.log(`[Stripe Checkout] Created new Stripe customer: ${stripeCustomerId} for ${email}`);
+      }
+    } catch (customerErr) {
+      console.warn(`[Stripe Checkout] Customer lookup/creation failed:`, customerErr);
     }
 
     // Creating actual live or test checkout session in Stripe
     const stripeLocale = lang === 'pt' ? 'pt-BR' : lang === 'es' ? 'es' : lang === 'de' ? 'de' : lang === 'fr' ? 'fr' : 'en';
-    const session = await stripe.checkout.sessions.create({
+    const priceId = planId === 'annual' ? 'price_1TjkNaLy2FLlsgZ1p832v8cB' : 'price_1TjjUdLy2FLlsgZ1783FoAAX';
+    
+    const checkoutParams: any = {
       payment_method_types: ['card'],
       locale: stripeLocale,
       line_items: [
         {
-          price_data: {
-            currency: currency,
-            product_data: {
-              name: `Portal Órbita - ${planName || planId.toUpperCase()}`,
-              description: planId === 'annual' 
-                ? 'Sincronização Cósmica Premium ilimitada - Assinatura Anual.' 
-                : 'Sincronização Cósmica Premium ilimitada - Assinatura Mensal.',
-            },
-            unit_amount: amountInCents,
-            recurring: {
-              interval: interval,
-            },
-          },
+          price: priceId,
           quantity: 1,
         },
       ],
@@ -5942,16 +6719,25 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
         metadata: {
           planId,
           email,
+          uid: uid || "",
         }
       },
       metadata: {
         planId,
         email,
+        uid: uid || "",
       },
-      customer_email: email,
       success_url: `${origin}?stripe_success=true&session_id={CHECKOUT_SESSION_ID}&plan_id=${planId}&email=${encodeURIComponent(email)}`,
       cancel_url: `${origin}?stripe_cancel=true`,
-    });
+    };
+
+    if (stripeCustomerId) {
+      checkoutParams.customer = stripeCustomerId;
+    } else {
+      checkoutParams.customer_email = email;
+    }
+
+    const session = await stripe.checkout.sessions.create(checkoutParams);
 
     return res.json({
       id: session.id,

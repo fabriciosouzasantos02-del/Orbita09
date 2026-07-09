@@ -1,407 +1,363 @@
 import React, { useState } from 'react';
-import { Sparkles, Lock, ShieldCheck, CheckCircle2, RefreshCw, ExternalLink } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Language } from '../lib/translations';
 import { useTranslation } from 'react-i18next';
-
-const LOCAL_PREMIUM_TRANSLATIONS: Record<Language, Record<string, string>> = {
-  pt: {
-    "plan_monthly_name": "Mensal",
-    "9,99 EUR / mês": "9,99 EUR / mês",
-    "plan_monthly_desc": "Acesso completo e ilimitado a todas as ferramentas astrológicas.",
-    "plan_annual_name": "Anual (Economize 33%)",
-    "79,99 EUR / ano": "79,99 EUR / ano",
-    "plan_annual_desc": "Melhor valor. Acesso ilimitado o ano todo (apenas 6,66 EUR/mês).",
-    "checkout_ready_title": "Sessão Segura Criada!",
-    "checkout_ready_desc": "Seu checkout seguro na Stripe está pronto. Caso o ambiente de pagamento não tenha aberto automaticamente em uma nova aba, clique no botão abaixo para prosseguir com segurança:",
-    "btn_open_checkout": "Abrir Checkout Seguro",
-    "btn_cancel_checkout": "Voltar e Tentar Novamente"
-  },
-  en: {
-    "plan_monthly_name": "Monthly",
-    "9,99 EUR / mês": "9.99 EUR / month",
-    "plan_monthly_desc": "Complete and unlimited access to all astrological tools.",
-    "plan_annual_name": "Annual (Save 33%)",
-    "79,99 EUR / ano": "79.99 EUR / year",
-    "plan_annual_desc": "Best value. Unlimited access all year round (just 6.66 EUR/month).",
-    "checkout_ready_title": "Secure Session Created!",
-    "checkout_ready_desc": "Your secure Stripe checkout is ready. If the payment environment did not open automatically in a new tab, click the button below to proceed securely:",
-    "btn_open_checkout": "Open Secure Checkout",
-    "btn_cancel_checkout": "Go Back & Try Again"
-  },
-  es: {
-    "plan_monthly_name": "Mensual",
-    "9,99 EUR / mês": "9,99 EUR / mes",
-    "plan_monthly_desc": "Acceso completo e ilimitado a todas las herramientas astrológicas.",
-    "plan_annual_name": "Anual (Ahorra un 33%)",
-    "79,99 EUR / ano": "79,99 EUR / año",
-    "plan_annual_desc": "El mejor valor. Acceso ilimitado todo el año (solo 6,66 EUR/mes).",
-    "checkout_ready_title": "¡Sesión Segura Creada!",
-    "checkout_ready_desc": "Tu pago seguro de Stripe está listo. Si el entorno de pago no se abrió automáticamente en una nueva pestaña, haz clic en el botón de abajo para proceder de manera segura:",
-    "btn_open_checkout": "Abrir Pago Seguro",
-    "btn_cancel_checkout": "Volver y Intentar de Nuevo"
-  },
-  de: {
-    "plan_monthly_name": "Monatlich",
-    "9,99 EUR / mês": "9,99 EUR / Monat",
-    "plan_monthly_desc": "Vollständiger und unbegrenzter Zugriff auf alle astrologischen Werkzeuge.",
-    "plan_annual_name": "Jährlich (Sparen Sie 33%)",
-    "79,99 EUR / ano": "79,99 EUR / Jahr",
-    "plan_annual_desc": "Bestes Preis-Leistungs-Verhältnis. Unbegrenzter Zugriff das ganze Jahr über (nur 6,66 EUR/Monat).",
-    "checkout_ready_title": "Sichere Sitzung erstellt!",
-    "checkout_ready_desc": "Ihre sichere Stripe-Kasse ist bereit. Wenn sich die Zahlungsumgebung nicht automatisch in einem neuen Tab geöffnet hat, klicken Sie auf die Schaltfläche unten, um sicher fortzufahren:",
-    "btn_open_checkout": "Sichere Kasse öffnen",
-    "btn_cancel_checkout": "Zurück & Erneut versuchen"
-  },
-  fr: {
-    "plan_monthly_name": "Mensuel",
-    "9,99 EUR / mês": "9,99 EUR / mois",
-    "plan_monthly_desc": "Accès complet et illimité à tous les outils astrologiques.",
-    "plan_annual_name": "Annuel (Économisez 33%)",
-    "79,99 EUR / ano": "79,99 EUR / an",
-    "plan_annual_desc": "Meilleur rapport qualité-prix. Accès illimité toute l'année (seulement 6,66 EUR/mois).",
-    "checkout_ready_title": "Session sécurisée créée !",
-    "checkout_ready_desc": "Votre paiement sécurisé Stripe est prêt. Si l'environnement de paiement ne s'est pas ouvert automatiquement dans un nouvel onglet, cliquez sur le bouton ci-dessous pour continuer en toute sécurité :",
-    "btn_open_checkout": "Ouvrir le paiement sécurisé",
-    "btn_cancel_checkout": "Retourner & Réessayer"
-  }
-};
+import { motion } from 'motion/react';
+import { 
+  Sparkles, 
+  Compass, 
+  BookOpen, 
+  Heart, 
+  CreditCard, 
+  Lock, 
+  Check, 
+  Loader2, 
+  Orbit, 
+  Globe, 
+  X,
+  ShieldCheck,
+  Zap,
+  Info
+} from 'lucide-react';
 
 interface PremiumConversionScreenProps {
-  currentLang: Language;
-  onUpgradeComplete: (isPremium: boolean) => void;
   userEmail: string;
-  updateUserProfileOnDb: (email: string, payload: any) => Promise<any>;
+  userUid: string;
+  currentLang: string;
+  onClose: () => void;
+  triggerGlobalNotification?: (title: string, message: string, type: 'success' | 'alert' | 'info') => void;
 }
 
 export const PremiumConversionScreen: React.FC<PremiumConversionScreenProps> = ({
-  currentLang,
-  onUpgradeComplete,
   userEmail,
+  userUid,
+  currentLang,
+  onClose,
+  triggerGlobalNotification
 }) => {
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
-  const [step, setStep] = useState<'checkout' | 'success'>('checkout');
-  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual'>('monthly');
+  const { t } = useTranslation();
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual'>('annual');
+  const [isRedirecting, setIsRedirecting] = useState<boolean>(false);
 
-  const { t: i18nT } = useTranslation();
-  const t = (key: string, fallback?: string) => {
-    const localDict = LOCAL_PREMIUM_TRANSLATIONS[currentLang];
-    if (localDict && localDict[key]) {
-      return localDict[key];
-    }
-    const translated = i18nT(key);
-    return translated !== key ? translated : (fallback || key);
-  };
-
-  const plansList = [
-    { 
-      id: 'monthly' as const, 
-      name: t('plan_monthly_name', 'Mensal'), 
-      price: t('9,99 EUR / mês', '9,99 EUR / mês'), 
-      stripePrice: '9,99 EUR', 
-      desc: t('plan_monthly_desc', 'Acesso completo e ilimitado a todas as ferramentas astrológicas.') 
-    },
-    { 
-      id: 'annual' as const, 
-      name: t('plan_annual_name', 'Anual (Economize 33%)'), 
-      price: t('79,99 EUR / ano', '79,99 EUR / ano'), 
-      stripePrice: '79,99 EUR', 
-      desc: t('plan_annual_desc', 'Melhor valor. Acesso ilimitado o ano todo (apenas 6,66 EUR/mês).') 
-    }
-  ];
-
-  const handleStripeCheckout = async () => {
-    if (!userEmail) {
-      alert(t('user_not_found', 'ID do usuário/Email não encontrado.'));
-      return;
-    }
-    setIsProcessing(true);
+  const handleCheckout = async () => {
+    setIsRedirecting(true);
     try {
-      const activePlan = plansList.find(p => p.id === selectedPlan) || plansList[0];
+      const planId = selectedPlan === 'monthly' 
+        ? 'price_1TjjUdLy2FLlsgZ1783FoAAX' 
+        : 'price_1TjkNaLy2FLlsgZ1p832v8cB';
+
+      const planName = selectedPlan === 'monthly' ? 'Orbita Monthly' : 'Orbita Annual';
+
       const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
-          email: userEmail,
-          planId: selectedPlan,
-          planName: activePlan.name,
-          lang: currentLang
-        })
+          email: userEmail || localStorage.getItem("orbi_logged_email") || "",
+          planId: planId,
+          planName: planName,
+          lang: currentLang || 'pt',
+          uid: userUid
+        }),
       });
 
       if (!response.ok) {
-        throw new Error('Network response not ok');
+        throw new Error('Falha ao conectar com o serviço de pagamento');
       }
 
-      const session = await response.json();
-      if (session.url) {
-        setCheckoutUrl(session.url);
-        
-        // Attempt to open in a new tab first (safest and required for Stripe inside iframes)
-        const stripeWindow = window.open(session.url, '_blank');
-        
-        // If popup blocker blocked it or if we are inside an iframe, try top-level redirect or keep the inline state
-        if (!stripeWindow || stripeWindow.closed || typeof stripeWindow.closed === 'undefined') {
-          try {
-            if (window.self !== window.top) {
-              window.top!.location.href = session.url;
-            } else {
-              window.location.href = session.url;
+      const data = await response.json();
+      if (data.url) {
+        // CORREÇÃO CRÍTICA PARA IFRAMES (AI Studio / Sandbox):
+        // Redirecionar diretamente no iframe causará uma tela branca devido às políticas de segurança da Stripe (X-Frame-Options/CSP).
+        // Tentamos abrir em uma nova aba para garantir o correto funcionamento e, como fallback, redirecionamos a aba pai (top window) ou a atual.
+        try {
+          if (window.self !== window.top) {
+            // Estamos dentro de um iframe, abre em nova aba
+            const openedWindow = window.open(data.url, '_blank');
+            if (!openedWindow) {
+              // Se o navegador bloqueou o popup, redirecionamos a página top
+              window.top!.location.href = data.url;
             }
-          } catch (e) {
-            console.log("Iframe top navigation restricted. Relying on user clicking the fallback checkout button.", e);
+          } else {
+            // Fora de iframe, redireciona normalmente
+            window.location.href = data.url;
+          }
+        } catch (iframeErr) {
+          // Fallback seguro caso haja erro de Cross-Origin acessando window.top
+          const openedWindow = window.open(data.url, '_blank');
+          if (!openedWindow) {
+            window.location.href = data.url;
           }
         }
       } else {
-        throw new Error(session.error || 'Invalid session response');
+        throw new Error('Retorno inválido do servidor de checkout');
       }
     } catch (err: any) {
-      console.error("Stripe Checkout error:", err);
-      alert(t('checkout_error', 'Erro ao gerar sessão de pagamento com a Stripe.'));
-    } finally {
-      setIsProcessing(false);
+      console.error('[Stripe Checkout Error]', err);
+      if (triggerGlobalNotification) {
+        triggerGlobalNotification(
+          t('Erro de Conexão'),
+          t('Não foi possível iniciar o checkout seguro da Stripe. Tente novamente.'),
+          'alert'
+        );
+      } else {
+        alert(t('Não foi possível iniciar o checkout seguro da Stripe. Tente novamente.'));
+      }
+      setIsRedirecting(false);
     }
   };
 
+  const benefits = [
+    {
+      icon: <Sparkles className="w-5 h-5 text-amber-400" />,
+      titleKey: 'premium_benefit_1_title',
+      titleDefault: 'Análise Avançada da IA Orbia',
+      descKey: 'premium_benefit_1_desc',
+      descDefault: 'Conselhos diários e interpretação personalizada em tempo real baseada em seus trânsitos e mapa astral.'
+    },
+    {
+      icon: <Compass className="w-5 h-5 text-emerald-400" />,
+      titleKey: 'premium_benefit_2_title',
+      titleDefault: 'Tarot Cósmico Profissional',
+      descKey: 'premium_benefit_2_desc',
+      descDefault: 'Tiragens ilimitadas com correspondências alquímicas, astrológicas e numéricas exclusivas.'
+    },
+    {
+      icon: <Heart className="w-5 h-5 text-rose-400" />,
+      titleKey: 'premium_benefit_3_title',
+      titleDefault: 'Compatibilidade e Sinastria',
+      descKey: 'premium_benefit_3_desc',
+      descDefault: 'Entenda os fios invisíveis de atração, desafios e afinidades entre sua energia e a de quem você ama.'
+    },
+    {
+      icon: <BookOpen className="w-5 h-5 text-purple-400" />,
+      titleKey: 'premium_benefit_4_title',
+      titleDefault: 'Oráculo dos Sonhos',
+      descKey: 'premium_benefit_4_desc',
+      descDefault: 'Desvende as mensagens ocultas de seu subconsciente com interpretações guiadas e arquivamento seguro.'
+    },
+    {
+      icon: <Orbit className="w-5 h-5 text-amber-500" />,
+      titleKey: 'premium_benefit_5_title',
+      titleDefault: 'Mapas Extras Ilimitados',
+      descKey: 'premium_benefit_5_desc',
+      descDefault: 'Crie, salve e analise as mandalas astrais e relatórios numerológicos de seus amigos e familiares.'
+    }
+  ];
+
   return (
-    <div id="premium-conversion-screen" className="relative z-10 space-y-10 pb-4 max-w-5xl mx-auto px-1">
-      {/* Fallback secure checkout modal overlay for iframe context and pop-up block prevention */}
-      <AnimatePresence>
-        {checkoutUrl && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-gradient-to-b from-slate-900 to-slate-950 border border-amber-500/35 rounded-3xl p-6 md:p-8 max-w-md w-full text-center space-y-6 shadow-2xl relative overflow-hidden"
-            >
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-amber-500/[0.04] rounded-full blur-3xl pointer-events-none" />
+    <div id="premium-conversion-screen" className="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 overflow-y-auto flex items-center justify-center p-4 sm:p-6 md:p-8">
+      
+      {/* Background stars animation visual container */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(245,158,11,0.05),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(99,102,241,0.05),transparent_50%)] pointer-events-none" />
+      
+      <motion.div 
+        initial={{ opacity: 0, y: 30, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: -30, scale: 0.98 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="relative w-full max-w-4xl bg-slate-900/90 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl shadow-amber-500/5 my-auto"
+      >
+        {/* Close Button */}
+        <button 
+          onClick={onClose}
+          disabled={isRedirecting}
+          className="absolute top-4 right-4 p-2 rounded-full bg-slate-950/50 border border-slate-800 hover:border-slate-700 hover:bg-slate-900 transition-all text-slate-400 hover:text-slate-200 z-10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          title={t('Voltar ao Portal')}
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="grid grid-cols-1 md:grid-cols-12">
+          
+          {/* Left Column - Benefits list */}
+          <div className="col-span-1 md:col-span-7 p-6 sm:p-8 border-b md:border-b-0 md:border-r border-slate-800 flex flex-col justify-between">
+            <div className="space-y-6">
               
-              <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto text-amber-500">
-                <Lock className="w-6 h-6 animate-pulse" />
+              {/* Badge */}
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs font-mono font-bold tracking-wider text-amber-400 uppercase">
+                <Zap className="w-3.5 h-3.5 fill-amber-400/20" />
+                <span>{t('premium', 'Premium')}</span>
               </div>
 
-              <div className="space-y-2">
-                <h3 className="text-lg font-sans font-black text-slate-100 tracking-tight">
-                  {t('checkout_ready_title', 'Sessão Segura Criada!')}
-                </h3>
-                <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                  {t('checkout_ready_desc', 'Seu checkout seguro na Stripe está pronto. Caso o ambiente de pagamento não tenha aberto automaticamente em uma nova aba, clique no botão abaixo para prosseguir com segurança:')}
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <a
-                  href={checkoutUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-3.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-amber-500 hover:from-purple-500 hover:via-indigo-500 hover:to-amber-400 text-slate-100 text-xs font-black uppercase tracking-wider rounded-xl transition duration-300 shadow-lg shadow-indigo-500/10 flex items-center justify-center gap-2 cursor-pointer border-0"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  <span>{t('btn_open_checkout', 'Abrir Checkout Seguro')}</span>
-                </a>
-
-                <button
-                  type="button"
-                  onClick={() => setCheckoutUrl(null)}
-                  className="w-full py-2.5 bg-slate-950/60 hover:bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 text-xs font-bold rounded-xl transition duration-200 cursor-pointer"
-                >
-                  {t('btn_cancel_checkout', 'Voltar e Tentar Novamente')}
-                </button>
-              </div>
-
-              <div className="flex justify-center items-center gap-1.5 text-[10px] font-mono text-slate-500">
-                <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                <span>{t('stripe_secure_billing', 'Sua conexão é 100% criptografada')}</span>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence mode="wait">
-        {step === 'checkout' ? (
-          <motion.div
-            key="checkout-view"
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.4 }}
-            className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
-          >
-            {/* Left Col: High-converting psychological text */}
-            <div className="lg:col-span-7 space-y-6 text-left">
-              <div className="space-y-4">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] uppercase font-mono font-bold tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/20">
-                  <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+              {/* Title & Headline */}
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold font-sans tracking-tight text-slate-100">
                   {t('conversion_headline', 'ALINHAMENTO CÓSMICO PREMIUM')}
-                </span>
-                <h1 className="text-2xl md:text-4xl font-sans font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-slate-50 via-slate-200 to-slate-400 leading-tight">
-                  {t('conversion_card_title', 'Sua Mandala Ancestral está Pronta')}
-                </h1>
-                <p className="text-xs md:text-sm text-slate-300 leading-relaxed font-sans font-semibold">
-                  {t('conversion_p1', 'Durante os últimos dias você teve acesso à nossa tecnologia avançada de interpretação astrológica personalizada em tempo real.')}
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-400 mt-2">
+                  {t('conversion_sub', 'Sua assinatura sintoniza interpretações exclusivas e tecnologia planetária de alta definição.')}
                 </p>
               </div>
 
-              {/* Core Benefits / Story telling paragraphs */}
-              <div className="space-y-4 text-xs text-slate-400 leading-relaxed border-l-2 border-slate-850 pl-4 font-sans">
-                <p>
-                  {t('conversion_p2', 'Por trás de cada análise existe uma avançada tecnologia astrológica e de inteligência artificial que processa continuamente milhares de cálculos personalizados com base no seu mapa astral, trânsitos planetários, posições celestes, casas astrológicas, aspectos ativos, Lua, Sol, ascendente e ciclos cósmicos que influenciam sua jornada neste exato momento.')}
-                </p>
-                <p>
-                  {t('conversion_p3', 'Diferente de aplicativos genéricos, o Orbita não entrega interpretações padronizadas. Nossa tecnologia monitora constantemente as movimentações celestes e cruza essas informações com a sua configuração astral exclusiva, gerando orientações altamente personalizadas, alinhadas à sua frequência energética atual.')}
-                </p>
-                <p>
-                  {t('conversion_p4', 'Sua assinatura contribui para manter toda essa estrutura funcionando: servidores de processamento em tempo real, sistemas avançados de inteligência artificial, atualização contínua dos dados astrológicos globais e o desenvolvimento constante de novos recursos exclusivos.')}
-                </p>
-                <p>
-                  {t('conversion_p5', 'Ao continuar sua jornada, você mantém acesso ilimitado a uma plataforma criada para oferecer autoconhecimento, clareza, direcionamento e uma leitura cósmica profundamente personalizada, algo que nenhum mapa genérico consegue entregar.')}
-                </p>
-                <p className="text-amber-400/90 font-medium">
-                  {t('conversion_p6', 'Milhares de cálculos astrológicos são processados continuamente para gerar suas previsões, análises e recomendações diárias.')}
-                </p>
+              {/* Precision JPL NASA Text */}
+              <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-850 text-[11px] leading-relaxed text-slate-400 flex gap-3">
+                <Globe className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                <span>
+                  {t('conversion_nasa_text', 'Tecnologia astrológica avançada de interpretação, com cálculos astronômicos de altíssima precisão conectados ao motor softwares da NASA/JPL, calculando posições planetárias, casas e trânsitos em tempo real.')}
+                </span>
               </div>
 
-              {/* Interactive Plan Selector */}
-              <div id="stripe-plan-selector" className="space-y-3 pt-2">
-                <span className="inline-flex items-center gap-1 text-[9px] uppercase font-mono tracking-widest text-amber-500 font-bold bg-amber-500/10 px-2 py-0.5 rounded-sm">
-                  {t('choose_celestial_connection', 'Escolha sua Conexão Celeste')}
-                </span>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {plansList.map((plan) => (
-                    <button
-                      key={plan.id}
-                      type="button"
-                      onClick={() => setSelectedPlan(plan.id)}
-                      className={`p-4 rounded-2xl text-left border cursor-pointer transition flex flex-col justify-between ${
-                        selectedPlan === plan.id
-                          ? 'bg-amber-500/10 border-amber-500 text-slate-100 shadow-[0_0_12px_rgba(245,158,11,0.15)]'
-                          : 'bg-slate-900/30 border-slate-850 hover:border-slate-800 text-slate-400'
-                      }`}
-                    >
-                      <div>
-                        <div className="flex justify-between items-center gap-1">
-                          <span className="text-xs font-black tracking-tight leading-none block text-slate-250">{plan.name}</span>
-                          {selectedPlan === plan.id && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-amber-400 to-rose-500" />
-                          )}
-                        </div>
-                        <p className="text-[10px] text-slate-400 mt-2 leading-snug font-sans">{plan.desc}</p>
-                      </div>
-                      <div className="mt-4 pt-2 border-t border-slate-850/50 flex justify-between items-baseline">
-                        <span className="text-[8px] font-mono opacity-50 uppercase">{plan.price}</span>
-                        <span className="text-xs font-mono font-bold text-amber-400">{plan.stripePrice}</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+              {/* Benefits list */}
+              <div className="space-y-4 pt-2">
+                {benefits.map((b, idx) => (
+                  <div key={idx} className="flex gap-3.5 items-start">
+                    <div className="p-1.5 rounded-lg bg-slate-950 border border-slate-800 shrink-0">
+                      {b.icon}
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-200">
+                        {t(b.titleKey, b.titleDefault)}
+                      </h4>
+                      <p className="text-[10px] text-slate-400 leading-normal mt-0.5">
+                        {t(b.descKey, b.descDefault)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
+
             </div>
 
-            {/* Right Col: Minimalist Ultra-Premium Checkout Card */}
-            <div className="lg:col-span-5">
-              <div className="bg-gradient-to-b from-slate-900 to-slate-950 border border-amber-500/15 rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl relative overflow-hidden text-left">
-                {/* Subtle backgrounds glowing */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/[0.03] rounded-full blur-2xl pointer-events-none" />
+            {/* Privacy details */}
+            <div className="flex items-center gap-2 text-[10px] text-slate-500 pt-6 mt-6 border-t border-slate-850">
+              <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+              <span>{t('sub_billing_info', 'Faturamento via Stripe Subscription seguro e criptografado.')}</span>
+            </div>
+          </div>
 
-                <div className="pb-4 border-b border-slate-850 flex justify-between items-center">
-                  <div className="space-y-0.5">
-                    <h3 className="text-xs font-bold text-slate-200 font-sans">{t('sub_billing_info', 'Dados de Pagamento')}</h3>
-                    <p className="text-[9px] font-mono text-slate-500 uppercase">{t('stripe_secure_billing', 'Assinatura Via Stripe Segura')}</p>
+          {/* Right Column - Plan options & Call to action */}
+          <div className="col-span-1 md:col-span-5 p-6 sm:p-8 bg-slate-950/40 flex flex-col justify-between">
+            <div className="space-y-6">
+              
+              <div>
+                <h3 className="text-sm font-bold text-slate-300 tracking-wider uppercase font-mono">
+                  {t('select_plan_title', 'Escolha seu Alinhamento')}
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  {t('select_plan_desc', 'Selecione o ciclo ideal para continuar sua jornada cósmica:')}
+                </p>
+              </div>
+
+              {/* Plan cards */}
+              <div className="space-y-3">
+                
+                {/* Annual Plan (Best Value) */}
+                <div 
+                  onClick={() => !isRedirecting && setSelectedPlan('annual')}
+                  className={`relative p-4 rounded-2xl border transition-all duration-300 cursor-pointer ${
+                    selectedPlan === 'annual'
+                      ? 'bg-amber-500/10 border-amber-500 shadow-lg shadow-amber-500/5'
+                      : 'bg-slate-900/50 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-bold uppercase font-mono tracking-wider text-emerald-400">
+                    {t('plan_annual_save', 'Economize 33%')}
                   </div>
-                  <Lock className="w-4 h-4 text-slate-500" />
+
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-4.5 h-4.5 rounded-full border flex items-center justify-center transition-all ${
+                      selectedPlan === 'annual' 
+                        ? 'border-amber-500 bg-amber-500 text-slate-950' 
+                        : 'border-slate-700 bg-transparent'
+                    }`}>
+                      {selectedPlan === 'annual' && <Check className="w-3 h-3 stroke-[3]" />}
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black text-slate-100 uppercase tracking-wide font-mono">
+                        {t('plan_annual_title', 'Plano Anual')}
+                      </h4>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        {t('plan_annual_sub', 'Cobrado anualmente')}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex items-baseline gap-1.5 border-t border-slate-850/50 pt-2.5">
+                    <span className="text-lg font-black font-mono text-slate-100">79,99 EUR</span>
+                    <span className="text-[10px] text-slate-500 font-mono">/ {t('year', 'ano')}</span>
+                    <span className="text-[10px] text-emerald-400 font-mono ml-auto font-bold">(~6,66 EUR/{t('month', 'mês')})</span>
+                  </div>
                 </div>
 
-                <div className="space-y-4 pt-1">
-                  <div className="p-4 bg-slate-950 border border-slate-900 rounded-2xl space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[9px] font-mono uppercase text-slate-400">{t('selected_plan', 'Plano Ativo')}</span>
-                      <span className="text-xs font-bold text-amber-400">
-                        {plansList.find(p => p.id === selectedPlan)?.name}
-                      </span>
+                {/* Monthly Plan */}
+                <div 
+                  onClick={() => !isRedirecting && setSelectedPlan('monthly')}
+                  className={`p-4 rounded-2xl border transition-all duration-300 cursor-pointer ${
+                    selectedPlan === 'monthly'
+                      ? 'bg-amber-500/10 border-amber-500 shadow-lg shadow-amber-500/5'
+                      : 'bg-slate-900/50 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-4.5 h-4.5 rounded-full border flex items-center justify-center transition-all ${
+                      selectedPlan === 'monthly' 
+                        ? 'border-amber-500 bg-amber-500 text-slate-950' 
+                        : 'border-slate-700 bg-transparent'
+                    }`}>
+                      {selectedPlan === 'monthly' && <Check className="w-3 h-3 stroke-[3]" />}
                     </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-[9px] font-mono uppercase text-slate-400">{t('billing_price', 'Custo de Assinatura')}</span>
-                      <span className="font-mono text-[11px] font-bold text-slate-200">
-                        {plansList.find(p => p.id === selectedPlan)?.stripePrice}
-                      </span>
+                    <div>
+                      <h4 className="text-xs font-black text-slate-100 uppercase tracking-wide font-mono">
+                        {t('plan_monthly_title', 'Plano Mensal')}
+                      </h4>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        {t('plan_monthly_sub', 'Cancele quando quiser')}
+                      </p>
                     </div>
-                    <p className="text-[9px] text-slate-500 leading-normal border-t border-slate-900 pt-2 font-mono">
-                      {t('stripe_disclaimer', 'Ao clicar no botão abaixo, você será redirecionado temporariamente para o ambiente seguro do Stripe para concluir sua assinatura com total segurança.')}
-                    </p>
                   </div>
 
-                  <button
-                    type="button"
-                    disabled={isProcessing}
-                    onClick={handleStripeCheckout}
-                    className="w-full py-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-amber-500 hover:from-purple-500 hover:via-indigo-500 hover:to-amber-400 text-slate-100 text-xs font-black uppercase tracking-wider rounded-xl transition duration-300 disabled:opacity-75 shadow-lg shadow-indigo-500/10 flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    {isProcessing ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>{t('stripe_tuning', 'Sintonizando Stripe...')}</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>{t('btn_upgrade', 'Continuar Minha Jornada')}</span>
-                      </>
-                    )}
-                  </button>
+                  <div className="mt-3 flex items-baseline gap-1.5 border-t border-slate-850/50 pt-2.5">
+                    <span className="text-lg font-black font-mono text-slate-100">9,99 EUR</span>
+                    <span className="text-[10px] text-slate-500 font-mono">/ {t('month', 'mês')}</span>
+                  </div>
                 </div>
 
-                {/* Secure Badge */}
-                <div className="pt-2 border-t border-slate-900 flex justify-between items-center text-[9px] font-mono text-slate-500">
-                  <span className="flex items-center gap-1 font-bold">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                    {t('ssl_direct_connection', 'CONEXÃO SSL DIRECT')}
+              </div>
+
+              {/* Summary description text */}
+              <div className="text-[10px] text-slate-400 leading-relaxed bg-slate-950/60 p-3 rounded-xl border border-slate-900">
+                <div className="flex gap-2 items-start">
+                  <Info className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
+                  <span>
+                    {selectedPlan === 'annual' 
+                      ? t('plan_annual_desc_info', 'O ciclo anual garante 12 meses completos de sintonia astrológica ininterrupta, trânsitos diários e IA por menos do que o preço de um café por semana.')
+                      : t('plan_monthly_desc_info', 'O ciclo mensal é cobrado automaticamente a cada 30 dias. Oferece total flexibilidade de cancelamento a qualquer momento diretamente no painel.')
+                    }
                   </span>
-                  <span>{t('pci_secure_certified', 'PCI SECURE CERTIFIED')}</span>
                 </div>
               </div>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="success-view"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-slate-900/60 p-8 md:p-12 rounded-3xl border border-amber-500/25 text-center space-y-6 max-w-xl mx-auto shadow-[0_0_50px_rgba(245,158,11,0.1)] relative overflow-hidden"
-          >
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-amber-500/[0.04] rounded-full blur-3xl pointer-events-none" />
 
-            <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-amber-500 to-rose-600 flex items-center justify-center mx-auto shadow-lg border border-amber-400/20">
-              <CheckCircle2 className="w-8 h-8 text-slate-950 animate-bounce" />
             </div>
 
-            <div className="space-y-3">
-              <span className="text-[10px] uppercase font-mono tracking-widest text-amber-500 font-extrabold block">{t('alignment_completed', 'Alinhamento Concluído')}</span>
-              <h2 className="text-2xl font-sans font-black text-slate-50 tracking-tight">
-                {t('welcome_celestial_elite', 'Bem-vindo ao Elite Celestial!')}
-              </h2>
-              <p className="text-xs text-slate-350 leading-relaxed font-sans max-w-sm mx-auto">
-                {t('success_view_unlocked', 'Sua assinatura premium foi sintonizada com sucesso. Todos os recursos cósmicos e ferramentas astrológicas avançadas foram desbloqueados para você!')}
+            {/* Main Action Button */}
+            <div className="pt-8">
+              <button
+                onClick={handleCheckout}
+                disabled={isRedirecting}
+                className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-slate-950 font-sans font-black text-xs uppercase tracking-widest transition-all duration-300 shadow-lg shadow-amber-500/10 flex items-center justify-center gap-2 cursor-pointer hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                {isRedirecting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                    <span>{t('btn_connecting_stripe', 'CONECTANDO...')}</span>
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="w-4 h-4 text-slate-950" />
+                    <span>{t('btn_upgrade', 'CONTINUAR MINHA JORNADA')}</span>
+                  </>
+                )}
+              </button>
+              <p className="text-[8px] text-center text-slate-500 font-mono uppercase tracking-wider mt-2.5 leading-none">
+                {t('stripe_secure_payment_guaranteed', 'Stripe Secure Checkout • Ativação Imediata')}
               </p>
             </div>
 
-            <div className="pt-2">
-              <button
-                onClick={() => onUpgradeComplete(true)}
-                className="px-8 py-3.5 bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-450 text-slate-950 text-xs font-black uppercase tracking-wider rounded-xl transition shadow-md hover:shadow-lg focus:outline-hidden cursor-pointer"
-              >
-                {t('start_my_readings', 'Iniciar Minhas Leituras')}
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+
+        </div>
+
+      </motion.div>
     </div>
   );
 };

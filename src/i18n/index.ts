@@ -14,6 +14,8 @@ import { numerologyTranslations } from './numerology';
 import { orbiaTranslations } from './orbia';
 import { serverTranslations } from './server';
 import { landingTranslations } from './landing';
+import { customFeaturesTranslations } from './customFeatures';
+import { dynamicContentTranslations } from './dynamicContent';
 
 // Collection of all registered translation modules
 const modules = [
@@ -31,7 +33,9 @@ const modules = [
   numerologyTranslations,
   orbiaTranslations,
   serverTranslations,
-  landingTranslations
+  landingTranslations,
+  customFeaturesTranslations,
+  dynamicContentTranslations
 ];
 
 // Automatically merged single official source of truth

@@ -820,6 +820,93 @@ export function subscribeToExtraMaps(email: string, onUpdate: (maps: ExtraMapIte
   });
 }
 
+// Real-Time Listener for User Natal Charts
+export function subscribeToNatalCharts(email: string, onUpdate: (charts: any[]) => void, onError?: (err: Error) => void) {
+  const mailKey = email.toLowerCase().trim();
+  const db = getFirestoreDB();
+  if (!db || !mailKey) {
+    return () => {};
+  }
+
+  const docKey = getUserDocKey(email);
+  const path = `users/${docKey}/natalCharts`;
+  const collectionRef = collection(db, "users", docKey, "natalCharts");
+
+  return onSnapshot(collectionRef, (snapshot) => {
+    const results: any[] = [];
+    snapshot.forEach((snap) => {
+      results.push({
+        id: snap.id,
+        ...snap.data()
+      });
+    });
+    onUpdate(results);
+  }, (error) => {
+    console.error("[SnapSync] Erro no snapshot de natalCharts:", error);
+    try {
+      handleFirestoreError(error, OperationType.GET, path);
+    } catch (transformed) {
+      if (onError && transformed instanceof Error) onError(transformed);
+    }
+  });
+}
+
+// Real-Time Listener for User Transits
+export function subscribeToTransits(email: string, onUpdate: (transits: any[]) => void, onError?: (err: Error) => void) {
+  const mailKey = email.toLowerCase().trim();
+  const db = getFirestoreDB();
+  if (!db || !mailKey) {
+    return () => {};
+  }
+
+  const docKey = getUserDocKey(email);
+  const path = `users/${docKey}/transits`;
+  const collectionRef = collection(db, "users", docKey, "transits");
+
+  return onSnapshot(collectionRef, (snapshot) => {
+    const results: any[] = [];
+    snapshot.forEach((snap) => {
+      results.push(snap.data());
+    });
+    onUpdate(results);
+  }, (error) => {
+    console.error("[SnapSync] Erro no snapshot de transits:", error);
+    try {
+      handleFirestoreError(error, OperationType.GET, path);
+    } catch (transformed) {
+      if (onError && transformed instanceof Error) onError(transformed);
+    }
+  });
+}
+
+// Real-Time Listener for User Numerology
+export function subscribeToNumerology(email: string, onUpdate: (numerology: any[]) => void, onError?: (err: Error) => void) {
+  const mailKey = email.toLowerCase().trim();
+  const db = getFirestoreDB();
+  if (!db || !mailKey) {
+    return () => {};
+  }
+
+  const docKey = getUserDocKey(email);
+  const path = `users/${docKey}/numerology`;
+  const collectionRef = collection(db, "users", docKey, "numerology");
+
+  return onSnapshot(collectionRef, (snapshot) => {
+    const results: any[] = [];
+    snapshot.forEach((snap) => {
+      results.push(snap.data());
+    });
+    onUpdate(results);
+  }, (error) => {
+    console.error("[SnapSync] Erro no snapshot de numerology:", error);
+    try {
+      handleFirestoreError(error, OperationType.GET, path);
+    } catch (transformed) {
+      if (onError && transformed instanceof Error) onError(transformed);
+    }
+  });
+}
+
 // 3. Dreams Sync & Real-Time Subscriber
 export async function saveDreamToDatabase(email: string, dream: DreamLogItem) {
   const mailKey = email.toLowerCase().trim();

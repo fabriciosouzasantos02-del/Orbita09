@@ -250,6 +250,49 @@ function findAspects(
   return found;
 }
 
+function findClosestAspectRegardlessOfOrb(
+  transitPositions: Record<string, number>,
+  natalPositions: Record<string, number>
+): FoundAspect | null {
+  const transitPlanets = Object.keys(transitPositions);
+  const natalPlanets = Object.keys(natalPositions);
+  let bestAspect: FoundAspect | null = null;
+  let minDiff = 360;
+
+  for (const tp of transitPlanets) {
+    const tLon = transitPositions[tp];
+    if (tLon === undefined) continue;
+    
+    for (const np of natalPlanets) {
+      const nLon = natalPositions[np];
+      if (nLon === undefined) continue;
+      
+      const dist = getAngularDistance(tLon, nLon);
+      
+      const aspects = [
+        { type: "Conjunção" as const, diff: dist },
+        { type: "Oposição" as const, diff: Math.abs(dist - 180) },
+        { type: "Trígono" as const, diff: Math.abs(dist - 120) },
+        { type: "Quadratura" as const, diff: Math.abs(dist - 90) },
+        { type: "Sextil" as const, diff: Math.abs(dist - 60) }
+      ];
+      
+      for (const asp of aspects) {
+        if (asp.diff < minDiff) {
+          minDiff = asp.diff;
+          bestAspect = {
+            transitPlanet: tp,
+            natalPlanet: np,
+            aspectType: asp.type,
+            diff: asp.diff
+          };
+        }
+      }
+    }
+  }
+  return bestAspect;
+}
+
 function getTransitPositions(date: Date, latitude: number, longitude: number): Record<string, number> | null {
   try {
     const ephemResult = ephemeris.getAllPlanets(date, longitude, latitude);
@@ -766,14 +809,20 @@ export function generateDailyPrediction(
     aspectType = primaryAspect.aspectType;
     diff = primaryAspect.diff;
   } else {
-    // Deterministic fallback using day seed
-    const transitPlanetsFallback = ["Sol", "Lua", "Mercúrio", "Vênus", "Marte", "Júpiter", "Saturno"];
-    const natalPlanetsFallback = ["Sol", "Lua", "Mercúrio", "Vênus", "Marte"];
-    const aspectTypesFallback: Array<"Conjunção" | "Oposição" | "Trígono" | "Quadratura" | "Sextil"> = ["Trígono", "Sextil", "Conjunção", "Quadratura", "Oposição"];
-    const seed = selectedDayIndex + targetDate.getMonth() + targetDate.getDate();
-    tp = transitPlanetsFallback[seed % transitPlanetsFallback.length];
-    np = natalPlanetsFallback[(seed + 2) % natalPlanetsFallback.length];
-    aspectType = aspectTypesFallback[(seed + 4) % aspectTypesFallback.length];
+    // 100% real calculation regardless of orb limits
+    const closest = findClosestAspectRegardlessOfOrb(transitPositions, natalPositions);
+    if (closest) {
+      tp = closest.transitPlanet;
+      np = closest.natalPlanet;
+      aspectType = closest.aspectType;
+      diff = closest.diff;
+    } else {
+      // absolute safety fallback (extremely theoretical)
+      tp = "Sol";
+      np = "Sol";
+      aspectType = "Trígono";
+      diff = 0;
+    }
   }
   
   // Create beautiful translated text for the real aspect

@@ -25,23 +25,46 @@ function reduceNumber(num: number, keepMaster: boolean = true): number {
 /**
  * Calculates Pythagorean numerology vectors based on Name and Birth Date.
  */
-export function calculateNumerology(name: string, birthDate: string): NumerologyData {
+export function calculateNumerology(name: string, birthDate: string): any {
   // 1. Life Path (Caminho de Vida) - derived from Birth Date (YYYY-MM-DD)
-  const dateStr = birthDate.replace(/[^0-9]/g, "");
-  let birthSum = 0;
-  if (dateStr.length === 8) {
-    const year = parseInt(dateStr.substring(0, 4));
-    const month = parseInt(dateStr.substring(4, 6));
-    const day = parseInt(dateStr.substring(6, 8));
+  let year = 1990;
+  let month = 1;
+  let day = 1;
 
-    const redYear = reduceNumber(year, true);
-    const redMonth = reduceNumber(month, true);
-    const redDay = reduceNumber(day, true);
-
-    birthSum = reduceNumber(redYear + redMonth + redDay, true);
+  if (birthDate.includes("-")) {
+    const parts = birthDate.split("-");
+    if (parts.length === 3) {
+      year = parseInt(parts[0], 10) || 1990;
+      month = parseInt(parts[1], 10) || 1;
+      day = parseInt(parts[2], 10) || 1;
+    }
+  } else if (birthDate.includes("/")) {
+    const parts = birthDate.split("/");
+    if (parts.length === 3) {
+      if (parts[2].length === 4) {
+        year = parseInt(parts[2], 10) || 1990;
+        month = parseInt(parts[1], 10) || 1;
+        day = parseInt(parts[0], 10) || 1;
+      } else {
+        year = parseInt(parts[0], 10) || 1990;
+        month = parseInt(parts[1], 10) || 1;
+        day = parseInt(parts[2], 10) || 1;
+      }
+    }
   } else {
-    birthSum = 1; // Fallback
+    const dateStr = birthDate.replace(/[^0-9]/g, "");
+    if (dateStr.length === 8) {
+      year = parseInt(dateStr.substring(0, 4), 10) || 1990;
+      month = parseInt(dateStr.substring(4, 6), 10) || 1;
+      day = parseInt(dateStr.substring(6, 8), 10) || 1;
+    }
   }
+
+  const redYear = reduceNumber(year, true);
+  const redMonth = reduceNumber(month, true);
+  const redDay = reduceNumber(day, true);
+
+  const birthSum = reduceNumber(redYear + redMonth + redDay, true);
 
   // Sanitize name for letter calculations
   const cleanName = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z]/g, "");
@@ -69,11 +92,28 @@ export function calculateNumerology(name: string, birthDate: string): Numerology
   // Destiny is a synthesis of Expression and Life Path
   const destiny = reduceNumber(expression + birthSum, true);
 
+  const caminhoDeVida = birthSum || 1;
+  const expressao = expression || 3;
+  const motivacao = soulUrge || 5;
+  const personalidade = personality || 7;
+
   return {
-    lifePath: birthSum || 1,
-    expression: expression || 3,
-    soulUrge: soulUrge || 5,
-    personality: personality || 7,
-    destiny: destiny || 9
+    // NumerologyData fields
+    lifePath: caminhoDeVida,
+    expression: expressao,
+    soulUrge: motivacao,
+    personality: personalidade,
+    destiny: destiny || 9,
+    // NumerologyCycle fields
+    caminhoDeVida,
+    expressao,
+    motivacao,
+    personalidade,
+    description: `Você é um perfil de vibração ${caminhoDeVida}. Este número denota que seu caminho principal de aprendizado incentiva a independência, curiosidade ativa e forte desenvolvimento pessoal.`,
+    ciclos: [
+      `Ciclo Formativo (0-28 anos): Vibração ${expressao} - Ênfase nos estudos e compreensão analítica da vida.`,
+      `Ciclo Produtivo (28-56 anos): Vibração ${caminhoDeVida} - Período de conquistas de independência e materialização profissional.`,
+      `Ciclo de Colheita (56+ anos): Vibração ${motivacao} - Transmissão de visão idealista e espiritual ao coletivo.`
+    ]
   };
 }

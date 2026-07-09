@@ -9,7 +9,15 @@ import {
 } from 'lucide-react';
 import SocialCompatibility from './SocialCompatibility';
 import SocialNetworkView from './SocialNetworkView';
-import { generatePersonalizedProsperityMap } from '../prosperityEngine';
+import SocialViralityCard from './SocialViralityCard';
+import CosmicChakras from './CosmicChakras';
+import PracticalRituals from './PracticalRituals';
+import { 
+  generatePersonalizedProsperityMap, 
+  generatePersonalizedColorsList, 
+  generateDynamicElementInfo, 
+  generateDynamicAmuletText 
+} from '../prosperityEngine';
 import { generateDailyPrediction } from './dailyPredictionsEngine';
 import { SIGNS_ZODIAC_LIST, BLOG_ARTICLES_LIST } from '../data';
 import { loadCalculationCache, saveCalculationCache } from '../lib/firebase';
@@ -1306,18 +1314,95 @@ export default function UserDashboardPortal({
     }
     return i18nT(text);
   };
+
+  const localDashboardTranslations: Record<string, Record<string, string>> = {
+    pt: {
+      "carregando_sintonias": "Sintonizando constelações e biorritmos de Osiris...",
+      "ritual_potencializacao": "Ritual de Potencialização",
+      "conselho_acao": "Conselho Cósmico de Ação",
+      "foco_ativo": "Foco Ativo",
+      "atualizacao_diaria": "Atualização Diária",
+      "radar_dia": "Radar do Dia",
+      "radar_oportunidades": "Radar de Oportunidades",
+      "clique_instrucao": "Selecione uma área abaixo para sintonizar o direcionamento astrológico de hoje.",
+      "conselho_hoje": "Conselho Especial Hoje",
+      "area_focada": "Área Focada"
+    },
+    en: {
+      "carregando_sintonias": "Tuning Osiris constellations and biorhythms...",
+      "ritual_potencializacao": "Empowerment Ritual",
+      "conselho_acao": "Cosmic Action Council",
+      "foco_ativo": "Active Focus",
+      "atualizacao_diaria": "Daily Update",
+      "radar_dia": "Daily Radar",
+      "radar_oportunidades": "Opportunities Radar",
+      "clique_instrucao": "Select an area below to tune in today's astrological guidance.",
+      "conselho_hoje": "Special Advice Today",
+      "area_focada": "Focused Area"
+    },
+    es: {
+      "carregando_sintonias": "Sintonizando constelaciones y biorritmos de Osiris...",
+      "ritual_potencializacao": "Ritual de Potenciación",
+      "conselho_acao": "Consejo Cósmico de Acción",
+      "foco_ativo": "Enfoque Activo",
+      "atualizacao_diaria": "Actualización Diaria",
+      "radar_dia": "Radar del Día",
+      "radar_oportunidades": "Radar de Oportunidades",
+      "clique_instrucao": "Selecciona un área a continuación para sintonizar la guía astrológica de hoy.",
+      "conselho_hoje": "Consejo Especial Hoy",
+      "area_focada": "Área Enfocada"
+    },
+    de: {
+      "carregando_sintonias": "Osiris-Konstellationen und Biorhythmen werden abgestimmt...",
+      "ritual_potencializacao": "Ritual zur Potenzierung",
+      "conselho_acao": "Kosmischer Aktionsrat",
+      "foco_ativo": "Aktiver Fokus",
+      "atualizacao_diaria": "Tägliches Update",
+      "radar_dia": "Tagesradar",
+      "radar_oportunidades": "Chancenradar",
+      "clique_instrucao": "Wählen Sie unten einen Bereich aus, um die heutige astrologische Führung abzustimmen.",
+      "conselho_hoje": "Besonderer Rat Heute",
+      "area_focada": "Fokusbereich"
+    },
+    fr: {
+      "carregando_sintonias": "Harmonisation des constellations et biorythmes d'Osiris...",
+      "ritual_potencializacao": "Rituel de Potentialisation",
+      "conselho_acao": "Conseil d'Action Cosmique",
+      "foco_ativo": "Mise au Point Active",
+      "atualizacao_diaria": "Mise à Jour Quotidienne",
+      "radar_dia": "Radar du Jour",
+      "radar_oportunidades": "Radar d'Opportunités",
+      "clique_instrucao": "Sélectionnez une zone ci-dessous pour accorder la guidance astrologique d'aujourd'hui.",
+      "conselho_hoje": "Conseil Spécial Aujourd'hui",
+      "area_focada": "Zone Ciblée"
+    }
+  };
+
+  const localT = (key: string) => {
+    return localDashboardTranslations[activeLang]?.[key] || localDashboardTranslations["pt"]?.[key] || t(key);
+  };
   const travelerFallback = t("Viajante");
   const userFirstName = user?.name ? user.name.split(' ')[0] : travelerFallback;
   const zodiacSign = getZodiacSign(user?.birthDate);
   const lifePathNumber = getLifePathNumber(user?.birthDate);
+  const preciseZodiacSign = mapData?.astros?.find((a: any) => a.name === "Sol")?.sign || zodiacSign;
 
   const personalProsperity = generatePersonalizedProsperityMap(
     user?.hasCreatedMap ? user.birthDate : "1997-02-11",
-    getZodiacSign(user?.birthDate),
+    preciseZodiacSign,
     user?.hasCreatedMap ? user.name : "",
     new Date(),
-    idioma
+    activeLang
   );
+
+  const dynamicColorsList = generatePersonalizedColorsList(
+    user?.birthDate || "1997-02-11",
+    preciseZodiacSign,
+    activeLang
+  );
+
+  const dynamicElementInfo = generateDynamicElementInfo(preciseZodiacSign, activeLang);
+  const dynamicAmuletText = generateDynamicAmuletText(user?.birthDate || "1997-02-11", activeLang);
 
   // Interactive states
   const [selectedCalendarDay, setSelectedCalendarDay] = useState<number>(9);
@@ -1349,7 +1434,9 @@ export default function UserDashboardPortal({
       group: "Práticas & Evolução",
       items: [
         { id: 'missao', label: 'Missões do Portal', icon: Award, color: 'text-indigo-400', bg: 'hover:bg-indigo-500/5' },
-        { id: 'amuletos', label: 'Símbolos & Amuletos', icon: ShieldCheck, color: 'text-emerald-400', bg: 'hover:bg-emerald-500/5' }
+        { id: 'amuletos', label: 'Símbolos & Amuletos', icon: ShieldCheck, color: 'text-emerald-400', bg: 'hover:bg-emerald-500/5' },
+        { id: 'chakras', label: 'Chakras Cósmicos', icon: Activity, color: 'text-amber-400', bg: 'hover:bg-amber-500/5' },
+        { id: 'rituais', label: 'Rituais Diários', icon: Sparkles, color: 'text-purple-400', bg: 'hover:bg-purple-500/5' }
       ]
     },
     {
@@ -1378,12 +1465,6 @@ export default function UserDashboardPortal({
         { id: 'desenvolvimento', label: 'Desenv. Pessoal', icon: Star, color: 'text-yellow-405', bg: 'hover:bg-yellow-500/5' },
         { id: 'energia_casa', label: 'Energia da Casa', icon: Home, color: 'text-indigo-405', bg: 'hover:bg-indigo-505/5' },
         { id: 'sonhos', label: 'Centro de Sonhos', icon: Moon, color: 'text-pink-400', bg: 'hover:bg-pink-500/5' }
-      ]
-    },
-    {
-      group: "Aplicativo Celular",
-      items: [
-        { id: 'baixar_app', label: 'Instalar APK / PWA', icon: Smartphone, color: 'text-rose-450', bg: 'hover:bg-rose-500/5' }
       ]
     }
   ], []);
@@ -1434,6 +1515,7 @@ export default function UserDashboardPortal({
       { id: "w3", title: isEn ? "This week dedicate time to learning" : isEs ? "Esta semana dedique tempo ao aprendizado" : isDe ? "Widmen Sie diese Woche Zeit dem Lernen" : isFr ? "Cette semana consacrez du temps à l'apprentissage" : "Esta semana dedique tempo ao aprendizado", description: isEn ? "Invest at least 1 hour in a book, course or meditation audio focused on your personal development." : isEs ? "Invierta al menos 1 hora en un libro, curso o audio de meditación enfocado en su desarrollo personal." : isDe ? "Investieren Sie mindestens 1 Stunde in ein Buch, einen Kurs oder ein Meditationsaudio, das auf Ihre persönliche Entwicklung ausgerichtet ist." : isFr ? "Investissez au moins 1 heure dans un livre, un cours ou un enregistrement de méditation axé sur votre développement personnel." : "Invista pelo menos 1 hora em um livro, curso ou áudio de meditação voltado ao seu desenvolvimento pessoal.", isCompleted: false, points: 100 }
     ];
     setWeeklyMissions(prev => prev.map(m => {
+      if (!m.id.startsWith("w")) return m;
       const tpl = templates.find(t => t.id === m.id);
       if (tpl) {
         return {
@@ -1534,9 +1616,9 @@ export default function UserDashboardPortal({
     const fetchMissions = async () => {
       try {
         if (email) {
-          const cachedMissions = await loadCalculationCache(email, `daily_missions_${todayStr}_${activeLang}`);
-          if (cachedMissions && Array.isArray(cachedMissions)) {
-            const updated = cachedMissions.map((m: any) => {
+          const cachedData = await loadCalculationCache(email, `daily_missions_v4_${todayStr}_${activeLang}`);
+          if (cachedData && Array.isArray(cachedData.missions)) {
+            const updated = cachedData.missions.map((m: any) => {
               const matched = dailyMissions.find(curr => curr.id === m.id);
               return {
                 ...m,
@@ -1544,6 +1626,9 @@ export default function UserDashboardPortal({
               };
             });
             setDailyMissions(updated);
+            if (Array.isArray(cachedData.weeklyMissions)) {
+              setWeeklyMissions(cachedData.weeklyMissions);
+            }
             return;
           }
         }
@@ -1551,7 +1636,7 @@ export default function UserDashboardPortal({
         const res = await fetch("/api/astrology/daily-missions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userProfile: user, lang: activeLang })
+          body: JSON.stringify({ userProfile: user, lang: activeLang, mapData })
         });
         if (res.ok) {
           const data = await res.json();
@@ -1565,8 +1650,11 @@ export default function UserDashboardPortal({
               };
             });
             setDailyMissions(updated);
+            if (Array.isArray(data.weeklyMissions)) {
+              setWeeklyMissions(data.weeklyMissions);
+            }
             if (email) {
-              await saveCalculationCache(email, `daily_missions_${todayStr}_${activeLang}`, data.missions);
+              await saveCalculationCache(email, `daily_missions_v4_${todayStr}_${activeLang}`, data);
             }
           }
         }
@@ -1601,7 +1689,8 @@ export default function UserDashboardPortal({
             biorhythm: defaultBiorhythm,
             location: locationStr,
             lastDream: dreamsHistory && dreamsHistory.length > 0 ? dreamsHistory[0] : null,
-            lang: activeLang
+            lang: activeLang,
+            mapData
           })
         });
         if (res.ok) {
@@ -1647,7 +1736,8 @@ export default function UserDashboardPortal({
           biorhythm: defaultBiorhythm,
           location: locationStr,
           dreams: dreamsHistory,
-          lang: activeLang
+          lang: activeLang,
+          mapData
         })
       });
 
@@ -2308,137 +2398,165 @@ export default function UserDashboardPortal({
 
           {/* TAB 2: RADAR DO DIA */}
           {areaSubTab === 'radar' && (
-            <div className="space-y-6">
+            <div className="space-y-6 animate-in fade-in duration-300">
               <div className="bg-slate-900/40 p-5 rounded-3xl border border-slate-800 space-y-5">
                 <div className="space-y-0.5 pb-2 border-b border-slate-850 flex justify-between items-center">
                   <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-widest flex items-center gap-2">
                     <Activity className="w-4 h-4 text-rose-500 animate-pulse" />
-                    {t("Radar do Dia")}
+                    {localT("radar_dia")}
                   </h3>
-                  <span className="px-2 py-0.5 bg-rose-500/10 border border-rose-500/20 text-[9px] font-mono font-bold text-rose-455 rounded-lg">
-                    {t("Atualização Diária")}
+                  <span className="px-2 py-0.5 bg-rose-500/10 border border-rose-500/20 text-[9px] font-mono font-bold text-rose-400 rounded-lg">
+                    {localT("atualizacao_diaria")}
                   </span>
                 </div>
 
-                <div className="space-y-4 font-sans text-left">
-                  <div className="bg-slate-950 p-4 rounded-2xl border border-slate-850/60">
-                    <span className="text-[9px] font-mono text-slate-500 block uppercase font-bold">{t("Frequência Dominante Celular")}</span>
-                    <span className="text-xs font-black text-rose-455 block tracking-wide mt-1">
-                      {t("Intuição Harmoniosa & Foco Singular (Sol e Mercúrio em Trígono)")}
-                    </span>
+                {osirisLoading ? (
+                  <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                    <div className="w-8 h-8 border-t-2 border-rose-500 border-solid rounded-full animate-spin" />
+                    <p className="text-xs text-slate-400 font-mono">{localT("carregando_sintonias")}</p>
                   </div>
-
-                  {/* The 5 Metrics */}
-                  <div className="space-y-3 pt-1">
-                    {[
-                      { label: 'Energia Vital', val: 92, grad: 'from-amber-500 to-orange-500', desc: 'Sua vitalidade celular física e impulso vital ativo sob sua regência estelar.' },
-                      { label: 'Produtividade', val: 88, grad: 'from-indigo-500 to-purple-600', desc: 'Retenção intelectual e foco singular de mercúrio ativo.' },
-                      { label: 'Relacionamentos', val: 74, grad: 'from-pink-500 to-rose-550', desc: 'Expressão de afetos, diplomacia e conexões áuricas com base em Vênus.' },
-                      { label: 'Organização', val: 81, grad: 'from-emerald-500 to-teal-500', desc: 'Estruturação de afazeres diários sob o Caminho de Vida 8.' },
-                      { label: 'Bem-estar', val: 90, grad: 'from-sky-400 to-indigo-500', desc: 'Centramento emocional e quietude mental do respirar.' }
-                    ].map((metric, i) => (
-                      <div key={i} className="p-3 bg-slate-950/60 rounded-2xl border border-slate-850 space-y-1.5">
-                        <div className="flex justify-between items-center text-[10px] font-mono text-slate-400 uppercase font-bold">
-                          <span>{t(metric.label)}</span>
-                          <span className="text-slate-205">{metric.val}%</span>
-                        </div>
-                        <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden">
-                          <div className={`h-full bg-gradient-to-r ${metric.grad}`} style={{ width: `${metric.val}%` }} />
-                        </div>
-                        <p className="text-[9px] text-slate-500 leading-normal italic">{t(metric.desc)}</p>
+                ) : (
+                  <div className="space-y-4 font-sans text-left">
+                    <div className="bg-slate-950 p-4 rounded-2xl border border-slate-850/60 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+                      <div>
+                        <span className="text-[9px] font-mono text-slate-500 block uppercase font-bold">{t("Frequência Dominante Celular")}</span>
+                        <span className="text-xs font-black text-rose-400 block tracking-wide mt-1">
+                          {osirisDashboard?.prioridadeDia?.title || t("Intuição Harmoniosa & Foco Singular (Sol e Mercúrio em Trígono)")}
+                        </span>
                       </div>
-                    ))}
+                      <span className="px-3 py-1.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-mono font-bold uppercase shrink-0">
+                        {osirisDashboard?.prioridadeDia?.category || "Astrologia"}
+                      </span>
+                    </div>
+
+                    {/* The 5 Metrics */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                      {osirisDashboard?.radarDoDia?.map((metric: any, i: number) => (
+                        <div key={metric.key || i} className="p-4 bg-slate-950 rounded-2xl border border-slate-850/80 hover:border-slate-800 transition duration-350 space-y-3 flex flex-col justify-between">
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs font-bold text-slate-200">{metric.label}</span>
+                              <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase bg-slate-900 border border-slate-800 ${metric.statusColor || 'text-slate-400'}`}>
+                                {metric.status}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-400 leading-relaxed font-sans">{metric.description}</p>
+                          </div>
+                          
+                          <div className="p-2.5 bg-slate-900/60 rounded-xl border border-slate-850/60 flex items-start gap-2 mt-1">
+                            <Sparkle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                            <span className="text-[10px] text-slate-400 leading-normal">
+                              <strong className="text-slate-300">{localT("conselho_acao")}:</strong> {metric.cosmicTip}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* TAB 3: RADAR DE OPORTUNIDADES (DAILY 0 TO 100 SLIDERS) */}
+          {/* TAB 3: RADAR DE OPORTUNIDADES */}
           {areaSubTab === 'oportunidades_hoje' && (
-            <div className="space-y-6">
+            <div className="space-y-6 animate-in fade-in duration-300">
               <div className="bg-slate-900/40 p-5 rounded-3xl border border-slate-800 space-y-5">
                 <div className="space-y-0.5 pb-2 border-b border-slate-850 flex justify-between items-center">
                   <div>
                     <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
-                      <Compass className="w-4 h-4 text-amber-500" />
-                      {t("Radar de oportunidades diárias")}
+                      <Compass className="w-4 h-4 text-amber-500 animate-pulse" />
+                      {localT("radar_oportunidades")}
                     </h3>
-                    <p className="text-[10px] text-slate-500 mt-0.5">{t('Clique em cada área para obter direcionamento astrológico de aproveitamento das tendências hoje.')}</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">
+                      {localT("clique_instrucao")}
+                    </p>
                   </div>
                   <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-[9px] font-mono font-bold text-amber-400 rounded-lg shrink-0">
-                    {t('O Momento Atual')}
+                    {localT("atualizacao_diaria")}
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
-                  
-                  {/* Left Column: Interactive Gauges */}
-                  <div className="space-y-3">
-                    {Object.entries(opportunityRadarValues).map(([key, data]) => {
-                      const isSelected = selectedOpportunityArea === key;
-                      return (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => setSelectedOpportunityArea(key)}
-                          className={`w-full p-3.5 rounded-2xl border transition text-left cursor-pointer flex flex-col justify-between gap-2 ${
-                            isSelected 
-                              ? 'bg-slate-950 border-amber-500/40 shadow-xs' 
-                              : 'bg-slate-950/40 border-slate-850 hover:border-slate-800'
-                          }`}
-                        >
-                          <div className="flex justify-between items-center w-full">
-                            <span className="text-[10px] font-mono font-black uppercase text-slate-300 flex items-center gap-1.5">
-                              {key === 'dinheiro' && <DollarSign className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />}
-                              {key === 'amor' && <Heart className="w-3.5 h-3.5 text-pink-400 animate-pulse" />}
-                              {key === 'estudos' && <Star className="w-3.5 h-3.5 text-sky-405 animate-pulse" />}
-                              {key === 'trabalho' && <Award className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />}
-                              {key === 'criatividade' && <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />}
-                              {key === 'networking' && <Users className="w-3.5 h-3.5 text-teal-400 animate-pulse" />}
-                              {key === 'espiritualidade' && <Moon className="w-3.5 h-3.5 text-purple-400 animate-pulse" />}
+                {osirisLoading ? (
+                  <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                    <div className="w-8 h-8 border-t-2 border-amber-500 border-solid rounded-full animate-spin" />
+                    <p className="text-xs text-slate-400 font-mono">{localT("carregando_sintonias")}</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 text-left">
+                    
+                    {/* Left Column: Interactive Gauges */}
+                    <div className="lg:col-span-5 space-y-2.5">
+                      {Object.keys(osirisDashboard?.radarOportunidades || {}).map((key) => {
+                        const isSelected = selectedOpportunityArea === key;
+                        const data = osirisDashboard?.radarOportunidades?.[key] || { status: "Sintonizado", statusColor: "text-slate-400" };
+                        return (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => setSelectedOpportunityArea(key)}
+                            className={`w-full p-3.5 rounded-2xl border transition text-left cursor-pointer flex items-center justify-between gap-3 ${
+                              isSelected 
+                                ? 'bg-slate-950 border-amber-500/50 shadow-lg shadow-amber-500/[0.02]' 
+                                : 'bg-slate-950/40 border-slate-850 hover:border-slate-800'
+                            }`}
+                          >
+                            <span className="text-[10px] font-mono font-black uppercase text-slate-300 flex items-center gap-2">
+                              {key === 'dinheiro' && <DollarSign className="w-3.5 h-3.5 text-emerald-400" />}
+                              {key === 'amor' && <Heart className="w-3.5 h-3.5 text-pink-400" />}
+                              {key === 'estudos' && <Star className="w-3.5 h-3.5 text-sky-405" />}
+                              {key === 'trabalho' && <Award className="w-3.5 h-3.5 text-indigo-400" />}
+                              {key === 'criatividade' && <Sparkles className="w-3.5 h-3.5 text-amber-400" />}
+                              {key === 'networking' && <Users className="w-3.5 h-3.5 text-teal-400" />}
+                              {key === 'espiritualidade' && <Moon className="w-3.5 h-3.5 text-purple-400" />}
                               {t(key)}
                             </span>
-                            <span className={`text-xs font-mono font-black ${data.color}`}>{data.val} / 100</span>
-                          </div>
-                          <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
-                            <div className={`h-full bg-linear-to-r from-slate-900 to-amber-400`} style={{ width: `${data.val}%` }} />
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
+                            <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-md bg-slate-900 border border-slate-800/80 ${data.statusColor}`}>
+                              {data.status}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
 
-                  {/* Right Column: Detailed focused advice */}
-                  <div className="p-5 rounded-2xl bg-slate-950 border border-slate-850 flex flex-col justify-between">
-                    <div className="space-y-4">
-                      <div className="pb-2 border-b border-slate-900 flex justify-between items-center">
-                        <span className="text-[9px] font-mono text-slate-500 block uppercase font-bold">{t('Conselho Especial Hoje')}</span>
-                        <span className="px-2 py-0.5 rounded-sm bg-amber-500/10 text-amber-400 font-mono font-black text-[8px] uppercase">{t('Foco Ativo')}</span>
+                    {/* Right Column: Detailed focused advice */}
+                    <div className="lg:col-span-7 p-5 rounded-2xl bg-slate-950 border border-slate-850 flex flex-col justify-between space-y-4">
+                      <div className="space-y-4">
+                        <div className="pb-2 border-b border-slate-900 flex justify-between items-center">
+                          <span className="text-[9px] font-mono text-slate-500 block uppercase font-bold">{localT("conselho_hoje")}</span>
+                          <span className="px-2 py-0.5 rounded-sm bg-amber-500/10 text-amber-400 font-mono font-black text-[8px] uppercase">{localT("foco_ativo")}</span>
+                        </div>
+
+                        <div className="space-y-3">
+                          <h4 className="text-xs font-black uppercase tracking-wide text-slate-100 flex items-center gap-1.5">
+                            <span>{localT("area_focada")}: {t(selectedOpportunityArea).toUpperCase()}</span>
+                          </h4>
+                          
+                          <div className="p-3.5 rounded-xl bg-slate-900/40 border border-slate-850/60">
+                            <p className="text-xs text-slate-300 leading-relaxed font-serif italic">
+                              "{osirisDashboard?.radarOportunidades?.[selectedOpportunityArea]?.text || t('Aguardando sintonia cósmica.')}"
+                            </p>
+                          </div>
+
+                          <div className="space-y-1">
+                            <span className="text-[9px] font-mono text-slate-500 uppercase block font-bold">{t("Direcionamento")}</span>
+                            <p className="text-[11px] text-slate-400 leading-relaxed">
+                              {osirisDashboard?.radarOportunidades?.[selectedOpportunityArea]?.conselho}
+                            </p>
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <h4 className="text-xs font-black uppercase tracking-wide text-slate-100 flex items-center gap-1.5">
-                          <span>{t('Área focada')}: {t(selectedOpportunityArea).toUpperCase()}</span>
-                        </h4>
-                        <p className="text-xs text-slate-350 leading-relaxed font-serif italic">
-                          "{t(opportunityRadarValues[selectedOpportunityArea].text)}"
-                        </p>
-                        <p className="text-[11px] text-slate-400 leading-relaxed pt-2">
-                          {t(opportunityRadarValues[selectedOpportunityArea].conselho)}
+                      <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-850 mt-4">
+                        <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold mb-1">{localT("ritual_potencializacao")}</span>
+                        <p className="text-[10px] text-slate-350 leading-relaxed font-serif">
+                          {osirisDashboard?.radarOportunidades?.[selectedOpportunityArea]?.ritual || t('Mantenha a mente clara e focada nas intenções do momento para sintonizar a energia.')}
                         </p>
                       </div>
                     </div>
 
-                    <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-850 mt-4">
-                      <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold mb-1">{t('Ritual de Potencialização')}</span>
-                      <p className="text-[10px] text-slate-405 leading-relaxed">
-                        {t('Coloque um guardanapo azul no bolso esquerdo ou use caneta de tinta preta para fixar as ações tomadas agora sob a influência desta vibração.')}
-                      </p>
-                    </div>
                   </div>
-
-                </div>
+                )}
               </div>
             </div>
           )}
@@ -2753,7 +2871,7 @@ export default function UserDashboardPortal({
                       <Sparkles className="w-4 h-4 text-purple-400" />
                       {t('Cores Favoráveis para o Mês de')} {personalProsperity.monthName}
                     </h3>
-                    <p className="text-[10px] text-slate-500 mt-0.5">{t('Suas vibrações de pigmentos sintonizadas ao Sol de')} {t(zodiacSign)} {t('e à estabilidade do Caminho de Vida')} {lifePathNumber}.</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">{t('Suas vibrações de pigmentos sintonizadas ao Sol de')} {t(preciseZodiacSign)} {t('e à estabilidade do Caminho de Vida')} {lifePathNumber}.</p>
                   </div>
                   <span className="px-2 py-0.5 bg-purple-500/10 border border-purple-500/20 text-[9px] font-mono font-bold text-purple-450 rounded-lg shrink-0">
                     {t('Mensal')}
@@ -2761,14 +2879,7 @@ export default function UserDashboardPortal({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-1 font-sans text-left">
-                  {[
-                    { title: t('Cor Principal do Mês'), name: t('Azul Cobalto Real'), hex: '#1e3a8a', bgClass: 'bg-[#1e3a8a]', text: t('Ativa sua mente racional de Aquário, eliminando o estresse dos trânsitos.') },
-                    { title: t('Cor de Transcendência'), name: t('Violeta Estelar'), hex: '#6366f1', bgClass: 'bg-[#6366f1]', text: t('Estimula recepções intuitivas nos sonhos e conecta os meridianos da mente.') },
-                    { title: t('Cor para Prosperidade'), name: t('Dourado Solar'), hex: '#eab308', bgClass: 'bg-[#eab308]', text: t('Amplifica o magnetismo material do Caminho de Vida 8. Use na carteira ou contas.') },
-                    { title: t('Cor para Afeto'), name: t('Rosa Quartzo Sutil'), hex: '#f43f5e', bgClass: 'bg-[#f43f5e]', text: t('Suaviza defesas lógicas em prol do acolhimento amoroso sincero.') },
-                    { title: t('Cor para Trabalho'), name: t('Cinza Slate Saturno'), hex: '#334155', bgClass: 'bg-[#334155]', text: t('Fomenta disciplina diária para finalizar pendências e obrigações.') },
-                    { title: t('Cor de Proteção'), name: t('Off-White Pérola'), hex: '#f8fafc', bgClass: 'bg-[#f8fafc]', text: t('Ideal para purificar vibrações densas em conversas ou ambientes pesados.') }
-                  ].map((c, i) => (
+                  {dynamicColorsList.map((c, i) => (
                     <div key={i} className="p-3.5 bg-slate-950/80 rounded-2xl border border-slate-850/70 space-y-3 hover:border-slate-800 transition">
                       <div className="flex items-center gap-3">
                         <div className={`w-9 h-9 rounded-xl ${c.bgClass} border border-white/10 shrink-0 shadow-lg`} />
@@ -2809,10 +2920,10 @@ export default function UserDashboardPortal({
                   <div className="p-4 bg-slate-950/80 rounded-2xl border border-slate-850 space-y-2">
                     <div className="flex items-center gap-2 text-sky-400">
                       <Activity className="w-4 h-4 shrink-0 animate-pulse" />
-                      <h4 className="text-[11px] font-bold uppercase font-mono tracking-wider text-sky-400">{t('Seu Elemento Ativo: Ar')}</h4>
+                      <h4 className="text-[11px] font-bold uppercase font-mono tracking-wider text-sky-400">{dynamicElementInfo.title}</h4>
                     </div>
                     <p className="text-[10.5px] text-slate-350 leading-relaxed font-sans">
-                      {t('O Ar governa sua matriz de')} <strong>{t('Aquário')}</strong>. {t('Traz velocidade de raciocínio, intuição aberta e facilidade para propor soluções de negócios. Alinhe seu elemento acendendo sândalo logo pela manhã e abrindo as janelas do quarto.')}
+                      {dynamicElementInfo.text}
                     </p>
                   </div>
 
@@ -2835,7 +2946,7 @@ export default function UserDashboardPortal({
                       <h4 className="text-[11px] font-bold uppercase font-mono tracking-wider text-amber-400">{t('Símbolos Ativos')}</h4>
                     </div>
                     <p className="text-[10.5px] text-slate-350 leading-relaxed font-sans">
-                      {t('O')} <strong>{t('Heptagrama Sagrado (Estrela de Sete Pontas)')}</strong> {t('soterra energias de fadiga celular e atua como escudo áurico nas terças-feiras de negócios arriscados.')}
+                      {t('O')} <strong>{t('Heptagrama Sagrado (Estrela de Sete Pontas)')}</strong> {t('soterra energias de fadiga cellular e atua como escudo áurico nas terças-feiras de negócios arriscados.')}
                     </p>
                   </div>
 
@@ -2846,7 +2957,7 @@ export default function UserDashboardPortal({
                       <h4 className="text-[11px] font-bold uppercase font-mono tracking-wider text-purple-400">{t('Amuletos Recomendados')}</h4>
                     </div>
                     <p className="text-[10.5px] text-slate-350 leading-relaxed font-sans">
-                      {t('Use um')} <strong>{t('Escarabeu de Lápis-Lazúli')}</strong> {t('posicionado na bolsa ou carteira de investimentos para guiar suas ações práticas rumo à consolidação do Caminho 8.')}
+                      {dynamicAmuletText}
                     </p>
                   </div>
                 </div>
@@ -2858,7 +2969,7 @@ export default function UserDashboardPortal({
                     <h4 className="text-[10px] font-bold uppercase font-mono text-amber-400 tracking-wider">{t('Recomendação Estelar de Joia de Poder')}</h4>
                   </div>
                   <p className="text-[11px] text-slate-350 leading-relaxed">
-                    {t('Recomendamos o uso de um')} <strong>{t('Colar de Lápis-Lazúli puro em Prata')}</strong> {t('ou um')} <strong>{t('Anel de Pirita ou Sodalita')}</strong> {t('posicionado no dedo indicador para canalizar de forma sólida o magnetismo materializador do seu Caminho de Vida 8.')}
+                    {t('Recomendamos o uso de um')} <strong>{t('Colar de Lápis-Lazúli puro em Prata')}</strong> {t('ou um')} <strong>{t('Anel de Pirita ou Sodalita')}</strong> {t('posicionado no dedo indicador para canalizar de forma sólida o magnetismo materializador do seu Caminho de Vida')} {lifePathNumber}.
                   </p>
                 </div>
               </div>
@@ -3103,13 +3214,21 @@ export default function UserDashboardPortal({
 
           {/* TAB 11.5: SISTEMA SOCIAL E COMPATIBILIDADE */}
           {areaSubTab === 'compatibilidade_social' && (
-            <div className="space-y-6 animate-in fade-in duration-300 text-left">
+            <div className="space-y-8 animate-in fade-in duration-300 text-left">
+              <SocialViralityCard 
+                user={user} 
+                mapData={mapData} 
+                preciseZodiacSign={preciseZodiacSign} 
+                lifePathNumber={lifePathNumber} 
+                activeLang={activeLang} 
+              />
+
               <div className="bg-slate-900/40 p-5 rounded-3xl border border-slate-800 space-y-5">
                 <div className="space-y-0.5 pb-2 border-b border-slate-850 flex justify-between items-center text-left">
                   <div>
                     <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
-                      <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" />
-                      {t('Sinergia & Ecossistema Social')}
+                      <Users className="w-4 h-4 text-amber-500 animate-pulse" />
+                      {t('Afinidades no Ecossistema')}
                     </h3>
                     <p className="text-[10px] text-slate-500 mt-0.5">{t('Explore afinidades, acompanhe a atividade no ecossistema e conecte-se com pessoas em ressonância estelar com seu mapa.')}</p>
                   </div>
@@ -3124,6 +3243,27 @@ export default function UserDashboardPortal({
                   hasCreatedMap={!!user.hasCreatedMap} 
                 />
               </div>
+            </div>
+          )}
+
+          {/* TAB: CHAKRAS CÓSMICOS */}
+          {areaSubTab === 'chakras' && (
+            <div className="space-y-6 animate-in fade-in duration-300 text-left">
+              <CosmicChakras 
+                user={user} 
+                mapData={mapData} 
+                activeLang={activeLang} 
+              />
+            </div>
+          )}
+
+          {/* TAB: RITUAIS DIÁRIOS */}
+          {areaSubTab === 'rituais' && (
+            <div className="space-y-6 animate-in fade-in duration-300 text-left">
+              <PracticalRituals 
+                user={user} 
+                activeLang={activeLang} 
+              />
             </div>
           )}
 
