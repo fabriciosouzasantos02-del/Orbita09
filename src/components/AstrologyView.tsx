@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Language } from '../lib/translations';
 import { AstrologyMap, AstroAstroPosition, UserProfile } from '../types';
 import CircularChart from './CircularChart';
+import { CityAutocomplete } from './CityAutocomplete';
 import { 
   Orbit, 
   Compass, 
@@ -818,13 +819,18 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
   const [overwriteDate, setOverwriteDate] = useState(user.birthDate);
   const [overwriteTime, setOverwriteTime] = useState(user.birthTime);
   const [overwriteCity, setOverwriteCity] = useState(user.birthCity);
+  const [overwriteCoords, setOverwriteCoords] = useState<{ latitude?: number; longitude?: number } | null>(
+    user.latitude && user.longitude ? { latitude: user.latitude, longitude: user.longitude } : null
+  );
 
   const handleOverwriteMainMap = (e: React.FormEvent) => {
     e.preventDefault();
     onUpdateMainMap({
       birthDate: overwriteDate,
       birthTime: overwriteTime,
-      birthCity: overwriteCity
+      birthCity: overwriteCity,
+      latitude: overwriteCoords?.latitude,
+      longitude: overwriteCoords?.longitude
     });
     setShowMainMapWarning(false);
   };
@@ -893,12 +899,15 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
               </div>
               <div>
                 <label className="block text-[10px] font-mono text-slate-400 mb-1">{t("CIDADE")}</label>
-                <input 
-                  type="text" 
+                <CityAutocomplete 
                   value={overwriteCity} 
-                  onChange={(e) => setOverwriteCity(e.target.value)} 
-                  className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200"
-                  placeholder="e.g. São Paulo"
+                  placeholder={t("Cidade e país...")}
+                  onChange={(val) => setOverwriteCity(val)} 
+                  onSelectCity={(city) => {
+                    setOverwriteCity(city.label);
+                    setOverwriteCoords({ latitude: city.latitude, longitude: city.longitude });
+                  }}
+                  inputClassName="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200"
                 />
               </div>
               <div className="sm:col-span-3 flex justify-end gap-2 mt-2">

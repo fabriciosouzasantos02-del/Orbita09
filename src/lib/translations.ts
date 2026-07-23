@@ -26,6 +26,14 @@ export function getInitialLanguage(): Language {
   return detected;
 }
 
+export function getCurrentLang(): Language {
+  if (typeof window !== 'undefined' && i18next && i18next.language) {
+    const l = i18next.language.slice(0, 2).toLowerCase() as Language;
+    if (['pt', 'en', 'es', 'de', 'fr'].includes(l)) return l;
+  }
+  return getInitialLanguage();
+}
+
 export const translationDict: Record<Language, Record<string, string>> = {
   pt: {
     // Custom requested i18n keys

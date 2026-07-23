@@ -23,6 +23,7 @@ import {
   updateDoc,
   query,
   where,
+  limit,
   onSnapshot
 } from 'firebase/firestore';
 import { performAstroCalculation } from './astroMath';
@@ -50,6 +51,9 @@ interface SocialNotification {
 
 interface SocialNetworkViewProps {
   currentUser: {
+    uid?: string;
+    userId?: string;
+    updatedAt?: string;
     email?: string;
     name: string;
     birthDate: string;
@@ -458,6 +462,13 @@ const SEED_USERS = [
 export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, lang }: SocialNetworkViewProps) {
   const { t: tI18n } = useTranslation();
   const currentEmail = (currentUser.email || "viajante@starportal.com").toLowerCase().trim();
+  const currentUserKey = currentUser.uid || currentUser.userId || currentEmail;
+
+  // Helper to resolve any user's unique identifier (prefers UID, fallback to email)
+  const getUserKey = (u: any): string => {
+    if (!u) return "";
+    return (u.uid || u.userId || u.email || "").toLowerCase().trim();
+  };
   
   // State variables
   const [allUsers, setAllUsers] = useState<SocialProfile[]>([]);
@@ -532,7 +543,9 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
       try {
         setLoading(true);
         const usersCol = collection(db, "users");
-        const snap = await getDocs(usersCol);
+        // Apply limit(50) to prevent slow loading and excessive read costs
+        const q = query(usersCol, limit(50));
+        const snap = await getDocs(q);
         let docsList: SocialProfile[] = [];
         
         snap.forEach(d => {
@@ -542,17 +555,11 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
         // Ensure we exclude other visitant placeholders, but filter valid records
         docsList = docsList.filter(u => u.email && u.name);
 
-        // Seeding mechanism: if there are no seed users, automatically write them to Firestore to populate the system
-        const otherDocs = docsList.filter(u => u.email.toLowerCase().trim() !== currentEmail);
+        // Seeding mechanism: if there are few other users, include seed profiles in memory
+        const otherDocs = docsList.filter(u => getUserKey(u) !== currentUserKey);
         if (otherDocs.length < 3) {
           for (const s of SEED_USERS) {
-            if (!docsList.some(u => u.email.toLowerCase().trim() === s.email)) {
-              const seedRef = doc(db, "users", s.email);
-              await setDoc(seedRef, {
-                ...s,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-              });
+            if (!docsList.some(u => u.email.toLowerCase().trim() === s.email.toLowerCase().trim())) {
               docsList.push(s as SocialProfile);
             }
           }
@@ -561,22 +568,22 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
         setAllUsers(docsList);
         
         // Featured profiles are basically any real users registered excluding the logged in user
-        const others = docsList.filter(u => u.email.toLowerCase().trim() !== currentEmail);
+        const others = docsList.filter(u => getUserKey(u) !== currentUserKey);
         setFeaturedProfiles(others);
         
         // Fetch My Follows
-        const followsCol = collection(db, "users", currentEmail, "following");
+        const followsCol = collection(db, "users", currentUserKey, "following");
         const followsSnap = await getDocs(followsCol);
-        const activeFollowEmails: string[] = [];
-        followsSnap.forEach(d => activeFollowEmails.push(d.id));
-        setMyFollows(activeFollowEmails);
+        const activeFollowKeys: string[] = [];
+        followsSnap.forEach(d => activeFollowKeys.push(d.id));
+        setMyFollows(activeFollowKeys);
 
         // Fetch My Likes
-        const likesCol = collection(db, "users", currentEmail, "likesGiven");
+        const likesCol = collection(db, "users", currentUserKey, "likesGiven");
         const likesSnap = await getDocs(likesCol);
-        const activeLikeEmails: string[] = [];
-        likesSnap.forEach(d => activeLikeEmails.push(d.id));
-        setMyLikes(activeLikeEmails);
+        const activeLikeKeys: string[] = [];
+        likesSnap.forEach(d => activeLikeKeys.push(d.id));
+        setMyLikes(activeLikeKeys);
 
       } catch (e) {
         console.error("Erro ao sintonizar rede social:", e);
@@ -588,8 +595,8 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
     loadData();
 
     // Listen to notifications real-time!
-    const notificationsPath = `users/${currentEmail}/notifications`;
-    const notificationsCol = collection(db, "users", currentEmail, "notifications");
+    const notificationsPath = `users/${currentUserKey}/notifications`;
+    const notificationsCol = collection(db, "users", currentUserKey, "notifications");
     const unsubscribeNotifications = onSnapshot(notificationsCol, (snap) => {
       const list: SocialNotification[] = [];
       snap.forEach(d => {
@@ -606,7 +613,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
       unsubscribeNotifications();
     };
 
-  }, [currentEmail]);
+  }, [currentUserKey, currentEmail]);
 
   // Handle Search
   const handleSearch = (e?: React.FormEvent) => {
@@ -620,7 +627,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
     const term = searchTerm.toLowerCase().trim();
     // Filter out our own account
     const matched = allUsers.filter(u => 
-      u.email.toLowerCase().trim() !== currentEmail && 
+      getUserKey(u) !== currentUserKey && 
       u.name.toLowerCase().includes(term)
     );
     setSearchResults(matched);
@@ -640,12 +647,12 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
         updatedAt: new Date().toISOString()
       };
       
-      await saveProfileToDatabase(currentEmail, updatedProfile as any);
+      await saveProfileToDatabase(currentUserKey, updatedProfile as any);
       onUpdateCurrentUser(updatedProfile);
       setIsEditingProfile(false);
       
       // Update local allUsers
-      setAllUsers(prev => prev.map(u => u.email.toLowerCase() === currentEmail ? { ...u, bio: editBio, instagram: editInstagram, facebook: editFacebook } : u));
+      setAllUsers(prev => prev.map(u => getUserKey(u) === currentUserKey ? { ...u, bio: editBio, instagram: editInstagram, facebook: editFacebook } : u));
     } catch (e) {
       console.error(e);
     } finally {
@@ -654,31 +661,31 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
   };
 
   // Load relationships for an active user profile
-  const fetchActiveRelations = async (targetEmail: string) => {
+  const fetchActiveRelations = async (targetKey: string) => {
     const db = getFirestoreDB();
     if (!db) return;
     try {
-      targetEmail = targetEmail.toLowerCase().trim();
+      targetKey = targetKey.trim();
       // Fetch followers
-      const followersSnap = await getDocs(collection(db, "users", targetEmail, "followers"));
+      const followersSnap = await getDocs(collection(db, "users", targetKey, "followers"));
       const followersList: SocialProfile[] = [];
       followersSnap.forEach(f => {
-        const matched = allUsers.find(u => u.email.toLowerCase().trim() === f.id);
+        const matched = allUsers.find(u => getUserKey(u) === f.id || u.email.toLowerCase().trim() === f.id);
         if (matched) followersList.push(matched);
       });
       setActiveFollowers(followersList);
 
       // Fetch following
-      const followingSnap = await getDocs(collection(db, "users", targetEmail, "following"));
+      const followingSnap = await getDocs(collection(db, "users", targetKey, "following"));
       const followingList: SocialProfile[] = [];
       followingSnap.forEach(f => {
-        const matched = allUsers.find(u => u.email.toLowerCase().trim() === f.id);
+        const matched = allUsers.find(u => getUserKey(u) === f.id || u.email.toLowerCase().trim() === f.id);
         if (matched) followingList.push(matched);
       });
       setActiveFollowing(followingList);
 
       // Friends are mutual connections (they follow each other!)
-      const friendList = followersList.filter(f => followingList.some(fol => fol.email.toLowerCase().trim() === f.email.toLowerCase().trim()));
+      const friendList = followersList.filter(f => followingList.some(fol => getUserKey(fol) === getUserKey(f)));
       setActiveFriends(friendList);
 
     } catch (e) {
@@ -692,21 +699,21 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
     setListModalType(null); // Close active list modals for fluid screen traversal
     setShowCompatibility(false);
     setShowPublicMap(false);
-    await fetchActiveRelations(profile.email);
+    await fetchActiveRelations(getUserKey(profile));
   };
 
   // Follow/Unfollow action
   const handleToggleFollow = async (target: SocialProfile) => {
     const db = getFirestoreDB();
     if (!db) return;
-    const targetEmail = target.email.toLowerCase().trim();
-    const isFollowing = myFollows.includes(targetEmail);
+    const targetUserKey = getUserKey(target);
+    const isFollowing = myFollows.includes(targetUserKey);
     
     try {
       setLoadingAction(isFollowing ? tI18n("Deixando de seguir...") : tI18n("Seguindo..."));
       
-      const myFollowingRef = doc(db, "users", currentEmail, "following", targetEmail);
-      const theirFollowersRef = doc(db, "users", targetEmail, "followers", currentEmail);
+      const myFollowingRef = doc(db, "users", currentUserKey, "following", targetUserKey);
+      const theirFollowersRef = doc(db, "users", targetUserKey, "followers", currentUserKey);
       
       if (isFollowing) {
         // Unfollow
@@ -714,18 +721,18 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
         await deleteDoc(theirFollowersRef);
         
         // Remove friend relationship records if mutually following
-        await deleteDoc(doc(db, "users", currentEmail, "friends", targetEmail));
-        await deleteDoc(doc(db, "users", targetEmail, "friends", currentEmail));
+        await deleteDoc(doc(db, "users", currentUserKey, "friends", targetUserKey));
+        await deleteDoc(doc(db, "users", targetUserKey, "friends", currentUserKey));
         
-        setMyFollows(prev => prev.filter(email => email !== targetEmail));
+        setMyFollows(prev => prev.filter(key => key !== targetUserKey));
         
         // Update database counters
-        const targetRef = doc(db, "users", targetEmail);
+        const targetRef = doc(db, "users", targetUserKey);
         await updateDoc(targetRef, {
           followersCount: Math.max(0, (target.followersCount || 1) - 1)
         }).catch(() => {});
         
-        const myRef = doc(db, "users", currentEmail);
+        const myRef = doc(db, "users", currentUserKey);
         await updateDoc(myRef, {
           followingCount: Math.max(0, (currentUser.followingCount || 1) - 1)
         }).catch(() => {});
@@ -735,29 +742,29 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
         await setDoc(myFollowingRef, { followedAt: new Date().toISOString() });
         await setDoc(theirFollowersRef, { followedAt: new Date().toISOString() });
         
-        setMyFollows(prev => [...prev, targetEmail]);
+        setMyFollows(prev => [...prev, targetUserKey]);
         
         // Update database counters
-        const targetRef = doc(db, "users", targetEmail);
+        const targetRef = doc(db, "users", targetUserKey);
         await updateDoc(targetRef, {
           followersCount: (target.followersCount || 0) + 1
         }).catch(() => {});
         
-        const myRef = doc(db, "users", currentEmail);
+        const myRef = doc(db, "users", currentUserKey);
         await updateDoc(myRef, {
           followingCount: (currentUser.followingCount || 0) + 1
         }).catch(() => {});
 
         // Check if mutual to register friend
-        const isMutualFollow = activeFollowers.some(f => f.email.toLowerCase().trim() === currentEmail) || 
-                               await getDoc(doc(db, "users", targetEmail, "following", currentEmail)).then(snap => snap.exists());
+        const isMutualFollow = activeFollowers.some(f => getUserKey(f) === currentUserKey) || 
+                               await getDoc(doc(db, "users", targetUserKey, "following", currentUserKey)).then(snap => snap.exists());
         
         if (isMutualFollow) {
-          await setDoc(doc(db, "users", currentEmail, "friends", targetEmail), { addedAt: new Date().toISOString() });
-          await setDoc(doc(db, "users", targetEmail, "friends", currentEmail), { addedAt: new Date().toISOString() });
+          await setDoc(doc(db, "users", currentUserKey, "friends", targetUserKey), { addedAt: new Date().toISOString() });
+          await setDoc(doc(db, "users", targetUserKey, "friends", currentUserKey), { addedAt: new Date().toISOString() });
           
           // Send notification of reciprocal friendship
-          const friendNotifRef = doc(collection(db, "users", targetEmail, "notifications"));
+          const friendNotifRef = doc(collection(db, "users", targetUserKey, "notifications"));
           await setDoc(friendNotifRef, {
             type: 'friend',
             senderEmail: currentEmail,
@@ -769,7 +776,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
         }
 
         // Send normal Follow notification
-        const followNotifRef = doc(collection(db, "users", targetEmail, "notifications"));
+        const followNotifRef = doc(collection(db, "users", targetUserKey, "notifications"));
         await setDoc(followNotifRef, {
           type: 'follow',
           senderEmail: currentEmail,
@@ -781,7 +788,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
       }
       
       // Reload relations
-      await fetchActiveRelations(targetEmail);
+      await fetchActiveRelations(targetUserKey);
     } catch (e) {
       console.error(e);
     } finally {
@@ -793,35 +800,35 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
   const handleToggleLike = async (target: SocialProfile) => {
     const db = getFirestoreDB();
     if (!db) return;
-    const targetEmail = target.email.toLowerCase().trim();
-    const isLiked = myLikes.includes(targetEmail);
+    const targetUserKey = getUserKey(target);
+    const isLiked = myLikes.includes(targetUserKey);
 
     try {
       setLoadingAction(isLiked ? tI18n("Removendo curtida...") : tI18n("Registrando curtida..."));
-      const myLikesGivenRef = doc(db, "users", currentEmail, "likesGiven", targetEmail);
-      const theirLikesCol = doc(db, "users", targetEmail, "likesSnapshot", currentEmail);
+      const myLikesGivenRef = doc(db, "users", currentUserKey, "likesGiven", targetUserKey);
+      const theirLikesCol = doc(db, "users", targetUserKey, "likesSnapshot", currentUserKey);
       
       if (isLiked) {
         await deleteDoc(myLikesGivenRef);
         await deleteDoc(theirLikesCol);
-        setMyLikes(prev => prev.filter(email => email !== targetEmail));
+        setMyLikes(prev => prev.filter(key => key !== targetUserKey));
         
-        const targetRef = doc(db, "users", targetEmail);
+        const targetRef = doc(db, "users", targetUserKey);
         await updateDoc(targetRef, {
           likesCount: Math.max(0, (target.likesCount || 1) - 1)
         }).catch(() => {});
       } else {
         await setDoc(myLikesGivenRef, { likedAt: new Date().toISOString() });
         await setDoc(theirLikesCol, { likedAt: new Date().toISOString() });
-        setMyLikes(prev => [...prev, targetEmail]);
+        setMyLikes(prev => [...prev, targetUserKey]);
 
-        const targetRef = doc(db, "users", targetEmail);
+        const targetRef = doc(db, "users", targetUserKey);
         await updateDoc(targetRef, {
           likesCount: (target.likesCount || 0) + 1
         }).catch(() => {});
 
         // Notify user about the like in their notifications feed
-        const likeNotifRef = doc(collection(db, "users", targetEmail, "notifications"));
+        const likeNotifRef = doc(collection(db, "users", targetUserKey, "notifications"));
         await setDoc(likeNotifRef, {
           type: 'like',
           senderEmail: currentEmail,
@@ -833,7 +840,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
       }
 
       // Reload profile
-      const updatedSnap = await getDoc(doc(db, "users", targetEmail));
+      const updatedSnap = await getDoc(doc(db, "users", targetUserKey));
       if (updatedSnap.exists()) {
         setActiveProfile(updatedSnap.data() as SocialProfile);
       }
@@ -849,7 +856,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
     const db = getFirestoreDB();
     if (!db) return;
     try {
-      await deleteDoc(doc(db, "users", currentEmail, "notifications", notifId));
+      await deleteDoc(doc(db, "users", currentUserKey, "notifications", notifId));
     } catch (e) {
       console.error(e);
     }
@@ -1148,7 +1155,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
                     {tI18n("Sol em")} {tI18n(getZodiacSign(activeProfile.birthDate))}
                   </span>
                   
-                  {activeProfile.hasPremium && (
+                  {activeProfile.isPremium && (
                     <span className="px-2 py-0.5 bg-cyan-500/10 border border-cyan-500/20 text-[9px] font-mono text-cyan-450 rounded-md">
                       {tI18n("Membro Premium")}
                     </span>

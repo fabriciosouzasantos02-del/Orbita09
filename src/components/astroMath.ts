@@ -580,22 +580,50 @@ export function performAstroCalculation(
   timezoneOffset?: number,
   passedLang?: string
 ): CalculatedChart {
-  // Parse birth details
+  // Parse birth details with robust, professional 24-hour time parsing
   const [year, month, day] = birthDate.split("-").map(v => parseInt(v, 10));
   let hour = 12;
   let minute = 0;
-  if (birthTime && birthTime.includes(":")) {
-    const [h, m] = birthTime.split(":").map(v => parseInt(v, 10));
-    hour = isNaN(h) ? 12 : h;
-    minute = isNaN(m) ? 0 : m;
+  if (birthTime) {
+    const clean = birthTime.trim().toLowerCase();
+    const match = clean.match(/(\d{1,2})[:h\s\.]+(\d{2})/);
+    if (match) {
+      hour = parseInt(match[1], 10);
+      minute = parseInt(match[2], 10);
+    } else {
+      const digitMatch = clean.match(/^\d+$/);
+      if (digitMatch) {
+        const val = digitMatch[0];
+        if (val.length === 4) {
+          hour = parseInt(val.substring(0, 2), 10);
+          minute = parseInt(val.substring(2, 4), 10);
+        } else if (val.length === 3) {
+          hour = parseInt(val.substring(0, 1), 10);
+          minute = parseInt(val.substring(1, 3), 10);
+        } else {
+          hour = parseInt(val, 10);
+        }
+      } else {
+        const parts = clean.split(/[^0-9]/).filter(Boolean);
+        if (parts.length >= 2) {
+          hour = parseInt(parts[0], 10);
+          minute = parseInt(parts[1], 10);
+        } else if (parts.length === 1) {
+          hour = parseInt(parts[0], 10);
+        }
+      }
+    }
   }
+  if (isNaN(hour) || hour < 0 || hour > 23) hour = 12;
+  if (isNaN(minute) || minute < 0 || minute > 59) minute = 0;
   
   // Determine standard timezone offset (in hours) if not provided
   const tzOffset = (timezoneOffset !== undefined) ? timezoneOffset : Math.round(longitude / 15);
 
-  // Convert local standard / DST time to UTC precisely, handling day/month/year overflows & underflows
-  const utcHour = hour - tzOffset;
-  const localJsDate = new Date(Date.UTC(year, month - 1, day, Math.floor(utcHour), Math.round((utcHour % 1) * 60) + minute, 0));
+  // Convert local standard / DST time to UTC precisely using minutes, handling day/month/year overflows & underflows
+  const totalLocalMinutes = hour * 60 + minute;
+  const totalUtcMinutes = totalLocalMinutes - (tzOffset * 60);
+  const localJsDate = new Date(Date.UTC(year, month - 1, day, 0, totalUtcMinutes, 0));
   
   const finalYear = localJsDate.getUTCFullYear();
   const finalMonth = localJsDate.getUTCMonth() + 1;

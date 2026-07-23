@@ -374,31 +374,34 @@ export default function DreamsTab({ lang }: DreamsTabProps) {
                           <span>{tI18n("Revelação Arquetípica Integral")}</span>
                         </span>
                         <div className="text-[11px] text-neutral-700 leading-relaxed font-sans">
-                          {typeof dream.aiAnalysis === 'object' && dream.aiAnalysis !== null ? (
-                            <div className="space-y-2 text-xs">
-                              {dream.aiAnalysis.title && (
-                                <p className="font-semibold text-neutral-900 border-b border-neutral-100 pb-1 text-sm">
-                                  {dream.aiAnalysis.title}
-                                </p>
-                              )}
-                              {dream.aiAnalysis.mainMeaning && (
-                                <p><strong className="text-indigo-950">{tI18n("Significado Principal")}:</strong> {dream.aiAnalysis.mainMeaning}</p>
-                              )}
-                              {dream.aiAnalysis.psychological && (
-                                <p><strong>{tI18n("Psicológico")}:</strong> {dream.aiAnalysis.psychological}</p>
-                              )}
-                              {dream.aiAnalysis.spiritual && (
-                                <p><strong>{tI18n("Espiritual")}:</strong> {dream.aiAnalysis.spiritual}</p>
-                              )}
-                              {dream.aiAnalysis.oracleAdvice && (
-                                <p className="italic text-indigo-700 bg-indigo-50/50 p-1.5 rounded-lg border border-indigo-100/50 mt-1">
-                                  ★ <strong>{tI18n("Conselho do Oráculo")}:</strong> {dream.aiAnalysis.oracleAdvice}
-                                </p>
-                              )}
-                            </div>
-                          ) : (
-                            <p>{tI18n(dream.aiAnalysis as unknown as string)}</p>
-                          )}
+                          {(() => {
+                            const analysisObj = dream.aiAnalysis as any;
+                            return typeof analysisObj === 'object' && analysisObj !== null ? (
+                              <div className="space-y-2 text-xs">
+                                {analysisObj.title && (
+                                  <p className="font-semibold text-neutral-900 border-b border-neutral-100 pb-1 text-sm">
+                                    {analysisObj.title}
+                                  </p>
+                                )}
+                                {analysisObj.mainMeaning && (
+                                  <p><strong className="text-indigo-950">{tI18n("Significado Principal")}:</strong> {analysisObj.mainMeaning}</p>
+                                )}
+                                {analysisObj.psychological && (
+                                  <p><strong>{tI18n("Psicológico")}:</strong> {analysisObj.psychological}</p>
+                                )}
+                                {analysisObj.spiritual && (
+                                  <p><strong>{tI18n("Espiritual")}:</strong> {analysisObj.spiritual}</p>
+                                )}
+                                {analysisObj.oracleAdvice && (
+                                  <p className="italic text-indigo-700 bg-indigo-50/50 p-1.5 rounded-lg border border-indigo-100/50 mt-1">
+                                    ★ <strong>{tI18n("Conselho do Oráculo")}:</strong> {analysisObj.oracleAdvice}
+                                  </p>
+                                )}
+                              </div>
+                            ) : (
+                              <p>{tI18n(dream.aiAnalysis as string)}</p>
+                            );
+                          })()}
                         </div>
                       </div>
                     ) : (

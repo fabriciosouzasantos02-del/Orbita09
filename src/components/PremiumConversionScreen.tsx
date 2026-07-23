@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
+import { getFirestoreDB, getFirebaseAuth } from '../lib/firebase';
+import { collection, addDoc, onSnapshot } from 'firebase/firestore';
 import { 
   Sparkles, 
   Compass, 
@@ -40,67 +42,145 @@ export const PremiumConversionScreen: React.FC<PremiumConversionScreenProps> = (
   const handleCheckout = async () => {
     setIsRedirecting(true);
     try {
-      const planId = selectedPlan === 'monthly' 
-        ? 'price_1TjjUdLy2FLlsgZ1783FoAAX' 
-        : 'price_1TjkNaLy2FLlsgZ1p832v8cB';
+      const priceId = selectedPlan === 'monthly' 
+        ? 'price_1TjSCjLy2FLlsgZ1QX39rY8J' 
+        : 'price_1Tu3HmLy2FLlsgZ1jlfKwPQT';
 
-      const planName = selectedPlan === 'monthly' ? 'Orbita Monthly' : 'Orbita Annual';
-
-      const response = await fetch('/api/stripe/create-checkout-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: userEmail || localStorage.getItem("orbi_logged_email") || "",
-          planId: planId,
-          planName: planName,
-          lang: currentLang || 'pt',
-          uid: userUid
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Falha ao conectar com o serviço de pagamento');
+      const activeUid = userUid || getFirebaseAuth()?.currentUser?.uid || localStorage.getItem("orbi_logged_uid") || "";
+      if (!activeUid) {
+        throw new Error(currentLang === 'pt' ? 'Usuário não autenticado. Por favor, faça login para continuar.' : 'User not authenticated. Please log in.');
       }
 
-      const data = await response.json();
-      if (data.url) {
-        // CORREÇÃO CRÍTICA PARA IFRAMES (AI Studio / Sandbox):
-        // Redirecionar diretamente no iframe causará uma tela branca devido às políticas de segurança da Stripe (X-Frame-Options/CSP).
-        // Tentamos abrir em uma nova aba para garantir o correto funcionamento e, como fallback, redirecionamos a aba pai (top window) ou a atual.
-        try {
-          if (window.self !== window.top) {
-            // Estamos dentro de um iframe, abre em nova aba
-            const openedWindow = window.open(data.url, '_blank');
-            if (!openedWindow) {
-              // Se o navegador bloqueou o popup, redirecionamos a página top
-              window.top!.location.href = data.url;
+      const db = getFirestoreDB();
+      if (!db) {
+        throw new Error('Serviço do Firebase não disponível no momento.');
+      }
+
+      const checkoutSessionData = {
+        price: priceId,
+        success_url: "https://portalorbit.vercel.app/success",
+        cancel_url: "https://portalorbit.vercel.app/failure",
+        clientReferenceId: activeUid,
+        metadata: {
+          uid: activeUid,
+          email: userEmail || localStorage.getItem("orbi_logged_email") || ""
+        }
+      };
+
+      console.log("[Stripe Firebase Extension] Creating checkout session document for UID:", activeUid, checkoutSessionData);
+
+      const docRef = await addDoc(
+        collection(db, "customers", activeUid, "checkout_sessions"), 
+        checkoutSessionData
+      );
+
+      // Listen to the document for updates from the extension
+      let resolved = false;
+      const unsubscribe = onSnapshot(docRef, (snap) => {
+        const data = snap.data();
+        if (data && !resolved) {
+          if (data.error) {
+            resolved = true;
+            unsubscribe();
+            setIsRedirecting(false);
+            console.error("[Stripe Extension Error]", data.error);
+            const errMsg = data.error.message || "Erro retornado pela extensão Stripe.";
+            if (triggerGlobalNotification) {
+              triggerGlobalNotification(t('Erro de Conexão'), errMsg, 'alert');
+            } else {
+              alert(errMsg);
             }
-          } else {
-            // Fora de iframe, redireciona normalmente
-            window.location.href = data.url;
-          }
-        } catch (iframeErr) {
-          // Fallback seguro caso haja erro de Cross-Origin acessando window.top
-          const openedWindow = window.open(data.url, '_blank');
-          if (!openedWindow) {
-            window.location.href = data.url;
+          } else if (data.url) {
+            resolved = true;
+            unsubscribe();
+            const stripeUrl = data.url;
+            console.log("[Stripe Firebase Extension] Redirecting to Stripe URL:", stripeUrl);
+            
+            // Safe redirection for iFrames (AI Studio/Sandbox/Vercel)
+            try {
+              if (window.self !== window.top) {
+                const openedWindow = window.open(stripeUrl, '_blank');
+                if (!openedWindow) {
+                  window.top!.location.href = stripeUrl;
+                }
+              } else {
+                window.location.href = stripeUrl;
+              }
+            } catch (iframeErr) {
+              const openedWindow = window.open(stripeUrl, '_blank');
+              if (!openedWindow) {
+                window.location.href = stripeUrl;
+              }
+            }
           }
         }
-      } else {
-        throw new Error('Retorno inválido do servidor de checkout');
-      }
+      });
+
+      // Timeout safety: if the extension doesn't process the session within 6 seconds, we attempt fallback to the local backend API
+      setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          unsubscribe();
+          console.warn("[Stripe Firebase Extension] Timeout listening for checkout URL. Falling back to secure API endpoint...");
+          
+          // Secure API endpoint fallback
+          const planName = selectedPlan === 'monthly' ? 'Orbita Monthly' : 'Orbita Annual';
+          fetch('/api/stripe/create-checkout-session', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: userEmail || localStorage.getItem("orbi_logged_email") || "",
+              planId: priceId,
+              planName: planName,
+              lang: currentLang || 'pt',
+              uid: activeUid
+            }),
+          })
+          .then(async (response) => {
+            if (!response.ok) throw new Error('Falha no fallback de checkout');
+            const data = await response.json();
+            if (data.url) {
+              try {
+                if (window.self !== window.top) {
+                  const openedWindow = window.open(data.url, '_blank');
+                  if (!openedWindow) window.top!.location.href = data.url;
+                } else {
+                  window.location.href = data.url;
+                }
+              } catch {
+                const openedWindow = window.open(data.url, '_blank');
+                if (!openedWindow) window.location.href = data.url;
+              }
+            } else {
+              throw new Error('Retorno de fallback inválido');
+            }
+          })
+          .catch((err) => {
+            console.error('[Stripe Fallback Error]', err);
+            const displayMsg = t('Não foi possível iniciar o checkout seguro da Stripe. Tente novamente.');
+            if (triggerGlobalNotification) {
+              triggerGlobalNotification(t('Erro de Conexão'), displayMsg, 'alert');
+            } else {
+              alert(displayMsg);
+            }
+            setIsRedirecting(false);
+          });
+        }
+      }, 6000);
+
     } catch (err: any) {
       console.error('[Stripe Checkout Error]', err);
+      const displayMsg = err.message ? `${err.message}` : t('Não foi possível iniciar o checkout seguro da Stripe. Tente novamente.');
       if (triggerGlobalNotification) {
         triggerGlobalNotification(
           t('Erro de Conexão'),
-          t('Não foi possível iniciar o checkout seguro da Stripe. Tente novamente.'),
+          displayMsg,
           'alert'
         );
       } else {
-        alert(t('Não foi possível iniciar o checkout seguro da Stripe. Tente novamente.'));
+        alert(displayMsg);
       }
       setIsRedirecting(false);
     }

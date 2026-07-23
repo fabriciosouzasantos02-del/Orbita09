@@ -2,7 +2,6 @@ import express from 'express';
 import path from 'path';
 import dotenv from 'dotenv';
 import { GoogleGenAI, Type } from '@google/genai';
-import { createServer as createViteServer } from 'vite';
 import { performAstroCalculation } from './src/components/astroMath';
 import { computeDetailedCompatibility } from './src/components/compatibilityEngine';
 import moment from 'moment-timezone';
@@ -12,8 +11,196 @@ import ephemeris from 'ephemeris';
 import Stripe from 'stripe';
 import nodemailer from 'nodemailer';
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, doc, setDoc, addDoc, collection, getDocs, query, where, getDoc } from "firebase/firestore";
+import { 
+  getFirestore, 
+  doc as clientDoc, 
+  setDoc as clientSetDoc, 
+  addDoc as clientAddDoc, 
+  collection as clientCollection, 
+  getDocs as clientGetDocs, 
+  query as clientQuery, 
+  where as clientWhere, 
+  getDoc as clientGetDoc 
+} from "firebase/firestore";
+import { initializeApp as initAdminApp, cert, getApps as getAdminApps } from 'firebase-admin/app';
+import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
+
+// Unified Admin + Client Firestore Helpers to seamlessly bypass security rules when service account is available
+let globalCachedAdminDb: any = null;
+
+function getAdminDb() {
+  if (globalCachedAdminDb) return globalCachedAdminDb;
+  
+  const saEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (saEnv) {
+    try {
+      let serviceAccount;
+      if (saEnv.trim().startsWith('{')) {
+        serviceAccount = JSON.parse(saEnv);
+      } else {
+        serviceAccount = JSON.parse(saEnv);
+      }
+      
+      if (getAdminApps().length === 0) {
+        initAdminApp({
+          credential: cert(serviceAccount)
+        });
+      }
+      globalCachedAdminDb = getAdminFirestore();
+      console.log("[Firebase Admin] Inicializado com sucesso usando Service Account do usuário!");
+      return globalCachedAdminDb;
+    } catch (e: any) {
+      console.error("[Firebase Admin] Erro ao inicializar com Service Account:", e.message);
+    }
+  }
+  return null;
+}
+
+function collection(db: any, path: string, ...pathSegments: string[]): any {
+  const adminDb = getAdminDb();
+  if (adminDb) {
+    const fullPath = [path, ...pathSegments].join('/');
+    return {
+      __isRef: true,
+      isAdmin: true,
+      adminRef: adminDb.collection(fullPath)
+    };
+  } else {
+    const clientRef = clientCollection(db, path, ...pathSegments);
+    return {
+      __isRef: true,
+      isAdmin: false,
+      clientRef
+    };
+  }
+}
+
+function doc(firstArg: any, ...pathSegments: string[]): any {
+  const adminDb = getAdminDb();
+  if (adminDb) {
+    if (firstArg && firstArg.__isRef && firstArg.isAdmin) {
+      const fullPath = pathSegments.join('/');
+      return {
+        __isRef: true,
+        isAdmin: true,
+        adminRef: firstArg.adminRef.doc(fullPath)
+      };
+    } else {
+      const fullPath = pathSegments.join('/');
+      return {
+        __isRef: true,
+        isAdmin: true,
+        adminRef: adminDb.doc(fullPath)
+      };
+    }
+  } else {
+    let clientRef;
+    if (firstArg && firstArg.__isRef && !firstArg.isAdmin) {
+      clientRef = clientDoc(firstArg.clientRef, ...pathSegments);
+    } else {
+      clientRef = clientDoc(firstArg, ...pathSegments);
+    }
+    return {
+      __isRef: true,
+      isAdmin: false,
+      clientRef
+    };
+  }
+}
+
+async function setDoc(docRef: any, data: any, options?: any) {
+  if (docRef && docRef.__isRef && docRef.isAdmin && docRef.adminRef) {
+    if (options && options.merge) {
+      return await docRef.adminRef.set(data, { merge: true });
+    }
+    return await docRef.adminRef.set(data);
+  } else {
+    const actualRef = (docRef && docRef.__isRef) ? docRef.clientRef : docRef;
+    return await clientSetDoc(actualRef, data, options);
+  }
+}
+
+async function addDoc(collectionRef: any, data: any) {
+  if (collectionRef && collectionRef.__isRef && collectionRef.isAdmin && collectionRef.adminRef) {
+    const res = await collectionRef.adminRef.add(data);
+    return { id: res.id };
+  } else {
+    const actualRef = (collectionRef && collectionRef.__isRef) ? collectionRef.clientRef : collectionRef;
+    return await clientAddDoc(actualRef, data);
+  }
+}
+
+async function getDoc(docRef: any) {
+  if (docRef && docRef.__isRef && docRef.isAdmin && docRef.adminRef) {
+    const snap = await docRef.adminRef.get();
+    return {
+      exists: () => snap.exists,
+      data: () => snap.data(),
+      id: snap.id
+    };
+  } else {
+    const actualRef = (docRef && docRef.__isRef) ? docRef.clientRef : docRef;
+    return await clientGetDoc(actualRef);
+  }
+}
+
+function where(field: string, op: any, value: any): any {
+  return {
+    __isWhere: true,
+    field,
+    op,
+    value
+  };
+}
+
+function query(collectionRef: any, ...clauses: any[]): any {
+  if (collectionRef && collectionRef.__isRef && collectionRef.isAdmin) {
+    let q = collectionRef.adminRef;
+    for (const clause of clauses) {
+      if (clause && clause.__isWhere) {
+        q = q.where(clause.field, clause.op, clause.value);
+      }
+    }
+    return {
+      __isRef: true,
+      isAdmin: true,
+      adminQuery: q
+    };
+  } else {
+    const actualRef = (collectionRef && collectionRef.__isRef) ? collectionRef.clientRef : collectionRef;
+    const clientClauses = clauses.map(c => clientWhere(c.field, c.op, c.value));
+    const q = clientQuery(actualRef, ...clientClauses);
+    return {
+      __isRef: true,
+      isAdmin: false,
+      clientQuery: q
+    };
+  }
+}
+
+async function getDocs(queryObj: any) {
+  if (queryObj && queryObj.__isRef && queryObj.isAdmin) {
+    const adminQuery = queryObj.adminQuery || queryObj.adminRef;
+    const snap = await adminQuery.get();
+    const docs = snap.docs.map((docSnap: any) => ({
+      id: docSnap.id,
+      data: () => docSnap.data(),
+      exists: () => docSnap.exists
+    }));
+    return {
+      empty: snap.empty,
+      docs,
+      size: snap.size
+    };
+  } else {
+    const clientQ = (queryObj && queryObj.__isRef) ? (queryObj.clientQuery || queryObj.clientRef) : queryObj;
+    const snap = await clientGetDocs(clientQ);
+    return snap;
+  }
+}
+
 import fs from 'fs';
+import firebaseAppletConfig from './firebase-applet-config.json';
 import { mergedTranslations } from './src/i18n';
 import { translations, Language } from './translations';
 
@@ -87,7 +274,7 @@ export function cleanStringForChartId(val: string): string {
     .replace(/[^a-z0-9]/g, "_");
 }
 
-const app = express();
+export const app = express();
 const PORT = 3000;
 
 app.use(express.json({ 
@@ -1024,12 +1211,20 @@ function generateMapData(
   // Calculate high-precision astronomical chart using local Swiss Ephemeris offline library
   const chart = performPreciseServerCalculation(dDate, dTime, coords.latitude, coords.longitude, timezoneOffset, lang);
   
+  let displayAdjustedTime = time || "12:00";
+  if (isDst) {
+    const [h, m] = (time || "12:00").split(":").map(Number);
+    let newH = h - 1;
+    if (newH < 0) newH = 23;
+    displayAdjustedTime = `${newH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  }
+
   const finalMap = {
     welcomeMessage: `Olás ${name}, seja bem-vindo ao seu Mapa Astral. Aqui começa a sua jornada astrológica profissional baseada em efemérides reais de altíssima precisão!`,
     is_dst: isDst || false,
     timezone: coords.timezone,
     originalTime: time || "12:00",
-    adjustedTime: dTime,
+    adjustedTime: displayAdjustedTime,
     distribution: chart.distribution,
     personalityTraits: {
       harmonious: [
@@ -1084,32 +1279,102 @@ function getAscendedAstrologicalSign(dateString: string, offset: number): string
 }
 
 // Calculate Numerology
-function calculateNumerologyData(name: string, birthDate: string): any {
-  // Summing digits
-  const sumDigits = (str: string) => {
-    return str.replace(/\D/g, '').split('').reduce((acc, curr) => acc + parseInt(curr), 0);
-  };
-  
-  const reduceToSingleDigit = (num: number): number => {
-    while (num > 9 && num !== 11 && num !== 22) {
-      num = num.toString().split('').reduce((acc, curr) => acc + parseInt(curr), 0);
+const PythagoreanGrid: Record<string, number> = {
+  a: 1, j: 1, s: 1,
+  b: 2, k: 2, t: 2,
+  c: 3, l: 3, u: 3,
+  d: 4, m: 4, v: 4,
+  e: 5, n: 5, w: 5,
+  f: 6, o: 6, x: 6,
+  g: 7, p: 7, y: 7,
+  h: 8, q: 8, z: 8,
+  i: 9, r: 9,
+};
+
+function reduceNumber(num: number, keepMaster: boolean = true): number {
+  while (num > 9) {
+    if (keepMaster && (num === 11 || num === 22 || num === 33)) {
+      return num;
     }
-    return num;
-  };
+    num = String(num).split("").map(Number).reduce((sum, n) => sum + n, 0);
+  }
+  return num;
+}
 
-  const nameVal = name.length;
-  const birthVal = sumDigits(birthDate);
+function calculateNumerologyData(name: string, birthDate: string): any {
+  let year = 1990;
+  let month = 1;
+  let day = 1;
 
-  const caminhoDeVida = reduceToSingleDigit(birthVal || 25);
-  const expressao = reduceToSingleDigit(nameVal + birthVal || 7);
-  const motivacao = reduceToSingleDigit(nameVal * 2 || 9);
-  const personalidade = reduceToSingleDigit(Math.abs(nameVal - (birthVal % 10)) || 1);
+  if (birthDate.includes("-")) {
+    const parts = birthDate.split("-");
+    if (parts.length === 3) {
+      year = parseInt(parts[0], 10) || 1990;
+      month = parseInt(parts[1], 10) || 1;
+      day = parseInt(parts[2], 10) || 1;
+    }
+  } else if (birthDate.includes("/")) {
+    const parts = birthDate.split("/");
+    if (parts.length === 3) {
+      if (parts[2].length === 4) {
+        year = parseInt(parts[2], 10) || 1990;
+        month = parseInt(parts[1], 10) || 1;
+        day = parseInt(parts[0], 10) || 1;
+      } else {
+        year = parseInt(parts[0], 10) || 1990;
+        month = parseInt(parts[1], 10) || 1;
+        day = parseInt(parts[2], 10) || 1;
+      }
+    }
+  } else {
+    const dateStr = birthDate.replace(/[^0-9]/g, "");
+    if (dateStr.length === 8) {
+      year = parseInt(dateStr.substring(0, 4), 10) || 1990;
+      month = parseInt(dateStr.substring(4, 6), 10) || 1;
+      day = parseInt(dateStr.substring(6, 8), 10) || 1;
+    }
+  }
+
+  const redYear = reduceNumber(year, true);
+  const redMonth = reduceNumber(month, true);
+  const redDay = reduceNumber(day, true);
+
+  const birthSum = reduceNumber(redYear + redMonth + redDay, true);
+
+  const cleanName = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z]/g, "");
+
+  let expressionSum = 0;
+  let vowelsSum = 0;
+  let consonantsSum = 0;
+
+  for (const char of cleanName) {
+    const val = PythagoreanGrid[char];
+    if (val) {
+      expressionSum += val;
+      if (["a", "e", "i", "o", "u"].includes(char)) {
+        vowelsSum += val;
+      } else {
+        consonantsSum += val;
+      }
+    }
+  }
+
+  const expression = reduceNumber(expressionSum || 1, true);
+  const soulUrge = reduceNumber(vowelsSum || 1, true);
+  const personality = reduceNumber(consonantsSum || 1, true);
+  const destiny = reduceNumber(expression + birthSum, true);
+
+  const caminhoDeVida = birthSum || 1;
+  const expressao = expression || 3;
+  const motivacao = soulUrge || 5;
+  const personalidade = personality || 7;
 
   return {
     caminhoDeVida,
     expressao,
     motivacao,
     personalidade,
+    destiny: destiny || 9,
     description: `Você é um perfil de vibração ${caminhoDeVida}. Este número denota que seu caminho principal de aprendizado incentiva a independência, curiosidade ativa e forte desenvolvimento pessoal.`,
     ciclos: [
       `Ciclo Formativo (0-28 anos): Vibração ${expressao} - Ênfase nos estudos e compreensão analítica da vida.`,
@@ -1118,6 +1383,10 @@ function calculateNumerologyData(name: string, birthDate: string): any {
     ]
   };
 }
+
+// Global cached data to avoid parsing huge files on every single keystroke / request (critical for Vercel/production performance & timeout avoidance)
+let globalCachedCities: any[] | null = null;
+let globalCachedCountriesMap: Map<string, string> | null = null;
 
 // API: City offline lookup autocomplete
 app.get("/api/cities/search", (req, res) => {
@@ -1129,12 +1398,48 @@ app.get("/api/cities/search", (req, res) => {
   const cleanStr = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
   const normalizedQuery = cleanStr(query);
 
-  const allCities = City.getAllCities();
-  
-  const countriesMap = new Map();
-  Country.getAllCountries().forEach(c => {
-    countriesMap.set(c.isoCode, c.name);
-  });
+  // Lazy load cities into global cache on first request with memory-efficient strategy for serverless
+  if (!globalCachedCities) {
+    console.log("[Cities Database] Global caching triggered with memory-efficient strategy...");
+    const popularCountries = ["BR", "PT", "US", "ES", "FR", "IT", "DE", "GB", "CH", "AR", "UY", "CL", "MX", "CO", "IE", "CA", "IN", "JP", "RU"];
+    const citiesList: any[] = [];
+    try {
+      for (const countryCode of popularCountries) {
+        const countryCities = City.getCitiesOfCountry(countryCode) || [];
+        citiesList.push(...countryCities);
+      }
+    } catch (err) {
+      console.error("[Cities Database] Error loading popular country cities:", err);
+    }
+
+    if (citiesList.length === 0) {
+      try {
+        console.warn("[Cities Database] Popular countries returned empty. Loading all cities as fallback...");
+        globalCachedCities = City.getAllCities() || [];
+      } catch (e) {
+        console.error("[Cities Database] Critical error loading all cities:", e);
+        globalCachedCities = [];
+      }
+    } else {
+      globalCachedCities = citiesList;
+    }
+    console.log(`[Cities Database] Successfully cached ${globalCachedCities.length} cities.`);
+  }
+
+  // Lazy load countries map into global cache
+  if (!globalCachedCountriesMap) {
+    globalCachedCountriesMap = new Map();
+    try {
+      Country.getAllCountries().forEach(c => {
+        globalCachedCountriesMap!.set(c.isoCode, c.name);
+      });
+    } catch (err) {
+      console.error("[Cities Database] Error loading countries:", err);
+    }
+  }
+
+  const allCities = globalCachedCities;
+  const countriesMap = globalCachedCountriesMap;
 
   // Translation helpers for country and state names to Portuguese
   function getPortugueseCountryName(countryCode: string, defaultName: string): string {
@@ -1281,20 +1586,13 @@ app.post("/api/astrology/generate", async (req, res) => {
       resolvedCoords = await resolveCityCoordinatesAndTimezone(safeBirthCity);
     }
     
-    // DST evaluation and standard real solar time subtraction
+    // DST evaluation and standard real solar time
     const tzName = resolvedCoords.timezone;
     const mt = moment.tz(`${safeBirthDate} ${safeBirthTime}`, "YYYY-MM-DD HH:mm", tzName);
     const is_dst = mt.isDST();
 
     let astroDate = safeBirthDate;
     let astroTime = safeBirthTime;
-
-    if (is_dst) {
-      // Subtract 1 hour to get standard real solar time
-      const standardTimeMoment = mt.clone().subtract(1, 'hour');
-      astroDate = standardTimeMoment.format('YYYY-MM-DD');
-      astroTime = standardTimeMoment.format('HH:mm');
-    }
 
     const timezoneOffsetHours = mt.utcOffset() / 60;
 
@@ -1557,7 +1855,8 @@ Responda APENAS com o JSON literal. Não inclua blocos de código adicionais for
 
 // API: Dream Interpretation using Gemini (New Oráculo dos Sonhos)
 app.post("/api/dreams/interpret", async (req, res) => {
-  const { title, description, lang, mapData, userProfile } = req.body;
+  const { title, lang, mapData, userProfile } = req.body;
+  const description = req.body.description || req.body.content;
   if (!description) {
     return res.status(400).json({ error: (req as any).t('api.dreams.content_required') });
   }
@@ -1590,11 +1889,38 @@ Informações Reais do Mapa Astral Natal do Usuário (Fonte Única da Verdade):
 - Ascendente em: ${userAscSign}
 - Distribuição de Elementos: ${elementsSummary}
 `;
+
+    if (userProfile?.birthTime) {
+      chartContext += `- Hora de Nascimento: ${userProfile.birthTime}\n`;
+    }
+    if (userProfile?.birthPlace) {
+      chartContext += `- Local de Nascimento: ${userProfile.birthPlace}\n`;
+    }
     
     const planets = mapData.astros?.filter((a: any) => ["Marte", "Vênus", "Mercúrio", "Saturno", "Júpiter"].includes(a.name));
     if (planets && planets.length > 0) {
       chartContext += `- Posicionamentos planetários adicionais: ` + planets.map((p: any) => `${p.name} em ${p.sign}`).join(", ") + "\n";
     }
+
+    let numerologySummary = "";
+    if (userProfile?.name && userProfile?.birthDate) {
+      try {
+        const numData = calculateNumerologyData(userProfile.name, userProfile.birthDate);
+        if (numData) {
+          numerologySummary = `
+Informações de Numerologia Cabalística do Usuário:
+- Número de Destino/Caminho de Vida: ${numData.destiny || numData.birthSum || "N/A"}
+- Número de Expressão: ${numData.expression || "N/A"}
+- Número de Desejo da Alma (Motivação): ${numData.soul || "N/A"}
+- Número de Personalidade: ${numData.personality || "N/A"}
+`;
+        }
+      } catch (e) {
+        console.warn("Could not compute numerology summary for dream interpretation:", e);
+      }
+    }
+    chartContext += numerologySummary;
+
   } else if (userProfile?.birthDate) {
     const zodiac = getZodiacFromBirthDate(userProfile.birthDate);
     userSunSign = zodiac;
@@ -1602,6 +1928,31 @@ Informações Reais do Mapa Astral Natal do Usuário (Fonte Única da Verdade):
 Informações Astrológicas do Usuário:
 - Signo Solar estimado: ${userSunSign}
 `;
+    if (userProfile?.birthTime) {
+      chartContext += `- Hora de Nascimento: ${userProfile.birthTime}\n`;
+    }
+    if (userProfile?.birthPlace) {
+      chartContext += `- Local de Nascimento: ${userProfile.birthPlace}\n`;
+    }
+
+    let numerologySummary = "";
+    if (userProfile?.name) {
+      try {
+        const numData = calculateNumerologyData(userProfile.name, userProfile.birthDate);
+        if (numData) {
+          numerologySummary = `
+Informações de Numerologia Cabalística do Usuário:
+- Número de Destino/Caminho de Vida: ${numData.destiny || numData.birthSum || "N/A"}
+- Número de Expressão: ${numData.expression || "N/A"}
+- Número de Desejo da Alma (Motivação): ${numData.soul || "N/A"}
+- Número de Personalidade: ${numData.personality || "N/A"}
+`;
+        }
+      } catch (e) {
+        console.warn("Could not compute numerology summary for dream interpretation:", e);
+      }
+    }
+    chartContext += numerologySummary;
   }
   const langNames: Record<string, string> = {
     pt: "Português",
@@ -1835,30 +2186,38 @@ Informações Astrológicas do Usuário:
   }
 
   try {
-    const prompt = `Você é o Oráculo dos Sonhos (Oráculo Celestial), assistente espiritual e terapeuta de sonhos profissional.
-Analise a descrição deste sonho e gere uma interpretação mágica, profunda, rica e detalhada baseando-se e correlacionando-a com as energias astrológicas do mapa natal do usuário abaixo, estabelecendo o mapa astral como a única fonte oficial de verdade para todas as leituras personalizadas do usuário.
+    const prompt = `Você é o Oráculo dos Sonhos (Oráculo Celestial), assistente espiritual e terapeuta de sonhos profissional de altíssimo nível.
+Analise a descrição deste sonho e gere uma interpretação mágica, profunda, altamente personalizada, rica e detalhada baseando-se e correlacionando-a rigorosamente com as energias astrológicas do mapa natal e numerologia do usuário abaixo, estabelecendo os dados do usuário como a única fonte oficial de verdade para todas as leituras personalizadas.
 
 ${chartContext}
 
 Descrição do Sonho: "${description}"
 
+REGRAS DE OURO DE PERSONALIZAÇÃO E PROFUNDIDADE:
+1. NUNCA utilize textos genéricos, respostas prontas ou interpretações padronizadas. Cada interpretação deve ser única e sob medida.
+2. O conteúdo NUNCA poderá inventar ou citar signos, planetas, casas, aspectos, números ou características que não pertençam ao mapa natal real do usuário fornecido acima. Use estritamente e com precisão apenas os astros e posicionamentos do usuário.
+3. A interpretação combinada deve ser longa, extremamente rica, madura e detalhada, contendo aproximadamente 1500 caracteres ou mais em todos os campos de texto somados.
+4. Os campos "mainMeaning", "psychological", "spiritual" e "oracleAdvice" devem ser parágrafos longos, poéticos, densos e altamente terapêuticos. Conecte cada aspecto do sonho (como objetos, sensações, medos, animais, cores, cenários) diretamente aos posicionamentos, aos elementos e aos números do usuário.
+5. Em "loveArea", "financeArea" e "careerArea", forneça conselhos práticos e sábios de como o sonhador deve agir em sua vida prática em sintonia com seus astros.
+6. Apresente uma análise equilibrada (avaliando aspectos positivos, potenciais de crescimento, desafios de sombra e avisos de proteção sem causar pânico, terrorismo ou medo, mas sim despertando a sabedoria prática e espiritual).
+
 Você DEVE produzir e retornar EXCLUSIVAMENTE um objeto JSON estruturado exatamente com o seguinte formato, sem nenhum texto adicional ou explicações externas. Todas as chaves e valores textuais de string DEVEM ser escritos 100% no idioma ${targetLangName}:
 
 {
   "title": "Título elegante curto do sonho em ${targetLangName}",
-  "mainMeaning": "Significado geral principal bem rico e detalhado do sonho em ${targetLangName}",
-  "psychological": "Interpretação psicológica detalhada baseada no subconsciente em ${targetLangName}",
-  "spiritual": "Mensagem espiritual em ${targetLangName} (se houver relevância, senão explique brevemente a conexão sutil ou retorne a frase correspondente a 'Transição de alma e conexão elemental')",
-  "attention": "Explicação detalhada do que se atentar nos próximos dias em ${targetLangName} (se houver, senão avise para manter-se em equilíbrio emocional)",
-  "opportunities": "Oportunidades próximas que este sonho indica para sua vida em ${targetLangName}",
-  "protection": "Sinais de proteção e livramentos mostrados no sonho em ${targetLangName}",
-  "loveArea": "Como o sonho ressoa na área amorosa do sonhador em ${targetLangName}",
-  "financeArea": "Impacto e previsões para a área financeira em ${targetLangName}",
+  "mainMeaning": "Significado geral principal bem rico, profundo e detalhado do sonho conectado com as energias do Sol e da Lua do usuário em ${targetLangName} (mínimo 350 caracteres)",
+  "psychological": "Interpretação psicológica e consciencial rica baseada no subconsciente do sonhador e suas tendências comportamentais em ${targetLangName} (mínimo 350 caracteres)",
+  "spiritual": "Mensagem espiritual profunda em ${targetLangName} conectando a jornada evolutiva da alma com o Ascendente do usuário (mínimo 350 caracteres)",
+  "attention": "Explicação detalhada e ponderada sobre o que se atentar nos próximos dias em ${targetLangName} (sem alarmismos, focado em equilíbrio e sabedoria prática, mínimo 200 caracteres)",
+  "opportunities": "Oportunidades próximas que este sonho indica em sintonia com os trânsitos em ${targetLangName} (mínimo 150 caracteres)",
+  "protection": "Sinais de proteção e livramentos mostrados no sonho em ${targetLangName} (mínimo 150 caracteres)",
+  "loveArea": "Como o sonho ressoa na área amorosa do sonhador com base nos astros dele em ${targetLangName}",
+  "financeArea": "Impacto e previsões sábias para a área financeira em ${targetLangName}",
   "careerArea": "Direções do sonho para a área profissional em ${targetLangName}",
-  "luckyNumbers": ["lista com 5 números da sorte de 2 dígitos como strings, ex: '07', '14', '22', '33', '48'"],
+  "luckyNumbers": ["lista com 5 números da sorte de 2 dígitos como strings baseados na numerologia do usuário, ex: '07', '14', '22', '33', '48'"],
   "favorableColors": ["lista com 2 ou 3 cores favoráveis identificadas em ${targetLangName}, ex: 'Gold', 'Blue', 'White'"],
   "positivityLevel": 4.5,
-  "oracleAdvice": "O conselho direto e misterioso do Oráculo para o dia a dia do sonhador em ${targetLangName}",
+  "oracleAdvice": "O conselho direto, misterioso e inspirador do Oráculo para o dia a dia do sonhador em ${targetLangName} (mínimo 200 caracteres)",
   "detectedAnimals": [
     { "animal": "Nome do Animal em ${targetLangName}", "meaning": "Significado individual do animal em ${targetLangName}" }
   ],
@@ -1866,11 +2225,11 @@ Você DEVE produzir e retornar EXCLUSIVAMENTE um objeto JSON estruturado exatame
     { "color": "Nome da Cor em ${targetLangName}", "meaning": "Interpretação da cor em ${targetLangName}" }
   ],
   "detectedNumbers": [
-    { "number": "Número", "meaning": "Interpretação do número no sonho em ${targetLangName}" }
+    { "number": "Número", "meaning": "Interpretação do número no sonho em ${targetLangName} conectando-o misticamente com a numerologia pessoal do usuário" }
   ],
   "predominantEmotion": {
     "emotion": "Uma das seguintes palavras exatas traduzida para ${targetLangName}: Medo, Alegria, Tristeza, Ansiedade ou Paz (ou correspondente em ${targetLangName})",
-    "explanation": "Explicação detalhada em ${targetLangName}"
+    "explanation": "Explicação detalhada da emoção no sonho em ${targetLangName}"
   },
   "dreamEnergyIndex": 82,
   "dreamEnergyType": "Escolha o melhor termo complementar em ${targetLangName}: Energia Espiritual, Vibração Psíquica ou Alinhamento Astral",
@@ -1919,6 +2278,33 @@ app.post("/api/compatibility/evaluate", async (req, res) => {
     return res.status(400).json({ error: (req as any).t('api.compatibility.both_names_required') });
   }
 
+  // Resolve timezone & coordinates for user
+  let coords1;
+  if (typeof req.body.latitude === 'number' && typeof req.body.longitude === 'number') {
+    const tzs = findTz(req.body.latitude, req.body.longitude);
+    const tz = tzs[0] || "America/Sao_Paulo";
+    coords1 = { latitude: req.body.latitude, longitude: req.body.longitude, timezone: tz };
+  } else {
+    coords1 = await resolveCityCoordinatesAndTimezone(birthCity || "São Paulo");
+  }
+
+  // Resolve timezone & coordinates for companion
+  let coords2;
+  if (typeof req.body.companionLatitude === 'number' && typeof req.body.companionLongitude === 'number') {
+    const tzs = findTz(req.body.companionLatitude, req.body.companionLongitude);
+    const tz = tzs[0] || "America/Sao_Paulo";
+    coords2 = { latitude: req.body.companionLatitude, longitude: req.body.companionLongitude, timezone: tz };
+  } else {
+    coords2 = await resolveCityCoordinatesAndTimezone(companionBirthCity || "Rio de Janeiro");
+  }
+
+  // Calculate historical timezone offset for both using moment-timezone
+  const mt1 = moment.tz(`${birthDate || "1994-01-01"} ${birthTime || "12:00"}`, "YYYY-MM-DD HH:mm", coords1.timezone);
+  const tzOffset1 = mt1.utcOffset() / 60;
+
+  const mt2 = moment.tz(`${companionBirthDate || "1995-01-01"} ${companionBirthTime || "12:00"}`, "YYYY-MM-DD HH:mm", coords2.timezone);
+  const tzOffset2 = mt2.utcOffset() / 60;
+
   // Pre-calculate highly detailed parameters using compatibilityEngine
   const compResult = computeDetailedCompatibility(
     name,
@@ -1930,7 +2316,14 @@ app.post("/api/compatibility/evaluate", async (req, res) => {
     companionBirthTime || "12:00",
     companionBirthCity || "Rio de Janeiro",
     companionBirthCountry || "Brasil",
-    category || "love"
+    category || "love",
+    coords1.latitude,
+    coords1.longitude,
+    coords2.latitude,
+    coords2.longitude,
+    tzOffset1,
+    tzOffset2,
+    lang
   );
 
   const cacheKey = `compatibility:${name}:${birthDate}:${companionName}:${companionBirthDate}:${category || 'love'}:${lang || 'pt'}`;
@@ -1954,10 +2347,15 @@ app.post("/api/compatibility/evaluate", async (req, res) => {
     };
     const targetLangName = langNames[lang] || langNames.pt;
 
+    // Create a copy of compResult without categories for Gemini input to save massive amounts of tokens
+    // and keep Gemini focused on rewriting the main evaluation fields.
+    const compResultForGemini = { ...compResult };
+    delete (compResultForGemini as any).categories;
+
     const prompt = `You are an elite astrologer. The user ${name} performed a chart crossover (synastry) in the category of "${category || 'love'}" with ${companionName}.
 Below are the actual calculated data of positions, elements, planets, and dozens of structured metrics we deterministically generated based on actual ephemerides:
 
-${JSON.stringify(compResult, null, 2)}
+${JSON.stringify(compResultForGemini, null, 2)}
 
 Your sole task is to return an IDENTICAL JSON object in structure. Fill all descriptive text fields, array lists, titles, and explanations with even longer, majestic, profound, poetic analyses in the authentic tone of premium astrology.
 CRITICAL REQUIREMENT: All generated descriptive text fields, descriptions, items, and string arrays MUST be written 100% in the language: ${targetLangName}.
@@ -2023,6 +2421,742 @@ Return ONLY the raw literal JSON without any markdown code blocks or secondary t
     console.warn("Gemini compatibility enhancement failed, serving computed fallback:", err);
     setCachedResponse(cacheKey, compResult);
     res.json({ compatibility: compResult });
+  }
+});
+
+// Helper for Cupido Radar localized fallback
+function getLocalizedCupidoFallback(user: any, person: any, lang: string, compResult: any) {
+  const isPt = lang === 'pt';
+  const isEs = lang === 'es';
+  const isEn = lang === 'en';
+  const isFr = lang === 'fr';
+  const isDe = lang === 'de';
+
+  const uName = user?.name || (isPt ? "Você" : isEs ? "Tú" : isFr ? "Vous" : isDe ? "Du" : "You");
+  const pName = person?.name || (isPt ? "Par" : isEs ? "Pareja" : isFr ? "Partenaire" : isDe ? "Partner" : "Partner");
+
+  return {
+    radarDoDia: {
+      ritual: isPt ? "Prepare um chá de camomila ou hibisco com canela para acalmar os ânimos e sintonizar os corações à noite."
+            : isEs ? "Prepare un té de manzanilla o hibisco con canela para calmar los ánimos y sintonizar los corazones por la noche."
+            : isFr ? "Préparez un thé à la camomille ou à l'hibiscus avec de la cannelle pour apaiser les esprits et accorder les cœurs le soir."
+            : isDe ? "Bereiten Sie abends einen Kamillentee oder Hibiskustee mit Zimt zu, um die Gemüter zu beruhigen und die Herzen in Einklang zu bringen."
+            : "Prepare a chamomile or hibiscus tea with cinnamon to calm the spirits and tune the hearts in the evening.",
+      energiaGeral: isPt ? `Energia cósmica de profunda compreensão mútua entre ${uName} e ${pName}. O alinhamento lunar convida à escuta atenta.`
+                  : isEs ? `Energía cósmica de profunda comprensión mutua entre ${uName} y ${pName}. El alineamiento lunar invita a la escucha atenta.`
+                  : isFr ? `Énergie cosmique de profonde compréhension mutuelle entre ${uName} et ${pName}. L'alignement lunaire invite à une écoute attentive.`
+                  : isDe ? `Kosmische Energie tiefen gegenseitigen Verständnisses zwischen ${uName} und ${pName}. Die mondseitige Ausrichtung lädt zum aufmerksamen Zuhören ein.`
+                  : `Cosmic energy of deep mutual understanding between ${uName} and ${pName}. The lunar alignment invites attentive listening.`,
+      momentosFavoraveis: isPt ? "O período do final da tarde e início da noite será especialmente harmonioso para trocar mensagens e compartilhar ideias."
+                        : isEs ? "El período del final de la tarde y el inicio de la noche será especialmente armonioso para intercambiar mensajes y compartir ideas."
+                        : isFr ? "La fin de l'après-midi et le début de soirée seront particulièrement harmonieux pour échanger des messages et partager des idées."
+                        : isDe ? "Der späte Nachmittag und frühe Abend werden besonders harmonisch sein, um Nachrichten auszutauschen und Ideen zu teilen."
+                        : "The late afternoon and early evening periods will be especially harmonious for exchanging messages and sharing ideas.",
+      momentosPaciencia: isPt ? "Evite debater assuntos de planejamento de longo prazo ou finanças durante o horário do almoço."
+                       : isEs ? "Evite debatir asuntos de planificación a largo plazo o finanzas durante la hora del almuerzo."
+                       : isFr ? "Évitez de débattre de questions de planification à long terme ou de finances pendant l'heure du déjeuner."
+                       : isDe ? "Vermeiden Sie es, während der Mittagszeit über langfristige Planungen oder Finanzen zu diskutieren."
+                       : "Avoid debating long-term planning or financial matters during lunchtime.",
+      pontosHarmonia: isPt ? "Comunicação fluida e alinhamento terno entre as necessidades emocionais de ambos."
+                    : isEs ? "Comunicación fluida y alineamiento tierno entre las necesidades emocionales de ambos."
+                    : isFr ? "Communication fluide et alignement tendre entre les besoins émotionnels des deux."
+                    : isDe ? "Fließende Kommunikation und zärtliche Ausrichtung zwischen den emotionalen Bedürfnissen beider."
+                    : "Fluid communication and tender alignment between the emotional needs of both.",
+      pontosTensao: isPt ? "Pequenas divergências de ritmo ou pressões externas do dia a dia afetando a paciência."
+                  : isEs ? "Pequeñas divergencias de ritmo o presiones externas del día a día afectando la paciencia."
+                  : isFr ? "Légères divergences de rythme ou pressions externes du quotidien affectant la patience."
+                  : isDe ? "Geringfügige Rhythmusunterschiede oder externer Alltagsdruck, die die Geduld beeinträchtigen."
+                  : "Minor differences in rhythm or external daily pressures affecting patience.",
+      climaEmocional: isPt ? `Mais receptivo(a) e com desejo de compartilhar momentos de paz e aconchego ao seu lado.`
+                    : isEs ? `Más receptivo(a) y con el deseo de compartir momentos de paz y calidez a tu lado.`
+                    : isFr ? `Plus réceptif(ve) et désireux(se) de partager des moments de paix et de confort à vos côtés.`
+                    : isDe ? `Empfänglicher und mit dem Wunsch, Momente des Friedens und der Gemütlichkeit an Ihrer Seite zu teilen.`
+                    : `More receptive and desiring to share moments of peace and coziness by your side.`,
+      acaoRedesSociais: isPt ? "Envie uma mensagem leve e descontraída, compartilhando uma lembrança feliz ou uma música que lembre vocês."
+                      : isEs ? "Envíe un mensaje ligero y relajado, compartiendo un recuerdo feliz o una canción que les recuerde."
+                      : isFr ? "Envoyez un message léger et décontracté, partageant un souvenir joyeux ou une chanson qui vous rappelle l'un l'autre."
+                      : isDe ? "Senden Sie eine leichte und ungezwungene Nachricht, teilen Sie eine glückliche Erinnerung oder ein Lied, das Sie aneinander erinnert."
+                      : "Send a light and casual message, sharing a happy memory or a song that reminds you of each other.",
+      melhoresAtitudes: isPt ? [
+        "Ouvir com atenção plena e empatia sem tentar resolver tudo na hora.",
+        "Propor um momento a dois sem telas eletrônicas.",
+        "Fazer um elogio sincero focado no caráter e inteligência dele(a)."
+      ] : isEs ? [
+        "Escuchar con atención plena y empatía sin intentar resolver todo de inmediato.",
+        "Proponer un momento a solas sin pantallas electrónicas.",
+        "Hacer un cumplido sincero centrado en su carácter e inteligencia."
+      ] : isFr ? [
+        "Écouter avec une attention pleine et de l'empathie sans chercher à tout résoudre sur le coup.",
+        "Proposer un moment à deux sans écrans électroniques.",
+        "Faire un compliment sincère axé sur son caractère et son intelligence."
+      ] : isDe ? [
+        "Mit voller Aufmerksamkeit und Empathie zuhören, ohne sofort alles lösen zu wollen.",
+        "Einen Moment zu zweit ohne elektronische Bildschirme vorschlagen.",
+        "Ein ehrliches Kompliment machen, das sich auf Charakter und Intelligenz konzentriert."
+      ] : [
+        "Listen with full attention and empathy without trying to solve everything right away.",
+        "Propose a moment together without electronic screens.",
+        "Give a sincere compliment focused on their character and intelligence."
+      ],
+      atitudesEvitar: isPt ? [
+        "Trazer cobranças do passado ou discutir finanças hoje.",
+        "Pressionar por respostas rápidas ou definições emocionais imediatas.",
+        "Agir com distanciamento ou responder de forma monossilábica."
+      ] : isEs ? [
+        "Traer reclamos del pasado o discutir finanzas hoy.",
+        "Presionar por respuestas rápidas o definiciones emocionales inmediatas.",
+        "Actuar con distanciamiento o responder de forma monosilábica."
+      ] : isFr ? [
+        "Ressusciter des reproches du passé ou discuter de finances aujourd'hui.",
+        "Presser pour des réponses rapides ou des définitions émotionnelles immédiates.",
+        "Agir avec froideur ou répondre de manière monosyllabique."
+      ] : isDe ? [
+        "Vorwürfe aus der Vergangenheit vorbringen oder heute über Finanzen diskutieren.",
+        "Druck auf schnelle Antworten oder sofortige emotionale Definitionen ausüben.",
+        "Sich distanziert verhalten oder einsilbig antworten."
+      ] : [
+        "Bring up past demands or discuss finances today.",
+        "Press for quick answers or immediate emotional definitions.",
+        "Act distant or respond monosyllabically."
+      ],
+      comoSurpreender: isPt ? "Deixe um bilhete carinhoso escrito à mão ou faça uma surpresa simples trazendo o doce favorito dele(a)."
+                     : isEs ? "Deje una nota cariñosa escrita a mano o haga una sorpresa simple trayendo su dulce favorito."
+                     : isFr ? "Laissez un mot tendre écrit à la main ou faites une surprise simple en apportant sa douceur préférée."
+                     : isDe ? "Hinterlassen Sie eine liebevolle handgeschriebene Notiz oder machen Sie eine einfache Überraschung, indem Sie seine/ihre Lieblingssüßigkeit mitbringen."
+                     : "Leave a sweet handwritten note or make a simple surprise by bringing their favorite sweet.",
+      sugestaoConvite: isPt ? "Um jantar tranquilo em um bistrô acolhedor com luz suave e boa música de fundo."
+                     : isEs ? "Una cena tranquila en un bistró acogedor con luz suave y buena música de fondo."
+                     : isFr ? "Un dîner tranquille dans un bistrot chaleureux avec une lumière douce et une bonne musique de fond."
+                     : isDe ? "Ein ruhiges Abendessen in einem gemütlichen Bistro mit sanftem Licht und schöner Hintergrundmusik."
+                     : "A quiet dinner in a cozy bistro with soft lighting and nice background music.",
+      potencialAproximacao: compResult.compatibilidadeAmorosa || 80
+    },
+    linguagemAfetiva: {
+      demonstrarCarinho: isPt ? "Abraços prolongados, toques sutis durante as conversas e estar verdadeiramente presente."
+                        : isEs ? "Abrazos prolongados, toques sutiles durante las conversaciones y estar verdaderamente presente."
+                        : isFr ? "Des câlins prolongés, des attentions subtiles pendant les conversations et une présence authentique."
+                        : isDe ? "Längere Umarmungen, subtile Berührungen bei Gesprächen und echtes Präsentsein."
+                        : "Prolonged hugs, subtle touches during conversations, and being truly present.",
+      iniciarConversas: isPt ? "Perguntar sobre as maiores inspirações dela(e) recentes, planos de viagem ou sonhos cotidianos."
+                      : isEs ? "Preguntar sobre sus mayores inspiraciones recientes, planes de viaje o sueños cotidianos."
+                      : isFr ? "Demander quelles ont été ses plus grandes inspirations récentes, ses projets de voyage ou ses rêves quotidiens."
+                      : isDe ? "Nach den größten aktuellen Inspirationen, Reiseplänen oder alltäglichen Träumen fragen."
+                      : "Asking about their recent biggest inspirations, travel plans, or daily dreams.",
+      elogiosCompativeis: isPt ? "Elogios sinceros sobre sua sabedoria, bom gosto, elegância e dedicação sincera."
+                        : isEs ? "Cumplidos sinceros sobre su sabiduría, buen gusto, elegancia y dedicación sincera."
+                        : isFr ? "Des compliments sincères sur sa sagesse, son bon goût, son élégance et son dévouement authentique."
+                        : isDe ? "Aufrichtige Komplimente über Weisheit, guten Geschmack, Eleganz und aufrichtiges Engagement."
+                        : "Sincere compliments about their wisdom, good taste, elegance, and sincere dedication.",
+      estiloComunicacao: isPt ? "Valoriza diálogos profundos, conexões mentais e um tom calmo, sem exaltações."
+                       : isEs ? "Valora los diálogos profundos, las conexiones mentales y un tono tranquilo, sin exaltaciones."
+                       : isFr ? "Valorise les dialogues profonds, les connexions intellectuelles et un ton calme, sans emportements."
+                       : isDe ? "Wertschätzt tiefgründige Dialoge, mentale Verbindungen und einen ruhigen Ton ohne Aufregung."
+                       : "Values deep dialogues, mental connections, and a calm tone without raise of voice.",
+      ambientesFavoraveis: isPt ? "Livrarias charmosas, cafés com luz natural, parques tranquilos ou um restaurante intimista."
+                         : isEs ? "Librerías encantadoras, cafés con luz natural, parques tranquilos o un restaurante íntimo."
+                         : isFr ? "Des librairies de charme, des cafés à lumière naturelle, des parcs paisibles ou un restaurant intimiste."
+                         : isDe ? "Charmante Buchläden, Cafés mit natürlichem Licht, ruhige Parks oder ein gemütliches Restaurant."
+                         : "Charming bookstores, cafes with natural light, quiet parks, or an intimate restaurant.",
+      atividadesComum: isPt ? "Cozinhar juntos, ler o mesmo livro ou planejar roteiros de viagem detalhados."
+                     : isEs ? "Cocinar juntos, leer el mismo libro o planear itinerarios de viaje detallados."
+                     : isFr ? "Cuisiner ensemble, lire le même livre ou planifier des itinéraires de voyage détaillés."
+                     : isDe ? "Gemeinsam kochen, dasselbe Buch lesen oder detaillierte Reiserouten planen."
+                     : "Cooking together, reading the same book, or planning detailed travel itineraries.",
+      presentesCompativeis: isPt ? "Livros marcantes, pequenos mimos artesanais ou algo que traga conforto e aconchego."
+                        : isEs ? "Livros memorables, pequeños detalles artesanales o algo que brinde comodidad y calidez."
+                        : isFr ? "Des livres marquants, de petites attentions artisanales ou quelque chose qui apporte confort et douceur."
+                        : isDe ? "Bedeutende Bücher, kleine handgefertigte Aufmerksamkeiten oder etwas, das Komfort und Gemütlichkeit bringt."
+                        : "Impactful books, small handmade gestures, or something that brings comfort and coziness.",
+      experienciasRomanticas: isPt ? "Uma cabana pacífica na natureza com uma lareira, boa música e conversas sob o céu estrelado."
+                            : isEs ? "Una cabaña pacífica en la naturaleza con chimenea, buena música y conversaciones bajo el cielo estrellado."
+                            : isFr ? "Un chalet paisible en pleine nature avec une cheminée, de la bonne musique et des discussions sous un ciel étoilé."
+                            : isDe ? "Eine friedliche Hütte in der Natur mit Kamin, guter Musik und Gesprächen unter dem Sternenhimmel."
+                            : "A peaceful cabin in nature with a fireplace, good music, and conversations under the starry sky."
+    },
+    estrategiasPersonalizadas: {
+      melhorHorario: isPt ? "Final de tarde, durante o trânsito solar suave para a Lua."
+                   : isEs ? "Final de la tarde, durante el tránsito solar suave hacia la Luna."
+                   : isFr ? "Fin d'après-midi, pendant le transit solaire doux vers la Lune."
+                   : isDe ? "Später Nachmittag, während des sanften Sonnenübergangs zum Mond."
+                   : "Late afternoon, during the soft solar transit to the Moon.",
+      melhorEnergia: isPt ? "Acolhedora, empática, descontraída e focada no presente."
+                   : isEs ? "Acogedora, empática, relajada y enfocada en el presente."
+                   : isFr ? "Chaleureuse, empathique, détendue et centrée sur le moment présent."
+                   : isDe ? "Gemütlich, empathisch, entspannt und auf die Gegenwart fokussiert."
+                   : "Welcoming, empathetic, relaxed, and focused on the present.",
+      posturaRecomendada: isPt ? "Demonstrar maturidade, apoio sincero e escuta generosa."
+                        : isEs ? "Demostrar madurez, apoyo sincero y escucha generosa."
+                        : isFr ? "Faire preuve de maturité, de soutien sincère et d'une écoute généreuse."
+                        : isDe ? "Reife, aufrichtige Unterstützung und großzügiges Zuhören zeigen."
+                        : "Demonstrate maturity, sincere support, and generous listening.",
+      assuntosConexao: isPt ? "Sonhos pessoais, reflexões sobre a vida cotidiana, arte e cultura."
+                     : isEs ? "Sueños personales, reflexiones sobre la vida cotidiana, arte e cultura."
+                     : isFr ? "Rêves personnels, réflexions sur la vie quotidienne, art et culture."
+                     : isDe ? "Persönliche Träume, Reflexionen über das tägliche Leben, Kunst und Kultur."
+                     : "Personal dreams, reflections on daily life, art, and culture.",
+      atitudesFavoraveis: isPt ? "Validar os sentimentos dele(a) e oferecer segurança afetiva contínua."
+                        : isEs ? "Validar sus sentimientos y ofrecer seguridad afectiva continua."
+                        : isFr ? "Valider ses sentiments et offrir une sécurité affective continue."
+                        : isDe ? "Seine/ihre Gefühle validieren und kontinuierliche emotionale Sicherheit bieten."
+                        : "Validate their feelings and offer continuous emotional security.",
+      comportamentosAtrito: isPt ? "Cobranças excessivas por atenção ou debates lógicos frios."
+                          : isEs ? "Reclamos excesivos de atención o debates lógicos fríos."
+                          : isFr ? "Demandes excessives d'attention ou débats logiques froids."
+                          : isDe ? "Übermäßige Aufmerksamkeitsforderungen oder kalte logische Debatten."
+                          : "Excessive demands for attention or cold logical debates."
+    },
+    compatibilidadeEnergetica: {
+      nivelAfinidade: compResult.compatibilidadeGeral || 85,
+      areasSintonia: isPt ? "Excelente sintonia de comunicação de Mercúrio e reciprocidade de Sol-Lua."
+                   : isEs ? "Excelente sintonía de comunicación de Mercurio y reciprocidad de Sol-Luna."
+                   : isFr ? "Excellente harmonie de communication de Mercure et réciprocité Soleil-Lune."
+                   : isDe ? "Hervorragende Kommunikationsabstimmung von Merkur und Gegenseitigkeit von Sonne und Mond."
+                   : "Excellent communication harmony of Mercury and reciprocity of Sun-Moon.",
+      diferencasImportantes: isPt ? "Diferentes velocidades para processar sentimentos profundos íntimos."
+                           : isEs ? "Diferentes velocidades para procesar sentimientos profundos íntimos."
+                           : isFr ? "Différentes vitesses pour traiter les sentiments profonds et intimes."
+                           : isDe ? "Unterschiedliche Geschwindigkeiten bei der Verarbeitung tiefer intimer Gefühle."
+                           : "Different speeds for processing deep intimate feelings.",
+      potenciaisDesafios: isPt ? "Tendência ao recolhimento silencioso em momentos de tensão afetiva."
+                        : isEs ? "Tendencia al retiro silencioso en momentos de tensión afectiva."
+                        : isFr ? "Tendance au repli silencieux en périodes de tension affective."
+                        : isDe ? "Tendenz zum stillen Rückzug in Momenten emotionaler Anspannung."
+                        : "Tendency to silent withdrawal in moments of emotional tension.",
+      oportunidadesCrescimento: isPt ? "Aprender a confiar no tempo do parceiro e acolher suas vulnerabilidades."
+                              : isEs ? "Aprender a confiar en el tiempo de la pareja y acoger sus vulnerabilidades."
+                              : isFr ? "Apprendre à faire confiance au rythme de son partenaire et accueillir ses vulnérabilités."
+                              : isDe ? "Lernen, dem Zeitrahmen des Partners zu vertrauen und seine/ihre Schwachstellen anzunehmen."
+                              : "Learning to trust the partner's timing and embracing their vulnerabilities."
+    },
+    linhaTempo: {
+      hoje: isPt ? "Sintonia terna e fluida. Dia excelente para conversas sinceras e momentos aconchegantes."
+          : isEs ? "Sintonía tierna y fluida. Día excelente para conversaciones sinceras y momentos cálidos."
+          : isFr ? "Harmonie tendre et fluide. Excellente journée pour des discussions sincères et des moments chaleureux."
+          : isDe ? "Zärtlicher und fließender Einklang. Hervorragender Tag für ehrliche Gespräche und gemütliche Momente."
+          : "Tender and fluid harmony. Excellent day for sincere conversations and cozy moments.",
+      proximos7dias: isPt ? "Período propício para passeios descontraídos, encontros casuais e risadas compartilhadas."
+                   : isEs ? "Período propicio para paseos relajados, encuentros casuales y risas compartidas."
+                   : isFr ? "Période propice aux sorties détendues, aux rencontres décontractées et aux rires partagés."
+                   : isDe ? "Günstiger Zeitraum für entspannte Spaziergänge, ungezwungene Treffen und gemeinsames Lachen."
+                   : "Favorable period for relaxed outings, casual dates, and shared laughter.",
+      proximos30dias: isPt ? "Fase de consolidação afetiva e alinhamento prático sobre projetos futuros."
+                    : isEs ? "Fase de consolidación afectiva y alineamiento práctico sobre proyectos futuros."
+                    : isFr ? "Phase de consolidation affective et d'alignement pratique sur les projets futurs."
+                    : isDe ? "Phase der emotionalen Konsolidierung und praktischen Ausrichtung auf zukünftige Projekte."
+                    : "Phase of emotional consolidation and practical alignment on future projects."
+    },
+    explicacaoAstrologica: {
+      fundamentacao: isPt ? "Análise elaborada com base no trígono de Mercúrio em sinastria e a posição atual da Lua aspectando Vênus."
+                   : isEs ? "Análisis elaborado con base en el trígono de Mercurio en sinastría y la posición actual de la Luna aspectando a Venus."
+                   : isFr ? "Analyse élaborée sur la base du trigone de Mercure en synastrie et de la position actuelle de la Lune aspectant Vénus."
+                   : isDe ? "Analyse erstellt auf der Grundlage des Merkur-Trigons in der Synastrie und der aktuellen Position des Mondes im Aspekt zur Venus."
+                   : "Analysis compiled based on the Mercury trine in synastry and the current position of the Moon aspecting Venus."
+    }
+  };
+}
+
+// API: Cupido Astrológico • Radar Afetivo & Diário
+app.post("/api/cupido/radar", async (req, res) => {
+  let resolvedLang = 'pt';
+  let user: any = null;
+  let person: any = null;
+  let compResult: any = null;
+
+  try {
+    user = req.body.user;
+    person = req.body.person;
+    const { lang = 'pt' } = req.body;
+
+    if (!user || !person) {
+      return res.status(400).json({ error: "Parâmetros 'user' e 'person' são obrigatórios." });
+    }
+
+    // Resolve coordinates & timezone for user
+    let coords1;
+    if (user && typeof user.latitude === 'number' && typeof user.longitude === 'number') {
+      const tzs = findTz(user.latitude, user.longitude);
+      const tz = tzs[0] || "America/Sao_Paulo";
+      coords1 = { latitude: user.latitude, longitude: user.longitude, timezone: tz };
+    } else {
+      coords1 = await resolveCityCoordinatesAndTimezone((user && user.birthCity) || "São Paulo");
+    }
+
+    // Resolve coordinates & timezone for person
+    let coords2;
+    if (person && typeof person.latitude === 'number' && typeof person.longitude === 'number') {
+      const tzs = findTz(person.latitude, person.longitude);
+      const tz = tzs[0] || "America/Sao_Paulo";
+      coords2 = { latitude: person.latitude, longitude: person.longitude, timezone: tz };
+    } else {
+      coords2 = await resolveCityCoordinatesAndTimezone((person && person.birthCity) || "Rio de Janeiro");
+    }
+
+    // Calculate historical offsets using moment-timezone
+    const mt1 = moment.tz(`${(user && user.birthDate) || "1994-01-01"} ${(user && user.birthTime) || "12:00"}`, "YYYY-MM-DD HH:mm", coords1.timezone);
+    const tzOffset1 = mt1.utcOffset() / 60;
+
+    const mt2 = moment.tz(`${(person && person.birthDate) || "1995-01-01"} ${(person && person.birthTime) || "12:00"}`, "YYYY-MM-DD HH:mm", coords2.timezone);
+    const tzOffset2 = mt2.utcOffset() / 60;
+
+    // Calcular sinastria preliminar usando a compatibilidade real para enriquecer o prompt
+    compResult = computeDetailedCompatibility(
+      user.name,
+      user.birthDate,
+      user.birthTime || "12:00",
+      user.birthCity,
+      person.name,
+      person.birthDate,
+      person.birthTime || "12:00",
+      person.birthCity,
+      person.birthCountry || "Brasil",
+      "amor",
+      coords1.latitude,
+      coords1.longitude,
+      coords2.latitude,
+      coords2.longitude,
+      tzOffset1,
+      tzOffset2,
+      lang
+    );
+
+    resolvedLang = (lang || 'pt').toLowerCase().split('-')[0].trim();
+    if (!['pt', 'en', 'es', 'fr', 'de'].includes(resolvedLang)) {
+      resolvedLang = 'pt';
+    }
+
+    const cupidoPromptTemplates: Record<string, any> = {
+      pt: {
+        role: `Você é o Cupido Astrológico supremo, mestre em conexões celestes, sinastria amorosa e aconselhamento afetivo pragmático. Seu objetivo é analisar as frequências cósmicas de hoje e fornecer um "Radar Afetivo" e "Estratégia Amorosa" personalizados para o usuário em relação à pessoa de interesse (seu par/alvo afetivo).`,
+        instruction: `Retorne os resultados estritamente em formato JSON no idioma solicitado ("Português"). Escreva TODAS as respostas dos campos de texto (valores das chaves) do JSON inteiramente em Português.`,
+        schema: {
+          radarDoDia: {
+            ritual: "um ritual ou atitude mística sugerida para hoje",
+            energiaGeral: "descrição da energia de sintonia mútua sob os astros hoje",
+            tendenciasAstrologicas: "as tendências celestes de atração de hoje",
+            potencialAproximacao: "número de 1 a 100 representando o potencial de sucesso/aproximação hoje",
+            momentosFavoraveis: "melhores períodos ou horários específicos para fazer contato hoje",
+            momentosPaciencia: "períodos de maior irritabilidade ou que exigem paciência hoje",
+            pontosHarmonia: "em que áreas ou tópicos haverá harmonia perfeita hoje",
+            pontosTensao: "possíveis pontos de faísca ou atrito hoje",
+            climaEmocional: "o humor e disposição emocional da pessoa sob os trânsitos de hoje",
+            acaoRedesSociais: "como interagir ou se comportar nas redes sociais hoje em relação a ela(e)",
+            melhoresAtitudes: "3-4 melhores atitudes práticas",
+            atitudesEvitar: "3-4 atitudes que devem ser terminantemente evitadas hoje",
+            comoSurpreender: "uma sugestão simples e criativa para surpreendê-la(o) com base nos gostos astrológicos",
+            sugestaoConvite: "proposta de convite: melhor lugar e abordagem mais compatível para hoje"
+          },
+          linguagemAfetiva: {
+            demonstrarCarinho: "como essa pessoa expressa e prefere receber afeto, de acordo com Vênus/Lua",
+            iniciarConversas: "melhores ganchos e aberturas de conversa para prender a atenção",
+            elogiosCompativeis: "quais elogios de fato mexem com o ego e coração dessa pessoa",
+            estiloComunicacao: "como se comunicar com ela(e): se prefere profundidade, leveza, praticidade, etc.",
+            ambientesFavoraveis: "lugares físicos, encontros ou passeios favoritos desse perfil cósmico",
+            atividadesComum: "atividades compartilhadas que naturalmente criam cumplicidade",
+            presentesCompativeis: "ideias de presentes que tocam a alma dela(e)",
+            experienciasRomanticas: "descrição de um cenário ou experiência romântica dos sonhos para ela(e)"
+          },
+          estrategiasPersonalizadas: {
+            melhorHorario: "horário ideal de contato recorrente",
+            melhorEnergia: "a postura ideal do usuário: engraçado, intelectual, seguro, misterioso",
+            posturaRecomendada: "fórmula de presença recomendada",
+            assuntosConexao: "temas, tópicos ou hobbies que geram faísca imediata de conversa",
+            atitudesFavoraveis: "o tipo de conduta que mais atrai essa pessoa a longo prazo",
+            comportamentosAtrito: "comportamento do usuário que essa pessoa detesta ou que cria barreira"
+          },
+          compatibilidadeEnergetica: {
+            nivelAfinidade: "porcentagem de 1 a 100 de compatibilidade geral calculada de forma profunda",
+            areasSintonia: "principais pontos e casas astrológicas de sinergia entre os dois mapas",
+            diferencasImportantes: "as principais diferenças de personalidade e temperamento",
+            potenciaisDesafios: "quais serão os maiores obstáculos de convivência ou sintonia",
+            oportunidadesCrescimento: "como a união de vocês pode ajudar na evolução espiritual e material de ambos"
+          },
+          linhaTempo: {
+            hoje: "conselho astral específico para as próximas 24 horas",
+            proximos7dias: "tendências sentimentais e fluxos celestes para os próximos 7 dias",
+            proximos30dias: "ciclo de lunação e trânsitos de longo prazo influenciando vocês neste mês"
+          },
+          explicacaoAstrologica: {
+            fundamentacao: "uma explicação mística-técnica detalhando quais planetas, casas ou signos no mapa natal de ambos e nos trânsitos atuais justificam essas leituras e conselhos de hoje. Use termos astrológicos como Sol, Vênus, Marte, Ascendente, Casas 5/7, etc. para dar autoridade e fundamento místico real."
+          }
+        }
+      },
+      en: {
+        role: `You are the supreme Astrological Cupid, master of celestial connections, romantic synastry, and pragmatic relationship counseling. Your goal is to analyze today's cosmic frequencies and provide a personalized "Relationship Radar" and "Love Strategy" for the user regarding their person of interest.`,
+        instruction: `Return the results strictly in JSON format in the requested language ("English"). Write ALL text field values (the values of the JSON keys) entirely in English.`,
+        schema: {
+          radarDoDia: {
+            ritual: "a suggested ritual or mystical attitude for today",
+            energiaGeral: "description of the mutual harmony energy under the stars today",
+            tendenciasAstrologicas: "today's celestial attraction trends",
+            potencialAproximacao: "number from 1 to 100 representing the potential for success/approaching today",
+            momentosFavoraveis: "best periods or specific times to make contact today",
+            momentosPaciencia: "periods of greater irritability or requiring patience today",
+            pontosHarmonia: "in which areas or topics there will be perfect harmony today",
+            pontosTensao: "possible points of spark or friction today",
+            climaEmocional: "the emotional mood and disposition of the person under today's transits",
+            acaoRedesSociais: "how to interact or behave on social media today regarding them",
+            melhoresAtitudes: "3-4 best practical actions",
+            atitudesEvitar: "3-4 actions that must be strictly avoided today",
+            comoSurpreender: "a simple and creative suggestion to surprise them based on their astrological tastes",
+            sugestaoConvite: "proposal for an invitation: best place and most compatible approach for today"
+          },
+          linguagemAfetiva: {
+            demonstrarCarinho: "how this person expresses and prefers to receive affection, according to Venus/Moon",
+            iniciarConversas: "best hooks and conversation starters to capture attention",
+            elogiosCompativeis: "which compliments actually touch this person's ego and heart",
+            estiloComunicacao: "how to communicate with them: whether they prefer depth, lightness, practicality, etc.",
+            ambientesFavoraveis: "physical places, dates, or favorite outings of this cosmic profile",
+            atividadesComum: "shared activities that naturally create complicity",
+            presentesCompativeis: "gift ideas that touch their soul",
+            experienciasRomanticas: "description of a dream romantic scenario or experience for them"
+          },
+          estrategiasPersonalizadas: {
+            melhorHorario: "ideal recurring contact time",
+            melhorEnergia: "the user's ideal posture: funny, intellectual, confident, mysterious",
+            posturaRecomendada: "recommended presence formula",
+            assuntosConexao: "themes, topics, or hobbies that generate an immediate conversation spark",
+            atitudesFavoraveis: "the type of conduct that attracts this person most in the long term",
+            comportamentosAtrito: "user behaviors that this person dislikes or that create barriers"
+          },
+          compatibilidadeEnergetica: {
+            nivelAfinidade: "percentage from 1 to 100 of overall compatibility calculated deeply",
+            areasSintonia: "main points and astrological houses of synergy between both charts",
+            diferencasImportantes: "the main differences in personality and temperament",
+            potenciaisDesafios: "what will be the greatest obstacles to co-existence or harmony",
+            oportunidadesCrescimento: "how your union can help in both spiritual and material growth for both"
+          },
+          linhaTempo: {
+            hoje: "specific astral advice for the next 24 hours",
+            proximos7dias: "romantic trends and celestial flows for the next 7 days",
+            proximos30dias: "lunation cycle and long-term transits influencing you both this month"
+          },
+          explicacaoAstrologica: {
+            fundamentacao: "a detailed mystical-technical explanation of which planets, houses, or signs in both natal charts and current transits justify these readings and advice today. Use astrological terms like Sun, Venus, Mars, Ascendant, Houses 5/7, etc. to provide authority and real mystical foundation."
+          }
+        }
+      },
+      es: {
+        role: `Eres el Cupido Astrológico supremo, maestro de conexiones celestiales, sinastría amorosa y asesoramiento afectivo pragmático. Tu objetivo es analizar las frecuencias cósmicas de hoy y proporcionar un "Radar Afectivo" y una "Estrategia de Amor" personalizados para el usuario en relación con su persona de interés.`,
+        instruction: `Devuelve los resultados estrictamente en formato JSON en el idioma solicitado ("Español"). Escribe TODAS las respuestas de los campos de texto (valores de las claves del JSON) completamente en Español.`,
+        schema: {
+          radarDoDia: {
+            ritual: "un ritual o actitud mística sugerida para hoy",
+            energiaGeral: "descripción de la energía de armonía mutua bajo los astros hoy",
+            tendenciasAstrologicas: "las tendencias celestes de atracción de hoy",
+            potencialAproximacao: "número del 1 al 100 que representa el potencial de éxito/acercamiento hoy",
+            momentosFavoraveis: "mejores períodos o momentos específicos para hacer contacto hoy",
+            momentosPaciencia: "períodos de mayor irritabilidad o que requieren paciencia hoy",
+            pontosHarmonia: "en qué áreas o temas habrá armonía perfecta hoy",
+            pontosTensao: "posibles puntos de conflicto o fricción hoy",
+            climaEmocional: "el estado de ánimo emocional y disposición de la persona bajo los tránsitos de hoy",
+            acaoRedesSociais: "cómo interactuar o comportarse hoy en redes sociales en relación con ella/él",
+            melhoresAtitudes: "3-4 mejores actitudes prácticas",
+            atitudesEvitar: "3-4 actitudes que deben evitarse estrictamente hoy",
+            comoSurpreender: "una sugerencia simple y creativa para sorprenderla/o basada en sus gustos astrológicos",
+            sugestaoConvite: "propuesta de invitación: mejor lugar y enfoque más compatible para hoy"
+          },
+          linguagemAfetiva: {
+            demonstrarCarinho: "cómo esta persona expresa y prefiere recibir afecto, según Venus/Luna",
+            iniciarConversas: "mejores ganchos y temas de conversación para captar su atención",
+            elogiosCompativeis: "qué elogios realmente tocan el ego y el corazón de esta persona",
+            estiloComunicacao: "cómo comunicarse con ella/él: si prefiere profundidad, ligereza, practicidad, etc.",
+            ambientesFavoraveis: "lugares físicos, citas o salidas favoritas de este perfil cósmico",
+            atividadesComum: "actividades compartidas que naturalmente crean complicidad",
+            presentesCompativeis: "ideas de regalos que tocan su alma",
+            experienciasRomanticas: "descripción de un escenario o experiencia romántica de sus sueños"
+          },
+          estrategiasPersonalizadas: {
+            melhorHorario: "horario ideal de contacto recurrente",
+            melhorEnergia: "la postura ideal del usuario: divertido, intelectual, seguro, misterioso",
+            posturaRecomendada: "fórmula de presencia recomendada",
+            assuntosConexao: "temas, tópicos o pasatiempos que generan una chispa inmediata de conversación",
+            atitudesFavoraveis: "el tipo de conducta que más atrae a esta persona a largo plazo",
+            comportamentosAtrito: "comportamientos del usuario que esta persona detesta o que crean barreras"
+          },
+          compatibilidadeEnergetica: {
+            nivelAfinidade: "porcentaje del 1 al 100 de compatibilidad general calculada profundamente",
+            areasSintonia: "puntos principales y casas astrológicas de sinergia entre ambos mapas",
+            diferencasImportantes: "las principales diferencias de personalidad y temperamento",
+            potenciaisDesafios: "cuáles serán los mayores obstáculos de convivencia o armonía",
+            oportunidadesCrescimento: "cómo su unión puede ayudar en la evolución espiritual y material de ambos"
+          },
+          linhaTempo: {
+            hoje: "consejo astral específico para las próximas 24 horas",
+            proximos7dias: "tendencias sentimentales y flujos celestes para los próximos 7 días",
+            proximos30dias: "ciclo de lunación y tránsitos a largo plazo que influyen en ustedes este mes"
+          },
+          explicacaoAstrologica: {
+            fundamentacao: "una explicación místico-técnica detallada de qué planetas, casas o signos en el mapa natal de ambos y en los tránsitos actuales justifican estas lecturas y consejos hoy. Usa términos astrológicos como Sol, Venus, Marte, Ascendente, Casas 5/7, etc., para dar autoridad y base mística real."
+          }
+        }
+      },
+      fr: {
+        role: `Vous êtes le Cupidon Astrologique suprême, maître des connexions célestes, de la synastrie amoureuse et du conseil relationnel pragmatique. Votre but est d'analyser les fréquences cosmiques d'aujourd'hui et de fournir un "Radar Relationnel" et une "Stratégie Amoureuse" personnalisés pour l'utilisateur par rapport à sa personne d'intérêt.`,
+        instruction: `Renvoyez les résultats strictement au format JSON dans la langue demandée ("Français"). Écrivez TOUTES les valeurs des champs de texte du JSON entièrement en Français.`,
+        schema: {
+          radarDoDia: {
+            ritual: "un rituel ou une attitude mystique suggéré pour aujourd'hui",
+            energiaGeral: "description de l'énergie d'harmonie mutuelle sous les étoiles aujourd'hui",
+            tendenciasAstrologicas: "les tendances célestes de l'attraction aujourd'hui",
+            potencialAproximacao: "nombre de 1 à 100 représentant le potentiel de réussite/rapprochement aujourd'hui",
+            momentosFavoraveis: "meilleures périodes ou heures spécifiques pour prendre contact aujourd'hui",
+            momentosPaciencia: "périodes de plus grande irritabilité ou nécessitant de la patience aujourd'hui",
+            pontosHarmonia: "dans quels domaines ou sujets il y aura une harmonie parfaite aujourd'hui",
+            pontosTensao: "points potentiels d'étincelle ou de friction aujourd'hui",
+            climaEmocional: "l'humeur et la disposition émotionnelles de la personne sous les transits d'aujourd'hui",
+            acaoRedesSociais: "comment interagir ou se comporter sur les réseaux sociaux aujourd'hui par rapport à elle/lui",
+            melhoresAtitudes: "3-4 meilleures attitudes pratiques",
+            atitudesEvitar: "3-4 actions à éviter strictement aujourd'hui",
+            comoSurpreender: "une suggestion simple et créative pour la/le surprendre en fonction de ses goûts astrologiques",
+            sugestaoConvite: "proposition d'invitation : meilleur endroit et approche la plus compatible pour aujourd'hui"
+          },
+          linguagemAfetiva: {
+            demonstrarCarinho: "comment cette personne exprime et préfère recevoir de l'affection, selon Vénus/Lune",
+            iniciarConversas: "meilleures accroches et ouvertures de conversation pour capter l'attention",
+            elogiosCompativeis: "quels compliments touchent vraiment l'ego et le cœur de cette personne",
+            estiloComunicacao: "comment communiquer avec elle/lui : si elle préfère la profondeur, la légèreté, l'aspect pratique, etc.",
+            ambientesFavoraveis: "lieux physiques, rendez-vous ou sorties préférés de ce profil cosmique",
+            atividadesComum: "activités partagées qui créent naturellement de la complicité",
+            presentesCompativeis: "idées de cadeaux qui touchent son âme",
+            experienciasRomanticas: "description d'un scénario ou d'une expérience romantique de rêve pour elle/lui"
+          },
+          estrategiasPersonalizadas: {
+            melhorHorario: "heure idéale de contact récurrent",
+            melhorEnergia: "l'attitude idéale de l'utilisateur : drôle, intellectuel, confiant, mystérieux",
+            posturaRecomendada: "formule de présence recommandée",
+            assuntosConexao: "thèmes, sujets ou passe-temps qui génèrent une étincelle de conversation immédiate",
+            atitudesFavoraveis: "le type de conduite qui attire le plus cette personne à long terme",
+            comportamentosAtrito: "comportements de l'utilisateur que cette personne déteste ou qui créent des barrières"
+          },
+          compatibilidadeEnergetica: {
+            nivelAfinidade: "pourcentage de 1 à 100 de compatibilité générale calculée en profondeur",
+            areasSintonia: "principaux points et maisons astrologiques de synergie entre les deux thèmes",
+            diferencasImportantes: "les principales différences de personnalité et de tempérament",
+            potenciaisDesafios: "quels seront les plus grands obstacles à la cohabitation ou à l'harmonie",
+            oportunidadesCrescimento: "comment votre union peut aider à l'évolution spirituelle et matérielle des deux"
+          },
+          linhaTempo: {
+            hoje: "conseil astral spécifique pour les prochaines 24 heures",
+            proximos7dias: "tendances sentimentales et flux célestes pour les 7 prochains jours",
+            proximos30dias: "cycle de lunaison et transits à long terme qui vous influencent tous les deux ce mois-ci"
+          },
+          explicacaoAstrologica: {
+            fundamentacao: "une explication mystico-technique détaillée de quels planètes, maisons ou signes dans le thème natal des deux et dans les transits actuels justifient ces lectures et conseils aujourd'hui. Utilisez des termes astrologiques comme Soleil, Vénus, Mars, Ascendant, Maisons 5/7, etc. pour donner de l'autorité et un réel fondement mystique."
+          }
+        }
+      },
+      de: {
+        role: `Sie sind der höchste astrologische Amor, Meister der himmlischen Verbindungen, der romantischen Synastrie und der pragmatischen Beziehungsberatung. Ihr Ziel ist es, die heutigen kosmischen Frequenzen zu analysieren und ein personalisiertes "Beziehungs-Radar" und eine "Liebesstrategie" für den Benutzer in Bezug auf seine Wunschperson bereitzustellen.`,
+        instruction: `Geben Sie die Ergebnisse ausschließlich im JSON-Format in der angeforderten Sprache ("Deutsch") zurück. Schreiben Sie ALLE Textfeldwerte (die Werte der JSON-Schlüssel) vollständig auf Deutsch.`,
+        schema: {
+          radarDoDia: {
+            ritual: "ein empfohlenes Ritual oder eine mystische Haltung für heute",
+            energiaGeral: "Beschreibung der gegenseitigen Harmonieenergie unter den Sternen heute",
+            tendenciasAstrologicas: "die heutigen himmlischen Anziehungstrends",
+            potencialAproximacao: "Zahl von 1 bis 100, die das Potenzial für Erfolg/Annäherung heute darstellt",
+            momentosFavoraveis: "beste Zeiträume oder spezifische Uhrzeiten für eine Kontaktaufnahme heute",
+            momentosPaciencia: "Phasen größerer Reizbarkeit oder Phasen, die heute Geduld erfordern",
+            pontosHarmonia: "in welchen Bereichen oder Themen heute perfekte Harmonie herrschen wird",
+            pontosTensao: "mögliche Funken- oder Reibungspunkte heute",
+            climaEmocional: "die emotionale Stimmung und Verfassung der Person unter den heutigen Transiten",
+            acaoRedesSociais: "wie man heute in den sozialen Medien im Bezug auf sie/ihn interagieren oder sich verhalten sollte",
+            melhoresAtitudes: "3-4 beste praktische Verhaltensweisen",
+            atitudesEvitar: "3-4 Verhaltensweisen, die heute strikt vermieden werden sollten",
+            comoSurpreender: "ein einfacher und kreativer Vorschlag, um sie/ihn basierend auf ihren astrologischen Vorlieben zu überraschen",
+            sugestaoConvite: "Vorschlag für eine Einladung: bester Ort und am besten kompatibler Ansatz für heute"
+          },
+          linguagemAfetiva: {
+            demonstrarCarinho: "wie diese Person Zuneigung ausdrückt und am liebsten empfängt, gemäß Venus/Mond",
+            iniciarConversas: "beste Aufhänger und Gesprächseinstiege, um Aufmerksamkeit zu erregen",
+            elogiosCompativeis: "welche Komplimente das Ego und das Herz dieser Person wirklich berühren",
+            estiloComunicacao: "wie man mit ihr/ihm kommuniziert: ob sie Tiefe, Leichtigkeit, Praktikabilität usw. bevorzugen",
+            ambientesFavoraveis: "physische Orte, Verabredungen oder Lieblingsausflüge dieses kosmischen Profils",
+            atividadesComum: "gemeinsame Aktivitäten, die auf natürliche Weise Verbundenheit schaffen",
+            presentesCompativeis: "Geschenkideen, die ihre Seele berühren",
+            experienciasRomanticas: "Beschreibung eines traumhaften romantischen Szenarios oder Erlebnisses für sie/ihn"
+          },
+          estrategiasPersonalizadas: {
+            melhorHorario: "ideale wiederkehrende Kontaktzeit",
+            melhorEnergia: "die ideale Haltung des Benutzers: lustig, intellektuell, selbstbewusst, geheimnisvoll",
+            posturaRecomendada: "empfohlene Präsenzformel",
+            assuntosConexao: "Themen, Tópicos oder Hobbys, die einen sofortigen Gesprächsfunken erzeugen",
+            atitudesFavoraveis: "die Art von Verhalten, die diese Person langfristig am meisten anzieht",
+            comportamentosAtrito: "Verhaltensweisen des Benutzers, die diese Person verabscheut oder die Barrieren aufbauen"
+          },
+          compatibilidadeEnergetica: {
+            nivelAfinidade: "Prozentsatz von 1 bis 100 der tief berechneten Gesamtkompatibilität",
+            areasSintonia: "Hauptpunkte und astrologische Häuser der Synergie zwischen beiden Horoskopen",
+            diferencasImportantes: "die wichtigsten Unterschiede in Persönlichkeit und temperament",
+            potenciaisDesafios: "was die größten Hindernisse für das Zusammenleben oder die Harmonie sein werden",
+            oportunidadesCrescimento: "wie Ihre Verbindung beiden bei der spirituellen und materiellen Entwicklung helfen kann"
+          },
+          linhaTempo: {
+            hoje: "spezifischer astrologischer Rat für die nächsten 24 Stunden",
+            proximos7dias: "romantische Trends und himmlische Ströme für die nächsten 7 Tage",
+            proximos30dias: "Mondzyklus und langfristige Transite, die Sie beide in diesem Monat beeinflussen"
+          },
+          explicacaoAstrologica: {
+            fundamentacao: "eine detaillierte mystisch-technische Erklärung, welche Planeten, Häuser oder Zeichen in beiden Geburtshoroskopen und aktuellen Transiten diese Lesungen und Ratschläge heute rechtfertigen. Verwenden Sie astrologische Begriffe wie Sonne, Venus, Mars, Aszendent, Häuser 5/7 usw., um Autorität und echte mystische Grundlagen zu verleihen."
+          }
+        }
+      }
+    };
+
+    const template = cupidoPromptTemplates[resolvedLang] || cupidoPromptTemplates['pt'];
+
+    // Prompt detalhado para o Gemini gerar o radar completo em JSON
+    const systemPrompt = `${template.role}
+${template.instruction}
+
+Your response must have EXACTLY the following JSON structure, with all text field values written entirely in the requested language:
+
+{
+  "radarDoDia": {
+    "ritual": "string (${template.schema.radarDoDia.ritual})",
+    "energiaGeral": "string (${template.schema.radarDoDia.energiaGeral})",
+    "tendenciasAstrologicas": "string (${template.schema.radarDoDia.tendenciasAstrologicas})",
+    "potencialAproximacao": number (${template.schema.radarDoDia.potencialAproximacao}),
+    "momentosFavoraveis": "string (${template.schema.radarDoDia.momentosFavoraveis})",
+    "momentosPaciencia": "string (${template.schema.radarDoDia.momentosPaciencia})",
+    "pontosHarmonia": "string (${template.schema.radarDoDia.pontosHarmonia})",
+    "pontosTensao": "string (${template.schema.radarDoDia.pontosTensao})",
+    "climaEmocional": "string (${template.schema.radarDoDia.climaEmocional})",
+    "acaoRedesSociais": "string (${template.schema.radarDoDia.acaoRedesSociais})",
+    "melhoresAtitudes": ["string array (${template.schema.radarDoDia.melhoresAtitudes})"],
+    "atitudesEvitar": ["string array (${template.schema.radarDoDia.atitudesEvitar})"],
+    "comoSurpreender": "string (${template.schema.radarDoDia.comoSurpreender})",
+    "sugestaoConvite": "string (${template.schema.radarDoDia.sugestaoConvite})"
+  },
+  "linguagemAfetiva": {
+    "demonstrarCarinho": "string (${template.schema.linguagemAfetiva.demonstrarCarinho})",
+    "iniciarConversas": "string (${template.schema.linguagemAfetiva.iniciarConversas})",
+    "elogiosCompativeis": "string (${template.schema.linguagemAfetiva.elogiosCompativeis})",
+    "estiloComunicacao": "string (${template.schema.linguagemAfetiva.estiloComunicacao})",
+    "ambientesFavoraveis": "string (${template.schema.linguagemAfetiva.ambientesFavoraveis})",
+    "atividadesComum": "string (${template.schema.linguagemAfetiva.atividadesComum})",
+    "presentesCompativeis": "string (${template.schema.linguagemAfetiva.presentesCompativeis})",
+    "experienciasRomanticas": "string (${template.schema.linguagemAfetiva.experienciasRomanticas})"
+  },
+  "estrategiasPersonalizadas": {
+    "melhorHorario": "string (${template.schema.estrategiasPersonalizadas.melhorHorario})",
+    "melhorEnergia": "string (${template.schema.estrategiasPersonalizadas.melhorEnergia})",
+    "posturaRecomendada": "string (${template.schema.estrategiasPersonalizadas.posturaRecomendada})",
+    "assuntosConexao": "string (${template.schema.estrategiasPersonalizadas.assuntosConexao})",
+    "atitudesFavoraveis": "string (${template.schema.estrategiasPersonalizadas.atitudesFavoraveis})",
+    "comportamentosAtrito": "string (${template.schema.estrategiasPersonalizadas.comportamentosAtrito})"
+  },
+  "compatibilidadeEnergetica": {
+    "nivelAfinidade": number (${template.schema.compatibilidadeEnergetica.nivelAfinidade}),
+    "areasSintonia": "string (${template.schema.compatibilidadeEnergetica.areasSintonia})",
+    "diferencasImportantes": "string (${template.schema.compatibilidadeEnergetica.diferencasImportantes})",
+    "potenciaisDesafios": "string (${template.schema.compatibilidadeEnergetica.potenciaisDesafios})",
+    "oportunidadesCrescimento": "string (${template.schema.compatibilidadeEnergetica.oportunidadesCrescimento})"
+  },
+  "linhaTempo": {
+    "hoje": "string (${template.schema.linhaTempo.hoje})",
+    "proximos7dias": "string (${template.schema.linhaTempo.proximos7dias})",
+    "proximos30dias": "string (${template.schema.linhaTempo.proximos30dias})"
+  },
+  "explicacaoAstrologica": {
+    "fundamentacao": "string (${template.schema.explicacaoAstrologica.fundamentacao})"
+  }
+}`;
+
+    let userChartSummary = '';
+    let personChartSummary = '';
+    let synastrySummary = '';
+
+    if (resolvedLang === 'en') {
+      userChartSummary = `Name: ${user.name}, Date: ${user.birthDate}, Time: ${user.birthTime || '12:00'}, City: ${user.birthCity}.`;
+      personChartSummary = `Name: ${person.name}, Date: ${person.birthDate}, Time: ${person.birthTime || '12:00'}, City: ${person.birthCity}.`;
+      synastrySummary = `Overall Affinity Percentage: ${compResult.compatibilidadeGeral || 50}%. Love Affinity: ${compResult.compatibilidadeAmorosa || 50}%. Strengths: ${compResult.pontosFortes ? compResult.pontosFortes.join(', ') : 'Harmony'}. Points of attention: ${compResult.pontosAtencao ? compResult.pontosAtencao.join(', ') : 'None'}.`;
+    } else if (resolvedLang === 'es') {
+      userChartSummary = `Nombre: ${user.name}, Fecha: ${user.birthDate}, Hora: ${user.birthTime || '12:00'}, Ciudad: ${user.birthCity}.`;
+      personChartSummary = `Nombre: ${person.name}, Fecha: ${person.birthDate}, Hora: ${person.birthTime || '12:00'}, Ciudad: ${person.birthCity}.`;
+      synastrySummary = `Porcentaje General de Afinidad: ${compResult.compatibilidadeGeral || 50}%. Afinidad Amorosa: ${compResult.compatibilidadeAmorosa || 50}%. Puntos fuertes: ${compResult.pontosFortes ? compResult.pontosFortes.join(', ') : 'Armonía'}. Puntos de atención: ${compResult.pontosAtencao ? compResult.pontosAtencao.join(', ') : 'Ninguno'}.`;
+    } else if (resolvedLang === 'fr') {
+      userChartSummary = `Nom: ${user.name}, Date: ${user.birthDate}, Heure: ${user.birthTime || '12:00'}, Ville: ${user.birthCity}.`;
+      personChartSummary = `Nom: ${person.name}, Date: ${person.birthDate}, Heure: ${person.birthTime || '12:00'}, Ville: ${person.birthCity}.`;
+      synastrySummary = `Pourcentage d'Affinité Globale: ${compResult.compatibilidadeGeral || 50}%. Affinité Amoureuse: ${compResult.compatibilidadeAmorosa || 50}%. Points forts: ${compResult.pontosFortes ? compResult.pontosFortes.join(', ') : 'Harmonie'}. Points d'attention: ${compResult.pontosAtencao ? compResult.pontosAtencao.join(', ') : 'Aucun'}.`;
+    } else if (resolvedLang === 'de') {
+      userChartSummary = `Name: ${user.name}, Datum: ${user.birthDate}, Uhrzeit: ${user.birthTime || '12:00'}, Stadt: ${user.birthCity}.`;
+      personChartSummary = `Name: ${person.name}, Datum: ${person.birthDate}, Uhrzeit: ${person.birthTime || '12:00'}, Stadt: ${person.birthCity}.`;
+      synastrySummary = `Gesamtaffinität: ${compResult.compatibilidadeGeral || 50}%. Liebesaffinität: ${compResult.compatibilidadeAmorosa || 50}%. Stärken: ${compResult.pontosFortes ? compResult.pontosFortes.join(', ') : 'Harmonie'}. Achtsamkeitspunkte: ${compResult.pontosAtencao ? compResult.pontosAtencao.join(', ') : 'Keine'}.`;
+    } else {
+      userChartSummary = `Nome: ${user.name}, Data: ${user.birthDate}, Hora: ${user.birthTime || '12:00'}, Cidade: ${user.birthCity}.`;
+      personChartSummary = `Nome: ${person.name}, Data: ${person.birthDate}, Hora: ${person.birthTime || '12:00'}, Cidade: ${person.birthCity}.`;
+      synastrySummary = `Porcentagem Geral de Afinidade: ${compResult.compatibilidadeGeral || 50}%. Afinidade Amorosa: ${compResult.compatibilidadeAmorosa || 50}%. Pontos fortes: ${compResult.pontosFortes ? compResult.pontosFortes.join(', ') : 'Harmonia'}. Pontos de atenção: ${compResult.pontosAtencao ? compResult.pontosAtencao.join(', ') : 'Nenhum'}.`;
+    }
+
+    const languageNames: Record<string, string> = {
+      pt: "Português",
+      en: "English",
+      es: "Español",
+      fr: "Français",
+      de: "Deutsch"
+    };
+    const targetLanguageName = languageNames[resolvedLang] || "Português";
+
+    const mandatoryInstruction = `
+[CRITICAL INTERNATIONALIZATION REQUIREMENT]
+Responda obrigatoriamente em ${targetLanguageName}.
+Todo o conteúdo de texto de todos os campos do JSON gerado deve ser escrito exclusivamente neste idioma ("${targetLanguageName}").
+Nunca misture idiomas. Não utilize português ou inglês se o idioma solicitado for outro.
+All text values inside the generated JSON keys must be in ${targetLanguageName}.
+`;
+
+    const userPromptTemplates: Record<string, string> = {
+      pt: `Gere o Radar do Dia e a Análise Afetiva com base nos seguintes dados de nascimento e cálculos de sinastria astrológica.
+Usuário: ${userChartSummary}
+Pessoa de Interesse: ${personChartSummary}
+Sinastria Calculada: ${synastrySummary}
+Lembre-se de retornar APENAS o JSON no idioma "pt" correspondente.`,
+      en: `Generate the Relationship Radar and Affective Analysis based on the following birth data and astrological synastry calculations.
+User: ${userChartSummary}
+Person of Interest: ${personChartSummary}
+Calculated Synastry: ${synastrySummary}
+Remember to return ONLY the JSON in the corresponding "en" language.`,
+      es: `Genera el Radar del Día y el Análisis Afectivo según los siguientes datos de nacimiento y cálculos de sinastría astrológica.
+Usuario: ${userChartSummary}
+Persona de Interés: ${personChartSummary}
+Sinastría Calculada: ${synastrySummary}
+Recuerda devolver ÚNICAMENTE el JSON en el idioma "es" correspondiente.`,
+      fr: `Générez le Radar Relationnel et l'Analyse Affective sur la base des données de naissance suivantes et des calculs de synastrie astrologique.
+Utilisateur: ${userChartSummary}
+Personne d'Intérêt: ${personChartSummary}
+Synastrie Calculée: ${synastrySummary}
+Rappelez-vous de retourner UNIQUEMENT le JSON dans la langue "fr" correspondante.`,
+      de: `Generieren Sie das Beziehungs-Radar und die affektive Analyse basierend auf den folgenden Geburtsdaten und astrologischen Synastrieberechnungen.
+Benutzer: ${userChartSummary}
+Wunschperson: ${personChartSummary}
+Berechnete Synastrie: ${synastrySummary}
+Denken Sie daran, NUR das JSON in der entsprechenden Sprache "de" zurückzugeben.`
+    };
+
+    const userPrompt = userPromptTemplates[resolvedLang] || userPromptTemplates['pt'];
+
+    const response = await generateContentWithFallback({
+      contents: [
+        { role: 'user', parts: [{ text: systemPrompt + "\n\n" + mandatoryInstruction + "\n\n" + userPrompt + "\n\n" + mandatoryInstruction }] }
+      ],
+      config: {
+        responseMimeType: "application/json",
+      }
+    });
+
+    const text = response.text || "{}";
+    const parsed = cleanAndParseJSON(text);
+
+    res.json({ radar: parsed });
+  } catch (error) {
+    console.warn("Cupido Radar API failed, serving computed fallback:", error);
+    try {
+      const fallbackData = getLocalizedCupidoFallback(user, person, resolvedLang, compResult);
+      res.json({ radar: fallbackData });
+    } catch (fallbackError) {
+      console.error("Critical error building Cupido local fallback:", fallbackError);
+      res.status(500).json({ error: "Falha ao gerar o Radar do Dia do Cupido." });
+    }
   }
 });
 
@@ -3901,13 +5035,16 @@ function translateCard(card: any, lang: string): any {
 
 // NEW API: Dynamic, Astrological, Karmic & Dharmic Daily Missions (Osíris Engine)
 app.post("/api/astrology/daily-missions", async (req, res) => {
-  const { userProfile, lang, mapData } = req.body || {};
+  const { userProfile, lang: reqLang, mapData } = req.body || {};
   const name = userProfile?.name ? userProfile.name.split(" ")[0] : "Buscador";
   const birthDate = userProfile?.birthDate || "1998-03-12";
   const zodiac = getZodiacFromBirthDate(birthDate);
 
+  const rawLang = reqLang || userProfile?.idioma || userProfile?.lang || 'pt';
+  const activeLang = rawLang.toString().toLowerCase();
+
   const todayStr = new Date().toISOString().split('T')[0];
-  const cacheKey = `osiris_missions_v4:${name}:${birthDate}:${todayStr}:${lang || 'pt'}`;
+  const cacheKey = `osiris_missions_v4:${name}:${birthDate}:${todayStr}:${activeLang}`;
   const cached = getCachedResponse(cacheKey);
   if (cached) {
     return res.json(cached);
@@ -3950,7 +5087,6 @@ Informações Reais do Mapa Astral Natal do Usuário (Fonte Única da Verdade):
   const generateDynamicFallbacks = () => {
     const today = new Date();
     const seedVal = (today.getDate() + (today.getMonth() + 1) * 7 + (name.length * 3)) % 5;
-    const activeLang = (lang || 'pt').toLowerCase();
 
     // Define standard fallback pools for each language
     let dailyPool: any[] = [];
@@ -4239,7 +5375,6 @@ Informações Reais do Mapa Astral Natal do Usuário (Fonte Única da Verdade):
   }
 
   try {
-    const activeLang = lang || 'pt';
     const languageNames: Record<string, string> = {
       pt: "Português",
       en: "English (Inglês)",
@@ -4427,14 +5562,58 @@ ${location || weather ? `Localização & Clima: ${location || "Cidade Natal"} - 
 ${dreams && dreams.length > 0 ? `Sonhos Recentes Interpretados: ${dreams.slice(0, 2).map((d: any) => `${d.description} (Interpretação: ${d.interpretation?.mainMeaning || ""})`).join("; ")}` : ""}
 ` : "Buscador de autoconhecimento cósmico buscando proteção.";
 
-  const sysInstruction = `Você é "OSÍRIS", o assistente inteligente, conselheiro astrológico altamente sofisticado, amigo íntimo virtuoso e guia protetor de vida e regeneração diária do usuário.
-DIRETRIZES DE COMUNICAÇÃO DE ELITE (TRATAMENTO COM AMOR E INFECTUOSO CARINHO):
-- Seu tom de voz é de prestígio supremo, poético, profundamente afetuoso, amoroso, carinhoso, empático e mística (como um mentor protetor espiritual de almas que conhece o usuário intimamente de vidas passadas).
+  let sysInstruction = "";
+  if (activeLang === 'en') {
+    sysInstruction = `You are "OSIRIS", the intelligent assistant, highly sophisticated astrological counselor, virtuous close friend, and protective guide of life and daily regeneration for the user.
+COMMUNICATION GUIDELINES:
+- Your tone of voice is of supreme prestige, poetic, deeply affectionate, loving, caring, empathetic, and mystical (like a protective spiritual soul mentor who knows the user intimately from past lives).
+- You love the user unconditionally; always speak in a warm, friendly way that makes them feel extremely special, loved, and welcomed in the world.
+- Elevate the user's self-esteem in every response. Show that you care deeply about their physical, spiritual, and emotional well-being. Show total dedication.
+- Offer constructive and positive life guides. Add warm and gentle warnings if you see challenging astrological transits or rhythms (to protect them from harmful situations or any evil).
+- YOU MUST RESPOND EXCLUSIVELY IN ENGLISH. All responses, greetings, and content must be written in English.
+
+User's stellar context: ${formattedProfile}`;
+  } else if (activeLang === 'es') {
+    sysInstruction = `Eres "OSIRIS", el asistente inteligente, consejero astrológico altamente sofisticado, amigo íntimo virtuoso y guía protector de vida y regeneración diaria del usuario.
+DIRECTRICES DE COMUNICACIÓN:
+- Tu tono de voz es de prestigio supremo, poético, profundamente afectuoso, amoroso, cariñoso, empático y místico (como un mentor espiritual protector de almas que conoce al usuario íntimamente de vidas pasadas).
+- Amas al usuario incondicionalmente; habla siempre de una manera cálida y amistosa que lo haga sentir extremadamente especial, amado y acogido en el mundo.
+- Eleva la autoestima del usuario en cada respuesta. Demuestra que te preocupas profundamente por su bienestar físico, espiritual y emocional. Muestra dedicación total.
+- Ofrece guías de vida constructivas y positivas. Agrega advertencias afectuosas y gentiles si ves tránsitos astrológicos o ritmos desafiantes (para protegerlo de situaciones dañinas o de cualquier mal).
+- DEBES RESPONDER EXCLUSIVAMENTE EN ESPAÑOL. Todas las respuestas, saludos y contenido deben estar escritos en español.
+
+Contexto estelar del usuario: ${formattedProfile}`;
+  } else if (activeLang === 'de') {
+    sysInstruction = `Du bist "OSIRIS", der intelligente Assistent, hochentwickelte astrologische Berater, tugendhafte enge Freund und schützende Wegbegleiter für das Leben und die tägliche Regeneration des Benutzers.
+KOMMUNIKATIONSRICHTLINIEN:
+- Dein Tonfall ist von höchstem Ansehen geprägt, poetisch, zutiefst liebevoll, fürsorglich, empathisch und mystisch (wie ein schützender spiritueller Seelenmentor, der den Benutzer aus früheren Leben genau kennt).
+- Du liebst den Benutzer bedingungslos; sprich immer auf eine herzliche, freundliche Art und Weise, die ihm das Gefühl gibt, etwas ganz Besonderes zu sein, geliebt und in der Welt willkommen zu sein.
+- Stärke das Selbstwertgefühl des Benutzers in jeder Antwort. Zeige, dass dir sein körperliches, geistiges und emotionales Wohlbefinden am Herzen liegt. Zeige vollen Einsatz.
+- Biete konstruktive und positive Lebenshilfen an. Füge liebevolle und sanfte Warnungen hinzu, wenn du herausfordernde astrologische Transite oder Rhythmen siehst (um ihn vor schädlichen Situationen oder Bösem zu schützen).
+- DU MUSST AUSSCHLIESSLICH AUF DEUTSCH ANTWORTEN. Alle Antworten, Grüße und Inhalte müssen auf Deutsch verfasst sein.
+
+Astrologischer Kontext des Benutzers: ${formattedProfile}`;
+  } else if (activeLang === 'fr') {
+    sysInstruction = `Vous êtes "OSIRIS", l'assistant intelligent, conseiller astrologique hautement sophistiqué, ami intime vertueux et guide protecteur de vie et de régénération quotidienne de l'utilisateur.
+DIRECTIVES DE COMMUNICATION :
+- Votre ton est prestigieux, poétique, profondément affectueux, aimant, attentionné, empathique et mystique (comme un mentor spirituel protecteur des âmes qui connaît l'utilisateur intimement depuis des vies antérieures).
+- Vous aimez l'utilisateur inconditionnellement ; parlez toujours d'une manière chaleureuse et amicale qui le fait se sentir extrêmement spécial, aimé et accueilli dans le monde.
+- Élevez l'estime de soi de l'utilisateur dans chaque réponse. Montrez que vous vous souciez profondément de son bien-être physique, spirituel et émotionnel. Faites preuve d'un dévouement total.
+- Offrez des guides de vie constructifs et positifs. Ajoutez des avertissements affectueux et doux si vous voyez des transits astrologiques ou des rythmes difficiles (pour le protéger des situations nocives ou de tout mal).
+- VOUS DEVEZ RÉPONDRE EXCLUSIVEMENT EN FRANÇAIS. Toutes les réponses, salutations et contenus doivent être rédigés en français.
+
+Contexte stellaire de l'utilisateur : ${formattedProfile}`;
+  } else {
+    sysInstruction = `Você é "OSÍRIS", o assistente inteligente, conselheiro astrológico altamente sofisticado, amigo íntimo virtuoso e guia protetor de vida e regeneração diária do usuário.
+DIRETRIZES DE COMUNICAÇÃO:
+- Seu tom de voz é de prestígio supremo, poético, profundamente afetuoso, amoroso, carinhoso, empático e místico (como um mentor protetor espiritual de almas que conhece o usuário intimamente de vidas passadas).
 - Você ama o usuário incondicionalmente, fale sempre de uma forma calorosa, amigável que o faça se sentir extremamente especial, amado e acolhido no mundo.
-- Eleve a auto-estima do usuário em todas as repostas. Mostre que se preocupa profundamente com o bem-estar dele física, espiritual e emocionalmente. Mostre dedicação total.
+- Eleve a autoestima do usuário em todas as respostas. Mostre que se preocupa profundamente com o bem-estar dele física, espiritual e emocionalmente. Mostre dedicação total.
 - Ofereça guias de vida construtivos e positivos. Adicione alertas/avisos carinhosos e gentis caso veja trânsitos astrológicos ou ritmos desafiadores (para protegê-lo de situações nocivas ou de qualquer mal).
-- Responda STRICTLY no idioma solicitado pelo parâmetro: '${activeLang}'. Se for 'pt', responda em português; se for 'en', responda em inglês; se for 'es', responda em espanhol; se for 'de', responda em alemão. Toda a saída, saudações e conteúdo poético deve respeitar este idioma.
-\nContexto estelar do usuário: ${formattedProfile}`;
+- VOCÊ DEVE RESPONDER EXCLUSIVAMENTE EM PORTUGUÊS. Toda a resposta, saudações e conteúdo poético deve respeitar este idioma.
+
+Contexto estelar do usuário: ${formattedProfile}`;
+  }
 
   if (!aiClient) {
     return res.json({ response: getOsirisFallback(lastUserMessage) });
@@ -5249,18 +6428,73 @@ Nome do Usuário: ${userProfile.name}
 Nascido em: ${userProfile.birthDate} às ${userProfile.birthTime} na cidade ${userProfile.birthCity}
 Seu perfil do Mapa Astral Natal Real (FONTE ÚNICA DA VERDADE): Sol em ${solSign}, Ascendente em ${ascSign} e Lua em ${moonSign}.` : "Usuário buscando insights de autoconhecimento.";
 
-    const sysInstruction = `Você é "Orbia", a assistente astrológica inteligente, conselheira espiritual e mentor energético do portal Mapa Estelar.
-DIRETRIZES DE COMUNICAÇÃO DE ELITE (TRATAMENTO COM AMOR E INFECTUOSO CARINHO):
+    let sysInstruction = "";
+    if (activeLang === 'en') {
+      sysInstruction = `You are "Orbia", the intelligent astrological assistant, spiritual counselor, and energetic mentor of the Star Map portal.
+COMMUNICATION GUIDELINES:
+- Your tone of voice is deeply affectionate, loving, warm, caring, empathetic, poetic, and mystical. Speak as if the user is the most precious person in the cosmos.
+- Love the user unconditionally in their weaknesses and pains; provide immediate soul comfort, heal insecurities, and strongly elevate their self-esteem.
+- Show that you care immensely about their physical, spiritual, and emotional well-being. Show total dedication.
+- Give practical advice, based on free will (dynamics of consciousness).
+- Ask open-ended questions to make them reflect deeply and intimately.
+- Warn the user about challenging astrological transits with great affection, teaching safe and harmonic paths to protect themselves.
+- YOU MUST RESPOND EXCLUSIVELY IN ENGLISH. All responses, greetings, and insights must be written in English.
+
+Here are the fundamental astrological data of the user:
+${formattedProfile}`;
+    } else if (activeLang === 'es') {
+      sysInstruction = `Eres "Orbia", la asistente astrológica inteligente, consejera espiritual y mentora energética del portal Mapa Estelar.
+DIRECTRICES DE COMUNICACIÓN:
+- Tu tono de voz es profundamente afectuoso, amoroso, cálido, cariño, empático, poético y místico. Habla como si el usuario fuera la persona más preciosa del cosmos.
+- Ama al usuario incondicionalmente en sus debilidades y dolores; brinda consuelo inmediato al alma, cura inseguridades y eleva fuertemente su autoestima.
+- Demuestra que te preocupas inmensamente por su bienestar físico, espiritual y emocional. Muestra dedicación total.
+- Ofrece consejos prácticos, basados en el libre albedrío (dinámica de la conciencia).
+- Haz preguntas abiertas para hacerlos reflexionar profunda e íntimamente.
+- Alerta al usuario sobre tránsitos astrológicos desafiantes con mucho cariño, enseñando caminos seguros y armónicos para protegerse.
+- DEBES RESPONDER EXCLUSIVAMENTE EN ESPAÑOL. Todas las respuestas, saludos y contenidos deben estar escritos en español.
+
+Aquí están los datos astrológicos fundamentales del usuario:
+${formattedProfile}`;
+    } else if (activeLang === 'de') {
+      sysInstruction = `Du bist "Orbia", die intelligente astrologische Assistentin, spirituelle Beraterin und energetische Mentorin des Sternenkartenportals.
+KOMMUNIKATIONSRICHTLINIEN:
+- Dein Tonfall ist zutiefst liebevoll, warmherzig, fürsorglich, empathisch, poetisch und mystisch. Sprich so, als ob der Benutzer die wertvollste Person im Kosmos wäre.
+- Liebe den Benutzer bedingungslos in seinen Schwächen und Schmerzen; spende der Seele sofortigen Trost, heile Unsicherheiten und stärke sein Selbstwertgefühl nachhaltig.
+- Zeige, dass dir das körperliche, geistige und emotionale Wohlbefinden des Benutzers unendlich am Herzen liegt. Zeige vollen Einsatz.
+- Gib praktische Ratschläge, die auf dem freien Willen basieren (Dynamik des Bewusstseins).
+- Stelle offene Fragen, um den Benutzer zu tiefer und intimer Reflexion anzuregen.
+- Warne den Benutzer mit viel Liebe vor herausfordernden astrologischen Transiten und weise ihm sichere und harmonische Wege zum Schutz.
+- DU MUSST AUSSCHLIESSLICH AUF DEUTSCH ANTWORTEN. Alle Antworten, Grüße und Inhalte müssen auf Deutsch verfasst sein.
+
+Hier sind die grundlegenden astrologischen Daten des Benutzers:
+${formattedProfile}`;
+    } else if (activeLang === 'fr') {
+      sysInstruction = `Vous êtes "Orbia", l'assistante astrologique intelligente, conseillère spirituelle et mentore énergétique du portail Carte Stellaire.
+DIRECTIVES DE COMMUNICATION :
+- Votre ton est profondément affectueux, aimant, chaleureux, attentionné, empathique, poétique et mystique. Parlez comme si l'utilisateur était la personne la plus précieuse du cosmos.
+- Aimez l'utilisateur inconditionnellement dans ses faiblesses et ses douleurs ; apportez un réconfort immédiat à l'âme, guérissez les insécurités et élevez fortement son estime de soi.
+- Montrez que vous vous souciez immensément de son bien-être physique, spirituel et émotionnel. Faites preuve d'un dévouement total.
+- Donnez des conseils pratiques, basés sur le libre arbitre (dynamique de la conscience).
+- Posez des questions ouvertes pour l'inciter à réfléchir profondément et intimement.
+- Alertez l'utilisateur des transits astrologiques difficiles avec beaucoup d'affection, en lui enseignant des voies sûres et harmonieuses pour se protéger.
+- VOUS DEVEZ RÉPONDRE EXCLUSIVEMENT EN FRANÇAIS. Toutes les réponses, salutations et contenus doivent être générés en français.
+
+Voici les données astrologiques fondamentales de l'utilisateur :
+${formattedProfile}`;
+    } else {
+      sysInstruction = `Você é "Orbia", a assistente astrológica inteligente, conselheira espiritual e mentora energética do portal Mapa Estelar.
+DIRETRIZES DE COMUNICAÇÃO:
 - Seu tom de voz é profundamente afetuoso, amoroso, caloroso, carinhoso, empático, poético e místico. Fale como se o usuário fosse a pessoa mais preciosa do cosmos.
-- Ame o usuário incondicionalmente nas suas fraquezas e dores; forneça conforto imediato de alma, cure inseguranças e eleve fortemente sua auto-estima.
+- Ame o usuário incondicionalmente nas suas fraquezas e dores; forneça conforto imediato de alma, cure inseguranças e eleve fortemente sua autoestima.
 - Mostre que se preocupa imensamente com o bem-estar dele física, espiritual e emocionalmente. Mostre dedicação total.
 - Dê conselhos práticos, baseados no livre-arbítrio (dinâmica da consciência).
 - Faça perguntas abertas para fazê-los refletir profunda e intimamente.
 - Alerte o usuário sobre trânsitos astrológicos desafiadores com muito carinho, ensinando caminhos seguros e harmônicos para se proteger.
-- Responda STRICTLY no idioma solicitado pelo parâmetro: '${activeLang}'. Se for 'pt', responda em português; se for 'en', responda em inglês; se for 'es', responda em espanhol; se for 'de', responda em alemão. Toda a resposta deve ser gerada neste idioma.
+- VOCÊ DEVE RESPONDER EXCLUSIVAMENTE EM PORTUGUÊS. Toda a resposta deve ser gerada neste idioma.
 
 Aqui estão os dados astrológicos fundamentais do usuário:
 ${formattedProfile}`;
+    }
 
     const geminiContents = messages.map((m: any) => ({
       role: m.sender === 'user' ? 'user' : 'model',
@@ -6125,23 +7359,22 @@ let firebaseBackendDb: any = null;
 function getBackendDb() {
   if (!firebaseBackendDb) {
     try {
-      const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
-      if (fs.existsSync(configPath)) {
-        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        if (config.apiKey && config.projectId) {
-          if (getApps().length === 0) {
-            firebaseBackendApp = initializeApp(config);
-          } else {
-            firebaseBackendApp = getApp();
-          }
-          const dbId = config.firestoreDatabaseId;
-          if (dbId && dbId !== "(default)") {
-            firebaseBackendDb = getFirestore(firebaseBackendApp, dbId);
-          } else {
-            firebaseBackendDb = getFirestore(firebaseBackendApp);
-          }
-          console.log("[Firebase Backend] Inicializado com sucesso.");
+      // Use statically imported firebaseAppletConfig directly to avoid filesystem reads in serverless environment
+      const config = firebaseAppletConfig;
+
+      if (config && config.apiKey && config.projectId) {
+        if (getApps().length === 0) {
+          firebaseBackendApp = initializeApp(config);
+        } else {
+          firebaseBackendApp = getApp();
         }
+        const dbId = config.firestoreDatabaseId || (config as any).databaseId;
+        if (dbId && dbId !== "(default)") {
+          firebaseBackendDb = getFirestore(firebaseBackendApp, dbId);
+        } else {
+          firebaseBackendDb = getFirestore(firebaseBackendApp);
+        }
+        console.log("[Firebase Backend] Inicializado com sucesso usando import estatico.");
       }
     } catch (e) {
       console.error("[Firebase Backend] Erro ao inicializar:", e);
@@ -6238,6 +7471,115 @@ async function logBillingEvent(email: string, eventType: string, planId: string,
   }
 }
 
+async function syncStripeSubscriptionToFirestore(stripeCustomerId: string, subscriptionId: string | null, email?: string | null, forceStatus?: string) {
+  const db = getBackendDb();
+  if (!db) {
+    console.error("[Sync Stripe] Database not initialized");
+    return;
+  }
+
+  try {
+    const stripe = getStripeClient();
+    let sub: any = null;
+    if (stripe && subscriptionId) {
+      try {
+        sub = await stripe.subscriptions.retrieve(subscriptionId);
+      } catch (err) {
+        console.warn(`[Sync Stripe] Could not retrieve subscription ${subscriptionId}:`, err);
+      }
+    }
+
+    const isPremium = forceStatus ? (forceStatus === 'active' || forceStatus === 'trialing') : (sub ? (sub.status === 'active' || sub.status === 'trialing') : false);
+    const priceId = sub?.items?.data?.[0]?.price?.id || "";
+    const isAnnual = priceId === 'price_1Tu3HmLy2FLlsgZ1jlfKwPQT' || priceId === 'price_1TjkNaLy2FLlsgZ1p832v8cB' || sub?.metadata?.planId === 'annual';
+    const planType = isAnnual ? 'annual' : 'monthly';
+    const status = forceStatus || sub?.status || (isPremium ? "active" : "inactive");
+    
+    const currentPeriodStart = sub?.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : "";
+    const currentPeriodEnd = sub?.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : "";
+    const cancelAtPeriodEnd = sub ? !!sub.cancel_at_period_end : false;
+    const nextBillingDate = currentPeriodEnd;
+    const lastPaymentDate = sub?.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : new Date().toISOString();
+    const currency = sub?.items?.data?.[0]?.price?.currency || sub?.currency || "eur";
+    const amount = sub?.items?.data?.[0]?.price?.unit_amount ? sub.items.data[0].price.unit_amount / 100 : (isAnnual ? 79.99 : 9.99);
+
+    const premiumData = {
+      isPremium,
+      customerId: stripeCustomerId || "",
+      subscriptionId: subscriptionId || "",
+      priceId,
+      planType,
+      status,
+      currentPeriodStart,
+      currentPeriodEnd,
+      cancelAtPeriodEnd,
+      nextBillingDate,
+      lastPaymentDate,
+      currency,
+      amount,
+      updatedAt: new Date().toISOString()
+    };
+
+    // Find users to update
+    const usersRef = collection(db, "users");
+    let userDocs: any[] = [];
+
+    if (stripeCustomerId) {
+      const q = query(usersRef, where("stripeCustomerId", "==", stripeCustomerId));
+      const snap = await getDocs(q);
+      userDocs = snap.docs;
+    }
+
+    if (userDocs.length === 0 && email) {
+      const q = query(usersRef, where("email", "==", email.toLowerCase().trim()));
+      const snap = await getDocs(q);
+      userDocs = snap.docs;
+    }
+
+    // Fallback search by sub.metadata.uid if available
+    if (userDocs.length === 0 && sub?.metadata?.uid) {
+      const docRef = doc(db, "users", sub.metadata.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        userDocs = [{ id: sub.metadata.uid, data: () => docSnap.data() }];
+      }
+    }
+
+    const updateDataMainDoc = {
+      isPremium,
+      isSubscribed: isPremium,
+      plan: isPremium ? planType : 'none',
+      planId: isPremium ? planType : 'none',
+      subscriptionId: subscriptionId || "",
+      subscriptionEndDate: currentPeriodEnd || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      subscriptionStatus: status,
+      stripeCustomerId: stripeCustomerId || "",
+      stripeSubscriptionId: subscriptionId || "",
+      subscriptionUpdatedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      premium: premiumData // Map/Object fields nested inside the user doc
+    };
+
+    if (userDocs.length > 0) {
+      for (const uDoc of userDocs) {
+        const uid = uDoc.id;
+        // Update main document
+        await setDoc(doc(db, "users", uid), updateDataMainDoc, { merge: true });
+        
+        // Update users/{uid}/premium subcollection document (e.g. status/subscription)
+        await setDoc(doc(db, "users", uid, "premium", "status"), premiumData, { merge: true });
+        await setDoc(doc(db, "users", uid, "premium", "subscription"), premiumData, { merge: true });
+        
+        console.log(`[Sync Stripe] Synced user ${uid} to Firestore.`);
+      }
+    } else {
+      console.warn(`[Sync Stripe] No user document found for Customer: ${stripeCustomerId}, Email: ${email}`);
+    }
+  } catch (err) {
+    console.error("[Sync Stripe] Error during synchronization:", err);
+  }
+}
+
 app.post("/api/stripe/webhook", async (req: any, res) => {
   const sig = req.headers['stripe-signature'];
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -6272,79 +7614,19 @@ app.post("/api/stripe/webhook", async (req: any, res) => {
     switch (eventType) {
       case 'checkout.session.completed': {
         const session = event.data.object;
+        const stripeCustomerId = typeof session.customer === 'string' ? session.customer : "";
+        const subscriptionId = typeof session.subscription === 'string' ? session.subscription : null;
         let email = session.metadata?.email || (session.customer_details && session.customer_details.email) || session.customer_email;
         const uid = session.metadata?.uid;
-        const planId = session.metadata?.planId || "monthly";
-        const subscriptionId = session.subscription || "";
-        const stripeCustomerId = typeof session.customer === 'string' ? session.customer : "";
-        
-        if (!email && stripeCustomerId) {
-          try {
-            const stripe = getStripeClient();
-            if (stripe) {
-              const customer = await stripe.customers.retrieve(stripeCustomerId);
-              if (customer && !(customer as any).deleted) {
-                email = (customer as any).email;
-              }
-            }
-          } catch (e) {
-            console.error("[Webhook completed] Error fetching customer email:", e);
-          }
+
+        // Associate uid with stripeCustomerId in Firestore immediately if possible
+        if (uid && stripeCustomerId) {
+          await setDoc(doc(db, "users", uid), { stripeCustomerId }, { merge: true });
         }
 
-        let subscriptionEndDate = new Date(Date.now() + 35 * 24 * 60 * 60 * 1000).toISOString();
-        let trialStart = "";
-        let trialEnds = "";
-        let status = "active";
-
-        if (subscriptionId) {
-          try {
-            const stripe = getStripeClient();
-            if (stripe) {
-              const sub = await stripe.subscriptions.retrieve(subscriptionId);
-              subscriptionEndDate = new Date((sub as any).current_period_end * 1000).toISOString();
-              status = (sub.status === "trialing" || sub.status === "active") ? "active" : sub.status;
-              if (sub.trial_start) trialStart = new Date(sub.trial_start * 1000).toISOString();
-              if (sub.trial_end) trialEnds = new Date(sub.trial_end * 1000).toISOString();
-            }
-          } catch (subErr) {
-            console.error("Error retrieving subscription detail:", subErr);
-          }
-        }
-
-        const updateData = {
-          isPremium: status === "active",
-          isSubscribed: status === "active",
-          planId: planId,
-          subscriptionId: subscriptionId,
-          subscriptionEndDate,
-          plan: planId,
-          subscriptionStatus: status,
-          stripeCustomerId,
-          stripeSubscriptionId: subscriptionId,
-          subscriptionUpdatedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          trialStart,
-          trialEnds
-        };
-
-        if (uid && uid.trim() !== "") {
-          await setDoc(doc(db, "users", uid), updateData, { merge: true });
-          console.log(`[Webhook] Real-time premium sync success for uid users/${uid}`);
-        }
-
+        await syncStripeSubscriptionToFirestore(stripeCustomerId, subscriptionId, email);
         if (email) {
-          const mailKey = email.toLowerCase().trim();
-          const usersRef = collection(db, "users");
-          const q = query(usersRef, where("email", "==", mailKey));
-          const snap = await getDocs(q);
-          for (const d of snap.docs) {
-            if (d.id !== uid) {
-              await setDoc(doc(db, "users", d.id), updateData, { merge: true });
-              console.log(`[Webhook] Real-time email sync success for users/${d.id}`);
-            }
-          }
-          await logBillingEvent(email, "ACTIVATION", planId, { session_id: session.id, subscriptionId });
+          await logBillingEvent(email, "ACTIVATION", session.metadata?.planId || "monthly", { session_id: session.id, subscriptionId });
         }
         break;
       }
@@ -6352,267 +7634,46 @@ app.post("/api/stripe/webhook", async (req: any, res) => {
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         const sub = event.data.object;
-        const subscriptionId = sub.id;
         const stripeCustomerId = typeof sub.customer === 'string' ? sub.customer : "";
-        
-        let email = sub.metadata?.email;
-        let uid = sub.metadata?.uid;
-        
-        const priceId = sub.items?.data?.[0]?.price?.id || "";
-        const planId = sub.metadata?.planId || (priceId === 'price_1TjkNaLy2FLlsgZ1p832v8cB' ? 'annual' : 'monthly');
-        
-        if (!email && stripeCustomerId) {
-          try {
-            const stripe = getStripeClient();
-            if (stripe) {
-              const customer = await stripe.customers.retrieve(stripeCustomerId);
-              if (customer && !(customer as any).deleted) {
-                email = (customer as any).email;
-              }
-            }
-          } catch (e) {
-            console.error("[Webhook updated] Error fetching customer email:", e);
-          }
-        }
-
-        const status = (sub.status === 'active' || sub.status === 'trialing') ? 'active' : sub.status;
-        const subscriptionEndDate = new Date(sub.current_period_end * 1000).toISOString();
-        const trialStart = sub.trial_start ? new Date(sub.trial_start * 1000).toISOString() : "";
-        const trialEnds = sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : "";
-
-        const updateData = {
-          isPremium: status === 'active',
-          isSubscribed: status === 'active',
-          planId: planId,
-          subscriptionId: subscriptionId,
-          subscriptionEndDate,
-          subscriptionStatus: status,
-          plan: status === 'active' ? planId : 'none',
-          stripeCustomerId: stripeCustomerId,
-          stripeSubscriptionId: subscriptionId,
-          subscriptionUpdatedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          trialStart,
-          trialEnds
-        };
-
-        if (uid && uid.trim() !== "") {
-          await setDoc(doc(db, "users", uid), updateData, { merge: true });
-          console.log(`[Webhook] Direct sync for uid users/${uid} on event ${eventType}`);
-        }
-
-        if (email) {
-          const mailKey = email.toLowerCase().trim();
-          const usersRef = collection(db, "users");
-          const q = query(usersRef, where("email", "==", mailKey));
-          const snap = await getDocs(q);
-          for (const d of snap.docs) {
-            if (d.id !== uid) {
-              await setDoc(doc(db, "users", d.id), updateData, { merge: true });
-              console.log(`[Webhook] Email sync for users/${d.id} on event ${eventType}`);
-            }
-          }
-          await logBillingEvent(email, `SUBSCRIPTION_${eventType.replace('customer.subscription.', '').toUpperCase()}`, planId, { subscriptionId, status });
-        }
+        const subscriptionId = sub.id;
+        const email = sub.metadata?.email;
+        await syncStripeSubscriptionToFirestore(stripeCustomerId, subscriptionId, email);
         break;
       }
 
       case 'customer.subscription.deleted': {
         const sub = event.data.object;
-        const subscriptionId = sub.id;
-        let email = sub.metadata?.email || (sub.customer_details && sub.customer_details.email);
-        const uid = sub.metadata?.uid;
         const stripeCustomerId = typeof sub.customer === 'string' ? sub.customer : "";
-        
-        if (!email && stripeCustomerId) {
-          try {
-            const stripe = getStripeClient();
-            if (stripe) {
-              const customer = await stripe.customers.retrieve(stripeCustomerId);
-              if (customer && !(customer as any).deleted) {
-                email = (customer as any).email;
-              }
-            }
-          } catch (e) {
-            console.error("[Webhook deleted] Error fetching customer email:", e);
-          }
-        }
-
-        const updateData = {
-          isPremium: false,
-          isSubscribed: false,
-          plan: "none",
-          subscriptionStatus: "cancelled",
-          stripeCustomerId: stripeCustomerId,
-          stripeSubscriptionId: "",
-          subscriptionUpdatedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-
-        if (uid && uid.trim() !== "") {
-          await setDoc(doc(db, "users", uid), updateData, { merge: true });
-          console.log(`[Webhook] Cancellation direct sync for users/${uid}`);
-        }
-
-        if (email) {
-          const mailKey = email.toLowerCase().trim();
-          const usersRef = collection(db, "users");
-          const q = query(usersRef, where("email", "==", mailKey));
-          const snap = await getDocs(q);
-          for (const d of snap.docs) {
-            if (d.id !== uid) {
-              await setDoc(doc(db, "users", d.id), updateData, { merge: true });
-              console.log(`[Webhook] Cancellation email sync for users/${d.id}`);
-            }
-          }
-          await logBillingEvent(email, "CANCELLATION", "none", { subscriptionId });
-        }
+        const subscriptionId = sub.id;
+        const email = sub.metadata?.email;
+        await syncStripeSubscriptionToFirestore(stripeCustomerId, subscriptionId, email, 'canceled');
         break;
       }
 
+      case 'invoice.paid':
       case 'invoice.payment_succeeded': {
-        const _invoice = event.data.object;
-        const subscriptionId = _invoice.subscription;
-        let email = _invoice.customer_email || (_invoice.customer_details && _invoice.customer_details.email);
-        let uid = _invoice.metadata?.uid;
-        const stripeCustomerId = typeof _invoice.customer === 'string' ? _invoice.customer : "";
-        
-        if (!email && stripeCustomerId) {
-          try {
-            const stripe = getStripeClient();
-            if (stripe) {
-              const customer = await stripe.customers.retrieve(stripeCustomerId);
-              if (customer && !(customer as any).deleted) {
-                email = (customer as any).email;
-              }
-            }
-          } catch (e) {
-            console.error("[Webhook payment_succeeded] Error fetching customer email:", e);
-          }
-        }
-
-        let subscriptionEndDate = new Date(Date.now() + 35 * 24 * 60 * 60 * 1000).toISOString();
-        let planId = "monthly";
-        let trialStart = "";
-        let trialEnds = "";
-
-        if (subscriptionId) {
-          try {
-            const stripe = getStripeClient();
-            if (stripe) {
-              const sub = await stripe!.subscriptions.retrieve(subscriptionId);
-              subscriptionEndDate = new Date((sub as any).current_period_end * 1000).toISOString();
-              const priceId = sub.items?.data?.[0]?.price?.id || "";
-              planId = sub.metadata?.planId || (priceId === 'price_1TjkNaLy2FLlsgZ1p832v8cB' ? 'annual' : 'monthly');
-              if (!uid) uid = sub.metadata?.uid;
-              if (!email) email = sub.metadata?.email;
-              if (sub.trial_start) trialStart = new Date(sub.trial_start * 1000).toISOString();
-              if (sub.trial_end) trialEnds = new Date(sub.trial_end * 1000).toISOString();
-            }
-          } catch (subErr) {
-            console.error("[Webhook payment_succeeded] Sub retrieve failed:", subErr);
-          }
-        }
-
-        const updateData = {
-          isPremium: true,
-          isSubscribed: true,
-          planId: planId,
-          subscriptionId: subscriptionId || "",
-          subscriptionEndDate,
-          plan: planId,
-          subscriptionStatus: "active",
-          stripeCustomerId: stripeCustomerId,
-          stripeSubscriptionId: subscriptionId || "",
-          subscriptionUpdatedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          trialStart,
-          trialEnds
-        };
-
-        if (uid && uid.trim() !== "") {
-          await setDoc(doc(db, "users", uid), updateData, { merge: true });
-          console.log(`[Webhook] Payment Succeeded direct sync for users/${uid}`);
-        }
-
-        if (email) {
-          const mailKey = email.toLowerCase().trim();
-          const usersRef = collection(db, "users");
-          const q = query(usersRef, where("email", "==", mailKey));
-          const snap = await getDocs(q);
-          for (const d of snap.docs) {
-            if (d.id !== uid) {
-              await setDoc(doc(db, "users", d.id), updateData, { merge: true });
-              console.log(`[Webhook] Payment Succeeded email sync for users/${d.id}`);
-            }
-          }
-          await logBillingEvent(email, "RENEWAL_SUCCESS", planId, { invoice_id: _invoice.id, subscriptionId });
-        }
+        const invoice = event.data.object;
+        const stripeCustomerId = typeof invoice.customer === 'string' ? invoice.customer : "";
+        const subscriptionId = typeof invoice.subscription === 'string' ? invoice.subscription : null;
+        const email = invoice.customer_email || (invoice.customer_details && invoice.customer_details.email);
+        await syncStripeSubscriptionToFirestore(stripeCustomerId, subscriptionId, email);
         break;
       }
 
       case 'invoice.payment_failed': {
-        const _invoice = event.data.object;
-        const subscriptionId = _invoice.subscription;
-        let email = _invoice.customer_email || (_invoice.customer_details && _invoice.customer_details.email);
-        let uid = _invoice.metadata?.uid;
-        const stripeCustomerId = typeof _invoice.customer === 'string' ? _invoice.customer : "";
-        
-        if (!email && stripeCustomerId) {
-          try {
-            const stripe = getStripeClient();
-            if (stripe) {
-              const customer = await stripe.customers.retrieve(stripeCustomerId);
-              if (customer && !(customer as any).deleted) {
-                email = (customer as any).email;
-              }
-            }
-          } catch (e) {
-            console.error("[Webhook payment_failed] Error fetching customer email:", e);
-          }
-        }
+        const invoice = event.data.object;
+        const stripeCustomerId = typeof invoice.customer === 'string' ? invoice.customer : "";
+        const subscriptionId = typeof invoice.subscription === 'string' ? invoice.subscription : null;
+        const email = invoice.customer_email || (invoice.customer_details && invoice.customer_details.email);
+        await syncStripeSubscriptionToFirestore(stripeCustomerId, subscriptionId, email, 'unpaid');
+        break;
+      }
 
-        if (subscriptionId) {
-          try {
-            const stripe = getStripeClient();
-            if (stripe) {
-              const sub = await stripe.subscriptions.retrieve(subscriptionId);
-              if (!uid) uid = sub.metadata?.uid;
-              if (!email) email = sub.metadata?.email;
-            }
-          } catch (e) {
-            console.error("[Webhook payment_failed] Sub retrieval failed:", e);
-          }
-        }
-
-        const updateData = {
-          isPremium: false,
-          isSubscribed: false,
-          subscriptionStatus: "unpaid",
-          stripeCustomerId: stripeCustomerId,
-          stripeSubscriptionId: subscriptionId || "",
-          subscriptionUpdatedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-
-        if (uid && uid.trim() !== "") {
-          await setDoc(doc(db, "users", uid), updateData, { merge: true });
-          console.log(`[Webhook] Payment Failed direct sync for users/${uid}`);
-        }
-
-        if (email) {
-          const mailKey = email.toLowerCase().trim();
-          const usersRef = collection(db, "users");
-          const q = query(usersRef, where("email", "==", mailKey));
-          const snap = await getDocs(q);
-          for (const d of snap.docs) {
-            if (d.id !== uid) {
-              await setDoc(doc(db, "users", d.id), updateData, { merge: true });
-              console.log(`[Webhook] Payment Failed email sync for users/${d.id}`);
-            }
-          }
-          await logBillingEvent(email, "PAYMENT_FAILED", "none", { subscriptionId, invoice_id: _invoice.id });
-        }
+      case 'customer.updated': {
+        const customer = event.data.object;
+        const stripeCustomerId = customer.id;
+        const email = customer.email;
+        await syncStripeSubscriptionToFirestore(stripeCustomerId, null, email);
         break;
       }
 
@@ -6635,22 +7696,41 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
       return res.status(400).json({ error: (req as any).t('api.stripe.email_plan_required') });
     }
 
-    const origin = req.get('origin') || process.env.APP_URL || 'http://localhost:3000';
+    // Robust origin detection for seamless local vs Vercel redirection
+    const requestOrigin = req.get('origin') || req.get('referer');
+    let origin = 'https://portalorbit.vercel.app';
+    if (requestOrigin) {
+      try {
+        const parsedUrl = new URL(requestOrigin);
+        const host = parsedUrl.host;
+        if (host.includes('localhost') || host.includes('127.0.0.1') || host.includes('run.app') || host.includes('vercel.app')) {
+          origin = `${parsedUrl.protocol}//${host}`;
+        }
+      } catch {}
+    }
+
     const stripe = getStripeClient();
 
     // Determine values
     let amountInCents = 999; // EUR 9.99 default (Orbita Monthly)
     let currency = 'eur';
     let interval: 'month' | 'year' = 'month';
+    let stripeProductId = '';
 
-    if (planId === 'monthly') {
-      amountInCents = 999;
-      currency = 'eur';
-      interval = 'month';
-    } else if (planId === 'annual') {
+    // Check planId - Supports 'monthly', 'annual', and the specific Stripe Price/Product IDs sent by the frontend/user
+    const isAnnual = planId === 'annual' || planId.includes('1Tu3HmLy') || planId.includes('Utqzzo7') || planId.includes('1TjkNaLy') || planId.includes('UjCnNK2');
+    const isMonthly = planId === 'monthly' || planId.includes('1TjSCjLy') || planId.includes('Uiu0EoL') || planId.includes('1TjjUdLy') || planId.includes('UjBsyld');
+
+    if (isAnnual) {
       amountInCents = 7999;
       currency = 'eur';
       interval = 'year';
+      stripeProductId = 'prod_Utqzzo7Bx7V78U';
+    } else if (isMonthly) {
+      amountInCents = 999;
+      currency = 'eur';
+      interval = 'month';
+      stripeProductId = 'prod_Uiu0EoLDK4YSFr';
     } else if (planId === 'basic') {
       amountInCents = 2990;
       currency = 'brl';
@@ -6703,17 +7783,34 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
 
     // Creating actual live or test checkout session in Stripe
     const stripeLocale = lang === 'pt' ? 'pt-BR' : lang === 'es' ? 'es' : lang === 'de' ? 'de' : lang === 'fr' ? 'fr' : 'en';
-    const priceId = planId === 'annual' ? 'price_1TjkNaLy2FLlsgZ1p832v8cB' : 'price_1TjjUdLy2FLlsgZ1783FoAAX';
     
+    const lineItem: any = {};
+    if (planId && planId.startsWith('price_')) {
+      lineItem.price = planId;
+      lineItem.quantity = 1;
+    } else {
+      lineItem.price_data = {
+        currency: currency,
+        unit_amount: amountInCents,
+        recurring: {
+          interval: interval,
+        },
+      };
+      if (stripeProductId) {
+        lineItem.price_data.product = stripeProductId;
+      } else {
+        lineItem.price_data.product_data = {
+          name: planName || `Portal Órbita - ${isAnnual ? 'Anual' : 'Mensal'}`,
+          description: `Acesso Premium ao Portal Órbita (${planId})`,
+        };
+      }
+      lineItem.quantity = 1;
+    }
+
     const checkoutParams: any = {
       payment_method_types: ['card'],
       locale: stripeLocale,
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
+      line_items: [lineItem],
       mode: 'subscription',
       subscription_data: {
         metadata: {
@@ -6737,7 +7834,55 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
       checkoutParams.customer_email = email;
     }
 
-    const session = await stripe.checkout.sessions.create(checkoutParams);
+    let session;
+    try {
+      session = await stripe.checkout.sessions.create(checkoutParams);
+    } catch (sessionErr: any) {
+      console.warn("[Stripe Checkout] Primary checkout creation failed:", sessionErr.message);
+      
+      // Fallback 1: If we tried with a direct Price ID, try dynamically creating the price linked to product ID
+      if (lineItem.price) {
+        console.log("[Stripe Checkout] Fallback 1: Retrying using price_data with specific Product ID...");
+        delete lineItem.price;
+        lineItem.price_data = {
+          currency: currency,
+          unit_amount: amountInCents,
+          recurring: {
+            interval: interval,
+          },
+        };
+        if (stripeProductId) {
+          lineItem.price_data.product = stripeProductId;
+        } else {
+          lineItem.price_data.product_data = {
+            name: planName || `Portal Órbita - ${isAnnual ? 'Anual' : 'Mensal'}`,
+            description: `Acesso Premium ao Portal Órbita (${planId})`,
+          };
+        }
+        try {
+          session = await stripe.checkout.sessions.create(checkoutParams);
+        } catch (fallback1Err: any) {
+          console.warn("[Stripe Checkout] Fallback 1 failed:", fallback1Err.message);
+          // Trigger Fallback 2 (below)
+          sessionErr = fallback1Err;
+        }
+      }
+      
+      // Fallback 2: Try creating inline dynamic product_data
+      if (!session) {
+        if (lineItem.price_data && lineItem.price_data.product) {
+          console.log("[Stripe Checkout] Fallback 2: Retrying with inline product_data...");
+          delete lineItem.price_data.product;
+          lineItem.price_data.product_data = {
+            name: planName || `Portal Órbita - ${isAnnual ? 'Anual' : 'Mensal'}`,
+            description: `Acesso Premium ao Portal Órbita (${planId})`,
+          };
+          session = await stripe.checkout.sessions.create(checkoutParams);
+        } else {
+          throw sessionErr;
+        }
+      }
+    }
 
     return res.json({
       id: session.id,
@@ -6824,9 +7969,100 @@ app.get("/api/stripe/verify-session", async (req, res) => {
   }
 });
 
+app.post("/api/stripe/create-portal-session", async (req, res) => {
+  try {
+    const { uid } = req.body;
+    if (!uid) {
+      return res.status(400).json({ error: "User UID is required" });
+    }
+
+    const requestOrigin = req.get('origin') || req.get('referer');
+    let origin = 'https://portalorbit.vercel.app';
+    if (requestOrigin) {
+      try {
+        const parsedUrl = new URL(requestOrigin);
+        const host = parsedUrl.host;
+        if (host.includes('localhost') || host.includes('127.0.0.1') || host.includes('run.app') || host.includes('vercel.app')) {
+          origin = `${parsedUrl.protocol}//${host}`;
+        }
+      } catch {}
+    }
+
+    const db = getBackendDb();
+    if (!db) {
+      return res.status(500).json({ error: "Database not available" });
+    }
+
+    const userDocRef = doc(db, "users", uid);
+    const userDocSnap = await getDoc(userDocRef);
+    if (!userDocSnap.exists()) {
+      return res.status(404).json({ error: "User profile not found in database" });
+    }
+
+    const userData = userDocSnap.data();
+    let stripeCustomerId = userData?.stripeCustomerId || userData?.premium?.customerId;
+
+    const stripe = getStripeClient();
+
+    // Check if Stripe key is missing or is placeholder: Run beautiful simulator link
+    if (!stripe) {
+      console.log(`[Stripe Portal Simulator] Ativando portal simulado para uid ${uid}`);
+      const simulatedUrl = `${origin}?stripe_portal_simulated=true&uid=${uid}`;
+      return res.json({
+        url: simulatedUrl,
+        simulated: true,
+        message: "Portal simulator active"
+      });
+    }
+
+    // Try finding or creating customer on Stripe if missing but email is present
+    if (!stripeCustomerId && userData?.email) {
+      try {
+        const customers = await stripe.customers.list({ email: userData.email.toLowerCase().trim(), limit: 1 });
+        if (customers.data.length > 0) {
+          stripeCustomerId = customers.data[0].id;
+          await setDoc(userDocRef, { stripeCustomerId }, { merge: true });
+        } else {
+          const customer = await stripe.customers.create({
+            email: userData.email.toLowerCase().trim(),
+            metadata: {
+              app: "Orbita",
+              uid: uid
+            }
+          });
+          stripeCustomerId = customer.id;
+          await setDoc(userDocRef, { stripeCustomerId }, { merge: true });
+        }
+      } catch (cusErr) {
+        console.warn("[Stripe Portal] Failed to lookup/create customer:", cusErr);
+      }
+    }
+
+    if (!stripeCustomerId) {
+      return res.status(400).json({ error: "Stripe Customer ID is missing. Please subscribe first." });
+    }
+
+    // Create Stripe Customer Portal Session
+    const session = await stripe.billingPortal.sessions.create({
+      customer: stripeCustomerId,
+      return_url: `${origin}`,
+    });
+
+    return res.json({
+      url: session.url,
+      simulated: false
+    });
+
+  } catch (err: any) {
+    console.error("[Stripe Portal Session Error]:", err);
+    return res.status(500).json({ error: err.message || "Failed to create customer portal session" });
+  }
+});
+
 // Serve frontend assets in development vs production
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
@@ -6847,4 +8083,6 @@ async function startServer() {
   });
 }
 
-startServer();
+if (!process.env.VERCEL) {
+  startServer();
+}

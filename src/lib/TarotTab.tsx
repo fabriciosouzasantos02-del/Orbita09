@@ -29,7 +29,7 @@ export default function TarotTab({ lang }: TarotTabProps) {
 
     setTimeout(() => {
       const result = performTarotReading(question);
-      setReading(result);
+      setReading(result as any);
       setIsShuffling(false);
     }, 1000);
   };

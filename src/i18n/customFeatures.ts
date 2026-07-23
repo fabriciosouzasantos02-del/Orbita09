@@ -86,7 +86,7 @@ export const customFeaturesTranslations: Record<Language, Record<string, string>
     "Prescrições astrológicas e numéricas sob medida para agir no plano material e elevar sua sintonia.": "Prescrições astrológicas e numéricas sob medida para agir no plano material e elevar sua sintonia.",
     "Daily Zen Quests": "Daily Zen Quests",
     "Missões Diárias de Sintonia": "Missões Diárias de Sintonia",
-    "Pratique o auto-alinhamento e some pontos de evolução cósmica. Complete todas as tarefas diárias para receber sua Estrela.": "Pratique o auto-alinhamento e some pontos de evolução cósmica. Complete todas as tarefas diárias para receber sua Estrela.",
+    "Pratique o auto-alinhamento e some pontos débito de evolução cósmica. Complete todas as tarefas diárias para receber Dharma ao longo de sua vida": "Pratique o auto-alinhamento e some pontos débito de evolução cósmica. Complete todas as tarefas diárias para receber Dharma ao longo de sua vida",
     "Sua Conclusão Hoje": "Sua Conclusão Hoje",
     "Tarefas Feitas": "Tarefas Feitas",
     "Completar o Passo 1 do Ritual Diário": "Completar o Passo 1 do Ritual Diário",
@@ -100,7 +100,17 @@ export const customFeaturesTranslations: Record<Language, Record<string, string>
     "Lua Nova": "Lua Nova",
     "Lua Crescente": "Lua Crescente",
     "Lua Cheia": "Lua Cheia",
-    "Lua Minguante": "Lua Minguante"
+    "Lua Minguante": "Lua Minguante",
+    "Instalar Aplicativo": "Instalar Aplicativo",
+    "Instale o Portal Órbita em seu dispositivo para acesso rápido e visual de app nativo!": "Instale o Portal Órbita em seu dispositivo para acesso rápido e visual de app nativo!",
+    "Aplicativo Instalado": "Aplicativo Instalado",
+    "Portal Órbita foi instalado com sucesso em seu dispositivo!": "Portal Órbita foi instalado com sucesso em seu dispositivo!",
+    "Instalação do App": "Instalação do App",
+    "Abra o menu do seu navegador (três pontos no Android ou botão Compartilhar no iOS Safari) e selecione 'Adicionar à Tela de Início' para instalar o Portal Órbita!": "Abra o menu do seu navegador (três pontos no Android ou botão Compartilhar no iOS Safari) e selecione 'Adicionar à Tela de Início' para instalar o Portal Órbita!",
+    "Instalar PWA": "Instalar PWA",
+    "Instalar App": "Instalar App",
+    "Visual Nativo & Atalho Direto": "Visual Nativo & Atalho Direto",
+    "Selecione o Idioma": "Selecione o Idioma"
   },
   en: {
     // Elements and Titles
@@ -187,7 +197,7 @@ export const customFeaturesTranslations: Record<Language, Record<string, string>
     "Prescrições astrológicas e numéricas sob medida para agir no plano material e elevar sua sintonia.": "Tailor-made astrological and numerical prescriptions to act on the material plane and elevate your alignment.",
     "Daily Zen Quests": "Daily Zen Quests",
     "Missões Diárias de Sintonia": "Daily Alignment Quests",
-    "Pratique o auto-alinhamento e some pontos de evolução cósmica. Complete todas as tarefas diárias para receber sua Estrela.": "Practice self-alignment and earn cosmic evolution points. Complete all daily tasks to receive your Star.",
+    "Pratique o auto-alinhamento e some pontos débito de evolução cósmica. Complete todas as tarefas diárias para receber Dharma ao longo de sua vida": "Practice self-alignment and earn cosmic evolution debit points. Complete all daily tasks to receive Dharma throughout your life",
     "Sua Conclusão Hoje": "Your Completion Today",
     "Tarefas Feitas": "Tasks Done",
     "Completar o Passo 1 do Ritual Diário": "Complete Step 1 of Daily Ritual",
@@ -201,7 +211,17 @@ export const customFeaturesTranslations: Record<Language, Record<string, string>
     "Lua Nova": "New Moon",
     "Lua Crescente": "Waxing Moon",
     "Lua Cheia": "Full Moon",
-    "Lua Minguante": "Waning Moon"
+    "Lua Minguante": "Waning Moon",
+    "Instalar Aplicativo": "Install Application",
+    "Instale o Portal Órbita em seu dispositivo para acesso rápido e visual de app nativo!": "Install Portal Órbita on your device for quick access and a native app look!",
+    "Aplicativo Instalado": "Application Installed",
+    "Portal Órbita foi instalado com sucesso em seu dispositivo!": "Portal Órbita has been successfully installed on your device!",
+    "Instalação do App": "App Installation",
+    "Abra o menu do seu navegador (três pontos no Android ou botão Compartilhar no iOS Safari) e selecione 'Adicionar à Tela de Início' para instalar o Portal Órbita!": "Open your browser menu (three dots on Android or Share button on iOS Safari) and select 'Add to Home Screen' to install Portal Órbita!",
+    "Instalar PWA": "Install PWA",
+    "Instalar App": "Install App",
+    "Visual Nativo & Atalho Direto": "Native Look & Direct Shortcut",
+    "Selecione o Idioma": "Select Language"
   },
   es: {
     // Elements and Titles
@@ -288,7 +308,7 @@ export const customFeaturesTranslations: Record<Language, Record<string, string>
     "Prescrições astrológicas e numéricas sob medida para agir no plano material e elevar sua sintonia.": "Prescripciones astrológicas y numéricas a medida para actuar en el plano material.",
     "Daily Zen Quests": "Daily Zen Quests",
     "Missões Diárias de Sintonia": "Misiones Diarias de Sintonía",
-    "Pratique o auto-alinhamento e some pontos de evolução cósmica. Complete todas as tarefas diárias para receber sua Estrela.": "Practica la autoalineación y suma puntos de evolución cósmica. Completa las tareas diarias para tu Estrella.",
+    "Pratique o auto-alinhamento e some pontos débito de evolução cósmica. Complete todas as tarefas diárias para receber Dharma ao longo de sua vida": "Practica la autoalineación y suma puntos de débito de evolución cósmica. Completa todas las tareas diarias para recibir Dharma a lo largo de tu vida",
     "Sua Conclusão Hoje": "Tu Finalización Hoy",
     "Tarefas Feitas": "Tareas Hechas",
     "Completar o Passo 1 do Ritual Diário": "Completar el Paso 1 del Ritual Diario",
@@ -302,7 +322,17 @@ export const customFeaturesTranslations: Record<Language, Record<string, string>
     "Lua Nova": "Luna Nueva",
     "Lua Crescente": "Luna Creciente",
     "Lua Cheia": "Luna Llena",
-    "Lua Minguante": "Luna Menguante"
+    "Lua Minguante": "Luna Menguante",
+    "Instalar Aplicativo": "Instalar Aplicación",
+    "Instale o Portal Órbita em seu dispositivo para acesso rápido e visual de app nativo!": "¡Instale Portal Órbita en su dispositivo para un acceso rápido y apariencia de aplicación nativa!",
+    "Aplicativo Instalado": "Aplicación Instalada",
+    "Portal Órbita foi instalado com sucesso em seu dispositivo!": "¡Portal Órbita se ha instalado correctamente en su dispositivo!",
+    "Instalação do App": "Instalación de la App",
+    "Abra o menu do seu navegador (três pontos no Android ou botão Compartilhar no iOS Safari) e selecione 'Adicionar à Tela de Início' para instalar o Portal Órbita!": "¡Abra el menú de su navegador (tres puntos en Android o el botón Compartir en iOS Safari) y seleccione 'Agregar a la pantalla de inicio' para instalar Portal Órbita!",
+    "Instalar PWA": "Instalar PWA",
+    "Instalar App": "Instalar App",
+    "Visual Nativo & Atalho Direto": "Aspecto Nativo y Acceso Directo",
+    "Selecione o Idioma": "Seleccione el Idioma"
   },
   de: {
     // Elements and Titles
@@ -389,7 +419,7 @@ export const customFeaturesTranslations: Record<Language, Record<string, string>
     "Prescrições astrológicas e numéricas sob medida para agir no plano material e elevar sua sintonia.": "Maßgeschneiderte astrologische und numerische Vorgaben für die materielle Ebene.",
     "Daily Zen Quests": "Daily Zen Quests",
     "Missões Diárias de Sintonia": "Tägliche Einstimmungsquests",
-    "Pratique o auto-alinhamento e some pontos de evolução cósmica. Complete todas as tarefas diárias para receber sua Estrela.": "Üben Sie die Selbstausrichtung und sammeln Sie kosmische Punkte. Erfülle alle täglichen Aufgaben für deinen Stern.",
+    "Pratique o auto-alinhamento e some pontos débito de evolução cósmica. Complete todas as tarefas diárias para receber Dharma ao longo de sua vida": "Üben Sie die Selbstausrichtung und sammeln Sie kosmische Evolutions-Soll-Punkte. Erfülle alle täglichen Aufgaben, um im Laufe deines Lebens Dharma zu erhalten",
     "Sua Conclusão Hoje": "Ihr Abschluss heute",
     "Tarefas Feitas": "Erledigte Aufgaben",
     "Completar o Passo 1 do Ritual Diário": "Schritt 1 des täglichen Rituals abschließen",
@@ -403,7 +433,17 @@ export const customFeaturesTranslations: Record<Language, Record<string, string>
     "Lua Nova": "Neumond",
     "Lua Crescente": "Zunehmender Mond",
     "Lua Cheia": "Vollmond",
-    "Lua Minguante": "Abnehmender Mond"
+    "Lua Minguante": "Abnehmender Mond",
+    "Instalar Aplicativo": "Anwendung installieren",
+    "Instale o Portal Órbita em seu dispositivo para acesso rápido e visual de app nativo!": "Installieren Sie Portal Órbita auf Ihrem Gerät für schnellen Zugriff und das Aussehen einer nativen App!",
+    "Aplicativo Instalado": "Anwendung installiert",
+    "Portal Órbita foi instalado com sucesso em seu dispositivo!": "Portal Órbita wurde erfolgreich auf Ihrem Gerät installiert!",
+    "Instalação do App": "App-Installation",
+    "Abra o menu do seu navegador (três pontos no Android ou botão Compartilhar no iOS Safari) e selecione 'Adicionar à Tela de Início' para instalar o Portal Órbita!": "Öffnen Sie Ihr Browsermenü (drei Punkte unter Android oder die Schaltfläche 'Teilen' unter iOS Safari) und wählen Sie 'Zum Startbildschirm hinzufügen', um Portal Órbita zu installieren!",
+    "Instalar PWA": "PWA installieren",
+    "Instalar App": "App installieren",
+    "Visual Nativo & Atalho Direto": "Natives Aussehen & direkte Verknüpfung",
+    "Selecione o Idioma": "Sprache auswählen"
   },
   fr: {
     // Elements and Titles
@@ -490,7 +530,7 @@ export const customFeaturesTranslations: Record<Language, Record<string, string>
     "Prescrições astrológicas e numéricas sob medida para agir no plano material e elevar sua sintonia.": "Prescriptions astrologiques et numériques sur mesure pour le plan matériel.",
     "Daily Zen Quests": "Daily Zen Quests",
     "Missões Diárias de Sintonia": "Quêtes d'alignement quotidiennes",
-    "Pratique o auto-alinhamento e some pontos de evolução cósmica. Complete todas as tarefas diárias para receber sua Estrela.": "Pratiquez l'auto-alignement et gagnez des points d'évolution. Terminez les tâches quotidiennes pour votre Étoile.",
+    "Pratique o auto-alinhamento e some pontos débito de evolução cósmica. Complete todas as tarefas diárias para receber Dharma ao longo de sua vida": "Pratiquez l'auto-alignement et gagnez des points de débit d'évolution cosmique. Terminez toutes les tâches quotidiennes pour recevoir le Dharma tout au long de votre vie",
     "Sua Conclusão Hoje": "Votre réussite aujourd'hui",
     "Tarefas Feitas": "Tâches faites",
     "Completar o Passo 1 do Ritual Diário": "Compléter l'étape 1 du rituel quotidien",
@@ -504,6 +544,16 @@ export const customFeaturesTranslations: Record<Language, Record<string, string>
     "Lua Nova": "Nouvelle Lune",
     "Lua Crescente": "Lune Croissante",
     "Lua Cheia": "Pleine Lune",
-    "Lua Minguante": "Lune Décroissante"
+    "Lua Minguante": "Lune Décroissante",
+    "Instalar Aplicativo": "Installer l'application",
+    "Instale o Portal Órbita em seu dispositivo para acesso rápido e visual de app nativo!": "Installez Portal Órbita sur votre appareil pour un accès rapide et l'apparence d'une application native!",
+    "Aplicativo Instalado": "Application Installée",
+    "Portal Órbita foi instalado com sucesso em seu dispositivo!": "Portal Órbita a été installé avec succès sur votre appareil !",
+    "Instalação do App": "Installation de l'App",
+    "Abra o menu do seu navegador (três pontos no Android ou botão Compartilhar no iOS Safari) e selecione 'Adicionar à Tela de Início' para instalar o Portal Órbita!": "Ouvrez le menu de votre navigateur (trois points sur Android ou le bouton Partager sur iOS Safari) et sélectionnez 'Ajouter à l'écran d'accueil' pour installer Portal Órbita !",
+    "Instalar PWA": "Installer la PWA",
+    "Instalar App": "Installer l'App",
+    "Visual Nativo & Atalho Direto": "Look Natif & Raccourci Direct",
+    "Selecione o Idioma": "Choisir la langue"
   }
 };

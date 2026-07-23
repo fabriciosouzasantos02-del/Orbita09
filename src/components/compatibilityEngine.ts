@@ -51,6 +51,7 @@ export interface CategoryDetails {
 }
 
 export interface DetailedCompatibilityResult {
+  lang?: string;
   partnerName: string;
   partnerBirthDate: string;
   partnerBirthTime?: string;
@@ -188,12 +189,31 @@ export function computeDetailedCompatibility(
   birthTime2: string,
   birthCity2: string,
   birthCountry2: string,
-  category: string
+  category: string,
+  lat1?: number,
+  lng1?: number,
+  lat2?: number,
+  lng2?: number,
+  tzOffset1?: number,
+  tzOffset2?: number,
+  langParam?: string
 ): DetailedCompatibilityResult {
   
-  // Realizar cálculos astrológicos reais usando astroMath para ambos os mapas natalicios
-  const chart1 = performAstroCalculation(birthDate1 || "1994-01-01", birthTime1 || "12:00", -23.5505, -46.6333);
-  const chart2 = performAstroCalculation(birthDate2 || "1995-01-01", birthTime2 || "12:00", -22.9068, -43.1729);
+  // Realizar cálculos astrológicos reais usando astroMath para ambos os mapas natalicios com coordenadas dinâmicas e offsets históricos exatos
+  const chart1 = performAstroCalculation(
+    birthDate1 || "1994-01-01", 
+    birthTime1 || "12:00", 
+    lat1 !== undefined ? lat1 : -23.5505, 
+    lng1 !== undefined ? lng1 : -46.6333,
+    tzOffset1
+  );
+  const chart2 = performAstroCalculation(
+    birthDate2 || "1995-01-01", 
+    birthTime2 || "12:00", 
+    lat2 !== undefined ? lat2 : -22.9068, 
+    lng2 !== undefined ? lng2 : -43.1729,
+    tzOffset2
+  );
 
   const findAstroSign = (chart: any, portName: string, englishName: string, index: number, fallback: string): string => {
     return chart.astros.find((a: any) => a.name === portName || a.name === englishName)?.sign 
@@ -247,7 +267,7 @@ export function computeDetailedCompatibility(
 
   // Trânsitos atuais em tempo real (data de simulação e dados reais)
   const dateObj = new Date();
-  const activeL = (i18next.language || 'pt').toLowerCase().split('-')[0];
+  const activeL = (langParam || i18next.language || 'pt').toLowerCase().split('-')[0];
   const lang = (['pt', 'en', 'es', 'de', 'fr'].includes(activeL) ? activeL : 'pt') as 'pt' | 'en' | 'es' | 'de' | 'fr';
 
   const TRANSLATED_SIGNS: Record<string, Record<string, string>> = {
@@ -800,12 +820,12 @@ export function computeDetailedCompatibility(
   };
 
   const categories: Record<string, CategoryDetails> = {
-    love: generateBespokeCategory('love', name1, name2, planetSigns),
-    friend: generateBespokeCategory('friend', name1, name2, planetSigns),
-    business: generateBespokeCategory('business', name1, name2, planetSigns),
-    family: generateBespokeCategory('family', name1, name2, planetSigns),
-    marriage: generateBespokeCategory('marriage', name1, name2, planetSigns),
-    partnership: generateBespokeCategory('partnership', name1, name2, planetSigns)
+    love: generateBespokeCategory('love', name1, name2, planetSigns, lang),
+    friend: generateBespokeCategory('friend', name1, name2, planetSigns, lang),
+    business: generateBespokeCategory('business', name1, name2, planetSigns, lang),
+    family: generateBespokeCategory('family', name1, name2, planetSigns, lang),
+    marriage: generateBespokeCategory('marriage', name1, name2, planetSigns, lang),
+    partnership: generateBespokeCategory('partnership', name1, name2, planetSigns, lang)
   };
 
   const fallbackTexts = {
@@ -814,6 +834,7 @@ export function computeDetailedCompatibility(
   };
 
   return {
+    lang,
     partnerName: name2,
     partnerBirthDate: birthDate2 || fallbackTexts.naoFornecida,
     partnerBirthTime: birthTime2 || fallbackTexts.naoFornecida,

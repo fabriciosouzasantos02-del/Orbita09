@@ -1045,3 +1045,889 @@ export function generateDynamicAmuletText(
   }
 }
 
+export interface DailyAstroRecommendations {
+  casa: {
+    aroma: string;
+    incenso: string;
+    planta: string;
+    ambiente_casa: string;
+    quarto_cor: string;
+    escritorio_cor: string;
+    aroma_desc: string;
+    incenso_desc: string;
+    planta_desc: string;
+  };
+  desenvolvimento: {
+    habilidade: string;
+    habilidade_desc: string;
+    bloqueio: string;
+    bloqueio_desc: string;
+    virtude: string;
+    licao: string;
+    exercicio: string;
+  };
+  mensagem: {
+    conselho_principal: string;
+    alerta_principal: string;
+    oportunidade_principal: string;
+    palavra_protecao: string;
+    palavra_protecao_desc: string;
+  };
+  painel: {
+    palavra_chave: string;
+    palavra_chave_desc: string;
+    simbolo: string;
+    simbolo_desc: string;
+    amuleto: string;
+    amuleto_desc: string;
+    numero_sorte: string;
+    numero_sorte_desc: string;
+    cor_favoravel: string;
+    cor_favoravel_desc: string;
+    ambiente_favoravel: string;
+    ambiente_favoravel_desc: string;
+    atividade_favoravel: string;
+    atividade_favoravel_desc: string;
+    desafio: string;
+    desafio_desc: string;
+    oportunidade: string;
+    oportunidade_desc: string;
+    energia_dominante: string;
+    energia_dominante_desc: string;
+    evitar: string;
+    evitar_desc: string;
+    area_foco: string;
+    area_foco_desc: string;
+    frase_poder: string;
+  };
+}
+
+export function generateDailyAstroRecommendations(
+  userSunSign: string,
+  lifePathNumber: number,
+  targetDate: Date,
+  overrideLang?: string
+): DailyAstroRecommendations {
+  const lang = getActiveLanguage(overrideLang);
+  const canonicalSign = canonicalSignName(userSunSign);
+  const signInfo = getZodiacSignInfoByString(canonicalSign);
+  const element = signInfo.element; // Fogo, Terra, Ar, Água
+
+  const day = targetDate.getDate();
+  const monthIdx = targetDate.getMonth() + 1;
+  const seed = day + monthIdx * 7 + lifePathNumber * 3;
+
+  // Dictionary variations
+  const recommendationsData: Record<string, {
+    aromas: { name: string; desc: string }[];
+    incenses: { name: string; desc: string }[];
+    plants: { name: string; desc: string }[];
+    rooms: string[];
+    bedroomColors: string[];
+    officeColors: string[];
+    skills: { name: string; desc: string }[];
+    blocks: { name: string; desc: string }[];
+    virtues: string[];
+    lessons: string[];
+    exercises: string[];
+    advices: string[];
+    alerts: string[];
+    opportunities: string[];
+    protectWords: { word: string; desc: string }[];
+    keywords: { word: string; desc: string }[];
+    symbols: { name: string; desc: string }[];
+    amulets: { name: string; desc: string }[];
+    environments: { name: string; desc: string }[];
+    activities: { name: string; desc: string }[];
+    challenges: { name: string; desc: string }[];
+    opps: { name: string; desc: string }[];
+    energies: { name: string; desc: string }[];
+    evitars: { name: string; desc: string }[];
+    foci: { name: string; desc: string }[];
+    phrases: string[];
+  }> = {
+    pt: {
+      aromas: [
+        { name: "Alecrim Concentrado", desc: "Purifica canais intelectuais e estimula decisões rápidas e lógicas na rotina." },
+        { name: "Capim-Limão Refrescante", desc: "Dissolve agitações e sintoniza a mente superior com vibrações de paz." },
+        { name: "Lavanda Francesa Sutil", desc: "Acalma o chakra cardíaco e regenera vias de sono profundo no quarto." },
+        { name: "Sândalo Amadeirado", desc: "Aterra ideais, ligando metas espirituais com a estrutura material prática." }
+      ],
+      incenses: [
+        { name: "Sândalo ou Alecrim", desc: "Excelente para banir exaustão de telas digitais e cansaço mental acumulado." },
+        { name: "Mirra ou Breu Branco", desc: "Sela as coordenadas do ambiente de intrusões ou energias densas externas." },
+        { name: "Palo Santo Natural", desc: "Atrai o fluxo de prosperidade e limpa poeiras psíquicas das terças-feiras." },
+        { name: "Cânfora ou Hortelã", desc: "Renova o ar celular e ativa a clareza e o foco durante reuniões críticas." }
+      ],
+      plants: [
+        { name: "Lírio da Paz Sagrado", desc: "Purifica os canais áuricos do ar doméstico e traz serenidade emocional." },
+        { name: "Espada de São Jorge", desc: "Cria um escudo impenetrável contra dispersões e invejas na mesa de trabalho." },
+        { name: "Zamioculca da Fortuna", desc: "Ancora o magnetismo de dinheiro e prosperidade no elemento Terra." },
+        { name: "Manjericão de Proteção", desc: "Irradia vitalidade e cura canais de cansaço molecular na cozinha ou sala." }
+      ],
+      rooms: ["Canto Leste (Nascer do Sol)", "Canto Norte da sala de estar", "Proximidade de janelas arejadas", "Centro geométrico da casa"],
+      bedroomColors: ["Azul Lavanda", "Lilás Sutil", "Verde Menta Claro", "Cinza Cósmico Suave"],
+      officeColors: ["Azul Índigo Real", "Verde Esmeralda", "Cinza Grafite Puro", "Âmbar Claro"],
+      skills: [
+        { name: "Inteligência Compassiva & Aterramento", desc: "Aprender a canalizar ideais abstratos para ações práticas imediatas de manifestação." },
+        { name: "Foco Singular Descomplicado", desc: "A capacidade de se isolar de distrações virtuais e terminar uma única tarefa robusta." },
+        { name: "Escuta Ativa Afetiva", desc: "Ouvir o outro com o coração livre de respostas mecânicas ou silogismos lógicos." },
+        { name: "Discernimento Kármico Prático", desc: "Reconhecer padrões cíclicos de exaustão e cortar despesas ou hábitos redundantes." }
+      ],
+      blocks: [
+        { name: "Medo do julgamento alheio", desc: "Gera distanciamentos ou orgulhos frios que impedem a verdadeira intimidade." },
+        { name: "Compulsão de planejar sem agir", desc: "Acumular dezenas de rascunhos sem dar o primeiro passo prático por receio do erro." },
+        { name: "Racionalização de afetos", desc: "Tentar debater sentimentos puros com lógica fria e regras rígidas." },
+        { name: "Desperdiço de energia celular", desc: "Gastar horas defendendo ideais ou debatendo nas redes sociais por impulsividade." }
+      ],
+      virtues: ["Presença", "Estrutura", "Paciência", "Humildade", "Vulnerabilidade", "Coragem", "Silêncio"],
+      lessons: [
+        "A abundância real e as conexões sinceras não florescem por inteligência matemática, mas sim quando aceitamos abraçar nossa vulnerabilidade.",
+        "A verdadeira sabedoria reside em calar os planos e deixar que as obras sintonizadas falem sozinhas na matéria.",
+        "Nenhum trânsito astral de sorte compensa a falta de disciplina diária. O Caminho de Vida exige consistência firme.",
+        "Perdoar desentendimentos antigos do passado é o único atalho real para desbloquear o fluxo das finanças hoje."
+      ],
+      exercises: [
+        "Reserve 10 minutos longe de qualquer tela, respire profundamente pelo nariz e visualize uma luz dourada limpando seu cérebro.",
+        "Escreva três metas simples em um papel com tinta preta e execute a primeira delas sem adiar por análises excessivas.",
+        "Faça uma caminhada de 15 minutos descalço na grama ou sinta o sol da manhã no rosto para alinhar seu biorritmo vital.",
+        "Envie uma mensagem curta e sincera de gratidão a alguém de sua história que raramente recebe seu contato."
+      ],
+      advices: [
+        "Dê vazão rápida aos seus insights práticos hoje. Acumular planos sem agir satura seu campo sutil.",
+        "Mantenha o silêncio estratégico sobre seus planos de negócios nesta lunação. Evite conselhos de terceiros céticos.",
+        "Sua matriz astral hoje favorece o foco na saúde e purificação molecular. Reduza a ingestão de alimentos densos.",
+        "O dia pede a harmonização de antigas pendências afetivas. Um gesto simples de carinho desarmará antigos muros."
+      ],
+      alerts: [
+        "Cuidado com dispersões financeiras de compensação afetiva. Trânsito lunar propício a gastos de impulso hoje.",
+        "Evite debates calorosos em redes sociais ou canais de chat. Não desgaste sua preciosa energia vital com opiniões alheias.",
+        "Atenção a dores musculares por má postura física diante do computador. Faça pausas frequentes a cada 50 minutos.",
+        "Evite assinar contratos de longo prazo de forma apressada. Leia todas as entrelinhas e consulte mentores experientes."
+      ],
+      opportunities: [
+        "Conversas com velhas amizades sintonizadas abrem canais inesperados para novos negócios ou projetos cooperativos.",
+        "Um insight original surgirá durante momentos de silêncio e repouso. Anote imediatamente em seu caderno físico.",
+        "O trânsito atual abre portais para renegociar pendências ou assinaturas e estancar vazamentos de capital.",
+        "Novos aprendizados em estudos sutis ou de inteligência trarão clareza incomum para decisões de carreira."
+      ],
+      protectWords: [
+        { word: "ÂNCORE-SE", desc: "Repita mentalmente ao acordar para banir distrações e dispersões cognitivas." },
+        { word: "FLUA EM PAZ", desc: "Lembre-se de respirar fundo quando encontrar atritos ou atrasos mecânicos na rotina." },
+        { word: "ESTRUTURA FIRME", desc: "Mentalize para ancorar seus propósitos na matéria com determinação e persistência." },
+        { word: "CLAREZA INTERIOR", desc: "Use para banir névoas mentais ou dúvidas sutis geradas por opiniões alheias." }
+      ],
+      keywords: [
+        { word: "EXPANSÃO SUTIL", desc: "Cresça de forma diplomática respeitando os canais de silêncio do seu próprio ser." },
+        { word: "ESTRUTURAÇÃO", desc: "Organize as fundações físicas antes de lançar novos projetos rumo aos céus." },
+        { word: "ALINHAMENTO", desc: "Sintonize suas ações de rotina com o trânsito planetário dominante de hoje." },
+        { word: "MANIFESTAÇÃO", desc: "Traga os insights metafísicos para a matéria através de pequenas tarefas consistentes." }
+      ],
+      symbols: [
+        { name: "Heptagrama Sagrado (⭐️)", desc: "Representa os sete caminhos de proteção que selam seu campo energético áurico." },
+        { name: "Ankh (Chave da Vida)", desc: "Simboliza a união das forças celestes e terrestres regulando sua vitalidade física." },
+        { name: "Olho de Hórus (𓂀)", desc: "Traz percepção aguçada e proteção contra desvios ou névoas intelectuais." },
+        { name: "Espiral Áurea Cósmica", desc: "Sinaliza crescimento contínuo, harmônico e focado na evolução milenar." }
+      ],
+      amulets: [
+        { name: "Escarabeu de Lápis-Lazúli", desc: "Atua na proteção física, facilitando transações e banindo a exaustão acumulada." },
+        { name: "Pirita Cubo de Ouro", desc: "Irradia a frequência solar de riqueza, merecimento e foco realizador material." },
+        { name: "Quartzo Rosa Bruto", desc: "Filtra sentimentos de tensão cardíaca e abre canais de diálogo compreensivo em casa." },
+        { name: "Sodalita de Foco", desc: "Estrutura as vias cerebrais para a absorção técnica de ensinamentos complexos." }
+      ],
+      environments: [
+        { name: "Bibliotecas ou Jardins de Lago", desc: "Fomentam a absorção silenciosa de conhecimento e a desaceleração cardíaca." },
+        { name: "Espaços com Luz Solar Direta", desc: "Recarregam o plexo solar e aumentam o ânimo molecular para novos começos." },
+        { name: "Cantos Silenciosos de Templos", desc: "Facilitam a conexão telepática com esferas sutis superiores e mentores cósmicos." },
+        { name: "Ambientes Organizados e Limpos", desc: "Reduzem drasticamente a ansiedade visual de Aquário, liberando fluxo pragmático." }
+      ],
+      activities: [
+        { name: "Meditação com Registro Escrito", desc: "Escrever logo cedo no diário ajuda o cérebro a não saturar de planos e ideias." },
+        { name: "Alongamentos de Coluna e Respiração", desc: "Desbloqueia os meridianos de energia física e flui oxigênio celular para o cérebro." },
+        { name: "Estudos de Astrologia Metafísica", desc: "Conecta seus interesses intelectuais com a bússola universal das estrelas." },
+        { name: "Organização Física de Arquivos", desc: "Materializa a ordem mental organizando sua mesa, gavetas e pastas digitais." }
+      ],
+      challenges: [
+        { name: "Dispersão e Excesso de Projetos Inacabados", desc: "Cuidado para não rascunhar 15 rascunhos de negócios e não consolidar nenhum." },
+        { name: "Isolamento Emocional por Orgulho Sutil", desc: "Vencer a tentação de se afastar silenciosamente quando atritos afetivos surgirem." },
+        { name: "Falta de Consistência Prática Diária", desc: "Evitar depender apenas de picos de inspiração; o Caminho exige disciplina constante." },
+        { name: "Saturação Cognitiva por Telas Virtuais", desc: "A ansiedade de absorver notícias e informações sem tempo para descanso celular." }
+      ],
+      opps: [
+        { name: "Negócios Inteligentes & Mentoria", desc: "Sua matriz original brilha ao gerar novos métodos de ensino ou infoprodutos digitais." },
+        { name: "Parcerias Simétricas com Velhos Amigos", desc: "Sintonizar propósitos com pessoas que partilham de sua ética e visão humanitária." },
+        { name: "Automação de Rotinas de Trabalho", desc: "Implementar sistemas e ferramentas para reduzir o tempo gasto em burocracias mecânicas." },
+        { name: "Consolidação de Investimentos Seguros", desc: "Oportunidade ideal para reorganizar aportes e focar em carteiras com rendimento consistente." }
+      ],
+      energies: [
+        { name: "Ar Ativo / Ideais Coletivos", desc: "Força mental e originalidade vibrando na casa das grandes descobertas e alinhamentos." },
+        { name: "Fogo de Impulso Pragmático", desc: "Vontade firme e entusiasmo solar para colocar de pé ideias antes estagnadas no rascunho." },
+        { name: "Terra de Estruturação Sólida", desc: "Capacidade de dar raízes firmes e durabilidade a seus acordos, parcerias e finanças." },
+        { name: "Água de Intuição Magnética", desc: "Ressonância fluida que facilita a leitura de intenções alheias e a atração de caminhos." }
+      ],
+      evitars: [
+        { name: "Assinar contratos ou compras por puro impulso", desc: "Aguarde transitar a lunação antes de fazer investimentos robustos." },
+        { name: "Debates calorosos nas redes virtuais", desc: "Não troque sua paz áurica e valioso foco diário por conflitos estéreis de opiniões." },
+        { name: "Sumiços repentinos e distanciamento frio", desc: "Dialogar com clareza evita que pequenas dúvidas se transformem em barreiras afetivas." },
+        { name: "Ignorar o biorritmo e acumular exaustão", desc: "Pequenas pausas de 3 minutos trarão o alinhamento celular que você necessita hoje." }
+      ],
+      foci: [
+        { name: "Estudos e Consolidamento Financeiro", desc: "Direcione sua ressonância celular para organizar sua carteira e expandir seus conhecimentos." },
+        { name: "Saúde Vital e Fortalecimento Corporal", desc: "Focar em melhorar a imunidade através de alimentação pura, repouso e exercícios regulares." },
+        { name: "Harmonização do Lar e Conforto Íntimo", desc: "Purificar a energia dos ambientes da casa para gerar um refúgio seguro de paz e recarga." },
+        { name: "Comunicação Clara e Parcerias Comerciais", desc: "Fazer pontes, contatos profissionais sinceros e apresentar propostas comerciais sintonizadas." }
+      ],
+      phrases: [
+        "Eu canalizo a originalidade libertadora do Ar e a estrutura firme de Saturno para manifestar a abundância de forma sutil.",
+        "Minha intuição é bússola soberana; eu dou passos firmes na matéria para materializar a paz e a abundância hoje.",
+        "Eu desfaço os muros da mente, acolho minha vulnerabilidade com coragem e sintonizo o fluxo da verdadeira prosperidade.",
+        "Com disciplina diária e fé nos planos universais, dou forma aos meus ideais e sinto a proteção ativa em meu caminhar."
+      ]
+    },
+    en: {
+      aromas: [
+        { name: "Concentrated Rosemary", desc: "Purifies intellectual pathways and stimulates quick, logical decisions in your routine." },
+        { name: "Refreshing Lemongrass", desc: "Dissolves restlessness and tunes the higher mind with peaceful vibrations." },
+        { name: "Subtle French Lavender", desc: "Calms the heart chakra and regenerates deep sleep pathways in the bedroom." },
+        { name: "Woody Sandalwood", desc: "Grounds ideas, linking spiritual goals with practical material structure." }
+      ],
+      incenses: [
+        { name: "Sandalwood or Rosemary", desc: "Excellent for banishing digital screen strain and accumulated mental fatigue." },
+        { name: "Myrrh or White Frankincense", desc: "Seals the environment coordinate from external intrusions or dense energies." },
+        { name: "Natural Palo Santo", desc: "Attracts the flow of prosperity and cleanses psychic dust from business Tuesdays." },
+        { name: "Camphor or Mint", desc: "Renews cellular air and activates clarity and focus during critical meetings." }
+      ],
+      plants: [
+        { name: "Sacred Peace Lily", desc: "Purifies the auric channels of domestic air and brings emotional serenity." },
+        { name: "Sword of Saint George", desc: "Creates an impenetrable shield against distractions and envies on your work desk." },
+        { name: "Fortuna Zamioculca", desc: "Anchors the magnetism of money and prosperity in the Earth element." },
+        { name: "Protective Basil", desc: "Radiates vitality and heals molecular fatigue channels in the kitchen or living room." }
+      ],
+      rooms: ["East Corner (Sunrise)", "North Corner of the living room", "Proximity of well-ventilated windows", "Geometric center of the house"],
+      bedroomColors: ["Lavender Blue", "Subtle Lilac", "Light Mint Green", "Soft Cosmic Gray"],
+      officeColors: ["Royal Indigo Blue", "Emerald Green", "Pure Graphite Gray", "Light Amber"],
+      skills: [
+        { name: "Compassionate Intelligence & Grounding", desc: "Learning to channel abstract ideas into immediate practical steps of manifestation." },
+        { name: "Uncomplicated Singular Focus", desc: "The ability to isolate yourself from virtual distractions and finish a single robust task." },
+        { name: "Active Affective Listening", desc: "Listening to others with a heart free of mechanical answers or logical syllogisms." },
+        { name: "Practical Karmic Discernment", desc: "Recognizing cyclic patterns of fatigue and cutting redundant expenses or habits." }
+      ],
+      blocks: [
+        { name: "Fear of others' judgment", desc: "Generates cold pride or distance that prevents true intimacy." },
+        { name: "Compulsion to plan without acting", desc: "Accumulating dozens of drafts without taking the first practical step out of fear of error." },
+        { name: "Rationalization of affects", desc: "Trying to debate pure feelings with cold logic and rigid rules." },
+        { name: "Waste of cellular energy", desc: "Spending hours defending ideals or debating on virtual social networks out of impulsivity." }
+      ],
+      virtues: ["Presence", "Structure", "Patience", "Humility", "Vulnerability", "Courage", "Silence"],
+      lessons: [
+        "Real abundance and sincere connections do not flourish through mathematical intelligence, but when we accept embracing our vulnerability.",
+        "True wisdom lies in silencing plans and letting sintonized works speak for themselves in matter.",
+        "No lucky astral transit compensates for a lack of daily discipline. Your Life Path requires firm consistency.",
+        "Forgiving old misunderstandings from the past is the only real shortcut to unlocking the flow of finance today."
+      ],
+      exercises: [
+        "Take 10 minutes away from any screen, breathe deeply through your nose, and visualize a golden light clearing your brain.",
+        "Write three simple goals on paper with black ink and execute the first one without postponing due to over-analysis.",
+        "Take a 15-minute walk barefoot on the grass or feel the morning sun on your face to align your vital biorhythm.",
+        "Send a short, sincere message of gratitude to someone from your history who rarely hears from you."
+      ],
+      advices: [
+        "Give quick release to your practical insights today. Accumulating plans without acting saturates your subtle field.",
+        "Maintain strategic silence about your business plans in this lunation. Avoid advice from skeptical third parties.",
+        "Your astral matrix today favors focusing on health and molecular purification. Reduce dense food intake.",
+        "The day calls for the harmonization of old emotional issues. A simple gesture of affection will disarm old walls."
+      ],
+      alerts: [
+        "Beware of financial leakages from emotional compensation. Lunar transit propitious to impulsive spending today.",
+        "Avoid heated debates in social networks or chat channels. Do not waste your precious vital energy on others' opinions.",
+        "Pay attention to muscle pain from poor physical posture in front of the computer. Take frequent breaks every 50 minutes.",
+        "Avoid signing long-term contracts hastily. Read all the small print and consult experienced mentors."
+      ],
+      opportunities: [
+        "Conversas with sintonized old friendships open unexpected channels for new businesses or cooperative projects.",
+        "An original insight will arise during moments of silence and rest. Write it down immediately in your physical notebook.",
+        "The current transit opens gateways to renegotiate pending items or subscriptions and stop capital leaks.",
+        "New learnings in subtle studies or intelligence will bring unusual clarity to career decisions."
+      ],
+      protectWords: [
+        { word: "GROUND YOURSELF", desc: "Repeat mentally when waking up to banish distractions and cognitive dispersions." },
+        { word: "FLOW IN PEACE", desc: "Remember to breathe deeply when encountering mechanical friction or delays in the routine." },
+        { word: "FIRM STRUCTURE", desc: "Mentalize to anchor your purposes in matter with determination and persistence." },
+        { word: "INNER CLARITY", desc: "Use to banish mental mists or subtle doubts generated by others' opinions." }
+      ],
+      keywords: [
+        { word: "SUBTLE EXPANSION", desc: "Grow in a diplomatic way respecting the silent channels of your own being." },
+        { word: "STRUCTURING", desc: "Organize the physical foundations before launching new projects towards the skies." },
+        { word: "ALIGNMENT", desc: "Sintonize your routine actions with the dominant planetary transit of today." },
+        { word: "MANIFESTATION", desc: "Bring metaphysical insights to matter through small, consistent tasks." }
+      ],
+      symbols: [
+        { name: "Sacred Heptagram (⭐️)", desc: "Represents the seven paths of protection that seal your auric energy field." },
+        { name: "Ankh (Key of Life)", desc: "Symbolizes the union of celestial and terrestrial forces regulating your physical vitality." },
+        { name: "Eye of Horus (𓂀)", desc: "Brings sharp perception and protection against intellectual deviations or mists." },
+        { name: "Cosmic Golden Spiral", desc: "Signals continuous growth, harmonious and focused on millennial evolution." }
+      ],
+      amulets: [
+        { name: "Lapis Lazuli Scarab", desc: "Acts on physical protection, facilitating transactions and banishing accumulated fatigue." },
+        { name: "Pyrite Gold Cube", desc: "Radiates the solar frequency of wealth, merit, and materializing focus." },
+        { name: "Rough Rose Quartz", desc: "Filters feelings of cardiac tension and opens channels of comprehensive dialogue at home." },
+        { name: "Focus Sodalite", desc: "Structures brain pathways for technical absorption of complex teachings." }
+      ],
+      environments: [
+        { name: "Libraries or Lake Gardens", desc: "Foster silent absorption of knowledge and cardiac deceleration." },
+        { name: "Spaces with Direct Sunlight", desc: "Recharge the solar plexus and increase molecular mood for new beginnings." },
+        { name: "Silent Corners of Temples", desc: "Facilitate telepathic connection with higher subtle spheres and cosmic mentors." },
+        { name: "Organized and Clean Environments", desc: "Drastically reduce visual anxiety, freeing up pragmatic workflow." }
+      ],
+      activities: [
+        { name: "Meditation with Written Log", desc: "Writing early in the diary helps the brain not to saturate with plans and ideas." },
+        { name: "Spinal Stretches & Breathing", desc: "Unblocks physical energy meridians and flows cellular oxygen to the brain." },
+        { name: "Metaphysical Astrology Studies", desc: "Connects your intellectual interests with the universal compass of the stars." },
+        { name: "Physical File Organization", desc: "Materializes mental order by organizing your desk, drawers, and digital folders." }
+      ],
+      challenges: [
+        { name: "Dispersion and Excess of Unfinished Projects", desc: "Be careful not to draft 15 business drafts and consolidate none." },
+        { name: "Emotional Isolation from Subtle Pride", desc: "Overcoming the temptation to pull away silently when affective friction arises." },
+        { name: "Lack of Daily Practical Consistency", desc: "Avoid depending only on peaks of inspiration; the Path requires constant discipline." },
+        { name: "Cognitive Saturation from Virtual Screens", desc: "The anxiety of absorbing news and information without time for cellular rest." }
+      ],
+      opps: [
+        { name: "Intelligent Business & Mentoring", desc: "Your original matrix shines when generating new teaching methods or digital products." },
+        { name: "Symmetrical Partnerships with Old Friends", desc: "Sintonizing purposes with people who share your ethics and humanitarian vision." },
+        { name: "Work Routine Automation", desc: "Implementing systems and tools to reduce time spent on mechanical bureaucracies." },
+        { name: "Consolidation of Secure Investments", desc: "Ideal opportunity to reorganize contributions and focus on portfolios with consistent yield." }
+      ],
+      energies: [
+        { name: "Active Air / Collective Ideals", desc: "Mental strength and originality vibrating in the house of great discoveries and alignments." },
+        { name: "Fire of Pragmatic Impulse", desc: "Firm will and solar enthusiasm to put on feet ideas previously stagnant in the draft." },
+        { name: "Earth of Solid Structuring", desc: "Ability to give firm roots and durability to your agreements, partnerships, and finances." },
+        { name: "Water of Magnetic Intuition", desc: "Fluid resonance that facilitates reading others' intentions and attracting paths." }
+      ],
+      evitars: [
+        { name: "Signing contracts or shopping out of pure impulse", desc: "Wait for the lunation to pass before making robust investments." },
+        { name: "Heated debates on virtual networks", desc: "Do not trade your auric peace and valuable daily focus for sterile opinion conflicts." },
+        { name: "Sudden disappearances and cold distance", desc: "Dialogue with clarity prevents small doubts from turning into affective barriers." },
+        { name: "Ignoring your biorhythm and accumulating fatigue", desc: "Small 3-minute pauses will bring the cellular alignment you need today." }
+      ],
+      foci: [
+        { name: "Studies and Financial Consolidation", desc: "Direct your cellular resonance to organize your portfolio and expand your knowledge." },
+        { name: "Vital Health & Body Strengthening", desc: "Focus on improving immunity through pure nutrition, rest, and regular exercise." },
+        { name: "Home Harmonization & Intimate Comfort", desc: "Purify room energies to generate a secure refuge of peace and recharging." },
+        { name: "Clear Communication & Business Partnerships", desc: "Make bridges, sincere professional contacts, and present sintonized business proposals." }
+      ],
+      phrases: [
+        "I channel the liberating originality of Air and the firm structure of Saturn to manifest abundance in a subtle way.",
+        "My intuition is a sovereign compass; I take firm steps in matter to materialize peace and abundance today.",
+        "I undo the walls of the mind, embrace my vulnerability with courage, and sintonize the flow of true prosperity.",
+        "With daily discipline and faith in universal plans, I give shape to my ideals and feel active protection in my walk."
+      ]
+    },
+    es: {
+      aromas: [
+        { name: "Romero Concentrado", desc: "Purifica los canales intelectuales y estimula las decisiones rápidas y lógicas en la rutina." },
+        { name: "Limoncillo Refrescante", desc: "Disuelve las agitaciones y sintoniza la mente superior con vibraciones de paz." },
+        { name: "Lavanda Francesa Sutil", desc: "Calma el chakra del corazón y regenera los canales de sueño profundo en el dormitorio." },
+        { name: "Sándalo Amaderado", desc: "Aterriza los ideales, uniendo las metas espirituales con la estructura material práctica." }
+      ],
+      incenses: [
+        { name: "Sándalo o Romero", desc: "Excelente para desterrar el cansancio de las pantallas digitales y la fatiga mental acumulada." },
+        { name: "Mirra o Incienso Blanco", desc: "Sella las coordenadas del entorno frente a intrusiones o energías densas externas." },
+        { name: "Palo Santo Natural", desc: "Atrae el flujo de prosperidad y limpia el polvo psíquico de los martes de negocios." },
+        { name: "Alcanfor o Menta", desc: "Renueva el aire celular y activa la claridad y el enfoque durante las reuniones críticas." }
+      ],
+      plants: [
+        { name: "Lirio de la Paz Sagrado", desc: "Purifica los canales áuricos del aire doméstico y trae serenidad emocional." },
+        { name: "Espada de San Jorge", desc: "Crea un escudo impenetrable contra distracciones y envidias en el escritorio de trabajo." },
+        { name: "Zamioculca de la Fortuna", desc: "Ancla el magnetismo del dinero y la prosperidad en el elemento Tierra." },
+        { name: "Albahaca Protectora", desc: "Irradia vitalidad y sana los canales de fatiga molecular en la cocina o sala." }
+      ],
+      rooms: ["Rincón Este (Amanecer)", "Rincón Norte de la sala de estar", "Proximidad de ventanas bien ventiladas", "Centro geométrico de la casa"],
+      bedroomColors: ["Azul Lavanda", "Lila Sutil", "Verde Menta Claro", "Gris Cósmico Suave"],
+      officeColors: ["Azul Índigo Real", "Verde Esmeralda", "Gris Grafito Puro", "Ámbar Claro"],
+      skills: [
+        { name: "Inteligencia Compasiva y Aterrizaje", desc: "Aprender a canalizar ideas abstractas en pasos prácticos inmediatos de manifestación." },
+        { name: "Enfoque Singular Sencillo", desc: "La capacidad de aislarse de distracciones virtuales y terminar una sola tarea robusta." },
+        { name: "Escucha Activa Afectiva", desc: "Escuchar a los demás con un corazón libre de respuestas mecánicas o silogismos lógicos." },
+        { name: "Discernimiento Kármico Práctico", desc: "Reconocer patrones cíclicos de fatiga y cortar gastos o hábitos redundantes." }
+      ],
+      blocks: [
+        { name: "Miedo al juicio de los demás", desc: "Genera distancias u orgullos fríos que impiden la verdadera intimidad." },
+        { name: "Compulsión de planificar sin actuar", desc: "Acumular decenas de borradores sin dar el primer paso práctico por miedo al error." },
+        { name: "Racionalización de los afectos", desc: "Intentar debatir sentimientos puros con lógica fría y reglas rígidas." },
+        { name: "Desperdicio de energía celular", desc: "Pasar horas defendiendo ideales o debatiendo en redes sociales por impulsividad." }
+      ],
+      virtues: ["Presencia", "Estructura", "Paciencia", "Humildad", "Vulnerabilidad", "Coraje", "Silencio"],
+      lessons: [
+        "La abundancia real y las conexiones sinceras no florecen por inteligencia matemática, sino cuando aceptamos abrazar nuestra vulnerabilidad.",
+        "La verdadera sabiduría reside en silenciar los planes y dejar que las obras sintonizadas hablen por sí mismas en la materia.",
+        "Ningún tránsito astral de suerte compensa la falta de disciplina diaria. Tu Camino exige una consistencia firme.",
+        "Perdonar viejos malentendidos del pasado es el único atajo real para desbloquear el flujo de las finanzas hoy."
+      ],
+      exercises: [
+        "Tómate 10 minutos lejos de cualquier pantalla, respira profundamente por la nariz y visualiza una luz dorada limpiando tu cerebro.",
+        "Escribe tres metas simples en un papel con tinta negra y ejecuta la primera de ellas sin posponer por exceso de análisis.",
+        "Camina 15 minutos descalzo sobre el césped o siente el sol de la mañana en tu rostro para alinear tu biorritmo vital.",
+        "Envía un mensaje corto y sincero de gratitud a alguien de tu historia con quien rara vez hables."
+      ],
+      advices: [
+        "Da una salida rápida a tus ideas prácticas hoy. Acumular planes sin actuar satura tu campo sutil.",
+        "Mantén un silencio estratégico sobre tus planes de negocios en esta lunación. Evita consejos de terceros escépticos.",
+        "Tu matriz astral hoy favorece el enfoque en la salud y la purificación molecular. Reduce alimentos pesados.",
+        "El día pide la armonización de antiguos temas afectivos. Un simple gesto de cariño desarmará viejos muros."
+      ],
+      alerts: [
+        "Cuidado con las fugas financieras por compensación afectiva. Tránsito lunar propicio a gastos de impulso hoy.",
+        "Evita debates acalorados en redes sociales o canales de chat. No desgastes tu preciosa energía con opiniones ajenas.",
+        "Atención a dolores musculares por mala postura física frente al ordenador. Haz pausas cada 50 minutos.",
+        "Evita firmar contratos a largo plazo de forma apresurada. Lee toda la letra pequeña y consulta a mentores."
+      ],
+      opportunities: [
+        "Las conversaciones con viejas amistades sintonizadas abren canales inesperados para nuevos negocios o proyectos cooperativos.",
+        "Un insight original surgirá durante momentos de silencio y descanso. Anótalo de inmediato en tu cuaderno físico.",
+        "El tránsito actual abre portales para renegociar temas pendientes o suscripciones y detener fugas de capital.",
+        "Nuevos aprendizajes en estudios sutiles o de inteligencia traerán una claridad inusual a las decisiones de carrera."
+      ],
+      protectWords: [
+        { word: "ATERRIZA", desc: "Repítelo mentalmente al despertar para desterrar distracciones y dispersiones cognitivas." },
+        { word: "FLUYE EN PAZ", desc: "Recuerda respirar profundamente al encontrar fricciones mecánicas o retrasos en la rutina." },
+        { word: "ESTRUCTURA FIRME", desc: "Mentaliza para anclar tus propósitos en la materia con determinación y persistencia." },
+        { word: "CLARIDAD INTERIOR", desc: "Úsalo para desterrar nieblas mentales o dudas sutiles generadas por opiniones ajenas." }
+      ],
+      keywords: [
+        { word: "EXPANSION SUTIL", desc: "Crece de forma diplomática respetando los canales de silencio de tu propio ser." },
+        { word: "ESTRUCTURACION", desc: "Organiza las bases físicas antes de lanzar nuevos proyectos hacia el cielo." },
+        { word: "ALINEACION", desc: "Sintoniza tus acciones rutinarias con el tránsito planetario dominante de hoy." },
+        { word: "MANIFESTACION", desc: "Trae las ideas metafísicas a la materia a través de pequeñas tareas consistentes." }
+      ],
+      symbols: [
+        { name: "Heptagrama Sagrado (⭐️)", desc: "Representa los siete caminos de protección que sellan tu campo energético áurico." },
+        { name: "Ankh (Clave de la Vida)", desc: "Simboliza la unión de fuerzas celestes y terrestres regulando tu vitalidad física." },
+        { name: "Ojo de Horus (𓂀)", desc: "Trae percepción aguda y protección contra desviaciones o nieblas intelectuales." },
+        { name: "Espiral Áurea Cósmica", desc: "Señala un crecimiento continuo, armónico y enfocado en la evolución milenaria." }
+      ],
+      amulets: [
+        { name: "Escarabajo de Lapis-Lázuli", desc: "Actúa en la protección física, facilitando transacciones y desterrando la fatiga acumulada." },
+        { name: "Pirita Cubo de Oro", desc: "Irradia la frecuencia solar de riqueza, merecimiento y enfoque realizador material." },
+        { name: "Cuarzo Rosa Bruto", desc: "Filtra tensiones cardíacas y abre canales de diálogo comprensivo en casa." },
+        { name: "Sodalita de Enfoque", desc: "Estructura las vías cerebrales para la absorción técnica de enseñanzas complejas." }
+      ],
+      environments: [
+        { name: "Bibliotecas o Jardines con Lago", desc: "Fomentan la absorción silenciosa de conocimiento y la desaceleración cardíaca." },
+        { name: "Espacios con Luz Solar Directa", desc: "Recargan el plexo solar y aumentan el ánimo molecular para nuevos comienzos." },
+        { name: "Rincones Silenciosos de Templos", desc: "Facilitan la conexión telepática con esferas sutiles superiores y mentores." },
+        { name: "Ambientes Organizados y Limpios", desc: "Reducen drásticamente la ansiedad visual, liberando un flujo de trabajo pragmático." }
+      ],
+      activities: [
+        { name: "Meditación con Registro Escrito", desc: "Escribir temprano en el diario ayuda al cerebro a no saturarse de planes e ideas." },
+        { name: "Estiramientos de Columna & Respiración", desc: "Desbloquea los meridianos de energía física y fluye oxígeno celular al cerebro." },
+        { name: "Estudios de Astrología Metafísica", desc: "Conecta tus intereses intelectuales con la brújula universal de las estrellas." },
+        { name: "Organización Física de Archivos", desc: "Materializa el orden mental organizando tu mesa, cajones y carpetas digitales." }
+      ],
+      challenges: [
+        { name: "Dispersión y Exceso de Proyectos Inacabados", desc: "Cuidado con redactar 15 borradores de negocios y no consolidar ninguno." },
+        { name: "Aislamiento Emocional por Orgullo Sutil", desc: "Vencer la tentación de alejarse silenciosamente cuando surgen roces afectivos." },
+        { name: "Falta de Consistencia Práctica Diaria", desc: "Evitar depender solo de picos de inspiración; el Camino exige disciplina constante." },
+        { name: "Saturación Cognitiva por Pantallas Virtuales", desc: "La ansiedad de absorber noticias e información sin tiempo para el descanso celular." }
+      ],
+      opps: [
+        { name: "Negocios Inteligentes & Mentoría", desc: "Tu matriz original brilla al generar nuevos métodos de enseñanza o infoproductos." },
+        { name: "Alianzas Simétricas con Viejos Amigos", desc: "Sintonizar propósitos con personas que comparten tu ética y visión humanitaria." },
+        { name: "Automatización de Rutinas de Trabajo", desc: "Implementar sistemas y herramientas para reducir el tiempo en tareas mecánicas." },
+        { name: "Consolidación de Inversiones Seguras", desc: "Oportunidad ideal para reorganizar aportes y enfocarse en carteras de rendimiento consistente." }
+      ],
+      energies: [
+        { name: "Aire Activo / Ideales Colectivos", desc: "Fuerza mental y originalidad vibrando en la casa de grandes descubrimientos y alineaciones." },
+        { name: "Fuego de Impulso Pragmático", desc: "Voluntad firme y entusiasmo solar para poner de pie ideas antes estancadas." },
+        { name: "Tierra de Estructuración Sólida", desc: "Capacidad de dar raíces firmes y durabilidad a tus acuerdos, sociedades y finanzas." },
+        { name: "Agua de Intuición Magnética", desc: "Resonancia fluida que facilita leer intenciones ajenas y atraer caminos favorables." }
+      ],
+      evitars: [
+        { name: "Firmar contratos o comprar por puro impulso", desc: "Aguarda a que pase la lunación antes de realizar inversiones importantes." },
+        { name: "Debates acalorados en redes virtuales", desc: "No cambies tu paz áurica y valioso enfoque diario por conflictos estériles de opiniones." },
+        { name: "Desapariciones repentinas y distanciamiento frío", desc: "Dialogar con claridad evita que pequeñas dudas se conviertan en barreras afectivas." },
+        { name: "Ignorar el biorritmo y acumular fatiga", desc: "Pequeñas pausas de 3 minutos traerán el alinhamento celular que necesitas hoy." }
+      ],
+      foci: [
+        { name: "Estudios y Consolidación Financiera", desc: "Direcciona tu resonancia celular para organizar tu cartera y expandir conocimientos." },
+        { name: "Salud Vital y Fortalecimiento Corporal", desc: "Enfocarse en mejorar la inmunidad mediante nutrición pura, descanso y ejercicio." },
+        { name: "Armonización del Hogar & Confort Íntimo", desc: "Purificar la energía de las habitaciones para generar un refugio seguro de recarga." },
+        { name: "Comunicación Clara & Alianzas Comerciales", desc: "Crear puentes, contactos sinceros y presentar propuestas comerciales sintonizadas." }
+      ],
+      phrases: [
+        "Canalizo la originalidad liberadora del Aire y la estructura firme de Saturno para manifestar la abundancia de forma sutil.",
+        "Mi intuición es mi brújula soberana; doy pasos firmes en la materia para materializar la paz y la abundancia hoy.",
+        "Deshago los muros de la mente, acojo mi vulnerabilidad con valentía y sintonizo el flujo de la verdadera prosperidad.",
+        "Con disciplina diaria y fe en los planes universales, doy forma a mis ideales y siento protección activa en mi caminar."
+      ]
+    },
+    de: {
+      aromas: [
+        { name: "Konzentrierter Rosmarin", desc: "Reinigt die intellektuellen Kanäle und fördert schnelle, logische Entscheidungen im Alltag." },
+        { name: "Erfrischendes Zitronengras", desc: "Löst Unruhe auf und stimmt den höheren Geist auf Schwingungen des Friedens ein." },
+        { name: "Feiner französischer Lavendel", desc: "Beruhigt das Herzchakra und regeneriert die Wege für tiefen Schlaf im Schlafzimmer." },
+        { name: "Holziges Sandelholz", desc: "Erdet Ideale und verbindet spirituelle Ziele mit praktischer materieller Struktur." }
+      ],
+      incenses: [
+        { name: "Sandelholz oder Rosmarin", desc: "Hervorragend geeignet, um die Erschöpfung durch digitale Bildschirme und mentale Müdigkeit zu vertreiben." },
+        { name: "Myrrhe oder Weihrauch", desc: "Versiegelt die Raumkoordinaten vor äußeren Störungen oder dichten Fremdenergien." },
+        { name: "Natürliches Palo Santo", desc: "Zieht den Fluss des Wohlstands an und reinigt den feinstofflichen Staub von geschäftlichen Dienstagen." },
+        { name: "Kampfer oder Minze", desc: "Erneuert die zelluläre Luft und aktiviert Klarheit und Fokus während kritischer Besprechungen." }
+      ],
+      plants: [
+        { name: "Heilige Friedenslilie", desc: "Reinigt die aurischen Kanäle der Raumluft und schenkt emotionale Gelassenheit." },
+        { name: "Bogenhanf der Abwehr", desc: "Schafft einen undurchdringlichen Schutzschild gegen Ablenkungen auf dem Schreibtisch." },
+        { name: "Glücksfeder (Zamioculca)", desc: "Verankert die Magnetkraft von Geld und Fülle fest im Element Erde." },
+        { name: "Schützendes Basilikum", desc: "Strahlt Vitalität aus und heilt molekulare Erschöpfungskanäle in Küche oder Wohnzimmer." }
+      ],
+      rooms: ["Ost-Ecke (Sonnenaufgang)", "Nord-Ecke des Wohnzimmers", "Nähe von gut belüfteten Fenstern", "Geometrisches Zentrum des Hauses"],
+      bedroomColors: ["Lavendelblau", "Zartes Lila", "Helles Minzgrün", "Weiches Kosmisches Grau"],
+      officeColors: ["Königliches Indigoblau", "Smaragdgrün", "Reines Graphitgrau", "Helles Bernstein"],
+      skills: [
+        { name: "Mitfühlende Intelligenz & Erdung", desc: "Lernen, abstrakte Ideale in unmittelbare praktische Schritte der Manifestation umzusetzen." },
+        { name: "Einfacher, einzigartiger Fokus", desc: "Die Fähigkeit, sich von virtuellen Ablenkungen zu isolieren und eine einzige Aufgabe abzuschließen." },
+        { name: "Aktives emotionales Zuhören", desc: "Anderen mit einem Herzen zuhören, das frei von mechanischen Antworten oder Logik ist." },
+        { name: "Praktisches karmisches Urteilsvermögen", desc: "Karmische Erschöpfungsmuster erkennen und unnötige Ausgaben oder Gewohnheiten abbauen." }
+      ],
+      blocks: [
+        { name: "Angst vor dem Urteil anderer", desc: "Erzeugt kalten Stolz oder Distanz, die wahre Intimität verhindern." },
+        { name: "Zwang zu planen, ohne zu handeln", desc: "Dutzende Entwürfe anhäufen, ohne aus Angst vor Fehlern den ersten Schritt zu tun." },
+        { name: "Rationalisierung von Gefühlen", desc: "Versuchen, reine Gefühle mit kalter Logik und starren Regeln zu debattieren." },
+        { name: "Verschwendung zellulärer Energie", desc: "Stundenlanges Verteidigen von Idealen oder Debattieren in sozialen Netzwerken aus Impulsivität." }
+      ],
+      virtues: ["Präsenz", "Struktur", "Geduld", "Demut", "Verletzlichkeit", "Mut", "Stille"],
+      lessons: [
+        "Wahre Fülle und aufrichtige Verbindungen gedeihen nicht durch mathematische Intelligenz, sondern wenn wir lernen, unsere Verletzlichkeit zuzulassen.",
+        "Wahre Weisheit liegt darin, Pläne schweigen zu lassen und die Werke für sich selbst sprechen zu lassen.",
+        "Kein glücklicher Astratransit gleicht mangelnde tägliche Disziplin aus. Ihr Lebensweg erfordert feste Beständigkeit.",
+        "Das Vergeben alter Missverständnisse aus der Vergangenheit ist die einzige reale Abkürzung, um den Finanzfluss heute freizusetzen."
+      ],
+      exercises: [
+        "Nehmen Sie sich 10 Minuten Abstand von jedem Bildschirm, atmen Sie tief ein und stellen Sie sich ein goldenes Licht vor, das Ihren Geist klärt.",
+        "Schreiben Sie drei einfache Ziele mit schwarzer Tinte auf Papier und setzen Sie das erste ohne Zögern um.",
+        "Gehen Sie 15 Minuten barfuß auf dem Rasen oder spüren Sie die Morgensonne auf Ihrem Gesicht, um Ihren Biorhythmus auszurichten.",
+        "Senden Sie eine kurze, ehrliche Dankesnachricht an jemanden aus Ihrer Vergangenheit, von dem Sie selten hören."
+      ],
+      advices: [
+        "Setzen Sie Ihre praktischen Erkenntnisse heute schnell um. Das Anhäufen von Plänen ohne Handeln übersättigt Ihr feinstoffliches Feld.",
+        "Bewahren Sie bei dieser Lunation strategisches Schweigen über Ihre Geschäftspläne. Meiden Sie Ratschläge von Skeptikern.",
+        "Ihre heutige Astralmatrix begünstigt den Fokus auf Gesundheit und zelluläre Reinigung. Meiden Sie schwere Kost.",
+        "Der Tag ruft zur Harmonisierung alter emotionaler Themen auf. Eine einfache Geste der Zuneigung wird Mauern brechen."
+      ],
+      alerts: [
+        "Vorsicht vor finanziellen Verlusten durch emotionale Kompensation. Mondtransit begünstigt heute Impulskäufe.",
+        "Meiden Sie hitzige Debatten in sozialen Netzwerken oder Chats. Verschwenden Sie Ihre wertvolle Lebensenergie nicht.",
+        "Achten Sie auf Muskelschmerzen durch schlechte Haltung vor dem PC. Machen Sie alle 50 Minuten eine Pause.",
+        "Vermeiden Sie es, langfristige Verträge voreilig zu unterschreiben. Lesen Sie das Kleingedruckte und fragen Sie Mentoren."
+      ],
+      opportunities: [
+        "Gespräche mit gleichgesinnten alten Freunden eröffnen unerwartete Wege für neue Geschäfte oder Gemeinschaftsprojekte.",
+        "Eine originelle Erkenntnis wird in Momenten der Stille und Ruhe auftauchen. Schreiben Sie sie sofort in Ihr Notizbuch.",
+        "Der aktuelle Transit öffnet Portale, um offene Verträge neu zu verhandeln und finanzielle Lecks zu schließen.",
+        "Neue Erkenntnisse in feinstofflichen Studien oder Intelligenz bringen ungewöhnliche Klarheit für Karriereentscheidungen."
+      ],
+      protectWords: [
+        { word: "ERDE DICH", desc: "Nach dem Aufwachen mental wiederholen, um Ablenkungen und kognitive Zerstreuung zu vertreiben." },
+        { word: "FLIESSE IN FRIEDEN", desc: "Tief durchatmen, wenn Sie auf mechanische Reibungen oder Verzögerungen im Alltag stoßen." },
+        { word: "FESTE STRUKTUR", desc: "Visualisieren, um Ihre Ziele mit Entschlossenheit und Ausdauer in der Materie zu verankern." },
+        { word: "INNERE KLARHEIT", desc: "Nutzen, um mentalen Nebel oder Zweifel zu vertreiben, die durch andere entstehen." }
+      ],
+      keywords: [
+        { word: "FEINE EXPANSION", desc: "Wachsen Sie auf diplomatische Weise, indem Sie die stillen Kanäle Ihres eigenen Wesens achten." },
+        { word: "STRUKTURIERUNG", desc: "Organisieren Sie die physischen Fundamente, bevor Sie neue Projekte in den Himmel starten." },
+        { word: "AUSRICHTUNG", desc: "Stimmen Sie Ihre täglichen Handlungen auf den dominanten planetarischen Transit von heute ab." },
+        { word: "MANIFESTATION", desc: "Bringen Sie metaphysische Erkenntnisse durch kleine, beständige Aufgaben in die Materie." }
+      ],
+      symbols: [
+        { name: "Heiliges Heptagramm (⭐️)", desc: "Repräsentiert die sieben Pfade des Schutzes, die Ihr feinstoffliches Energiefeld versiegeln." },
+        { name: "Ankh (Schlüssel des Lebens)", desc: "Symbolisiert die Vereinigung himmlischer und irdischer Kräfte, die Ihre Vitalität regulieren." },
+        { name: "Auge des Horus (𓂀)", desc: "Schenkt scharfe Wahrnehmung und Schutz vor intellektuellen Abweichungen oder Nebeln." },
+        { name: "Kosmische goldene Spirale", desc: "Signalisiert kontinuierliches, harmonisches Wachstum, das auf die Evolution fokussiert ist." }
+      ],
+      amulets: [
+        { name: "Lapislazuli-Skarabäus", desc: "Schützt auf physischer Ebene, erleichtert Transaktionen und vertreibt Müdigkeit." },
+        { name: "Pyrit-Goldwürfel", desc: "Strahlt die solare Frequenz von Wohlstand, Verdienst und materiellem Fokus aus." },
+        { name: "Roher Rosenquarz", desc: "Filtert Herzspannungen und öffnet Wege für verständnisvolle Gespräche zu Hause." },
+        { name: "Sodalith des Fokus", desc: "Strukturiert Gehirnbahnen für die technische Aufnahme komplexer Lehren." }
+      ],
+      environments: [
+        { name: "Bibliotheken oder Seengärten", desc: "Fördern die stille Aufnahme von Wissen und die Verlangsamung der Herzfrequenz." },
+        { name: "Räume mit direktem Sonnenlicht", desc: "Laden den Solarplexus auf und steigern die molekulare Stimmung für Neuanfänge." },
+        { name: "Stille Ecken in Tempeln", desc: "Erleichtern die telepathische Verbindung mit höheren feinstofflichen Sphären und Mentoren." },
+        { name: "Organisierte und saubere Umgebungen", desc: "Reduzieren visuelle Ängste drastisch und setzen einen pragmatischen Arbeitsfluss frei." }
+      ],
+      activities: [
+        { name: "Meditation mit Tagebucheintrag", desc: "Frühzeitiges Schreiben hilft dem Gehirn, sich nicht mit Plänen und Ideen zu überlasten." },
+        { name: "Dehnen der Wirbelsäule & Atmung", desc: "Entblockt die physischen Energie-Meridiane und leitet zellulären Sauerstoff ins Gehirn." },
+        { name: "Metaphysische Astrologiestudien", desc: "Verbindet Ihre intellektuellen Interessen mit dem universellen Kompass der Sterne." },
+        { name: "Physische Dateiorganisation", desc: "Materialisiert die mentale Ordnung durch das Aufräumen von Schreibtisch und Ordnern." }
+      ],
+      challenges: [
+        { name: "Zerstreuung und unvollendete Projekte", desc: "Achten Sie darauf, nicht 15 Entwürfe zu zeichnen und keinen einzigen zu festigen." },
+        { name: "Emotionale Isolation aus Stolz", desc: "Der Versuchung widerstehen, sich schweigend zurückzuziehen, wenn Beziehungsreibungen auftreten." },
+        { name: "Mangel an täglicher praktischer Beständigkeit", desc: "Nicht nur von Inspirationsspitzen abhängen; der Weg erfordert ständige Disziplin." },
+        { name: "Kognitive Sättigung durch Bildschirme", desc: "Die Angst, Nachrichten aufzunehmen, ohne Zeit für zelluläre Erholung zu lassen." }
+      ],
+      opps: [
+        { name: "Intelligentes Business & Mentoring", desc: "Ihre Matrix glänzt, wenn Sie neue Lehrmethoden oder digitale Infoprodukte erschaffen." },
+        { name: "Symmetrische Partnerschaften mit Freunden", desc: "Ziele mit Menschen abstimmen, die Ihre Ethik und humanitäre Vision teilen." },
+        { name: "Automatisierung von Arbeitsabläufen", desc: "Systeme implementieren, um Zeit für mechanische Büroarbeiten zu reduzieren." },
+        { name: "Konsolidierung sicherer Investitionen", desc: "Ideale Gelegenheit, Beiträge neu zu ordnen und sich auf beständige Portfolios zu fokussieren." }
+      ],
+      energies: [
+        { name: "Aktive Luft / Kollektive Ideale", desc: "Mentale Stärke und Originalität vibrieren im Haus großer Entdeckungen und Ausrichtungen." },
+        { name: "Feuer des pragmatischen Impulses", desc: "Fester Wille und solarer Enthusiasmus, um zuvor stagnierende Ideen umzusetzen." },
+        { name: "Erde der soliden Strukturierung", desc: "Fähigkeit, Ihren Vereinbarungen, Partnerschaften und Finanzen feste Wurzeln zu geben." },
+        { name: "Wasser der magnetischen Intuition", desc: "Fließende Resonanz, die das Lesen der Absichten anderer erleichtert und Wege anzieht." }
+      ],
+      evitars: [
+        { name: "Verträge oder Käufe aus reinem Impuls", desc: "Warten Sie, bis die Lunation vorüber ist, bevor Sie größere Investitionen tätigen." },
+        { name: "Hitzige Debatten in virtuellen Netzwerken", desc: "Tauschen Sie Ihren aurischen Frieden nicht gegen unfruchtbare Meinungskonflikte ein." },
+        { name: "Plötzliches Verschwinden und kalte Distanz", desc: "Klarer Dialog verhindert, dass kleine Zweifel zu emotionalen Barrieren werden." },
+        { name: "Ignorieren des Biorhythmus", desc: "Kleine 3-minütige Pausen bringen heute die zelluläre Ausrichtung, die Sie benötigen." }
+      ],
+      foci: [
+        { name: "Studien und finanzielle Konsolidierung", desc: "Richten Sie Ihre zelluläre Resonanz darauf aus, Ihr Portfolio zu ordnen und Ihr Wissen zu erweitern." },
+        { name: "Vitale Gesundheit & Körperstärkung", desc: "Fokus auf die Verbesserung der Immunität durch reine Ernährung, Ruhe und Bewegung." },
+        { name: "Harmonisierung des Hauses", desc: "Reinigen Sie die Energie der Räume, um einen sicheren Zufluchtsort des Friedens zu schaffen." },
+        { name: "Klare Kommunikation & Partnerschaften", desc: "Brücken bauen, aufrichtige Kontakte knüpfen und abgestimmte Vorschläge präsentieren." }
+      ],
+      phrases: [
+        "Ich kanalisiere die befreiende Originalität der Luft und die feste Struktur des Saturns, um Fülle auf feine Weise zu manifestieren.",
+        "Meine Intuition ist ein souveräner Kompass; ich gehe feste Schritte, um heute Frieden und Fülle zu materialisieren.",
+        "Ich löse die Mauern des Geistes auf, nehme meine Verletzlichkeit mutig an und stimme mich auf den Fluss wahrer Fülle ein.",
+        "Mit täglicher Disziplin und Vertrauen in universelle Pläne gebe ich meinen Idealen Form und spüre aktiven Schutz."
+      ]
+    },
+    fr: {
+      aromas: [
+        { name: "Romarin Concentré", desc: "Purifie les canaux intellectuels et stimule des décisions rapides et logiques au quotidien." },
+        { name: "Citronnelle Rafraîchissante", desc: "Dissout l'agitation et syntonise l'esprit supérieur avec des vibrations de paix." },
+        { name: "Lavande Française Subtile", desc: "Calme le chakra du cœur et régénère les voies du sommeil profond dans la chambre." },
+        { name: "Santal Boisé", desc: "Ancre les idéaux, reliant les objectifs spirituels à la structure matérielle pratique." }
+      ],
+      incenses: [
+        { name: "Santal ou Romarin", desc: "Excellent pour bannir l'épuisement des écrans numériques et la fatigue mentale accumulée." },
+        { name: "Myrrhe ou Benjoin Blanc", desc: "Scelle les coordonnées de l'environnement contre les intrusions ou énergies denses externes." },
+        { name: "Palo Santo Naturel", desc: "Attire le flux de prospérité et nettoie la poussière psychique des mardis d'affaires." },
+        { name: "Camphre ou Menthe", desc: "Renouvelle l'air cellulaire et active la clarté et la concentration lors des réunions critiques." }
+      ],
+      plants: [
+        { name: "Lis de la Paix Sacré", desc: "Purifie les canaux auriques de l'air domestique et apporte la sérénité émotionnelle." },
+        { name: "Sansevieria de Protection", desc: "Crée un bouclier impénétrable contre les distractions et la jalousie sur votre bureau." },
+        { name: "Zamioculca de la Fortune", desc: "Ancre le magnétisme de l'argent et de la prospérité dans l'élément Terre." },
+        { name: "Basilic Protecteur", desc: "Irradie la vitalité et guérit les canaux de fatigue moléculaire dans la cuisine ou le salon." }
+      ],
+      rooms: ["Coin Est (Lever du Soleil)", "Coin Nord du salon de séjour", "Proximité de fenêtres bien ventilées", "Centre géométrique de la maison"],
+      bedroomColors: ["Bleu Lavande", "Violet Subtil", "Vert Menthe Clair", "Gris Cosmique Doux"],
+      officeColors: ["Bleu Indigo Royal", "Vert Émeraude", "Gris Graphite Pur", "Ambre Clair"],
+      skills: [
+        { name: "Intelligence Compassionnelle & Ancrage", desc: "Apprendre à canaliser les idées abstraites vers des actions pratiques immédiates de manifestation." },
+        { name: "Focalisation Singulière Simple", desc: "La capacité de s'isoler des distractions virtuelles et de terminer une seule tâche robuste." },
+        { name: "Écoute Active Affective", desc: "Écouter l'autre avec un cœur libre de réponses mécaniques ou de syllogismes logiques." },
+        { name: "Discernement Karmique Pratique", desc: "Reconnaître les schémas cycliques de fatigue et couper les dépenses ou habitudes redondantes." }
+      ],
+      blocks: [
+        { name: "Peur du jugement d'autrui", desc: "Génère de la distance ou un orgueil froid qui empêche la véritable intimité." },
+        { name: "Compulsion à planifier sans agir", desc: "Accumuler des dizaines de brouillons sans faire le premier pas pratique par peur de l'erreur." },
+        { name: "Rationalisation des affects", desc: "Tenter de débattre des sentiments purs avec une logique froide et des règles rigides." },
+        { name: "Gaspillage d'énergie cellulaire", desc: "Passer des heures à défendre des idéaux ou à débattre sur les réseaux sociaux par impulsivité." }
+      ],
+      virtues: ["Présence", "Structure", "Patience", "Humilité", "Vulnérabilité", "Courage", "Silence"],
+      lessons: [
+        "L'abondance réelle et les connexions sincères ne fleurissent pas par l'intelligence mathématique, mais lorsque nous acceptons d'embrasser notre vulnérabilité.",
+        "La véritable sagesse réside dans le fait de taire les projets et de laisser les œuvres s'exprimer d'elles-mêmes dans la matière.",
+        "Aucun transit astral de chance ne compense le manque de discipline quotidienne. Votre Chemin exige une cohérence ferme.",
+        "Pardonner les anciens malentendus du passé est le seul raccourci réel pour débloquer le flux des finances aujourd'hui."
+      ],
+      exercises: [
+        "Prenez 10 minutes loin de tout écran, respirez profondément par le nez et visualisez une lumière dorée purifiant votre esprit.",
+        "Écrivez trois objectifs simples sur papier à l'encre noire et exécutez le premier d'entre eux sans tarder.",
+        "Faites une marche de 15 minutes pieds nus sur l'herbe ou sentez le soleil du matin sur votre visage pour aligner votre biorythme.",
+        "Envoyez un message court et sincère de gratitude à quelqu'un de votre passé avec qui vous parlez rarement."
+      ],
+      advices: [
+        "Donnez une issue rapide à vos intuitions pratiques aujourd'hui. Accumuler des projets sans agir sature votre champ subtil.",
+        "Maintenez un silence stratégique sur vos plans d'affaires lors de cette lunaison. Évitez les conseils des tiers sceptiques.",
+        "Votre matrice astrale favorise aujourd'hui la santé et la purification moléculaire. Réduisez les aliments lourds.",
+        "La journée appelle à l'harmonisation d'anciens dossiers affectifs. Un simple geste d'affection désarmera les vieux murs."
+      ],
+      alerts: [
+        "Attention aux fuites financières par compensation affective. Transit lunaire propice aux achats impulsifs aujourd'hui.",
+        "Évitez les débats houleux sur les réseaux sociaux ou les chats. Ne gaspillez pas votre précieuse énergie pour des opinions.",
+        "Attention aux douleurs musculaires dues à une mauvaise posture devant l'ordinateur. Faites des pauses toutes les 50 minutes.",
+        "Évitez de signer des contrats à long terme à la hâte. Lisez toutes les lignes et consultez des mentors expérimentés."
+      ],
+      opportunities: [
+        "Les conversations avec de vieilles amitiés connectées ouvrent des canaux inattendus pour de nouvelles affaires ou projets.",
+        "Une idée originale émergera lors de moments de silence et de repos. Notez-la immédiatement dans votre carnet physique.",
+        "Le transit actuel ouvre des voies pour renégocier des dossiers en attente ou abonnements et arrêter les fuites de capitaux.",
+        "De nouveaux apprentissages dans les études subtiles ou l'intelligence apporteront une clarté inhabituelle aux décisions."
+      ],
+      protectWords: [
+        { word: "ANCREZ-VOUS", desc: "Répétez mentalement au réveil pour bannir les distractions et dispersions cognitives." },
+        { word: "COULEZ EN PAIX", desc: "Rappelez-vous de respirer profondément face aux frictions mécaniques ou retards de la routine." },
+        { word: "STRUCTURE FERME", desc: "Mentalisez pour ancrer vos projets dans la matière avec détermination et persévérance." },
+        { word: "CLARTÉ INTÉRIEURE", desc: "Utilisez pour chasser les brumes mentales ou doutes subtils générés par l'opinion des autres." }
+      ],
+      keywords: [
+        { word: "EXPANSION SUBTILE", desc: "Grandissez de manière diplomatique en respectant les canaux de silence de votre propre être." },
+        { word: "STRUCTURATION", desc: "Organisez les fondations physiques avant de lancer de nouveaux projets vers les cieux." },
+        { word: "ALIGNEMENT", desc: "Syntonisez vos actions quotidiennes avec le transit planétaire dominant d'aujourd'hui." },
+        { word: "MANIFESTATION", desc: "Amenez les intuitions métaphysiques dans la matière par de petites tâches cohérentes." }
+      ],
+      symbols: [
+        { name: "Heptagramme Sacré (⭐️)", desc: "Représente les sept chemins de protection qui scellent votre champ d'énergie aurique." },
+        { name: "Ankh (Clé de la Vie)", desc: "Symbolise l'union des forces célestes et terrestres régulant votre vitalité physique." },
+        { name: "Œil d'Horus (𓂀)", desc: "Apporte une perception aiguë et une protection contre les déviations ou brumes intellectuelles." },
+        { name: "Spirale d'Or Cosmique", desc: "Signale une croissance continue, harmonieuse et centrée sur l'évolution millénaire." }
+      ],
+      amulets: [
+        { name: "Scarabée de Lapis-Lazuli", desc: "Agit sur la protection physique, facilitant les transactions et bannissant la fatigue." },
+        { name: "Pyrite Cube d'Or", desc: "Irradie la fréquence solaire de richesse, de mérite et de focalisation matérielle." },
+        { name: "Quartz Rose Brut", desc: "Filtre les tensions cardiaques et ouvre des voies de dialogue compréhensif à la maison." },
+        { name: "Sodalite de Concentration", desc: "Structure les voies cérébrales pour l'absorption technique d'enseignements complexes." }
+      ],
+      environments: [
+        { name: "Bibliothèques ou Jardins de Lac", desc: "Favorisent l'absorption silencieuse des connaissances et la décélération cardiaque." },
+        { name: "Espaces avec Lumière Solaire Directe", desc: "Rechargent le plexus solaire et augmentent l'humeur moléculaire pour de nouveaux départs." },
+        { name: "Coins Silencieux de Temples", desc: "Facilitent la connexion télépathique avec les sphères subtiles et les mentors." },
+        { name: "Environnements Organisés et Propres", desc: "Réduisent considérablement l'anxiété visuelle, libérant un flux de travail pragmatique." }
+      ],
+      activities: [
+        { name: "Méditation avec Journal Intime", desc: "Écrire tôt dans le journal aide le cerveau à ne pas se saturer de plans et d'idées." },
+        { name: "Étirements du Dos & Respiration", desc: "Débloque les méridiens d'énergie physique et fait circuler l'oxygène cellulaire." },
+        { name: "Études d'Astrologie Métaphysique", desc: "Connecte vos intérêts intellectuels avec la boussole universelle des étoiles." },
+        { name: "Organisation Physique de Fichiers", desc: "Matérialise l'ordre mental en organisant votre bureau, tiroirs et dossiers." }
+      ],
+      challenges: [
+        { name: "Dispersion et Excès de Projets Inachevés", desc: "Attention à ne pas ébaucher 15 brouillons d'affaires sans en consolider aucun." },
+        { name: "Isolement Émotionnel par Orgueil", desc: "Surmonter la tentation de s'éloigner silencieusement lorsque des frictions affectives surgissent." },
+        { name: "Manque de Cohérence Pratique Quotidienne", desc: "Éviter de dépendre uniquement des pics d'inspiration ; le Chemin exige une discipline constante." },
+        { name: "Saturation Cognitive par Écrans Virtuels", desc: "L'anxiété d'absorber des nouvelles et informations sans temps de repos cellulaire." }
+      ],
+      opps: [
+        { name: "Affaires Intelligentes & Mentorat", desc: "Votre matrice originale brille lors de la création de nouvelles méthodes ou infoproduits." },
+        { name: "Partenariats Symétriques avec de Vieux Amis", desc: "Syntoniser les objectifs avec des personnes partageant votre éthique et vision humanitaire." },
+        { name: "Automatisation de la Routine de Travail", desc: "Mettre en œuvre des systèmes et des outils pour réduire le temps consacré à la bureaucratie." },
+        { name: "Consolidation d'Investissements Sûrs", desc: "Opportunité idéale pour réorganiser les apports et se concentrer sur des portefeuilles stables." }
+      ],
+      energies: [
+        { name: "Air Actif / Idéaux Collectifs", desc: "Force mentale et originalité vibrant dans la maison des grandes découvertes et alignements." },
+        { name: "Feu de l'Impulsion Pragmatique", desc: "Volonté ferme et enthousiasme solaire pour mettre sur pied des idées auparavant stagnantes." },
+        { name: "Terre de Structuration Solide", desc: "Capacité à donner des racines fermes et de la durabilité à vos accords, partenariats et finances." },
+        { name: "Eau d'Intuition Magnétique", desc: "Résonance fluide qui facilite la lecture des intentions d'autrui et attire les opportunités." }
+      ],
+      evitars: [
+        { name: "Signer des contrats ou acheter sous l'impulsion", desc: "Attendez que la lunation passe avant de faire des investissements importants." },
+        { name: "Débats houleux sur les réseaux virtuels", desc: "Ne troquez pas votre paix aurique et votre concentration précieuse pour des conflits stériles." },
+        { name: "Disparitions soudaines et distance froide", desc: "Dialoguer avec clarté évite que de petits doutes ne se transforment en barrières." },
+        { name: "Ignorer le biorythme et accumuler la fatigue", desc: "De petites pauses de 3 minutes apporteront l'alignement cellulaire dont vous avez besoin." }
+      ],
+      foci: [
+        { name: "Études et Consolidation Financière", desc: "Orientez votre résonance cellulaire pour organiser votre portefeuille et enrichir vos connaissances." },
+        { name: "Santé Vitale & Renforcement Corporel", desc: "Se concentrer sur l'immunité par une alimentation pure, le repos et de l'exercice régulier." },
+        { name: "Harmonisation du Foyer & Confort Intime", desc: "Purifier l'énergie des pièces pour générer un refuge sûr de paix et de recharge." },
+        { name: "Communication Claire & Partenariats", desc: "Créer des ponts, des contacts professionnels sincères et présenter des propositions sintonisées." }
+      ],
+      phrases: [
+        "Je canalise l'originalité libératrice de l'Air et la structure ferme de Saturne pour manifester l'abondance subtilement.",
+        "Mon intuition est une boussole souveraine ; je pose des gestes fermes pour matérialiser la paix et l'abondance aujourd'hui.",
+        "Je brise les murs de l'esprit, j'embrasse ma vulnérabilité avec courage et je syntonise le flux de la vraie prospérité.",
+        "Avec une discipline quotidienne et la foi dans les plans universels, je donne forme à mes idéaux et ressens la protection."
+      ]
+    }
+  };
+
+  const activeDict = recommendationsData[lang] || recommendationsData["pt"];
+
+  // Seed-based selection
+  const aromaObj = activeDict.aromas[seed % activeDict.aromas.length];
+  const incenseObj = activeDict.incenses[(seed + 1) % activeDict.incenses.length];
+  const plantObj = activeDict.plants[(seed + 2) % activeDict.plants.length];
+  const roomStr = activeDict.rooms[(seed + 3) % activeDict.rooms.length];
+  const bedColorStr = activeDict.bedroomColors[(seed + 4) % activeDict.bedroomColors.length];
+  const offColorStr = activeDict.officeColors[(seed + 5) % activeDict.officeColors.length];
+
+  const skillObj = activeDict.skills[(seed + 1) % activeDict.skills.length];
+  const blockObj = activeDict.blocks[(seed + 2) % activeDict.blocks.length];
+  const virtueStr = activeDict.virtues[(seed + 3) % activeDict.virtues.length];
+  const lessonStr = activeDict.lessons[(seed + 4) % activeDict.lessons.length];
+  const exerciseStr = activeDict.exercises[(seed + 5) % activeDict.exercises.length];
+
+  const adviceStr = activeDict.advices[(seed + 2) % activeDict.advices.length];
+  const alertStr = activeDict.alerts[(seed + 3) % activeDict.alerts.length];
+  const opportunityStr = activeDict.opportunities[(seed + 4) % activeDict.opportunities.length];
+  const protectWordObj = activeDict.protectWords[(seed + 5) % activeDict.protectWords.length];
+
+  const keywordObj = activeDict.keywords[(seed + 1) % activeDict.keywords.length];
+  const symbolObj = activeDict.symbols[(seed + 2) % activeDict.symbols.length];
+  const amuletObj = activeDict.amulets[(seed + 3) % activeDict.amulets.length];
+  const envObj = activeDict.environments[(seed + 4) % activeDict.environments.length];
+  const actObj = activeDict.activities[(seed + 5) % activeDict.activities.length];
+  const challengeObj = activeDict.challenges[(seed + 6) % activeDict.challenges.length];
+  const oppObj = activeDict.opps[(seed + 7) % activeDict.opps.length];
+  const energyObj = activeDict.energies[(seed + 8) % activeDict.energies.length];
+  const evitarObj = activeDict.evitars[(seed + 9) % activeDict.evitars.length];
+  const focusObj = activeDict.foci[(seed + 10) % activeDict.foci.length];
+  const phraseStr = activeDict.phrases[(seed + 11) % activeDict.phrases.length];
+
+  const luckyNum = (seed * 11) % 99 + 1;
+
+  return {
+    casa: {
+      aroma: aromaObj.name,
+      aroma_desc: aromaObj.desc,
+      incenso: incenseObj.name,
+      incenso_desc: incenseObj.desc,
+      planta: plantObj.name,
+      planta_desc: plantObj.desc,
+      ambiente_casa: roomStr,
+      quarto_cor: bedColorStr,
+      escritorio_cor: offColorStr
+    },
+    desenvolvimento: {
+      habilidade: skillObj.name,
+      habilidade_desc: skillObj.desc,
+      bloqueio: blockObj.name,
+      bloqueio_desc: blockObj.desc,
+      virtude: virtueStr,
+      licao: lessonStr,
+      exercicio: exerciseStr
+    },
+    mensagem: {
+      conselho_principal: adviceStr,
+      alerta_principal: alertStr,
+      oportunidade_principal: opportunityStr,
+      palavra_protecao: protectWordObj.word,
+      palavra_protecao_desc: protectWordObj.desc
+    },
+    painel: {
+      palavra_chave: keywordObj.word,
+      palavra_chave_desc: keywordObj.desc,
+      simbolo: symbolObj.name,
+      simbolo_desc: symbolObj.desc,
+      amuleto: amuletObj.name,
+      amuleto_desc: amuletObj.desc,
+      numero_sorte: String(luckyNum),
+      numero_sorte_desc: lang === "pt" ? `Conecta seu Caminho de Vida com a energia realizadora cósmica.` : `Connects your Life Path with cosmic manifesting energy.`,
+      cor_favoravel: amuletObj.name === "Escarabeu de Lápis-Lazúli" ? (lang === "pt" ? "Azul Cobalto Real" : "Royal Cobalt Blue") : (lang === "pt" ? "Verde Menta" : "Mint Green"),
+      cor_favoravel_desc: lang === "pt" ? "Promove a harmonização sutil dos meridianos celulares." : "Promotes the subtle harmonization of cellular meridians.",
+      ambiente_favoravel: envObj.name,
+      ambiente_favoravel_desc: envObj.desc,
+      atividade_favoravel: actObj.name,
+      atividade_favoravel_desc: actObj.desc,
+      desafio: challengeObj.name,
+      desafio_desc: challengeObj.desc,
+      oportunidade: oppObj.name,
+      oportunidade_desc: oppObj.desc,
+      energia_dominante: energyObj.name,
+      energia_dominante_desc: energyObj.desc,
+      evitar: evitarObj.name,
+      evitar_desc: evitarObj.desc,
+      area_foco: focusObj.name,
+      area_foco_desc: focusObj.desc,
+      frase_poder: phraseStr
+    }
+  };
+}
+

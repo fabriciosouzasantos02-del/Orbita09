@@ -1,3 +1,4 @@
+import { autoAuditPatch } from './autoAuditPatch';
 // Highly polished manual translations to ensure 100% key consistency across all languages
 import { uiTranslations } from './translations';
 
@@ -328,6 +329,12 @@ export function applyTranslationPatches() {
     const patch = patches[lang];
     for (const key of Object.keys(patch)) {
       dict[key] = patch[key];
+    }
+    const autoPatch = autoAuditPatch[lang] || {};
+    for (const key of Object.keys(autoPatch)) {
+      if (autoPatch[key] && autoPatch[key] !== key) {
+        dict[key] = autoPatch[key];
+      }
     }
   }
 }

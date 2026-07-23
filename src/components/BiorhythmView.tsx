@@ -139,9 +139,13 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
     const fetchSynthesis = async () => {
       setLoadingSynthesis(true);
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
         const res = await fetch("/api/astrology/vibrational-synthesis", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
           body: JSON.stringify({
             name: userName,
             birthDate,
@@ -154,12 +158,16 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
             lang: activeL
           })
         });
-        const data = await res.json();
-        if (data && data.synthesis) {
-          setSynthesis(data.synthesis);
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.synthesis) {
+            setSynthesis(data.synthesis);
+          }
         }
       } catch (err) {
-        console.error("Error fetching vibrational synthesis:", err);
+        console.warn("Vibrational synthesis fetch timed out or failed:", err);
       } finally {
         setLoadingSynthesis(false);
       }

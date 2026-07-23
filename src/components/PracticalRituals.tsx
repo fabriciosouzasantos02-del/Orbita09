@@ -9,6 +9,8 @@ import { motion, AnimatePresence } from 'motion/react';
 interface PracticalRitualsProps {
   user: any;
   activeLang: string;
+  dailyQuestsList?: any[];
+  onToggleQuest?: (id: string, points: number) => void;
 }
 
 interface RitualStep {
@@ -30,7 +32,7 @@ interface RitualData {
   metaphysicalEffect: string;
 }
 
-export default function PracticalRituals({ user, activeLang }: PracticalRitualsProps) {
+export default function PracticalRituals({ user, activeLang, dailyQuestsList, onToggleQuest }: PracticalRitualsProps) {
   const { t } = useTranslation();
   
   // Interactive checklist state
@@ -253,37 +255,59 @@ export default function PracticalRituals({ user, activeLang }: PracticalRitualsP
   }, [personalDayNumber, moonPhaseInfo, t]);
 
   // Daily Zen Quests - checklist tailored dynamically
-  const dailyQuestsList = useMemo(() => {
+  const quests = useMemo(() => {
+    if (dailyQuestsList && dailyQuestsList.length > 0) {
+      return dailyQuestsList;
+    }
     return [
       {
         id: 'dq1',
         title: t('Completar o Passo 1 do Ritual Diário'),
         desc: t('Realizar a preparação e sintonização do ambiente espiritual.'),
-        points: 40
+        points: 40,
+        isCompleted: !!completedQuests['dq1']
       },
       {
         id: 'dq2',
         title: t('Realizar Exercício de Respiração de 4 Segundos'),
         desc: t('Alinhe seus chakras respirando por 4s, segurando por 4s, expirando por 4s.'),
-        points: 30
+        points: 30,
+        isCompleted: !!completedQuests['dq2']
       },
       {
         id: 'dq3',
         title: t('Limpar Conflito ou Dispersão'),
         desc: t('Envie uma mensagem leve de harmonia ou afaste-se de distrações por 1h hoje.'),
-        points: 50
+        points: 50,
+        isCompleted: !!completedQuests['dq3']
       },
       {
         id: 'dq4',
         title: t('Anotar o Insight de Sintonia do Dia'),
         desc: t('Escreva no centro de anotações ou diário sua principal percepção intuitiva.'),
-        points: 40
+        points: 40,
+        isCompleted: !!completedQuests['dq4']
       }
     ];
-  }, [t]);
+  }, [dailyQuestsList, completedQuests, t]);
 
   // Persist completed quests
   const handleToggleQuest = (id: string, points: number) => {
+    if (onToggleQuest) {
+      onToggleQuest(id, points);
+      if (dailyQuestsList) {
+        const nextMissions = dailyQuestsList.map(q => {
+          if (q.id === id) return { ...q, isCompleted: !q.isCompleted };
+          return q;
+        });
+        const allDone = nextMissions.every(q => q.isCompleted);
+        if (allDone) {
+          setShowCelebration(true);
+        }
+      }
+      return;
+    }
+
     const nextCompleted = {
       ...completedQuests,
       [id]: !completedQuests[id]
@@ -292,28 +316,26 @@ export default function PracticalRituals({ user, activeLang }: PracticalRitualsP
     setCompletedQuests(nextCompleted);
     localStorage.setItem('orbi_daily_quests_completed', JSON.stringify(nextCompleted));
 
-    // Handle score points
+    // Handle score points (with NO regression)
     let nextScore = scorePoints;
     if (!completedQuests[id]) {
       nextScore += points;
-    } else {
-      nextScore = Math.max(0, nextScore - points);
     }
     setScorePoints(nextScore);
     localStorage.setItem('orbi_cosmic_points', nextScore.toString());
 
     // Check if all are completed
-    const allDone = dailyQuestsList.every(q => nextCompleted[q.id]);
+    const allDone = quests.every(q => nextCompleted[q.id]);
     if (allDone) {
       setShowCelebration(true);
     }
   };
 
   const completedCount = useMemo(() => {
-    return dailyQuestsList.filter(q => completedQuests[q.id]).length;
-  }, [completedQuests, dailyQuestsList]);
+    return quests.filter(q => q.isCompleted).length;
+  }, [quests]);
 
-  const completionPercent = Math.round((completedCount / dailyQuestsList.length) * 100);
+  const completionPercent = quests.length > 0 ? Math.round((completedCount / quests.length) * 100) : 0;
 
   return (
     <div id="practical-rituals-container" className="space-y-8">
@@ -484,7 +506,7 @@ export default function PracticalRituals({ user, activeLang }: PracticalRitualsP
               </div>
               <h4 className="text-base font-extrabold text-slate-100 font-sans">{t('Missões Diárias de Sintonia')}</h4>
               <p className="text-xs text-slate-400 leading-normal font-sans">
-                {t('Pratique o auto-alinhamento e some pontos de evolução cósmica. Complete todas as tarefas diárias para receber sua Estrela.')}
+                {t('Pratique o auto-alinhamento e some pontos débito de evolução cósmica. Complete todas as tarefas diárias para receber Dharma ao longo de sua vida')}
               </p>
             </div>
 
@@ -524,8 +546,8 @@ export default function PracticalRituals({ user, activeLang }: PracticalRitualsP
 
             {/* Quests Checkable items list */}
             <div className="space-y-3">
-              {dailyQuestsList.map((quest) => {
-                const isCompleted = !!completedQuests[quest.id];
+              {quests.map((quest) => {
+                const isCompleted = !!quest.isCompleted;
                 return (
                   <button
                     key={quest.id}
@@ -549,7 +571,7 @@ export default function PracticalRituals({ user, activeLang }: PracticalRitualsP
                         {quest.title}
                       </h5>
                       <p className={`text-[10px] leading-relaxed font-sans ${isCompleted ? 'text-slate-500/60' : 'text-slate-500'}`}>
-                        {quest.desc}
+                        {quest.desc || quest.description}
                       </p>
                     </div>
 

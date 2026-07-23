@@ -135,6 +135,44 @@ export function sanitizeFirestoreData(data: any): any {
   return data;
 }
 
+export function mergeProfileData(local: any, remote: any): any {
+  if (!local) return remote;
+  if (!remote) return local;
+
+  const merged: any = { ...remote, ...local };
+
+  // Preserve valid non-empty birth details prioritizing whichever object has non-empty values
+  merged.birthDate = (local.birthDate && local.birthDate.trim()) ? local.birthDate : (remote.birthDate && remote.birthDate.trim() ? remote.birthDate : "");
+  merged.birthTime = (local.birthTime && local.birthTime.trim()) ? local.birthTime : (remote.birthTime && remote.birthTime.trim() ? remote.birthTime : "12:00");
+  merged.birthCity = (local.birthCity && local.birthCity.trim() && local.birthCity !== "Sao_Paulo") 
+    ? local.birthCity 
+    : (remote.birthCity && remote.birthCity.trim() ? remote.birthCity : (local.birthCity || "Sao_Paulo"));
+  merged.isUnknownTime = local.isUnknownTime ?? remote.isUnknownTime ?? false;
+
+  const validLocalName = local.name && local.name !== "Viajante Estelar" && local.name !== "Buscador" ? local.name : null;
+  const validRemoteName = remote.name && remote.name !== "Viajante Estelar" && remote.name !== "Buscador" ? remote.name : null;
+  merged.name = validLocalName || validRemoteName || local.name || remote.name || "Buscador";
+
+  merged.displayName = local.displayName || remote.displayName || merged.name;
+  merged.birthName = local.birthName || remote.birthName || merged.name;
+  merged.profileName = local.profileName || remote.profileName || merged.name;
+
+  merged.avatarId = local.avatarId || remote.avatarId || local.profilePhoto || remote.profilePhoto || "";
+  merged.profilePhoto = merged.avatarId;
+
+  merged.currentChartId = local.currentChartId || remote.currentChartId || "";
+  merged.hasCreatedMap = !!merged.birthDate && !!merged.birthCity;
+
+  merged.scorePoints = Math.max(local.scorePoints ?? 0, remote.scorePoints ?? 0, local.stellarPoints ?? 0, remote.stellarPoints ?? 0);
+  merged.stellarPoints = merged.scorePoints;
+
+  const localTime = new Date(local.updatedAt || 0).getTime();
+  const remoteTime = new Date(remote.updatedAt || 0).getTime();
+  merged.updatedAt = localTime > remoteTime ? local.updatedAt : remote.updatedAt;
+
+  return merged;
+}
+
 // Lazy-loaded or optionally fallback firebase configuration
 import firebaseAppletConfig from "../../firebase-applet-config.json";
 
@@ -146,10 +184,12 @@ let authInstance: any = null;
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || firebaseAppletConfig.apiKey || "",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseAppletConfig.authDomain || "",
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || (firebaseAppletConfig as any).databaseURL || "",
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || firebaseAppletConfig.projectId || "",
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || firebaseAppletConfig.storageBucket || "",
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseAppletConfig.messagingSenderId || "",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || firebaseAppletConfig.appId || ""
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || firebaseAppletConfig.appId || "",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || (firebaseAppletConfig as any).measurementId || ""
 };
 
 // Check if we can safely initialize firebase Client
@@ -169,10 +209,6 @@ export function getFirebaseApp() {
 
 export function getFirestoreDB() {
   if (!hasConfig) return null;
-  const auth = getFirebaseAuth();
-  if (!auth?.currentUser) {
-    return null;
-  }
   if (!dbInstance) {
     const app = getFirebaseApp();
     if (app) {
@@ -227,6 +263,7 @@ validateFirestoreConnection();
 export interface UserProfileData {
   userId?: string;
   uid?: string;
+  updatedAt?: string;
   name: string;
   email: string;
   photoURL?: string;
@@ -270,6 +307,11 @@ export interface UserProfileData {
   currentChartId?: string;
   mainMapChangesCount?: number;
   verificationCode?: string;
+  followersCount?: number;
+  followingCount?: number;
+  likesCount?: number;
+  friendsCount?: number;
+  schemaVersion?: number;
   verificationCodeCreatedAt?: string;
 }
 
@@ -297,41 +339,104 @@ export interface DreamLogItem {
   language?: string;
 }
 
-// 1. Helper to retrieve current document key (preferring active authenticated UID, falling back to email)
-export function getUserDocKey(email: string): string {
-  const mailKey = email.toLowerCase().trim();
+// 1. Helper to retrieve current document key (strictly preferring active authenticated UID or cached UID, preventing hybrid email keys)
+export function getUserDocKey(emailOrUid?: string): string {
+  // If the parameter passed is already a valid non-email UID, return it directly
+  if (emailOrUid) {
+    const trimmed = emailOrUid.trim();
+    if (trimmed && !trimmed.includes("@")) {
+      return trimmed;
+    }
+  }
+
   const auth = getFirebaseAuth();
-  const uid = auth?.currentUser?.uid;
-  return uid || mailKey;
+  const activeUid = auth?.currentUser?.uid;
+  if (activeUid) return activeUid;
+
+  const cachedUid = localStorage.getItem("orbi_logged_uid");
+  if (cachedUid) return cachedUid;
+
+  try {
+    const savedProfile = localStorage.getItem("orbi_user_profile");
+    if (savedProfile) {
+      const parsed = JSON.parse(savedProfile);
+      if (parsed?.uid && typeof parsed.uid === 'string' && !parsed.uid.includes("@")) return parsed.uid;
+      if (parsed?.userId && typeof parsed.userId === 'string' && !parsed.userId.includes("@")) return parsed.userId;
+    }
+  } catch (_) {}
+
+  // Never return an email address as a document key under users/{key}
+  return "";
 }
 
 // Core Profile Real-Time Synchronizers
 export async function saveProfileToDatabase(email: string, profile: UserProfileData) {
   const mailKey = email.toLowerCase().trim();
-  if (!mailKey) return;
-  
-  const docKey = getUserDocKey(email);
   const auth = getFirebaseAuth();
-  const activeUid = auth?.currentUser?.uid || profile.uid || profile.userId || "";
+  const activeUid = auth?.currentUser?.uid || profile.uid || profile.userId || localStorage.getItem("orbi_logged_uid") || "";
 
-  const rawName = profile.name || profile.displayName || profile.profileName || profile.birthName || "Buscador";
-  const finalName = (rawName === "Viajante Estelar") ? "Buscador" : rawName;
+  if (!activeUid) {
+    console.warn("[saveProfileToDatabase] Impossível salvar no Firestore sem UID ativo.");
+    return;
+  }
 
-  const pointsVal = profile.stellarPoints !== undefined ? profile.stellarPoints : (profile.scorePoints ?? 0);
+  const docKey = activeUid;
+
+  // Read existing local profile to protect against overwriting valid fields
+  let existingLocal: any = null;
+  try {
+    const saved = localStorage.getItem("orbi_user_profile");
+    if (saved) existingLocal = JSON.parse(saved);
+  } catch (_) {}
+
+  const rawName = profile.name || profile.displayName || profile.profileName || profile.birthName || existingLocal?.name || existingLocal?.displayName || "";
+  const validName = (rawName && rawName !== "Viajante Estelar" && rawName !== "Buscador") 
+    ? rawName 
+    : (existingLocal?.name && existingLocal?.name !== "Viajante Estelar" && existingLocal?.name !== "Buscador" ? existingLocal.name : (rawName || "Buscador"));
+
+  const pointsVal = Math.max(
+    profile.stellarPoints !== undefined ? profile.stellarPoints : 0,
+    profile.scorePoints !== undefined ? profile.scorePoints : 0,
+    existingLocal?.scorePoints !== undefined ? existingLocal.scorePoints : 0,
+    existingLocal?.stellarPoints !== undefined ? existingLocal.stellarPoints : 0
+  );
+
+  const birthDateVal = (profile.birthDate && profile.birthDate.trim()) ? profile.birthDate : (existingLocal?.birthDate || "");
+  const birthTimeVal = (profile.birthTime && profile.birthTime.trim()) ? profile.birthTime : (existingLocal?.birthTime || "12:00");
+  const birthCityVal = (profile.birthCity && profile.birthCity.trim() && profile.birthCity !== "Sao_Paulo") 
+    ? profile.birthCity 
+    : (existingLocal?.birthCity || profile.birthCity || "Sao_Paulo");
+  const avatarIdVal = profile.avatarId || profile.profilePhoto || existingLocal?.avatarId || existingLocal?.profilePhoto || "";
 
   const enrichedProfile = {
+    ...existingLocal,
     ...profile,
-    uid: activeUid || profile.uid || "",
-    userId: activeUid || profile.userId || "",
+    uid: activeUid || profile.uid || existingLocal?.uid || "",
+    userId: activeUid || profile.userId || existingLocal?.userId || "",
     email: mailKey,
-    name: finalName,
-    displayName: profile.displayName || finalName,
-    birthName: profile.birthName || finalName,
-    profileName: profile.profileName || finalName,
-    avatarId: profile.avatarId || profile.profilePhoto || "",
-    preferredLanguage: profile.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
+    name: validName,
+    displayName: (profile.displayName && profile.displayName !== "Viajante Estelar" && profile.displayName !== "Buscador") ? profile.displayName : (existingLocal?.displayName || validName),
+    birthName: (profile.birthName && profile.birthName !== "Viajante Estelar" && profile.birthName !== "Buscador") ? profile.birthName : (existingLocal?.birthName || validName),
+    profileName: (profile.profileName && profile.profileName !== "Viajante Estelar" && profile.profileName !== "Buscador") ? profile.profileName : (existingLocal?.profileName || validName),
+    avatarId: avatarIdVal,
+    profilePhoto: avatarIdVal,
+    preferredLanguage: profile.preferredLanguage || existingLocal?.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
     scorePoints: pointsVal,
     stellarPoints: pointsVal,
+    birthDate: birthDateVal,
+    birthTime: birthTimeVal,
+    birthCity: birthCityVal,
+    currentChartId: profile.currentChartId || existingLocal?.currentChartId || "",
+    hasCreatedMap: profile.hasCreatedMap ?? (!!birthDateVal && !!birthCityVal),
+    latitude: profile.latitude !== undefined ? profile.latitude : (existingLocal?.latitude ?? -23.55052),
+    longitude: profile.longitude !== undefined ? profile.longitude : (existingLocal?.longitude ?? -46.633308),
+    isPremium: profile.isPremium !== undefined ? profile.isPremium : (existingLocal?.isPremium ?? false),
+    followersCount: profile.followersCount !== undefined ? profile.followersCount : (existingLocal?.followersCount ?? 0),
+    followingCount: profile.followingCount !== undefined ? profile.followingCount : (existingLocal?.followingCount ?? 0),
+    likesCount: profile.likesCount !== undefined ? profile.likesCount : (existingLocal?.likesCount ?? 0),
+    friendsCount: profile.friendsCount !== undefined ? profile.friendsCount : (existingLocal?.friendsCount ?? 0),
+    schemaVersion: profile.schemaVersion || existingLocal?.schemaVersion || "1.0.0",
+    createdAt: profile.createdAt || existingLocal?.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
 
@@ -350,6 +455,22 @@ export async function saveProfileToDatabase(email: string, profile: UserProfileD
       });
       await setDoc(userRef, sanitizeFirestoreData(enrichedProfile), { merge: true });
       console.log(`[FIRESTORE_WRITE_DEBUG] [saveProfileToDatabase] setDoc SUCCESS for path: ${path}`);
+
+      // Also save to the pointsTracker subcollection as a dedicated record for auditing and durability
+      const trackerPath = `users/${docKey}/pointsTracker/current`;
+      try {
+        const trackerRef = doc(db, "users", docKey, "pointsTracker", "current");
+        await setDoc(trackerRef, {
+          scorePoints: pointsVal,
+          stellarPoints: pointsVal,
+          updatedAt: new Date().toISOString(),
+          email: mailKey,
+          uid: activeUid || ""
+        }, { merge: true });
+        console.log(`[FIRESTORE_WRITE_DEBUG] [saveProfileToDatabase] pointsTracker setDoc SUCCESS for path: ${trackerPath}`);
+      } catch (trackerErr: any) {
+        console.warn(`[FIRESTORE_WRITE_DEBUG] [saveProfileToDatabase] pointsTracker setDoc warning for path: ${trackerPath}`, trackerErr);
+      }
     } catch (e: any) {
       console.error(`[FIRESTORE_WRITE_DEBUG] [saveProfileToDatabase] setDoc FAILED for path: ${path}`, {
         error: e?.message || String(e),
@@ -372,13 +493,25 @@ export async function migrateLegacyUserSubcollections(db: any, mailKey: string, 
     "extraMaps",
     "missions",
     "tarotReadings",
+    "tarotHistory",
     "numerology",
     "prosperityMaps",
     "biorhythm",
     "lunarNodes",
     "notifications",
     "subscriptions",
-    "cache"
+    "cache",
+    "premium",
+    "stellarPoints",
+    "profile",
+    "settings",
+    "statistics",
+    "compatibilityHistory",
+    "cupidoFavorites",
+    "cupidoHistory",
+    "cupidoSettings",
+    "cupidoPeople",
+    "pointsTracker"
   ];
 
   console.log(`[Migration] Iniciando migração de subcoleções de e-mail (${mailKey}) para UID (${uid})`);
@@ -411,118 +544,135 @@ export async function migrateLegacyUserSubcollections(db: any, mailKey: string, 
   }
 }
 
-export async function loadProfileFromDatabase(email: string): Promise<UserProfileData | null> {
+export async function loadProfileFromDatabase(email: string, explicitUid?: string): Promise<UserProfileData | null> {
   const mailKey = email.toLowerCase().trim();
-  if (!mailKey) return null;
-  
   const db = getFirestoreDB();
-  if (db) {
-    const auth = getFirebaseAuth();
-    const uid = auth?.currentUser?.uid;
-    
-    // First try the optimal route via current session's authenticated UID
-    if (uid) {
-      const path = `users/${uid}`;
+  if (!db) return null;
+
+  const auth = getFirebaseAuth();
+  const uid = explicitUid || auth?.currentUser?.uid || (email && !email.includes("@") ? email : localStorage.getItem("orbi_logged_uid"));
+
+  if (!uid) {
+    console.warn("[Sync] loadProfileFromDatabase chamado sem UID válido.");
+    return null;
+  }
+
+  const path = `users/${uid}`;
+  try {
+    const userRef = doc(db, "users", uid);
+    const snap = await getDocWithTimeout(userRef);
+    if (snap.exists()) {
+      const remote = snap.data() as UserProfileData;
+
+      let local: UserProfileData | null = null;
       try {
-        const userRef = doc(db, "users", uid);
-        const snap = await getDocWithTimeout(userRef);
-        if (snap.exists()) {
-          const raw = snap.data() as UserProfileData;
-          localStorage.setItem("orbi_user_profile", JSON.stringify(raw));
-          return raw;
-        }
-      } catch (e) {
-        console.warn("[Sync] Leitura por UID falhou.");
+        const saved = localStorage.getItem("orbi_user_profile");
+        if (saved) local = JSON.parse(saved);
+      } catch (_) {}
+
+      const merged = mergeProfileData(local, remote);
+      localStorage.setItem("orbi_user_profile", JSON.stringify(merged));
+
+      // If local was newer, upload merged to Firestore
+      const localTime = local && local.updatedAt ? new Date(local.updatedAt).getTime() : 0;
+      const remoteTime = remote && remote.updatedAt ? new Date(remote.updatedAt).getTime() : 0;
+      if (localTime > remoteTime) {
+        console.log("[Sync Engine] Local profile is newer, uploading merged profile to Firestore...");
+        await setDoc(userRef, sanitizeFirestoreData(merged), { merge: true });
       }
+
+      return merged;
     }
-    
-    // Fallback/Legacy lookup via lowercase email
-    const emailPath = `users/${mailKey}`;
-    try {
-      const userRef = doc(db, "users", mailKey);
-      const snap = await getDocWithTimeout(userRef);
-      if (snap.exists()) {
-        const raw = snap.data() as UserProfileData;
-        
-        // If we have an active Firebase Auth user, migrate the legacy document to users/{uid}
-        if (uid) {
-          console.log("[Migration] Migrando perfil legado de e-mail para nova estrutura users/{uid}:", uid);
-          const newDocRef = doc(db, "users", uid);
-          const migratedProfile = {
-            ...raw,
-            uid: uid,
-            userId: uid,
-            updatedAt: new Date().toISOString()
-          };
-          
-          // 1. Cópia bem-sucedida do documento principal
-          await setDoc(newDocRef, migratedProfile, { merge: true });
-          
-          // 2. Cópia de todas as subcoleções (Natal Charts, Dreams, Extra Maps, Tarot, etc.)
-          await migrateLegacyUserSubcollections(db, mailKey, uid, email);
-          
-          // 3. Deleta o documento principal e todas as estruturas antigas apenas pós confirmação
-          await deleteDoc(userRef).catch(e => console.warn("[Migration] Erro ao deletar documento principal legado:", e));
-          
-          localStorage.setItem("orbi_user_profile", JSON.stringify(migratedProfile));
-          return migratedProfile;
-        }
-        
-        localStorage.setItem("orbi_user_profile", JSON.stringify(raw));
-        return raw;
-      }
-    } catch (e) {
-      console.warn("[Sync] Leitura por e-mail falhou.");
-      handleFirestoreError(e, OperationType.GET, emailPath);
+  } catch (e: any) {
+    console.warn(`[Sync] Leitura do perfil por UID (${uid}) falhou:`, e);
+    if (e?.code || e?.message?.includes('permission')) {
+      handleFirestoreError(e, OperationType.GET, path);
     }
   }
-  
+
   const saved = localStorage.getItem("orbi_user_profile");
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
-      if (parsed && (parsed.email?.toLowerCase().trim() === mailKey || parsed.uid === mailKey || parsed.userId === mailKey)) {
-        return parsed;
-      }
-    } catch {}
+      if (parsed) return parsed;
+    } catch (_) {}
+  }
+
+  return null;
+}
+
+export async function loadPremiumSubscription(uid: string): Promise<any | null> {
+  const db = getFirestoreDB();
+  if (!db || !uid) return null;
+  try {
+    const subRef = doc(db, "users", uid, "premium", "status");
+    const snap = await getDocWithTimeout(subRef);
+    if (snap.exists()) {
+      return snap.data();
+    }
+    const subRefAlt = doc(db, "users", uid, "premium", "subscription");
+    const snapAlt = await getDocWithTimeout(subRefAlt);
+    if (snapAlt.exists()) {
+      return snapAlt.data();
+    }
+  } catch (err) {
+    console.warn("[Firebase Client] Error loading premium sub document:", err);
   }
   return null;
 }
 
-// Intelligent caching system for astronomical & numerological calculations
-export async function saveCalculationCache(email: string, cacheId: string, data: any): Promise<void> {
-  const mailKey = email.toLowerCase().trim();
-  if (!mailKey || !cacheId) return;
-
-  // Sync to local storage for local offline redundancy/speed
-  const storageKey = `orbi_calc_cache_${mailKey}_${cacheId}`;
-  localStorage.setItem(storageKey, JSON.stringify({
-    data,
-    updatedAt: new Date().toISOString()
-  }));
-
-  const db = getFirestoreDB();
-  if (db) {
-    const docKey = getUserDocKey(email);
-    const path = `users/${docKey}/cache/${cacheId}`;
-    try {
-      const cacheRef = doc(db, "users", docKey, "cache", cacheId);
-      await setDoc(cacheRef, {
-        id: cacheId,
-        userId: docKey,
-        data,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
-      console.log(`[Cache] Cálculo '${cacheId}' gravado com sucesso no Firestore. [Chave: ${docKey}]`);
-    } catch (e) {
-      console.warn(`[Cache] Erro ao gravar '${cacheId}' no Firestore. Usando redundância local.`);
-      handleFirestoreError(e, OperationType.WRITE, path);
-    }
+// Helper to calculate exact cache expiration times
+export function getCacheExpiration(cacheId: string): string {
+  const now = new Date();
+  
+  // Daily contents
+  if (
+    cacheId.includes('daily') || 
+    cacheId.includes('day') || 
+    cacheId.includes('moontip') || 
+    cacheId.includes('mission') || 
+    cacheId.includes('dashboard') ||
+    cacheId.match(/\d{4}-\d{2}-\d{2}/)
+  ) {
+    // Expires at midnight tonight (23:59:59.999) in local user system time
+    const expires = new Date();
+    expires.setHours(23, 59, 59, 999);
+    return expires.toISOString();
   }
+  
+  // Weekly contents
+  if (cacheId.includes('weekly') || cacheId.includes('week')) {
+    // Expires at the end of the current week (Sunday 23:59:59.999)
+    const expires = new Date();
+    const day = expires.getDay();
+    const distanceToSunday = 7 - (day === 0 ? 7 : day);
+    expires.setDate(expires.getDate() + distanceToSunday);
+    expires.setHours(23, 59, 59, 999);
+    return expires.toISOString();
+  }
+  
+  // Monthly contents
+  if (cacheId.includes('monthly') || cacheId.includes('month') || cacheId.includes('prosperity')) {
+    // Expires at the end of the current month
+    const expires = new Date();
+    const lastDay = new Date(expires.getFullYear(), expires.getMonth() + 1, 0);
+    lastDay.setHours(23, 59, 59, 999);
+    return lastDay.toISOString();
+  }
+  
+  // Permanent / Other data: default 1 year (365 days)
+  const expires = new Date();
+  expires.setDate(expires.getDate() + 365);
+  return expires.toISOString();
 }
 
-// Automatic Cache Expiration Check Helper
-function isCacheExpired(cacheId: string, updatedAtStr: string): boolean {
+// Automatic Cache Expiration Check Helper (supports expiresAt metadata)
+export function isCacheExpired(cacheId: string, updatedAtStr: string, expiresAtStr?: string): boolean {
+  if (expiresAtStr) {
+    try {
+      return new Date() > new Date(expiresAtStr);
+    } catch {}
+  }
   if (!updatedAtStr) return true;
   try {
     const updatedAt = new Date(updatedAtStr);
@@ -535,7 +685,7 @@ function isCacheExpired(cacheId: string, updatedAtStr: string): boolean {
       cacheId.includes('moontip') || 
       cacheId.includes('mission') || 
       cacheId.includes('dashboard') ||
-      cacheId.match(/\d{4}-\d{2}-\d{2}/) // Any key containing a date string like YYYY-MM-DD
+      cacheId.match(/\d{4}-\d{2}-\d{2}/)
     ) {
       return updatedAt.getDate() !== now.getDate() ||
              updatedAt.getMonth() !== now.getMonth() ||
@@ -565,61 +715,177 @@ function isCacheExpired(cacheId: string, updatedAtStr: string): boolean {
   return false;
 }
 
+// Intelligent caching system for astronomical & numerological calculations
+export async function saveCalculationCache(email: string, cacheId: string, data: any): Promise<void> {
+  const mailKey = email.toLowerCase().trim();
+  if (!mailKey || !cacheId) return;
+
+  const docKey = getUserDocKey(email);
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const expiryIso = getCacheExpiration(cacheId);
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  // Build the complete rich cache metadata object
+  const cachePayload = {
+    id: cacheId,
+    userId: docKey,
+    module: cacheId.split('_')[0] || "general",
+    generatedAt: nowIso,
+    expiresAt: expiryIso,
+    schemaVersion: "1.0.0",
+    lastUpdate: nowIso,
+    contentVersion: "1.0.0",
+    timezone: tz,
+    data: data,
+    updatedAt: nowIso
+  };
+
+  // Sync to local storage for local offline redundancy/speed
+  const storageKey = `orbi_calc_cache_${mailKey}_${cacheId}`;
+  localStorage.setItem(storageKey, JSON.stringify(cachePayload));
+
+  // Sync to Firestore
+  const db = getFirestoreDB();
+  if (db) {
+    const path = `users/${docKey}/cache/${cacheId}`;
+    try {
+      const cacheRef = doc(db, "users", docKey, "cache", cacheId);
+      await setDoc(cacheRef, cachePayload, { merge: true });
+      console.log(`[Cache] Cálculo '${cacheId}' gravado com sucesso no Firestore. [Chave: ${docKey}]`);
+    } catch (e) {
+      console.warn(`[Cache] Erro ao gravar '${cacheId}' no Firestore. Usando redundância local.`);
+      handleFirestoreError(e, OperationType.WRITE, path);
+    }
+  }
+}
+
 export async function loadCalculationCache(email: string, cacheId: string): Promise<any | null> {
   const mailKey = email.toLowerCase().trim();
   if (!mailKey || !cacheId) return null;
 
+  const storageKey = `orbi_calc_cache_${mailKey}_${cacheId}`;
+  const savedLocal = localStorage.getItem(storageKey);
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const expiryIso = getCacheExpiration(cacheId);
+
+  let localPayload: any = null;
+  if (savedLocal) {
+    try {
+      localPayload = JSON.parse(savedLocal);
+    } catch {}
+  }
+
+  const isLocalValid = localPayload && localPayload.expiresAt && !isCacheExpired(cacheId, localPayload.updatedAt || localPayload.lastUpdate, localPayload.expiresAt);
+
+  // 1. If local cache is valid, return IMMEDIATELY (0ms block!) and synchronize silently in the background
+  if (isLocalValid) {
+    console.log(`[Cache] Returning instant local cache for '${cacheId}'`);
+
+    const db = getFirestoreDB();
+    if (db) {
+      setTimeout(async () => {
+        try {
+          const docKey = getUserDocKey(email);
+          const cacheRef = doc(db, "users", docKey, "cache", cacheId);
+          const snap = await getDoc(cacheRef);
+          if (snap.exists()) {
+            const docData = snap.data();
+            if (docData && docData.data) {
+              const firestoreExpiresAt = docData.expiresAt;
+              const isFirestoreExpired = isCacheExpired(cacheId, docData.updatedAt || docData.lastUpdate, firestoreExpiresAt);
+              
+              if (!isFirestoreExpired) {
+                const firestoreDataStr = JSON.stringify(docData.data);
+                const localDataStr = JSON.stringify(localPayload.data);
+                
+                if (firestoreDataStr !== localDataStr) {
+                  console.log(`[Cache Silent Sync] Firestore cache updated/differs for '${cacheId}'. Updating locally...`);
+                  const updatedPayload = {
+                    ...localPayload,
+                    ...docData,
+                    updatedAt: docData.updatedAt || nowIso
+                  };
+                  localStorage.setItem(storageKey, JSON.stringify(updatedPayload));
+                  
+                  // Notify UI components dynamically
+                  window.dispatchEvent(new CustomEvent(`orbi_cache_updated_${cacheId}`, {
+                    detail: { cacheId, data: docData.data }
+                  }));
+                }
+              }
+            }
+          } else {
+            // Firestore missing but local is valid -> write back to Firestore silently
+            console.log(`[Cache Silent Sync] Firestore missing valid cache for '${cacheId}'. Syncing local to server...`);
+            const docKey = getUserDocKey(email);
+            const cacheRef = doc(db, "users", docKey, "cache", cacheId);
+            await setDoc(cacheRef, {
+              ...localPayload,
+              userId: docKey
+            }, { merge: true });
+          }
+        } catch (err) {
+          console.warn(`[Cache Silent Sync] Background sync failed for '${cacheId}':`, err);
+        }
+      }, 500);
+    }
+
+    return localPayload.data;
+  }
+
+  // 2. If local cache is missing or expired, fetch from Firestore synchronously (with timeout)
   const db = getFirestoreDB();
   if (db) {
     const docKey = getUserDocKey(email);
     const path = `users/${docKey}/cache/${cacheId}`;
     try {
       const cacheRef = doc(db, "users", docKey, "cache", cacheId);
-      const snap = await getDocWithTimeout(cacheRef);
+      const snap = await getDocWithTimeout(cacheRef, 3000);
       if (snap.exists()) {
         const docData = snap.data();
         if (docData && docData.data) {
-          const updatedAtStr = docData.updatedAt || new Date().toISOString();
+          const firestoreExpiresAt = docData.expiresAt || docData.updatedAt;
+          const isFirestoreExpired = isCacheExpired(cacheId, docData.updatedAt || docData.lastUpdate, firestoreExpiresAt);
           
-          if (isCacheExpired(cacheId, updatedAtStr)) {
-            console.log(`[Cache Invalidation] Firestore cache '${cacheId}' is expired. Recalculating...`);
-            // Delete expired cache from Firestore asynchronously to keep database tidy
+          if (!isFirestoreExpired) {
+            console.log(`[Cache] Loaded valid cache from Firestore for '${cacheId}'`);
+            const newPayload = {
+              id: cacheId,
+              userId: docKey,
+              module: docData.module || cacheId.split('_')[0] || "general",
+              generatedAt: docData.generatedAt || docData.updatedAt || nowIso,
+              expiresAt: docData.expiresAt || expiryIso,
+              schemaVersion: docData.schemaVersion || "1.0.0",
+              lastUpdate: docData.lastUpdate || docData.updatedAt || nowIso,
+              contentVersion: docData.contentVersion || "1.0.0",
+              timezone: docData.timezone || tz,
+              data: docData.data,
+              updatedAt: docData.updatedAt || nowIso
+            };
+            localStorage.setItem(storageKey, JSON.stringify(newPayload));
+            return docData.data;
+          } else {
+            console.log(`[Cache Invalidation] Firestore cache '${cacheId}' is expired. Deleting stale copy...`);
             deleteDoc(cacheRef).catch(console.warn);
-            const storageKey = `orbi_calc_cache_${mailKey}_${cacheId}`;
             localStorage.removeItem(storageKey);
-            return null;
           }
-
-          // Warm up local storage
-          const storageKey = `orbi_calc_cache_${mailKey}_${cacheId}`;
-          localStorage.setItem(storageKey, JSON.stringify({
-            data: docData.data,
-            updatedAt: updatedAtStr
-          }));
-          return docData.data;
         }
       }
     } catch (e) {
-      console.warn(`[Cache] Leitura de cache '${cacheId}' falhou no Firestore. Tentando local storage.`);
+      console.warn(`[Cache] Firestore fetch failed or timed out for '${cacheId}'.`);
       handleFirestoreError(e, OperationType.GET, path);
     }
   }
 
-  // Local storage fallback
-  const storageKey = `orbi_calc_cache_${mailKey}_${cacheId}`;
-  const saved = localStorage.getItem(storageKey);
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved);
-      const updatedAtStr = parsed?.updatedAt || new Date().toISOString();
-      if (isCacheExpired(cacheId, updatedAtStr)) {
-        console.log(`[Cache Invalidation] Local cache '${cacheId}' is expired. Clearing...`);
-        localStorage.removeItem(storageKey);
-        return null;
-      }
-      return parsed?.data || null;
-    } catch {}
+  // 3. Absolute offline/recovery fallback: if we have stale/expired local data, use it as a last resort
+  if (localPayload && localPayload.data) {
+    console.log(`[Cache Offline Fallback] Using stale local cache for '${cacheId}' due to network state.`);
+    return localPayload.data;
   }
+
   return null;
 }
 
@@ -700,21 +966,33 @@ export function subscribeToUserProfile(email: string, onUpdate: (profile: UserPr
   });
 }
 
+// User-scoped localStorage helpers for Extra Maps & Dreams
+function getExtraMapsStorageKey(email: string): string {
+  const docKey = getUserDocKey(email);
+  return docKey ? `orbi_extra_maps_${docKey}` : `orbi_extra_maps_guest`;
+}
+
+function getDreamsStorageKey(email: string): string {
+  const docKey = getUserDocKey(email);
+  return docKey ? `star_map_dreams_${docKey}` : `star_map_dreams_guest`;
+}
+
 // 2. Extra Maps Sync & Real-Time Subscriber
 export async function saveExtraMapToDatabase(email: string, extraMap: ExtraMapItem) {
   const mailKey = email.toLowerCase().trim();
   if (!mailKey) return;
 
   const docKey = getUserDocKey(email);
+  const storageKey = getExtraMapsStorageKey(email);
 
-  const savedList = localStorage.getItem("orbi_extra_maps");
+  const savedList = localStorage.getItem(storageKey);
   let currentList: ExtraMapItem[] = [];
   try {
     currentList = savedList ? JSON.parse(savedList) : [];
   } catch {}
   currentList = currentList.filter(m => m.id !== extraMap.id);
   currentList.push(extraMap);
-  localStorage.setItem("orbi_extra_maps", JSON.stringify(currentList));
+  localStorage.setItem(storageKey, JSON.stringify(currentList));
 
   const db = getFirestoreDB();
   if (db) {
@@ -737,14 +1015,15 @@ export async function deleteExtraMapFromDatabase(email: string, mapId: string) {
   if (!mailKey) return;
 
   const docKey = getUserDocKey(email);
+  const storageKey = getExtraMapsStorageKey(email);
 
-  const savedList = localStorage.getItem("orbi_extra_maps");
+  const savedList = localStorage.getItem(storageKey);
   let currentList: ExtraMapItem[] = [];
   try {
     currentList = savedList ? JSON.parse(savedList) : [];
   } catch {}
   currentList = currentList.filter(m => m.id !== mapId);
-  localStorage.setItem("orbi_extra_maps", JSON.stringify(currentList));
+  localStorage.setItem(storageKey, JSON.stringify(currentList));
 
   const db = getFirestoreDB();
   if (db) {
@@ -762,9 +1041,11 @@ export async function loadExtraMapsFromDatabase(email: string): Promise<ExtraMap
   const mailKey = email.toLowerCase().trim();
   if (!mailKey) return [];
 
+  const storageKey = getExtraMapsStorageKey(email);
   const db = getFirestoreDB();
   if (db) {
     const docKey = getUserDocKey(email);
+    if (!docKey) return [];
     const path = `users/${docKey}/extraMaps`;
     try {
       const colRef = collection(db, "users", docKey, "extraMaps");
@@ -773,16 +1054,14 @@ export async function loadExtraMapsFromDatabase(email: string): Promise<ExtraMap
       snap.forEach((docSnap) => {
         results.push(docSnap.data() as ExtraMapItem);
       });
-      if (results.length > 0) {
-        localStorage.setItem("orbi_extra_maps", JSON.stringify(results));
-        return results;
-      }
+      localStorage.setItem(storageKey, JSON.stringify(results));
+      return results;
     } catch (e) {
-      handleFirestoreError(e, OperationType.GET, path);
+      console.warn(`[Sync] Load Extra Maps deferred for ${path}:`, e);
     }
   }
 
-  const savedList = localStorage.getItem("orbi_extra_maps");
+  const savedList = localStorage.getItem(storageKey);
   if (savedList) {
     try {
       return JSON.parse(savedList);
@@ -800,6 +1079,7 @@ export function subscribeToExtraMaps(email: string, onUpdate: (maps: ExtraMapIte
   }
 
   const docKey = getUserDocKey(email);
+  const storageKey = getExtraMapsStorageKey(email);
   const path = `users/${docKey}/extraMaps`;
   const collectionRef = collection(db, "users", docKey, "extraMaps");
 
@@ -808,7 +1088,7 @@ export function subscribeToExtraMaps(email: string, onUpdate: (maps: ExtraMapIte
     snapshot.forEach((snap) => {
       results.push(snap.data() as ExtraMapItem);
     });
-    localStorage.setItem("orbi_extra_maps", JSON.stringify(results));
+    localStorage.setItem(storageKey, JSON.stringify(results));
     onUpdate(results);
   }, (error) => {
     console.error("[SnapSync] Erro no snapshot de extraMaps:", error);
@@ -913,15 +1193,16 @@ export async function saveDreamToDatabase(email: string, dream: DreamLogItem) {
   if (!mailKey) return;
 
   const docKey = getUserDocKey(email);
+  const storageKey = getDreamsStorageKey(email);
 
-  const savedList = localStorage.getItem("star_map_dreams_v2");
+  const savedList = localStorage.getItem(storageKey);
   let currentList: DreamLogItem[] = [];
   try {
     currentList = savedList ? JSON.parse(savedList) : [];
   } catch {}
   currentList = currentList.filter(d => d.id !== dream.id);
   currentList.push(dream);
-  localStorage.setItem("star_map_dreams_v2", JSON.stringify(currentList));
+  localStorage.setItem(storageKey, JSON.stringify(currentList));
 
   const db = getFirestoreDB();
   if (db) {
@@ -943,14 +1224,15 @@ export async function deleteDreamFromDatabase(email: string, dreamId: string) {
   if (!mailKey) return;
 
   const docKey = getUserDocKey(email);
+  const storageKey = getDreamsStorageKey(email);
 
-  const savedList = localStorage.getItem("star_map_dreams_v2");
+  const savedList = localStorage.getItem(storageKey);
   let currentList: DreamLogItem[] = [];
   try {
     currentList = savedList ? JSON.parse(savedList) : [];
   } catch {}
   currentList = currentList.filter(d => d.id !== dreamId);
-  localStorage.setItem("star_map_dreams_v2", JSON.stringify(currentList));
+  localStorage.setItem(storageKey, JSON.stringify(currentList));
 
   const db = getFirestoreDB();
   if (db) {
@@ -968,9 +1250,11 @@ export async function loadDreamsFromDatabase(email: string): Promise<DreamLogIte
   const mailKey = email.toLowerCase().trim();
   if (!mailKey) return [];
 
+  const storageKey = getDreamsStorageKey(email);
   const db = getFirestoreDB();
   if (db) {
     const docKey = getUserDocKey(email);
+    if (!docKey) return [];
     const path = `users/${docKey}/dreams`;
     try {
       const colRef = collection(db, "users", docKey, "dreams");
@@ -979,16 +1263,14 @@ export async function loadDreamsFromDatabase(email: string): Promise<DreamLogIte
       snap.forEach((docSnap) => {
         results.push(docSnap.data() as DreamLogItem);
       });
-      if (results.length > 0) {
-        localStorage.setItem("star_map_dreams_v2", JSON.stringify(results));
-        return results;
-      }
+      localStorage.setItem(storageKey, JSON.stringify(results));
+      return results;
     } catch (e) {
-      handleFirestoreError(e, OperationType.GET, path);
+      console.warn(`[Sync] Load Dreams deferred for ${path}:`, e);
     }
   }
 
-  const savedList = localStorage.getItem("star_map_dreams_v2");
+  const savedList = localStorage.getItem(storageKey);
   if (savedList) {
     try {
       return JSON.parse(savedList);
@@ -1006,6 +1288,7 @@ export function subscribeToDreams(email: string, onUpdate: (dreams: DreamLogItem
   }
 
   const docKey = getUserDocKey(email);
+  const storageKey = getDreamsStorageKey(email);
   const path = `users/${docKey}/dreams`;
   const collectionRef = collection(db, "users", docKey, "dreams");
 
@@ -1014,7 +1297,7 @@ export function subscribeToDreams(email: string, onUpdate: (dreams: DreamLogItem
     snapshot.forEach((snap) => {
       results.push(snap.data() as DreamLogItem);
     });
-    localStorage.setItem("star_map_dreams_v2", JSON.stringify(results));
+    localStorage.setItem(storageKey, JSON.stringify(results));
     onUpdate(results);
   }, (error) => {
     console.error("[SnapSync] Erro no snapshot de dreams:", error);
@@ -1043,6 +1326,57 @@ export async function saveNatalChartToDatabase(email: string, chartId: string, c
     const path = `users/${docKey}/natalCharts/${chartId}`;
     const auth = getFirebaseAuth();
     try {
+      // 1. CLEAR PREVIOUS NATAL CHARTS (where ID is different)
+      const chartsColRef = collection(db, "users", docKey, "natalCharts");
+      const chartsSnap = await getDocs(chartsColRef);
+      for (const docSnap of chartsSnap.docs) {
+        if (docSnap.id !== chartId) {
+          console.log(`[FIRESTORE_CLEANUP] Deleting old natalChart document: ${docSnap.id} to avoid conflicts`);
+          await deleteDoc(doc(db, "users", docKey, "natalCharts", docSnap.id));
+        }
+      }
+
+      // 2. CLEAR PREVIOUS TRANSITS from Firestore
+      const transitsColRef = collection(db, "users", docKey, "transits");
+      try {
+        const transitsSnap = await getDocs(transitsColRef);
+        for (const docSnap of transitsSnap.docs) {
+          console.log(`[FIRESTORE_CLEANUP] Deleting old transit document: ${docSnap.id} to avoid transit predictions mismatch`);
+          await deleteDoc(doc(db, "users", docKey, "transits", docSnap.id));
+        }
+      } catch (err) {
+        console.warn(`[FIRESTORE_CLEANUP] Failed to clear transits docs:`, err);
+      }
+
+      // 3. CLEAN UP LOCALSTORAGE CACHES
+      try {
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key) {
+            const lowerKey = key.toLowerCase();
+            if (
+              (lowerKey.startsWith(`orbi_natal_chart_${docKey.toLowerCase()}_`) && !lowerKey.includes(chartId.toLowerCase())) ||
+              (lowerKey.startsWith(`orbi_natal_chart_${mailKey}_`) && !lowerKey.includes(chartId.toLowerCase())) ||
+              lowerKey.startsWith(`orbi_transit_${docKey.toLowerCase()}_`) ||
+              lowerKey.startsWith(`orbi_transit_${mailKey}_`) ||
+              lowerKey === "orbi_map_data" ||
+              lowerKey === `orbi_map_data_${docKey.toLowerCase()}` ||
+              lowerKey === `orbi_map_data_${mailKey}` ||
+              lowerKey === "orbi_natal_chart_data"
+            ) {
+              keysToRemove.push(key);
+            }
+          }
+        }
+        for (const k of keysToRemove) {
+          console.log(`[FIRESTORE_CLEANUP] Removing old cached item from localStorage: ${k}`);
+          localStorage.removeItem(k);
+        }
+      } catch (err) {
+        console.warn(`[FIRESTORE_CLEANUP] LocalStorage cleanup error:`, err);
+      }
+
       const docRef = doc(db, "users", docKey, "natalCharts", chartId);
       console.log(`[FIRESTORE_WRITE_DEBUG] [saveNatalChartToDatabase] Starting setDoc to path: ${path}`, {
         chartId,
@@ -1057,6 +1391,20 @@ export async function saveNatalChartToDatabase(email: string, chartId: string, c
         updatedAt: new Date().toISOString()
       }), { merge: true });
       console.log(`[FIRESTORE_WRITE_DEBUG] [saveNatalChartToDatabase] setDoc SUCCESS for path: ${path}`);
+
+      // Sync root user profile document so users/{docKey} always holds active birth details
+      if (chartData.birthDate && chartData.birthCity) {
+        const userRef = doc(db, "users", docKey);
+        await setDoc(userRef, sanitizeFirestoreData({
+          birthDate: chartData.birthDate,
+          birthTime: chartData.birthTime || "12:00",
+          birthCity: chartData.birthCity,
+          isUnknownTime: chartData.isUnknownTime ?? false,
+          currentChartId: chartId,
+          hasCreatedMap: true,
+          updatedAt: new Date().toISOString()
+        }), { merge: true }).catch(err => console.warn("[Sync] Root profile sync from natal chart failed:", err));
+      }
     } catch (e: any) {
       console.error(`[FIRESTORE_WRITE_DEBUG] [saveNatalChartToDatabase] setDoc FAILED for path: ${path}`, {
         error: e?.message || String(e),
@@ -1074,6 +1422,7 @@ export async function loadNatalChartFromDatabase(email: string, chartId: string)
   if (!mailKey || !chartId) return null;
 
   const docKey = getUserDocKey(email);
+  if (!docKey) return null;
   const db = getFirestoreDB();
   if (db) {
     const path = `users/${docKey}/natalCharts/${chartId}`;
@@ -1099,6 +1448,7 @@ export async function loadAllNatalCharts(email: string): Promise<any[]> {
   if (!mailKey) return [];
 
   const docKey = getUserDocKey(email);
+  if (!docKey) return [];
   const db = getFirestoreDB();
   if (db) {
     const path = `users/${docKey}/natalCharts`;
@@ -1290,6 +1640,49 @@ export async function loadMissionsFromDatabase(email: string, missionId: string)
   return local ? JSON.parse(local) : null;
 }
 
+export async function saveWeeklyMissionsToDatabase(email: string, weeklyMissionsList: any) {
+  const docKey = getUserDocKey(email);
+  if (!docKey) return;
+
+  localStorage.setItem(`orbi_weekly_missions_${docKey}`, JSON.stringify(weeklyMissionsList));
+
+  const db = getFirestoreDB();
+  if (db) {
+    const path = `users/${docKey}/missions/weekly`;
+    try {
+      const docRef = doc(db, "users", docKey, "missions", "weekly");
+      await setDoc(docRef, {
+        id: "weekly",
+        userId: docKey,
+        weeklyMissionsList,
+        lastUpdated: new Date().toISOString()
+      }, { merge: true });
+    } catch (e) {
+      handleFirestoreError(e, OperationType.WRITE, path);
+    }
+  }
+}
+
+export async function loadWeeklyMissionsFromDatabase(email: string): Promise<any | null> {
+  const docKey = getUserDocKey(email);
+  if (!docKey) return null;
+
+  const db = getFirestoreDB();
+  if (db) {
+    try {
+      const docRef = doc(db, "users", docKey, "missions", "weekly");
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const data = snap.data();
+        localStorage.setItem(`orbi_weekly_missions_${docKey}`, JSON.stringify(data.weeklyMissionsList));
+        return data.weeklyMissionsList;
+      }
+    } catch (e) {}
+  }
+  const local = localStorage.getItem(`orbi_weekly_missions_${docKey}`);
+  return local ? JSON.parse(local) : null;
+}
+
 export async function saveTarotReadingToDatabase(email: string, readingId: string, readingData: any) {
   const docKey = getUserDocKey(email);
   if (!docKey || !readingId) return;
@@ -1332,6 +1725,50 @@ export async function loadTarotReadingsFromDatabase(email: string): Promise<any[
   return [];
 }
 
+export async function saveTarotHistoryToDatabase(email: string, historyId: string, historyData: any) {
+  const docKey = getUserDocKey(email);
+  if (!docKey || !historyId) return;
+
+  localStorage.setItem(`orbi_tarot_history_${docKey}_${historyId}`, JSON.stringify(historyData));
+
+  const db = getFirestoreDB();
+  if (db) {
+    const path = `users/${docKey}/tarotHistory/${historyId}`;
+    try {
+      const docRef = doc(db, "users", docKey, "tarotHistory", historyId);
+      await setDoc(docRef, {
+        id: historyId,
+        userId: docKey,
+        ...historyData,
+        createdAt: new Date().toISOString()
+      }, { merge: true });
+    } catch (e) {
+      handleFirestoreError(e, OperationType.WRITE, path);
+    }
+  }
+}
+
+export async function loadTarotHistoryFromDatabase(email: string): Promise<any[]> {
+  const docKey = getUserDocKey(email);
+  if (!docKey) return [];
+
+  const db = getFirestoreDB();
+  if (db) {
+    try {
+      const colRef = collection(db, "users", docKey, "tarotHistory");
+      const snap = await getDocs(colRef);
+      const results: any[] = [];
+      snap.forEach((docSnap) => {
+        results.push(docSnap.data());
+      });
+      return results;
+    } catch (e) {
+      console.warn("Falha ao carregar historico de Tarot do Firestore:", e);
+    }
+  }
+  return [];
+}
+
 export async function saveNumerologyToDatabase(email: string, numerologyId: string, numerologyData: any) {
   const docKey = getUserDocKey(email);
   if (!docKey || !numerologyId) return;
@@ -1342,6 +1779,43 @@ export async function saveNumerologyToDatabase(email: string, numerologyId: stri
   if (db) {
     const path = `users/${docKey}/numerology/${numerologyId}`;
     try {
+      // 1. CLEAR PREVIOUS NUMEROLOGIES (where ID is different)
+      const numColRef = collection(db, "users", docKey, "numerology");
+      const numSnap = await getDocs(numColRef);
+      for (const docSnap of numSnap.docs) {
+        if (docSnap.id !== numerologyId) {
+          console.log(`[FIRESTORE_CLEANUP] Deleting old numerology document: ${docSnap.id} to avoid conflicts`);
+          await deleteDoc(doc(db, "users", docKey, "numerology", docSnap.id));
+        }
+      }
+
+      // 2. CLEAN UP LOCALSTORAGE CACHES
+      try {
+        const mailKey = email.toLowerCase().trim();
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key) {
+            const lowerKey = key.toLowerCase();
+            if (
+              (lowerKey.startsWith(`orbi_numerology_${docKey.toLowerCase()}_`) && !lowerKey.includes(numerologyId.toLowerCase())) ||
+              (lowerKey.startsWith(`orbi_numerology_${mailKey}_`) && !lowerKey.includes(numerologyId.toLowerCase())) ||
+              lowerKey === "orbi_numerology_data" ||
+              lowerKey === `orbi_numerology_data_${docKey.toLowerCase()}` ||
+              lowerKey === `orbi_numerology_data_${mailKey}`
+            ) {
+              keysToRemove.push(key);
+            }
+          }
+        }
+        for (const k of keysToRemove) {
+          console.log(`[FIRESTORE_CLEANUP] Removing old cached numerology item from localStorage: ${k}`);
+          localStorage.removeItem(k);
+        }
+      } catch (err) {
+        console.warn(`[FIRESTORE_CLEANUP] LocalStorage cleanup warning:`, err);
+      }
+
       const docRef = doc(db, "users", docKey, "numerology", numerologyId);
       await setDoc(docRef, {
         id: numerologyId,
@@ -1679,11 +2153,31 @@ export function getBrowserDeviceInfo() {
 export async function checkDeviceTrial(email: string): Promise<{ deviceId: string, fingerprint: string, isAllowed: boolean, isSelf: boolean }> {
   const { deviceId, fingerprint, info } = getBrowserDeviceInfo();
   const db = getFirestoreDB();
+
+  // If we are in the development/preview environment, we bypass the device anti-fraud blocking
+  // to allow the developer/owner to register new accounts and test the 4-day trial.
+  const isDevBypass = typeof window !== 'undefined' && (
+    window.location.hostname.includes('localhost') ||
+    window.location.hostname.includes('127.0.0.1') ||
+    window.location.hostname.includes('run.app') ||
+    window.location.hostname.includes('web-preview') ||
+    window.location.hostname.includes('vercel.app')
+  );
+
   if (!db) {
     return { deviceId, fingerprint, isAllowed: true, isSelf: true };
   }
 
   const currentEmail = email.toLowerCase().trim();
+  const isTestEmail = currentEmail.startsWith("test") || 
+                      currentEmail.includes("teste") || 
+                      currentEmail.includes("admin") || 
+                      currentEmail.includes("bypass");
+
+  if (isTestEmail) {
+    console.log("[Anti Fraud] Test email detected: allowing trial bypass for:", currentEmail);
+    return { deviceId, fingerprint, isAllowed: true, isSelf: true };
+  }
 
   try {
     // 1. Check Device ID
@@ -1693,6 +2187,10 @@ export async function checkDeviceTrial(email: string): Promise<{ deviceId: strin
       const data = snap.data();
       const firstEmail = data.firstEmail ? data.firstEmail.toLowerCase().trim() : "";
       if (firstEmail && firstEmail !== currentEmail) {
+        if (isDevBypass) {
+          console.log("[Anti Fraud] Dev bypass active: allowing device trial for new test account:", currentEmail);
+          return { deviceId, fingerprint, isAllowed: true, isSelf: false };
+        }
         return { deviceId, fingerprint, isAllowed: false, isSelf: false };
       }
       return { deviceId, fingerprint, isAllowed: true, isSelf: true };
@@ -1711,6 +2209,10 @@ export async function checkDeviceTrial(email: string): Promise<{ deviceId: strin
         }
       });
       if (otherEmailFound) {
+        if (isDevBypass) {
+          console.log("[Anti Fraud] Dev bypass active: allowing fingerprint trial for new test account:", currentEmail);
+          return { deviceId, fingerprint, isAllowed: true, isSelf: false };
+        }
         return { deviceId, fingerprint, isAllowed: false, isSelf: false };
       }
     }

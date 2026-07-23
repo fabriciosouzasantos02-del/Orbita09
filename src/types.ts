@@ -232,6 +232,7 @@ export interface DailyMission {
   points: number;
   benefit?: string;
   benefitExplanation?: string;
+  isClaimed?: boolean;
 }
 
 export interface DayTrend {

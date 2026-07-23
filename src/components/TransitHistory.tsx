@@ -367,7 +367,24 @@ export default function TransitHistory({ userName, birthDate, birthTime, latitud
   };
 
   useEffect(() => {
+    const email = localStorage.getItem("orbi_logged_email") || "";
+    const weekKey = getWeeklyCacheKey();
+    const cacheKey = `orbi_cache_updated_weekly_transits_${weekKey}_${lang || 'pt'}`;
+
+    const handleBgUpdate = (e: any) => {
+      if (e.detail && e.detail.data) {
+        console.log("[Cache Event] Silently updated transits in background.");
+        setEvents(e.detail.data);
+      }
+    };
+
+    window.addEventListener(cacheKey, handleBgUpdate);
+
     fetchTransits();
+
+    return () => {
+      window.removeEventListener(cacheKey, handleBgUpdate);
+    };
   }, [userName, birthDate, birthTime, latitude, longitude, lang]);
 
   // Extract unique planets from events for filters

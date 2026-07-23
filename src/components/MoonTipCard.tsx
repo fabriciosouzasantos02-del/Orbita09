@@ -113,6 +113,17 @@ export default function MoonTipCard({ userName, birthDate, onRewardPoints, lang 
       }
     }
 
+    const cacheKey = `orbi_cache_updated_daily_moontip_${todayStr}_${lang}`;
+
+    const handleBgUpdate = (e: any) => {
+      if (e.detail && e.detail.data) {
+        console.log("[Cache Event] Silently updated MoonTip in background.");
+        setData(e.detail.data);
+      }
+    };
+
+    window.addEventListener(cacheKey, handleBgUpdate);
+
     // 2. Fetch fresh tip from the endpoint for a new login session
     const fetchTip = async () => {
       setLoading(true);
@@ -148,6 +159,10 @@ export default function MoonTipCard({ userName, birthDate, onRewardPoints, lang 
     };
 
     fetchTip();
+
+    return () => {
+      window.removeEventListener(cacheKey, handleBgUpdate);
+    };
   }, [userName, birthDate, lang]);
 
   // Check if reward was claimed already in this session

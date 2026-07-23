@@ -7,15 +7,9 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // A user owns a record if the record ID matches their auth UID or their registered email address.
+    // A user owns a record if the record ID matches their auth UID.
     function isOwner(userId) {
-      return isSignedIn() && (
-        request.auth.uid == userId || 
-        (request.auth.token.email != null && (
-          request.auth.token.email == userId || 
-          request.auth.token.email.lower() == userId.lower()
-        ))
-      );
+      return isSignedIn() && request.auth.uid == userId;
     }
 
     // Rules for User Profile documents and their subcollections
@@ -50,7 +44,13 @@ service cloud.firestore {
       match /missions/{missionId} {
         allow read, write: if isOwner(userId);
       }
+      match /pointsTracker/{trackerId} {
+        allow read, write: if isOwner(userId);
+      }
       match /tarotReadings/{readingId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /tarotHistory/{historyId} {
         allow read, write: if isOwner(userId);
       }
       match /numerology/{numerologyId} {
@@ -66,6 +66,26 @@ service cloud.firestore {
         allow read, write: if isOwner(userId);
       }
       match /subscriptions/{subId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /cupidoPeople/{personId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /cupidoHistory/{historyId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /cupidoFavorites/{favoriteId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /cupidoSettings/{settingsId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /compatibilityHistory/{historyId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Catch-all rule for any other user subcollections (premium, posts, etc.)
+      match /{allSubcollections=**} {
         allow read, write: if isOwner(userId);
       }
 
@@ -103,6 +123,33 @@ service cloud.firestore {
     // Device trials collection rules
     match /device_trials/{deviceId} {
       allow read, write: if isSignedIn();
+    }
+
+    // Stripe Extension rules (invertase/firestore-stripe-payments)
+    match /customers/{uid} {
+      allow read: if isOwner(uid);
+
+      match /checkout_sessions/{id} {
+        allow read, write: if isOwner(uid);
+      }
+      match /subscriptions/{id} {
+        allow read: if isOwner(uid);
+      }
+      match /payments/{id} {
+        allow read: if isOwner(uid);
+      }
+    }
+
+    match /products/{id} {
+      allow read: if true;
+
+      match /prices/{id} {
+        allow read: if true;
+      }
+
+      match /tax_rates/{id} {
+        allow read: if true;
+      }
     }
   }
 }

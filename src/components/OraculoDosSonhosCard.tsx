@@ -319,9 +319,56 @@ export default function OraculoDosSonhosCard({
   setSelectedDreamDisplay,
   preferredLanguage = "pt"
 }: OraculoDosSonhosCardProps) {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const langKey = (i18n.language || preferredLanguage || 'pt').toLowerCase().split('-')[0];
-  const ui = ORACLE_UI[langKey] || ORACLE_UI['pt'];
+  
+  // Dynamic UI dictionary driven by i18next
+  const ui = {
+    oracleTitle: t('oracleTitle'),
+    oracleSubtitle: t('oracleSubtitle'),
+    tellDream: t('tellDream'),
+    describeHint: t('describeHint'),
+    revealBtn: t('revealBtn'),
+    decipheringBtn: t('decipheringBtn'),
+    dreamVault: t('dreamVault'),
+    downloadDream: t('downloadDream'),
+    searchPlaceholder: t('searchPlaceholder'),
+    meaningPrefix: t('meaningPrefix'),
+    noArchived: t('noArchived'),
+    archivedOn: t('archivedOn'),
+    atTime: t('atTime'),
+    scribeReport: t('scribeReport'),
+    downloadPDF: t('downloadPDF'),
+    primaryMeaning: t('primaryMeaning'),
+    energyIndex: t('energyIndex'),
+    tuned: t('tuned'),
+    oracleAdvice: t('oracleAdvice'),
+    loveArea: t('loveArea'),
+    financeArea: t('financeArea'),
+    careerArea: t('careerArea'),
+    attentionLabel: t('attentionLabel'),
+    opportunitiesLabel: t('opportunitiesLabel'),
+    protectionLabel: t('protectionLabel'),
+    luckyNumbers: t('luckyNumbers'),
+    energyColors: t('energyColors'),
+    highlights: t('highlights'),
+    predominantEmotion: t('predominantEmotion'),
+    numberSymbols: t('numberSymbols'),
+    numberPrefix: t('numberPrefix'),
+    animalArchetypes: t('animalArchetypes'),
+    colorSymbolism: t('colorSymbolism'),
+    universeMessage: t('universeMessage'),
+    waitingDream: t('waitingDream'),
+    waitingDesc: t('waitingDesc'),
+    downloadModal: t('downloadModal'),
+    downloadModalDesc: t('downloadModalDesc'),
+    noArchivedDownload: t('noArchivedDownload'),
+    close: t('close'),
+    dreamsCount: (n: number) => t('dreamsCount', { count: n }),
+    loadingTitle: t('loadingTitle'),
+    loadingDesc: t('loadingDesc'),
+    placeholderText: t('placeholderText'),
+  };
   // Search state inside dreams list sidebar
   const [dreamSearch, setDreamSearch] = useState('');
   const [isDownloadListOpen, setIsDownloadListOpen] = useState(false);
@@ -700,6 +747,15 @@ export default function OraculoDosSonhosCard({
               <p className="text-[9px] text-slate-500 leading-normal">
                 {ui.describeHint}
               </p>
+              
+              {/* Orientation Alert Block */}
+              <div className="p-3.5 bg-rose-500/5 border border-rose-500/10 rounded-2xl space-y-1 my-2 text-slate-400 leading-relaxed font-sans text-[11px]" id="dream-orientation-alert">
+                <span className="font-bold text-rose-400 block text-[9.5px] font-mono uppercase tracking-widest">📝 {t('dreamOrientationTitle') || 'Orientação Onírica'}</span>
+                <p className="text-slate-350 leading-relaxed font-sans text-[10.5px]">
+                  {t('dreamOrientationMessage')}
+                </p>
+              </div>
+
               <textarea 
                 rows={6}
                 required

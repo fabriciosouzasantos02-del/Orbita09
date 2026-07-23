@@ -1,10 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Language } from '../lib/translations';
 import { useIdioma } from '../context/IdiomaContext';
 import { CompatibilityResult, UserProfile } from '../types';
 import { computeDetailedCompatibility } from './compatibilityEngine';
+import { CityAutocomplete } from './CityAutocomplete';
 import { motion, AnimatePresence } from 'motion/react';
+import { getFirebaseAuth } from '../lib/firebase';
+import { 
+  saveCompatibilityHistory, 
+  loadCompatibilityHistory, 
+  CompatibilityHistoryItem 
+} from '../lib/cupidoFirebase';
 import { 
   Heart, 
   Users, 
@@ -933,7 +940,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
     return tI18n(text);
   };
 
-  const [activeSubTab, setActiveSubTab] = useState<'geral'>('geral'); // Only Cruzamento Astrológico remains
+  const [activeSubTab, setActiveSubTab] = useState<'geral' | 'curtidas' | 'visitantes' | 'busca'>('geral'); // Only Cruzamento Astrológico remains
   const [relationCategory, setRelationCategory] = useState<'love' | 'business' | 'friend' | 'family' | 'marriage' | 'partnership'>('love');
   const [partnerName, setPartnerName] = useState('');
   const [partnerDate, setPartnerDate] = useState('');
@@ -942,10 +949,140 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
   const [partnerTime, setPartnerTime] = useState('');
   const [partnerCity, setPartnerCity] = useState('');
   const [partnerCountry, setPartnerCountry] = useState('');
+  const [partnerLat, setPartnerLat] = useState<number | undefined>(undefined);
+  const [partnerLng, setPartnerLng] = useState<number | undefined>(undefined);
   const [showSurgical, setShowSurgical] = useState(false);
 
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [result, setResult] = useState<any>(null);
+
+  const [authUid, setAuthUid] = useState<string>('');
+  const [history, setHistory] = useState<CompatibilityHistoryItem[]>([]);
+
+  // Listen to Auth State changes to capture active UID and re-trigger subscriptions safely
+  useEffect(() => {
+    const auth = getFirebaseAuth();
+    if (!auth) return;
+    return auth.onAuthStateChanged((firebaseUser) => {
+      setAuthUid(firebaseUser ? firebaseUser.uid : '');
+    });
+  }, []);
+
+  const userEmail = user?.email || 'offline_user';
+
+  // Load saved compatibility reports from Firestore & LocalStorage on mount or when user changes
+  useEffect(() => {
+    if (!userEmail) return;
+    const loadHistory = async () => {
+      const data = await loadCompatibilityHistory(userEmail);
+      setHistory(data);
+      // Auto-load the last calculated result if any exists
+      if (data && data.length > 0) {
+        const sorted = [...data].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setResult(sorted[0].compatibilityData);
+        // Populate inputs with last evaluated report's parameters
+        const lastItem = sorted[0];
+        setPartnerName(lastItem.partnerName);
+        setRelationCategory(lastItem.category as any);
+        if (lastItem.compatibilityData) {
+          const cData = lastItem.compatibilityData;
+          if (cData.partnerBirthDate) setPartnerDate(cData.partnerBirthDate);
+          if (cData.partnerBirthTime) setPartnerTime(cData.partnerBirthTime);
+          if (cData.partnerBirthCity) setPartnerCity(cData.partnerBirthCity);
+          if (cData.partnerBirthCountry) setPartnerCountry(cData.partnerBirthCountry);
+        }
+      }
+    };
+    loadHistory();
+  }, [userEmail, authUid]);
+
+  const autoEvalLockRef = useRef<string | null>(null);
+
+  // Load matched history report if user switches category, companion, or language
+  useEffect(() => {
+    if (!partnerName) return;
+
+    // First try to find a history item matching partner, category and CURRENT language
+    const matchThisLang = history.find(h => 
+      h.partnerName.toLowerCase().trim() === partnerName.toLowerCase().trim() && 
+      h.category === relationCategory &&
+      (h.lang || 'pt') === idiomaAtual
+    );
+
+    if (matchThisLang) {
+      setResult(matchThisLang.compatibilityData);
+    } else {
+      // If we don't have a history item in this language, but we have a match in ANY language
+      const matchAnyLang = history.find(h => 
+        h.partnerName.toLowerCase().trim() === partnerName.toLowerCase().trim() && 
+        h.category === relationCategory
+      );
+
+      const evalKey = `${partnerName}_${relationCategory}_${idiomaAtual}`.toLowerCase().trim();
+
+      if (matchAnyLang && autoEvalLockRef.current !== evalKey) {
+        autoEvalLockRef.current = evalKey;
+        setResult(matchAnyLang.compatibilityData); // Show previous lang result while loading translation
+
+        const autoTriggerEvaluate = async () => {
+          setIsEvaluating(true);
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+            const response = await fetch("/api/compatibility/evaluate", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              signal: controller.signal,
+              body: JSON.stringify({
+                name: user.name || "Você",
+                birthDate: user.birthDate,
+                birthTime: user.birthTime || "12:00",
+                birthCity: user.birthCity || "São Paulo",
+                latitude: user.latitude,
+                longitude: user.longitude,
+                companionName: partnerName,
+                companionBirthDate: partnerDate,
+                companionBirthTime: partnerTime || "12:00",
+                companionBirthCity: partnerCity,
+                companionBirthCountry: partnerCountry || "Brasil",
+                companionLatitude: partnerLat,
+                companionLongitude: partnerLng,
+                category: relationCategory,
+                lang: idiomaAtual,
+              })
+            });
+            clearTimeout(timeoutId);
+
+            if (response.ok) {
+              const data = await response.json();
+              if (data.compatibility) {
+                setResult(data.compatibility);
+
+                const newHistoryItem: CompatibilityHistoryItem = {
+                  id: evalKey.replace(/[.$#[\]\s]/g, "_"),
+                  partnerName,
+                  category: relationCategory,
+                  lang: idiomaAtual,
+                  compatibilityData: data.compatibility,
+                  createdAt: new Date().toISOString()
+                };
+                await saveCompatibilityHistory(userEmail, newHistoryItem);
+                setHistory(prev => [newHistoryItem, ...prev.filter(h => h.id !== newHistoryItem.id)]);
+              }
+            }
+          } catch (err) {
+            console.warn("Auto language translation fetch failed/timed out:", err);
+          } finally {
+            setIsEvaluating(false);
+          }
+        };
+        autoTriggerEvaluate();
+      } else if (matchAnyLang && !result) {
+        setResult(matchAnyLang.compatibilityData);
+      }
+    }
+  }, [relationCategory, partnerName, history, idiomaAtual, user]);
 
   // Interactivity for planetary aspect accordions and elements details
   const [expandedAspectIndex, setExpandedAspectIndex] = useState<number | null>(0);
@@ -1052,11 +1189,15 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
           birthDate: user.birthDate,
           birthTime: user.birthTime || "12:00",
           birthCity: user.birthCity || "São Paulo",
+          latitude: user.latitude,
+          longitude: user.longitude,
           companionName: partnerName,
           companionBirthDate: partnerDate,
-          companionBirthTime: partnerTime,
+          companionBirthTime: partnerTime || "12:00",
           companionBirthCity: partnerCity,
-          companionBirthCountry: partnerCountry,
+          companionBirthCountry: partnerCountry || "Brasil",
+          companionLatitude: partnerLat,
+          companionLongitude: partnerLng,
           category: relationCategory,
           lang: idiomaAtual,
         })
@@ -1064,6 +1205,18 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
       const data = await response.json();
       if (data.compatibility) {
         setResult(data.compatibility);
+
+        // Save to Firestore and Local History
+        const newHistoryItem: CompatibilityHistoryItem = {
+          id: `${partnerName}_${relationCategory}_${idiomaAtual}`.toLowerCase().trim().replace(/[.$#[\]\s]/g, "_"),
+          partnerName,
+          category: relationCategory,
+          lang: idiomaAtual,
+          compatibilityData: data.compatibility,
+          createdAt: new Date().toISOString()
+        };
+        await saveCompatibilityHistory(userEmail, newHistoryItem);
+        setHistory(prev => [newHistoryItem, ...prev.filter(h => h.id !== newHistoryItem.id)]);
       }
     } catch (err) {
       console.error(err);
@@ -1953,26 +2106,22 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[10px] font-mono text-slate-450 mb-1">{t("CIDADE DE NASCIMENTO")}</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder={t("Cidade de nascimento")}
+                <div className="sm:col-span-2">
+                  <label className="block text-[10px] font-mono text-slate-450 mb-1">{t("CIDADE E PAÍS DE NASCIMENTO")}</label>
+                  <CityAutocomplete
                     value={partnerCity}
-                    onChange={(e) => setPartnerCity(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-200 focus:border-rose-500/40 focus:outline-hidden transition"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-mono text-slate-450 mb-1">{t("PAÍS (OPCIONAL)")}</label>
-                  <input
-                    type="text"
-                    placeholder={t("País de nascimento")}
-                    value={partnerCountry}
-                    onChange={(e) => setPartnerCountry(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-200 focus:border-rose-500/40 focus:outline-hidden transition"
+                    placeholder={t("Cidade e país de nascimento")}
+                    onChange={(val) => setPartnerCity(val)}
+                    onSelectCity={(city) => {
+                      setPartnerCity(city.label);
+                      const parts = city.label.split(',');
+                      if (parts.length > 0) {
+                        setPartnerCountry(parts[parts.length - 1].trim());
+                      }
+                      setPartnerLat(city.latitude);
+                      setPartnerLng(city.longitude);
+                    }}
+                    inputClassName="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-200 focus:border-rose-500/40 focus:outline-hidden transition"
                   />
                 </div>
               </div>

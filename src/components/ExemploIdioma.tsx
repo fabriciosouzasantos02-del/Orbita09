@@ -15,7 +15,7 @@ export default function ExemploIdioma() {
   };
 
   const tI18n = (text: string) => {
-    return t(text);
+    return t(text as any);
   };
 
   return (
