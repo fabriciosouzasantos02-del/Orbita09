@@ -2465,14 +2465,20 @@ export default function App() {
   };
 
   // AI Counselor (Orbia Chat) State
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    {
-      id: "welcomeMsg",
-      sender: "assistant",
-      text: "Saudações, Fabricio. Eu sou Orbia, sua Conselheira Astrológica e Terapeuta Pessoal de Inteligência Celestial. Nascido com o Sol em Aquário e Ascendente em Sagitário, você traz em sua essência um idealismo ardente e uma reverência inata pela liberdade. Como posso te orientar em seu caminho em 2026?",
-      timestamp: "02:37"
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  useEffect(() => {
+    if (chatMessages.length === 0) {
+      const userName = user?.name ? user.name.split(' ')[0] : 'Buscador';
+      setChatMessages([
+        {
+          id: "welcomeMsg",
+          sender: "assistant",
+          text: `${userName}, sinto uma luz muito especial ao ler sua energia. Eu sou Orbia, sua Conselheira Astrológica e Terapeuta Pessoal de Inteligência Celestial. Como posso te orientar em seu caminho em 2026?`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]);
     }
-  ]);
+  }, [user]);
   const [currentChatInput, setCurrentChatInput] = useState<string>('');
   const [isSendingChat, setIsSendingChat] = useState<boolean>(false);
 

@@ -748,7 +748,7 @@ export default function LunarCycle({
         <p className="text-xs text-slate-350 leading-relaxed font-sans">
           {userName ? (
             <>
-              {t("Olá,")} <strong className="text-indigo-300 font-bold">{userName}</strong> ({t("Sol em")} <strong className="text-amber-400 font-semibold">{t(userSunSign)}</strong>, {t("Ascendente em")} <strong className="text-pink-400 font-semibold">{t(userAscendant)}</strong>). {t("O ritmo gravitacional lunar dita o movimento das marés e rege os biorritmos biológicos de curto curso. Este módulo calcula em tempo real, através de efemérides geocêntricas integradas, a exata posição da Lua no céu para o seu mapa pessoal.")}
+              <strong className="text-indigo-300 font-bold">{userName}</strong>, {t("sinto uma luz muito especial ao ler sua energia.")} {t("O ritmo gravitacional lunar dita o movimento das marés e rege os biorritmos biológicos de curto curso. Este módulo calcula em tempo real, através de efemérides geocêntricas integradas, a exata posição da Lua no céu para o seu mapa pessoal.")}
             </>
           ) : (
             <>

@@ -373,17 +373,17 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
         {
           id: "amor",
           label: "Amor e relacionamento",
-          description: `As posições planetárias de hoje harmonizam com seu Sol em ${solSign}. É um momento auspicioso para diálogos profundos com seu par ou para cultivar a vulnerabilidade consciente se estiver buscando um novo elo. A tônica é a escuta generosa, permitindo que a sinergia amorosa se amplie.`
+          description: `As posições planetárias de hoje harmonizam com sua essência natal. É um momento auspicioso para diálogos profundos com seu par ou para cultivar a vulnerabilidade consciente se estiver buscando um novo elo. A tônica é a escuta generosa, permitindo que a sinergia amorosa se amplie.`
         },
         {
           id: "carreira",
           label: "Dinheiro e Carreira",
-          description: `Seu Sol em ${solSign} recebe aspectos favoráveis de estabilidade material. Bom para organizar planos, revisar orçamentos de longo prazo e propor parcerias construtivas. O foco no pragmatismo evitará escolhas precipitadas sob impulsividade emocional.`
+          description: `Sua energia natal recebe aspectos favoráveis de estabilidade material. Bom para organizar planos, revisar orçamentos de longo prazo e propor parcerias construtivas. O foco no pragmatismo evitará escolhas precipitadas sob impulsividade emocional.`
         },
         {
           id: "saude",
           label: "Saúde e Bem-estar",
-          description: `O fluxo vital convida você a reequilibrar seus hábitos diários. Beba mais água purificada, faça alongamentos suaves pela manhã e considere desacelerar um pouco o ritmo mental acelerado. O estresse acumulado pode ser dissolvido com silêncio e repouso de alta qualidade.`
+          description: `O fluxo vital convida você a reequilibrar seus hábitos diários. Beba mais água purificada, faça pontos de pausa conscientemente e considere desacelerar um pouco o ritmo mental acelerado. O estresse acumulado pode ser dissolvido com silêncio e repouso de alta qualidade.`
         },
         {
           id: "familia",
@@ -393,7 +393,7 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
         {
           id: "espiritualidade",
           label: "Espiritualidade",
-          description: `Seu portal espiritual de hoje está amplamente expandido, estimulado pelos transições em casas astrológicas sutis do seu mapa de nascimento. Excelente momento para rituais pessoais, orações, leitura oracular de tarot ou meditação profunda. Sua intuição estará extremamente aguçada, trazendo respostas nítidas.`
+          description: `Seu portal espiritual de hoje está amplamente expandido, estimulado pelas frequências sutis do seu mapa de nascimento. Excelente momento para rituais pessoais, orações, leitura oracular de tarot ou meditação profunda. Sua intuição estará extremamente aguçada, trazendo respostas nítidas.`
         },
         {
           id: "periodo",
@@ -405,17 +405,17 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
         {
           id: "amor",
           label: "Love & Relationships",
-          description: `Today's planetary positions harmonize with your Sun in ${solSign}. It is an auspicious moment for deep dialogues with your partner or for cultivating conscious vulnerability if you are seeking a new connection. The key is generous listening, allowing love synergy to expand.`
+          description: `Today's planetary positions harmonize with your natal essence. It is an auspicious moment for deep dialogues with your partner or for cultivating conscious vulnerability if you are seeking a new connection. The key is generous listening, allowing love synergy to expand.`
         },
         {
           id: "carreira",
           label: "Money & Career",
-          description: `Your Sun in ${solSign} receives favorable aspects of material stability. Good for organizing plans, reviewing long-term budgets, and proposing constructive partnerships. The focus on pragmatism will prevent hasty choices under emotional impulsivity.`
+          description: `Your natal energy receives favorable aspects of material stability. Good for organizing plans, reviewing long-term budgets, and proposing constructive partnerships. The focus on pragmatism will prevent hasty choices under emotional impulsivity.`
         },
         {
           id: "saude",
           label: "Health & Well-being",
-          description: `The vital flow invites you to rebalance your daily habits. Drink more purified water, do gentle stretches in the morning, and consider slowing down your fast mental pace. Accumulated stress can be dissolved with silence and high-quality rest.`
+          description: `The vital flow invites you to rebalance your daily habits. Drink more purified water, take mindful pauses, and consider slowing down your fast mental pace. Accumulated stress can be dissolved with silence and high-quality rest.`
         },
         {
           id: "familia",
@@ -425,7 +425,7 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
         {
           id: "espiritualidade",
           label: "Spirituality",
-          description: `Your spiritual portal today is widely expanded, stimulated by transitions in subtle astrological houses of your birth chart. Excellent time for personal rituals, prayers, oracle tarot reading, or deep meditation. Your intuition will be extremely sharp, bringing clear answers.`
+          description: `Your spiritual portal today is widely expanded, stimulated by subtle frequencies of your birth chart. Excellent time for personal rituals, prayers, oracle tarot reading, or deep meditation. Your intuition will be extremely sharp, bringing clear answers.`
         },
         {
           id: "periodo",
@@ -437,17 +437,17 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
         {
           id: "amor",
           label: "Amor y relaciones",
-          description: `Las posiciones planetarias de hoy armonizan con tu Sol en ${solSign}. Es un momento propicio para diálogos profundos con tu pareja o para cultivar la vulnerabilidad consciente si estás buscando un nuevo vínculo. La clave es la escucha generosa, permitiendo que la sinergia amorosa se amplíe.`
+          description: `Las posiciones planetarias de hoy armonizan con tu esencia natal. Es un momento propicio para diálogos profundos con tu pareja o para cultivar la vulnerabilidad consciente si estás buscando un nuevo vínculo. La clave es la escucha generosa, permitiendo que la sinergia amorosa se amplíe.`
         },
         {
           id: "carreira",
           label: "Dinero y carrera",
-          description: `Tu Sol en ${solSign} recibe aspectos favorables de estabilidad material. Bueno para organizar planes, revisar presupuestos a largo plazo y proponer asociaciones constructivas. El enfoque en el pragmatismo evitará elecciones apresuradas bajo impulsividad emocional.`
+          description: `Tu energía natal recibe aspectos favorables de estabilidad material. Bueno para organizar planes, revisar presupuestos a largo plazo y proponer asociaciones constructivas. El enfoque en el pragmatismo evitará elecciones apresuradas bajo impulsividad emocional.`
         },
         {
           id: "saude",
           label: "Salud y bienestar",
-          description: `El flujo vital te invita a reequilibrar tus hábitos diarios. Bebe más agua purificada, haz estiramientos suaves por la mañana y considera desacelerar un poco el ritmo mental acelerado. El estrés acumulado se puede disolver con silencio y descanso de alta calidad.`
+          description: `El flujo vital te invita a reequilibrar tus hábitos diarios. Bebe más agua purificada, haz pausas conscientes y considera desacelerar un poco el ritmo mental acelerado. El estrés acumulado se puede disolver con silencio y descanso de alta calidad.`
         },
         {
           id: "familia",
@@ -457,7 +457,7 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
         {
           id: "espiritualidade",
           label: "Espiritualidad",
-          description: `Tu portal espiritual de hoy está ampliamente deparado, estimulado por las transiciones en casas astrológicas sutiles de tu carta natal. Excelente momento para rituales personales, oraciones, lectura oracular de tarot o meditación profunda. Tu intuición estará extremadamente aguda, trayendo respuestas claras.`
+          description: `Tu portal espiritual de hoy está ampliamente deparado, estimulado por las frecuencias sutiles de tu carta natal. Excelente momento para rituales personales, oraciones, lectura oracular de tarot o meditación profunda. Tu intuición estará extremadamente aguda, trayendo respuestas claras.`
         },
         {
           id: "periodo",
@@ -469,17 +469,17 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
         {
           id: "amor",
           label: "Liebe & Beziehungen",
-          description: `Die heutigen Planetenkonstellationen harmonieren mit Ihrer Sonne in ${solSign}. Es ist ein günstiger Moment für tiefe Gespräche mit Ihrem Partner oder zur Pflege bewusster Verwundbarkeit, wenn Sie eine neue Verbindung suchen. Der Schlüssel liegt im großzügigen Zuhören, sodass sich die Liebessynergie entfalten kann.`
+          description: `Die heutigen Planetenkonstellationen harmonieren mit Ihrer gebürtigen Essenz. Es ist ein günstiger Moment für tiefe Gespräche mit Ihrem Partner oder zur Pflege bewusster Verwundbarkeit, wenn Sie eine neue Verbindung suchen. Der Schlüssel liegt im großzügigen Zuhören, sodass sich die Liebessynergie entfalten kann.`
         },
         {
           id: "carreira",
           label: "Geld & Karriere",
-          description: `Ihre Sonne in ${solSign} erhält günstige Aspekte materieller Stabilität. Gut geeignet, um Pläne zu organisieren, langfristige Budgets zu überprüfen und konstruktive Partnerschaften vorzuschlagen. Der Fokus auf Pragmatismus verhindert überstürzte Entscheidungen unter emotionaler Impulsivität.`
+          description: `Ihre gebürtige Energie erhält günstige Aspekte materieller Stabilität. Gut geeignet, um Pläne zu organisieren, langfristige Budgets zu überprüfen und konstruktive Partnerschaften vorzuschlagen. Der Fokus auf Pragmatismus verhindert überstürzte Entscheidungen unter emotionaler Impulsivität.`
         },
         {
           id: "saude",
           label: "Gesundheit & Wohlbefinden",
-          description: `Der Lebensfluss lädt Sie ein, Ihre täglichen Gewohnheiten wieder ins Gleichgewicht zu bringen. Trinken Sie mehr gereinigtes Wasser, machen Sie morgens leichte Dehnübungen und verlangsamen Sie Ihr schnelles mentales Tempo. Angesammelter Stress kann durch Stille und hochwertige Erholung abgebaut werden.`
+          description: `Der Lebensfluss lädt Sie ein, Ihre täglichen Gewohnheiten wieder ins Gleichgewicht zu bringen. Trinken Sie mehr gereinigtes Wasser, machen Sie bewusste Pausen und verlangsamen Sie Ihr schnelles mentales Tempo. Angesammelter Stress kann durch Stille und hochwertige Erholung abgebaut werden.`
         },
         {
           id: "familia",
@@ -489,7 +489,7 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
         {
           id: "espiritualidade",
           label: "Spiritualität",
-          description: `Ihr heutiges spirituelles Portal ist weit geöffnet, angeregt durch Transite in subtilen astrologischen Häusern Ihres Geburtshoroskops. Hervorragende Zeit für persönliche Rituale, Gebete, Tarot-Sitzungen oder tiefe Meditation. Ihre Intuition wird extrem scharf sein und klare Antworten bringen.`
+          description: `Ihr heutiges spirituelles Portal ist weit geöffnet, angeregt durch subtile Frequenzen Ihres Geburtshoroskops. Hervorragende Zeit für persönliche Rituale, Gebete, Tarot-Sitzungen oder tiefe Meditation. Ihre Intuition wird extrem scharf sein und klare Antworten bringen.`
         },
         {
           id: "periodo",
@@ -501,17 +501,17 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
         {
           id: "amor",
           label: "Amour & Relations",
-          description: `Les positions planétaires d'aujourd'hui s'harmonisent avec votre Soleil en ${solSign}. C'est un moment propice pour des dialogues profonds avec votre partenaire ou pour cultiver une vulnérabilité consciente si vous recherchez une nouvelle relation. L'accent est mis sur l'écoute généreuse, permettant à la synergie amoureuse de se développer.`
+          description: `Les positions planétaires d'aujourd'hui s'harmonisent avec votre essence natale. C'est un moment propice pour des dialogues profonds avec votre partenaire ou pour cultiver une vulnérabilité consciente si vous recherchez une nouvelle relation. L'accent est mis sur l'écoute généreuse, permettant à la synergie amoureuse de se développer.`
         },
         {
           id: "carreira",
           label: "Argent & Carrière",
-          description: `Votre Soleil en ${solSign} reçoit des aspects favorables de stabilité matérielle. Idéal pour organiser vos plans, revoir les budgets à l'aide de pragmatisme et proposer des partenariats constructifs. L'accent mis sur le pragmatisme évitera les choix hâtifs sous l'impulsion émotionnelle.`
+          description: `Votre énergie natale reçoit des aspects favorables de stabilité matérielle. Idéal pour organiser vos plans, revoir les budgets à l'aide de pragmatisme et proposer des partenariats constructifs. L'accent mis sur le pragmatisme évitera les choix hâtifs sous l'impulsion émotionnelle.`
         },
         {
           id: "saude",
           label: "Santé & Bien-être",
-          description: `Le flux vital vous invite à rééquilibrer vos habitudes quotidiennes. Buvez plus d'eau purifiée, faites des étirements doux le matin et pensez à ralentir votre rythme mental effréné. Le stress accumulé peut être dissous par le silence et un repos de haute qualité.`
+          description: `Le flux vital vous invite à rééquilibrer vos habitudes quotidiennes. Buvez plus d'eau purifiée, faites des pauses en pleine conscience et pensez à ralentir votre rythme mental effréné. Le stress accumulé peut être dissous par le silence et un repos de haute qualité.`
         },
         {
           id: "familia",

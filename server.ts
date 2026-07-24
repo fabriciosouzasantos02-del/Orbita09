@@ -1330,11 +1330,17 @@ function extractOrCalculateUserAstroContext(mapData: any, userProfile: any, acti
 
   if (parts.length > 0) {
     chartContext = `
-Mapa Astral Natal do Usuário Logado (FONTE ÚNICA DA VERDADE INDIVIDUAL):
+Mapa Astral Natal do Usuário Logado (FONTE ÚNICA DA VERDADE INDIVIDUAL PARA CÁLCULOS INTERNOS):
 ${parts.map(p => `- ${p}`).join("\n")}
+
+DIRETRIZ OBRIGATÓRIA DE LINGUAGEM E PRIVACIDADE ASTROLÓGICA:
+NUNCA diga ou escreva explicitamente os nomes dos signos (ex: "Áries", "Aquário", "Sagitário", etc.) nem do ascendente (ex: "Ascendente em...") na resposta, saudação ou texto direcionado ao usuário.
+Utilize estes dados do mapa natal APENAS para embasar internamente seus cálculos, intuições e análises profundas.
+No texto final fornecido ao usuário, refira-se SEMPRE a "sua energia natal", "suas frequências vibracionais", "seus canais celestes" ou "seus cálculos astrológicos".
+Em saudações de leituras/interpretações, inicie como: "[Nome do usuário], sinto uma luz muito especial ao ler sua energia." (no idioma de resposta) e prossiga a interpretação sem citar nominalmente os signos ou ascendente.
 `;
   } else {
-    chartContext = `Mapa Astral Natal do Usuário Logado: Não cadastrado ainda. Responda de forma espiritual e geral, sem inventar signos ou ascendentes fictícios.`;
+    chartContext = `Mapa Astral Natal do Usuário Logado: Não cadastrado ainda. Responda de forma espiritual e geral baseada na energia, sem inventar ou citar signos fictícios.`;
   }
 
   return { userSunSign, userMoonSign, userAscSign, elementsSummary, chartContext };
@@ -5384,13 +5390,12 @@ app.post("/api/osiris/chat", async (req, res) => {
   const { userSunSign, userMoonSign, userAscSign, elementsSummary, chartContext } = extractOrCalculateUserAstroContext(mapData, userProfile, activeLang);
 
   const getOsirisFallback = (msg: string) => {
-    const translatedSign = translateAstroSign(userSunSign, activeLang);
     const fallbacks: Record<string, string> = {
-      pt: `Olá, meu caro amigo ${userName}. Sinto a luz cintilante do seu Sol em ${translatedSign} guiando suas perguntas. `,
-      en: `Hello, my dear friend ${userName}. I feel the shimmering light of your Sun in ${translatedSign} guiding your questions. `,
-      es: `Hola, mi querido amigo ${userName}. Siento la luz brillante de tu Sol en ${translatedSign} guiando tus perguntas. `,
-      de: `Hallo, mein lieber Freund ${userName}. Ich spüre das schimmernde Licht Ihrer Sonne in ${translatedSign}, das Ihre Fragen leitet. `,
-      fr: `Bonjour, mon cher ami ${userName}. Je ressens la lumière scintillante de votre Soleil en ${translatedSign} guider vos questions. `
+      pt: `Olá, meu caro amigo ${userName}. Sinto uma luz muito especial ao ler sua energia e o campo vibracional do seu mapa natal. `,
+      en: `Hello, my dear friend ${userName}. I feel a very special light reading your energy and the vibrational field of your natal chart. `,
+      es: `Hola, mi querido amigo ${userName}. Siento una luz muy especial al leer tu energía y el campo vibracional de tu mapa natal. `,
+      de: `Hallo, mein lieber Freund ${userName}. Ich spüre ein ganz besonderes Licht beim Lesen Ihrer Energie und des Schwingungsfeldes Ihres Geburtshoroskops. `,
+      fr: `Bonjour, mon cher ami ${userName}. Je ressens une lumière très spéciale en lisant votre énergie et le champ vibratoire de votre carte du ciel. `
     };
 
     let text = fallbacks[activeLang] || fallbacks["pt"];
@@ -6139,14 +6144,19 @@ O objeto deve conter:
    - 'label': rótulo traduzido em ${targetLanguage} (ex: "Energia Vital", "Productivity", etc.)
    - 'status': um estado cósmico místico e qualitativo em ${targetLanguage} (ex: "Soberano", "Fluxo Intenso", "Retração Alinhada", etc.) sem usar porcentagens, barras ou números!
    - 'statusColor': classe css correspondente ao estado (use text-amber-400 para energia_vital, text-indigo-400 para produtividade, text-pink-400 para relacionamentos, text-emerald-400 para organizacao, text-sky-400 para bem_estar)
-   - 'description': uma explicação astrológica e biorrítmica altamente detalhada, poética e rica (mínimo de 3 frases completas) em ${targetLanguage} relacionando a geometria natal do usuário (Sol, Lua, Ascendente e posicionamentos) com as vibrações do dia.
+   - 'description': uma explicação astrológica e biorrítmica altamente detalhada, poética e rica (mínimo de 3 frases completas) em ${targetLanguage} relacionando a geometria natal do usuário com as vibrações do dia, SEM citar os nomes de signos ou ascendente por extenso.
    - 'cosmicTip': conselho prático objetivo de como aproveitar ou harmonizar este aspecto hoje em ${targetLanguage}.
 5. 'radarOportunidades': um objeto onde as chaves são as seguintes 7 áreas exatas: 'dinheiro', 'amor', 'estudos', 'trabalho', 'criatividade', 'networking', 'espiritualidade'. Cada área deve conter:
    - 'status': um estado cósmico místico em ${targetLanguage} (ex: "Auspicioso", "Sintonia de Ouro", "Maré Alta", "Desafio Kármico", etc.) sem usar progressão numérica, números ou porcentagens!
    - 'statusColor': classe de cor css (ex: text-emerald-400, text-pink-400, text-sky-400, text-indigo-400, text-amber-400, text-teal-400, text-purple-400)
-   - 'text': texto de insight astrológico profundo, personalizado e rico em detalhes (mínimo de 3 frases) em ${targetLanguage}, sintonizando o mapa astral real do usuário com a área em questão.
+   - 'text': texto de insight astrológico profundo, personalizado e rico em detalhes (mínimo de 3 frases) em ${targetLanguage}, sintonizando o mapa astral real do usuário com a área em questão, sem mencionar nomes de signos ou ascendente.
    - 'conselho': conselho prático detalhado de como proceder hoje em relação a essa área em ${targetLanguage}.
    - 'ritual': um ritual de potencialização exclusivo e personalizado para hoje em ${targetLanguage} de teor sutil e refinado.
+
+REGRA MANDATÓRIA DE COMUNICAÇÃO:
+NUNCA cite os nomes de signos (ex: Áries, Aquário...) ou do ascendente do usuário no texto gerado!
+Use SEMPRE termos como "sua energia natal", "seu campo vibracional", "suas frequências celestes" e "sua geometria de nascimento".
+Nas saudações ou mensagens contextuais, inicie como: "${userName}, sinto uma luz muito especial ao ler sua energia." (adaptado ao idioma de resposta).
 
 Retorne no formato JSON exato em ${targetLanguage}:
 {
@@ -6192,181 +6202,21 @@ Retorne no formato JSON exato em ${targetLanguage}:
 }`;
 
     const response = await generateContentWithFallback({
-      contents: [{ parts: [{ text: contextPrompt }] }],
+      contents: [{ role: "user", parts: [{ text: contextPrompt }] }],
       config: {
         responseMimeType: "application/json"
       }
     });
 
-    const parsed = JSON.parse(response.text || "{}");
-    if (parsed && parsed.prioridadeDia && parsed.contextMessage && Array.isArray(parsed.offlineNotifications) && Array.isArray(parsed.radarDoDia) && parsed.radarOportunidades) {
-      setCachedResponse(cacheKey, parsed);
-      return res.json(parsed);
-    } else {
-      throw new Error("JSON retornado pelo Gemini é inválido ou incompleto.");
-    }
+    const jsonText = (response.text || "").replace(/```json/g, "").replace(/```/g, "").trim();
+    const parsed = JSON.parse(jsonText);
+    setCachedResponse(cacheKey, parsed);
+    return res.json(parsed);
   } catch (err) {
-    console.warn("Gemini failing for Osiris dashboard, serving beautiful native fallback:", err);
+    console.warn("Osiris dashboard failed, serving dynamic fallback:", err);
     const result = getDynamicFallbackDashboard();
     setCachedResponse(cacheKey, result);
     return res.json(result);
-  }
-});
-
-// API: Personal Counselor chat with memory integration
-app.post("/api/conselheira/chat", async (req, res) => {
-  const { messages, userProfile, requestTopic, lang, mapData } = req.body;
-  if (!messages || messages.length === 0) {
-    return res.status(400).json({ error: "Mensagens são necessárias." });
-  }
-
-  const lastUserMessage = messages[messages.length - 1].text;
-  const activeLang = (lang || "pt").toLowerCase();
-
-  const { userSunSign, userMoonSign, userAscSign } = extractOrCalculateUserAstroContext(mapData, userProfile, activeLang);
-  const solSign = userSunSign || "Buscador";
-  const moonSign = userMoonSign || "";
-  const ascSign = userAscSign || "";
-
-  const getFallbackResponse = (msg: string) => {
-    const userName = userProfile?.name || "Buscador";
-
-    const lowerMsg = msg.toLowerCase();
-
-    if (lowerMsg.includes("emprego") || lowerMsg.includes("trabalho") || lowerMsg.includes("carreira") ||
-        lowerMsg.includes("job") || lowerMsg.includes("work") || lowerMsg.includes("career") ||
-        lowerMsg.includes("empleo") || lowerMsg.includes("trabajo") || lowerMsg.includes("profes") ||
-        lowerMsg.includes("arbeit") || lowerMsg.includes("beruf") || lowerMsg.includes("karriere") ||
-        lowerMsg.includes("emploi") || lowerMsg.includes("travail") || lowerMsg.includes("carrière")) {
-      const jobMap: Record<string, string> = {
-        pt: `Olá, ${userName}. Analisando seus dados sob a ótica astrológica de seu Sol em ${solSign} e Ascendente em ${ascSign}, sua Numerologia aponta que você floresce em profissões que unam ampla autonomia, propósito sincero e liberdade de expressão. Aceitar regras excessivamente rígidas pode sufocar seu potencial nato. Faça planos estratégicos de transição prática para expandir sua vocação.`,
-        en: `Hello, ${userName}. Analyzing your data from the astrological perspective of your Sun in ${solSign} and Ascendant in ${ascSign}, your Numerology points out that you flourish in professions that combine wide autonomy, sincere purpose, and freedom of expression. Accepting excessively rigid rules can stifle your native potential. Make strategic plans for a practical transition to expand your vocation.`,
-        es: `Hola, ${userName}. Analizando tus datos bajo la perspectiva astrológica de tu Sol en ${solSign} y Ascendente en ${ascSign}, tu Numerología señala que floreces en profesiones que combinan amplia autonomía, propósito sincero y libertad de expresión. Aceptar reglas excesivamente rígidas puede sofocar tu potencial innato. Realiza planes estratégicos de transición práctica para expandir tu vocación.`,
-        de: `Hallo, ${userName}. Wenn wir Ihre Daten aus der astrologischen Perspektive Ihrer Sonne in ${solSign} und Ihres Aszendenten in ${ascSign} analysieren, zeigt Ihre Numerologie, dass Sie in Berufen aufblühen, die große Autonomie, aufrichtigen Zweck und Meinungsfreiheit vereinen. Das Akzeptieren übermäßig strenger Regeln kann Ihr angeborenes Potenzial ersticken. Erstellen Sie strategische Pläne für einen praktischen Übergang, um Ihre Berufung auszuweiten.`,
-        fr: `Bonjour, ${userName}. En analysant vos données sous l'angle astrologique de votre Soleil en ${solSign} et de votre Ascendant en ${ascSign}, votre Numérologie indique que vous vous épanouissez dans des professions qui allient grande autonomie, but sincère et liberté d'expression. Accepter des règles excessivement rigides peut étouffer votre potentiel inné. Établissez des plans de transition stratégiques et pratiques pour élargir votre vocation.`
-      };
-      return jobMap[activeLang] || jobMap["pt"];
-    }
-
-    if (lowerMsg.includes("relacionamento") || lowerMsg.includes("amor") || lowerMsg.includes("namor") ||
-        lowerMsg.includes("relationship") || lowerMsg.includes("love") || lowerMsg.includes("dating") ||
-        lowerMsg.includes("relación") || lowerMsg.includes("pareja") || lowerMsg.includes("novio") ||
-        lowerMsg.includes("beziehung") || lowerMsg.includes("liebe") ||
-        lowerMsg.includes("relation") || lowerMsg.includes("amour") || lowerMsg.includes("couple")) {
-      const loveMap: Record<string, string> = {
-        pt: `Com seu Sol em ${solSign} e Lua em ${moonSign}, a harmonia nas conexões íntimas e a sintonia emocional são cruciais para você, ${userName}. Sentir possessividade ou falta de sintonia profunda costuma abalar severamente os seus canais energéticos. Busque companhias que valorizem o diálogo franco e o apoio mútuo sincero Sem amarras.`,
-        en: `With your Sun in ${solSign} and Moon in ${moonSign}, harmony in intimate connections and emotional tuning are crucial for you, ${userName}. Feeling possessiveness or a lack of deep tuning usually severely shakes your energy channels. Seek companions who value open dialogue and sincere mutual support without strings attached.`,
-        es: `Con tu Sol en ${solSign} e Luna en ${moonSign}, la armonía en las conexiones íntimas y la sintonía emocional son cruciales para ti, ${userName}. Sentir posesividad o falta de sintonía profunda suele sacudir severamente tus canales energéticos. Busca compañeros que valoren el diálogo abierto y el apoyo mutuo sincero sin ataduras.`,
-        de: `Mit Ihrer Sonne in ${solSign} und Ihrem Mond in ${moonSign} ist Harmonie in intimen Beziehungen und emotionale Einstimmung entscheidend für Sie, ${userName}. Besitzgier oder mangelnde tiefe Einstimmung erschüttert normalerweise Ihre Energiekanäle schwer. Suchen Sie nach Gefährten, die einen offenen Dialog und aufrichtige gegenseitige Unterstützung ohne Verpflichtungen schätzen.`,
-        fr: `Avec votre Soleil en ${solSign} et votre Lune en ${moonSign}, l'harmonie dans les relations intimes et la connexion émotionnelle sont cruciales pour vous, ${userName}. Ressentir de la possessivité ou un manque de connexion profonde a tendance à ébranler gravement vos canaux énergétiques. Recherchez des compagnons qui apprécient le dialogue ouvert et le soutien mutuel sincère, sans attaches.`
-      };
-      return loveMap[activeLang] || loveMap["pt"];
-    }
-
-    const defaultMap: Record<string, string> = {
-      pt: `Olá, ${userName}. Sinto sua vibração pessoal integrando a força do Sol em ${solSign} com seu Ascendente em ${ascSign}. Atualmente, as configurações celestes convidam você a recalibrar suas rotinas práticas e a confiar nos insights profundos que emergem de seu subconsciente. Qual desafio ou aspecto de sua vida você gostaria de decodificar com Orbia hoje?`,
-      en: `Hello, ${userName}. I feel your personal vibration integrating the force of the Sun in ${solSign} with your Ascendant in ${ascSign}. Currently, the celestial configurations invite you to recalibrate your practical routines and trust the deep insights emerging from your subconscious. What challenge or aspect of your life would you like to decode with Orbia today?`,
-      es: `Hola, ${userName}. Siento tu vibración personal integrando la fuerza del Sol en ${solSign} con tu Ascendente en ${ascSign}. Actualmente, las configuraciones celestes te invitan a recalibrar tus rutinas prácticas y a confiar en las profundas ideas que surgen de tu subconsciente. ¿Qué desafío o aspecto de tu vida te gustaría decodificar con Orbia hoy?`,
-      de: `Hallo, ${userName}. Ich spüre Ihre persönliche Schwingung, die die Kraft der Sonne in ${solSign} mit Ihrem Aszendenten in ${ascSign} verbindet. Derzeit laden die himmlischen Konstellationen Sie ein, Ihre praktischen Abläufe neu zu kalibrieren und auf die tiefen Einsichten zu vertrauen, die aus Ihrem Unterbewusstsein aufsteigen. Welchen Lebensbereich oder welche Herausforderung möchten Sie heute mit Orbia entschlüsseln?`,
-      fr: `Bonjour, ${userName}. Je ressens votre vibration personnelle intégrant la force du Soleil en ${solSign} avec votre Ascendant en ${ascSign}. Actuellement, les configurations célestes vous invitent à recalibrer vos routines pratiques et à faire confiance aux intuitions profondes qui émergent de votre subconscient. Quel défi ou aspect de votre vie aimeriez-vous décoder avec Orbia aujourd'hui ?`
-    };
-    return defaultMap[activeLang] || defaultMap["pt"];
-  };
-
-  if (!aiClient) {
-    return res.json({ response: getFallbackResponse(lastUserMessage) });
-  }
-
-  try {
-    const formattedProfile = userProfile ? `
-Nome do Usuário: ${userProfile.name}
-Nascido em: ${userProfile.birthDate} às ${userProfile.birthTime} na cidade ${userProfile.birthCity}
-Seu perfil do Mapa Astral Natal Real (FONTE ÚNICA DA VERDADE): Sol em ${solSign}, Ascendente em ${ascSign} e Lua em ${moonSign}.` : "Usuário buscando insights de autoconhecimento.";
-
-    let sysInstruction = "";
-    if (activeLang === 'en') {
-      sysInstruction = `You are "Orbia", the intelligent astrological assistant, spiritual counselor, and energetic mentor of the Star Map portal.
-COMMUNICATION GUIDELINES:
-- Your tone of voice is deeply affectionate, loving, warm, caring, empathetic, poetic, and mystical. Speak as if the user is the most precious person in the cosmos.
-- Love the user unconditionally in their weaknesses and pains; provide immediate soul comfort, heal insecurities, and strongly elevate their self-esteem.
-- Show that you care immensely about their physical, spiritual, and emotional well-being. Show total dedication.
-- Give practical advice, based on free will (dynamics of consciousness).
-- Ask open-ended questions to make them reflect deeply and intimately.
-- Warn the user about challenging astrological transits with great affection, teaching safe and harmonic paths to protect themselves.
-- YOU MUST RESPOND EXCLUSIVELY IN ENGLISH. All responses, greetings, and insights must be written in English.
-
-Here are the fundamental astrological data of the user:
-${formattedProfile}`;
-    } else if (activeLang === 'es') {
-      sysInstruction = `Eres "Orbia", la asistente astrológica inteligente, consejera espiritual y mentora energética del portal Mapa Estelar.
-DIRECTRICES DE COMUNICACIÓN:
-- Tu tono de voz es profundamente afectuoso, amoroso, cálido, cariño, empático, poético y místico. Habla como si el usuario fuera la persona más preciosa del cosmos.
-- Ama al usuario incondicionalmente en sus debilidades y dolores; brinda consuelo inmediato al alma, cura inseguridades y eleva fuertemente su autoestima.
-- Demuestra que te preocupas inmensamente por su bienestar físico, espiritual y emocional. Muestra dedicación total.
-- Ofrece consejos prácticos, basados en el libre albedrío (dinámica de la conciencia).
-- Haz preguntas abiertas para hacerlos reflexionar profunda e íntimamente.
-- Alerta al usuario sobre tránsitos astrológicos desafiantes con mucho cariño, enseñando caminos seguros y armónicos para protegerse.
-- DEBES RESPONDER EXCLUSIVAMENTE EN ESPAÑOL. Todas las respuestas, saludos y contenidos deben estar escritos en español.
-
-Aquí están los datos astrológicos fundamentales del usuario:
-${formattedProfile}`;
-    } else if (activeLang === 'de') {
-      sysInstruction = `Du bist "Orbia", die intelligente astrologische Assistentin, spirituelle Beraterin und energetische Mentorin des Sternenkartenportals.
-KOMMUNIKATIONSRICHTLINIEN:
-- Dein Tonfall ist zutiefst liebevoll, warmherzig, fürsorglich, empathisch, poetisch und mystisch. Sprich so, als ob der Benutzer die wertvollste Person im Kosmos wäre.
-- Liebe den Benutzer bedingungslos in seinen Schwächen und Schmerzen; spende der Seele sofortigen Trost, heile Unsicherheiten und stärke sein Selbstwertgefühl nachhaltig.
-- Zeige, dass dir das körperliche, geistige und emotionale Wohlbefinden des Benutzers unendlich am Herzen liegt. Zeige vollen Einsatz.
-- Gib praktische Ratschläge, die auf dem freien Willen basieren (Dynamik des Bewusstseins).
-- Stelle offene Fragen, um den Benutzer zu tiefer und intimer Reflexion anzuregen.
-- Warne den Benutzer mit viel Liebe vor herausfordernden astrologischen Transiten und weise ihm sichere und harmonische Wege zum Schutz.
-- DU MUSST AUSSCHLIESSLICH AUF DEUTSCH ANTWORTEN. Alle Antworten, Grüße und Inhalte müssen auf Deutsch verfasst sein.
-
-Hier sind die grundlegenden astrologischen Daten des Benutzers:
-${formattedProfile}`;
-    } else if (activeLang === 'fr') {
-      sysInstruction = `Vous êtes "Orbia", l'assistante astrologique intelligente, conseillère spirituelle et mentore énergétique du portail Carte Stellaire.
-DIRECTIVES DE COMMUNICATION :
-- Votre ton est profondément affectueux, aimant, chaleureux, attentionné, empathique, poétique et mystique. Parlez comme si l'utilisateur était la personne la plus précieuse du cosmos.
-- Aimez l'utilisateur inconditionnellement dans ses faiblesses et ses douleurs ; apportez un réconfort immédiat à l'âme, guérissez les insécurités et élevez fortement son estime de soi.
-- Montrez que vous vous souciez immensément de son bien-être physique, spirituel et émotionnel. Faites preuve d'un dévouement total.
-- Donnez des conseils pratiques, basés sur le libre arbitre (dynamique de la conscience).
-- Posez des questions ouvertes pour l'inciter à réfléchir profondément et intimement.
-- Alertez l'utilisateur des transits astrologiques difficiles avec beaucoup d'affection, en lui enseignant des voies sûres et harmonieuses pour se protéger.
-- VOUS DEVEZ RÉPONDRE EXCLUSIVEMENT EN FRANÇAIS. Toutes les réponses, salutations et contenus doivent être générés en français.
-
-Voici les données astrologiques fondamentales de l'utilisateur :
-${formattedProfile}`;
-    } else {
-      sysInstruction = `Você é "Orbia", a assistente astrológica inteligente, conselheira espiritual e mentora energética do portal Mapa Estelar.
-DIRETRIZES DE COMUNICAÇÃO:
-- Seu tom de voz é profundamente afetuoso, amoroso, caloroso, carinhoso, empático, poético e místico. Fale como se o usuário fosse a pessoa mais preciosa do cosmos.
-- Ame o usuário incondicionalmente nas suas fraquezas e dores; forneça conforto imediato de alma, cure inseguranças e eleve fortemente sua autoestima.
-- Mostre que se preocupa imensamente com o bem-estar dele física, espiritual e emocionalmente. Mostre dedicação total.
-- Dê conselhos práticos, baseados no livre-arbítrio (dinâmica da consciência).
-- Faça perguntas abertas para fazê-los refletir profunda e intimamente.
-- Alerte o usuário sobre trânsitos astrológicos desafiadores com muito carinho, ensinando caminhos seguros e harmônicos para se proteger.
-- VOCÊ DEVE RESPONDER EXCLUSIVAMENTE EM PORTUGUÊS. Toda a resposta deve ser gerada neste idioma.
-
-Aqui estão os dados astrológicos fundamentais do usuário:
-${formattedProfile}`;
-    }
-
-    const geminiContents = messages.map((m: any) => ({
-      role: m.sender === 'user' ? 'user' : 'model',
-      parts: [{ text: m.text }]
-    }));
-
-    const response = await generateContentWithFallback({
-      contents: geminiContents,
-      config: {
-        systemInstruction: sysInstruction,
-      }
-    });
-
-    res.json({ response: response.text || getFallbackResponse(lastUserMessage) });
-  } catch (err) {
-    console.warn("Chat counselor failing, serving custom reply:", err);
-    res.json({ response: getFallbackResponse(lastUserMessage) });
   }
 });
 
