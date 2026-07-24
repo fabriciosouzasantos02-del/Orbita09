@@ -1264,18 +1264,80 @@ function generateMapData(
 function getAscendedAstrologicalSign(dateString: string, offset: number): string {
   try {
     const calc = performAstroCalculation(dateString, "12:00");
-    if (offset === 0) return calc.astros.find(a => a.name === "Sol")?.sign || "Aquário";
-    if (offset === 5) return calc.astros.find(a => a.name === "Lua")?.sign || "Aquário";
-    if (offset === 8) return calc.astros.find(a => a.name === "Ascendente")?.sign || "Sagitário";
+    if (offset === 0) return calc.astros.find(a => a.name === "Sol")?.sign || "";
+    if (offset === 5) return calc.astros.find(a => a.name === "Lua")?.sign || "";
+    if (offset === 8) return calc.astros.find(a => a.name === "Ascendente")?.sign || "";
     
     const signs = ["Áries", "Touro", "Gêmeos", "Câncer", "Leão", "Virgem", "Libra", "Escorpião", "Sagitário", "Capricórnio", "Aquário", "Peixes"];
     const d = new Date(dateString);
-    if (isNaN(d.getTime())) return "Aquário";
+    if (isNaN(d.getTime())) return "";
     const idx = (d.getMonth() + offset) % 12;
     return signs[idx];
   } catch {
-    return "Aquário";
+    return "";
   }
+}
+
+// Extract or calculate exact astronomical context for the active logged-in user (NO hardcoded sign defaults)
+function extractOrCalculateUserAstroContext(mapData: any, userProfile: any, activeLang: string = 'pt') {
+  let userSunSign = "";
+  let userMoonSign = "";
+  let userAscSign = "";
+  let elementsSummary = "";
+  let chartContext = "";
+
+  if (mapData && mapData.astros) {
+    const sun = mapData.astros.find((a: any) => a.name === "Sol" || a.name === "Sun")?.sign;
+    const moon = mapData.astros.find((a: any) => a.name === "Lua" || a.name === "Moon")?.sign;
+    const asc = mapData.astros.find((a: any) => a.name === "Ascendente" || a.name === "Ascendant")?.sign;
+    if (sun) userSunSign = translateAstroSign(sun, activeLang);
+    if (moon) userMoonSign = translateAstroSign(moon, activeLang);
+    if (asc) userAscSign = translateAstroSign(asc, activeLang);
+
+    const elements = mapData.distribution?.elements;
+    if (elements) {
+      elementsSummary = `Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%`;
+    }
+  } else if (userProfile && (userProfile.birthDate || userProfile.date)) {
+    try {
+      const bDate = userProfile.birthDate || userProfile.date;
+      const bTime = userProfile.birthTime || "12:00";
+      const lat = userProfile.latitude !== undefined ? userProfile.latitude : -23.5505;
+      const lon = userProfile.longitude !== undefined ? userProfile.longitude : -46.6333;
+      const chart = performAstroCalculation(bDate, bTime, lat, lon, undefined, activeLang);
+      if (chart && chart.astros) {
+        const sun = chart.astros.find((a: any) => a.name === "Sol" || a.name === "Sun")?.sign;
+        const moon = chart.astros.find((a: any) => a.name === "Lua" || a.name === "Moon")?.sign;
+        const asc = chart.astros.find((a: any) => a.name === "Ascendente" || a.name === "Ascendant")?.sign;
+        if (sun) userSunSign = translateAstroSign(sun, activeLang);
+        if (moon) userMoonSign = translateAstroSign(moon, activeLang);
+        if (asc) userAscSign = translateAstroSign(asc, activeLang);
+      }
+      if (chart && chart.distribution?.elements) {
+        const elements = chart.distribution.elements;
+        elementsSummary = `Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%`;
+      }
+    } catch (err) {
+      console.warn("[Astro Helper] Failed to compute astro context from userProfile:", err);
+    }
+  }
+
+  const parts = [];
+  if (userSunSign) parts.push(`Sol em ${userSunSign}`);
+  if (userMoonSign) parts.push(`Lua em ${userMoonSign}`);
+  if (userAscSign) parts.push(`Ascendente em ${userAscSign}`);
+  if (elementsSummary) parts.push(`Balanço dos Elementos: ${elementsSummary}`);
+
+  if (parts.length > 0) {
+    chartContext = `
+Mapa Astral Natal do Usuário Logado (FONTE ÚNICA DA VERDADE INDIVIDUAL):
+${parts.map(p => `- ${p}`).join("\n")}
+`;
+  } else {
+    chartContext = `Mapa Astral Natal do Usuário Logado: Não cadastrado ainda. Responda de forma espiritual e geral, sem inventar signos ou ascendentes fictícios.`;
+  }
+
+  return { userSunSign, userMoonSign, userAscSign, elementsSummary, chartContext };
 }
 
 // Calculate Numerology
@@ -1863,96 +1925,31 @@ app.post("/api/dreams/interpret", async (req, res) => {
 
   const activeLang = (lang || "pt").toLowerCase();
 
-  let userSunSign = "";
-  let userMoonSign = "Aquário";
-  let userAscSign = "Sagitário";
-  let elementsSummary = "Fogo 25%, Terra 25%, Ar 25%, Água 25%";
-  let chartContext = "";
+  const { userSunSign, userMoonSign, userAscSign, elementsSummary, chartContext: astroContext } = extractOrCalculateUserAstroContext(mapData, userProfile, activeLang);
+  let chartContext = astroContext;
 
-  if (mapData) {
-    const sun = mapData.astros?.find((a: any) => a.name === "Sol")?.sign;
-    const moon = mapData.astros?.find((a: any) => a.name === "Lua")?.sign;
-    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente")?.sign;
-    if (sun) userSunSign = sun;
-    if (moon) userMoonSign = moon;
-    if (asc) userAscSign = asc;
-    
-    const elements = mapData.distribution?.elements;
-    if (elements) {
-      elementsSummary = `Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%`;
-    }
-    
-    chartContext = `
-Informações Reais do Mapa Astral Natal do Usuário (Fonte Única da Verdade):
-- Sol em: ${userSunSign}
-- Lua em: ${userMoonSign}
-- Ascendente em: ${userAscSign}
-- Distribuição de Elementos: ${elementsSummary}
-`;
+  if (userProfile?.birthTime) {
+    chartContext += `- Hora de Nascimento: ${userProfile.birthTime}\n`;
+  }
+  if (userProfile?.birthCity || userProfile?.birthPlace) {
+    chartContext += `- Local de Nascimento: ${userProfile.birthCity || userProfile.birthPlace}\n`;
+  }
 
-    if (userProfile?.birthTime) {
-      chartContext += `- Hora de Nascimento: ${userProfile.birthTime}\n`;
-    }
-    if (userProfile?.birthPlace) {
-      chartContext += `- Local de Nascimento: ${userProfile.birthPlace}\n`;
-    }
-    
-    const planets = mapData.astros?.filter((a: any) => ["Marte", "Vênus", "Mercúrio", "Saturno", "Júpiter"].includes(a.name));
-    if (planets && planets.length > 0) {
-      chartContext += `- Posicionamentos planetários adicionais: ` + planets.map((p: any) => `${p.name} em ${p.sign}`).join(", ") + "\n";
-    }
-
-    let numerologySummary = "";
-    if (userProfile?.name && userProfile?.birthDate) {
-      try {
-        const numData = calculateNumerologyData(userProfile.name, userProfile.birthDate);
-        if (numData) {
-          numerologySummary = `
+  if (userProfile?.name && userProfile?.birthDate) {
+    try {
+      const numData = calculateNumerologyData(userProfile.name, userProfile.birthDate);
+      if (numData) {
+        chartContext += `
 Informações de Numerologia Cabalística do Usuário:
 - Número de Destino/Caminho de Vida: ${numData.destiny || numData.birthSum || "N/A"}
 - Número de Expressão: ${numData.expression || "N/A"}
 - Número de Desejo da Alma (Motivação): ${numData.soul || "N/A"}
 - Número de Personalidade: ${numData.personality || "N/A"}
 `;
-        }
-      } catch (e) {
-        console.warn("Could not compute numerology summary for dream interpretation:", e);
       }
+    } catch (e) {
+      console.warn("Could not compute numerology summary for dream interpretation:", e);
     }
-    chartContext += numerologySummary;
-
-  } else if (userProfile?.birthDate) {
-    const zodiac = getZodiacFromBirthDate(userProfile.birthDate);
-    userSunSign = zodiac;
-    chartContext = `
-Informações Astrológicas do Usuário:
-- Signo Solar estimado: ${userSunSign}
-`;
-    if (userProfile?.birthTime) {
-      chartContext += `- Hora de Nascimento: ${userProfile.birthTime}\n`;
-    }
-    if (userProfile?.birthPlace) {
-      chartContext += `- Local de Nascimento: ${userProfile.birthPlace}\n`;
-    }
-
-    let numerologySummary = "";
-    if (userProfile?.name) {
-      try {
-        const numData = calculateNumerologyData(userProfile.name, userProfile.birthDate);
-        if (numData) {
-          numerologySummary = `
-Informações de Numerologia Cabalística do Usuário:
-- Número de Destino/Caminho de Vida: ${numData.destiny || numData.birthSum || "N/A"}
-- Número de Expressão: ${numData.expression || "N/A"}
-- Número de Desejo da Alma (Motivação): ${numData.soul || "N/A"}
-- Número de Personalidade: ${numData.personality || "N/A"}
-`;
-        }
-      } catch (e) {
-        console.warn("Could not compute numerology summary for dream interpretation:", e);
-      }
-    }
-    chartContext += numerologySummary;
   }
   const langNames: Record<string, string> = {
     pt: "Português",
@@ -3169,45 +3166,7 @@ app.post("/api/oraculo/query", async (req, res) => {
 
   const activeLang = (lang || "pt").toLowerCase();
 
-  let userSunSign = "";
-  let userMoonSign = "Aquário";
-  let userAscSign = "Sagitário";
-  let elementsSummary = "Fogo 25%, Terra 25%, Ar 25%, Água 25%";
-  let chartContext = "";
-
-  if (mapData) {
-    const sun = mapData.astros?.find((a: any) => a.name === "Sol")?.sign;
-    const moon = mapData.astros?.find((a: any) => a.name === "Lua")?.sign;
-    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente")?.sign;
-    if (sun) userSunSign = sun;
-    if (moon) userMoonSign = moon;
-    if (asc) userAscSign = asc;
-    
-    const elements = mapData.distribution?.elements;
-    if (elements) {
-      elementsSummary = `Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%`;
-    }
-    
-    chartContext = `
-Informações Reais do Mapa Astral Natal do Usuário (Fonte Única da Verdade):
-- Sol em: ${userSunSign}
-- Lua em: ${userMoonSign}
-- Ascendente em: ${userAscSign}
-- Distribuição de Elementos: ${elementsSummary}
-`;
-    
-    const planets = mapData.astros?.filter((a: any) => ["Marte", "Vênus", "Mercúrio", "Saturno", "Júpiter"].includes(a.name));
-    if (planets && planets.length > 0) {
-      chartContext += `- Posicionamentos planetários adicionais: ` + planets.map((p: any) => `${p.name} em ${p.sign}`).join(", ") + "\n";
-    }
-  } else if (userProfile?.birthDate) {
-    const zodiac = getZodiacFromBirthDate(userProfile.birthDate);
-    userSunSign = zodiac;
-    chartContext = `
-Informações Astrológicas do Usuário:
-- Signo Solar estimado: ${userSunSign}
-`;
-  }
+  const { userSunSign, userMoonSign, userAscSign, elementsSummary, chartContext } = extractOrCalculateUserAstroContext(mapData, userProfile, activeLang);
 
   const fallbackOracleMap: Record<string, any> = {
     pt: {
@@ -5050,38 +5009,7 @@ app.post("/api/astrology/daily-missions", async (req, res) => {
     return res.json(cached);
   }
 
-  let userSunSign = zodiac;
-  let userMoonSign = "Aquário";
-  let userAscSign = "Sagitário";
-  let elementsSummary = "Fogo 25%, Terra 25%, Ar 25%, Água 25%";
-  let chartContext = "";
-
-  if (mapData) {
-    const sun = mapData.astros?.find((a: any) => a.name === "Sol")?.sign;
-    const moon = mapData.astros?.find((a: any) => a.name === "Lua")?.sign;
-    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente")?.sign;
-    if (sun) userSunSign = sun;
-    if (moon) userMoonSign = moon;
-    if (asc) userAscSign = asc;
-    
-    const elements = mapData.distribution?.elements;
-    if (elements) {
-      elementsSummary = `Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%`;
-    }
-    
-    chartContext = `
-Informações Reais do Mapa Astral Natal do Usuário (Fonte Única da Verdade):
-- Sol em: ${userSunSign}
-- Lua em: ${userMoonSign}
-- Ascendente em: ${userAscSign}
-- Distribuição de Elementos: ${elementsSummary}
-`;
-    
-    const planets = mapData.astros?.filter((a: any) => ["Marte", "Vênus", "Mercúrio", "Saturno", "Júpiter"].includes(a.name));
-    if (planets && planets.length > 0) {
-      chartContext += `- Posicionamentos planetários adicionais: ` + planets.map((p: any) => `${p.name} em ${p.sign}`).join(", ") + "\n";
-    }
-  }
+  const { userSunSign, userMoonSign, userAscSign, elementsSummary, chartContext } = extractOrCalculateUserAstroContext(mapData, userProfile, activeLang);
 
   // Robust Dynamic Fallback Generator seeded with current date & user parameters
   const generateDynamicFallbacks = () => {
@@ -5453,35 +5381,7 @@ app.post("/api/osiris/chat", async (req, res) => {
   const userName = userProfile?.name || "Buscador";
   const activeLang = (lang || "pt").toLowerCase();
 
-  let userSunSign = solSign;
-  let userMoonSign = "Aquário";
-  let userAscSign = "Sagitário";
-  let chartContext = "";
-
-  if (mapData) {
-    const sun = mapData.astros?.find((a: any) => a.name === "Sol")?.sign;
-    const moon = mapData.astros?.find((a: any) => a.name === "Lua")?.sign;
-    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente")?.sign;
-    if (sun) userSunSign = sun;
-    if (moon) userMoonSign = moon;
-    if (asc) userAscSign = asc;
-    
-    chartContext = `
-Mapa Astral Real do Usuário (FONTE ÚNICA DA VERDADE):
-- Sol: ${userSunSign}
-- Lua: ${userMoonSign}
-- Ascendente: ${userAscSign}
-`;
-    const elements = mapData.distribution?.elements;
-    if (elements) {
-      chartContext += `- Balanço dos Elementos: Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%\n`;
-    }
-    
-    const planets = mapData.astros?.filter((a: any) => ["Marte", "Vênus", "Mercúrio", "Saturno", "Júpiter"].includes(a.name));
-    if (planets && planets.length > 0) {
-      chartContext += `- Outros posicionamentos planetários: ` + planets.map((p: any) => `${p.name} em ${p.sign}`).join(", ") + "\n";
-    }
-  }
+  const { userSunSign, userMoonSign, userAscSign, elementsSummary, chartContext } = extractOrCalculateUserAstroContext(mapData, userProfile, activeLang);
 
   const getOsirisFallback = (msg: string) => {
     const translatedSign = translateAstroSign(userSunSign, activeLang);
@@ -5641,39 +5541,12 @@ Contexto estelar do usuário: ${formattedProfile}`;
 
 app.post("/api/osiris/dashboard", async (req, res) => {
   const { userProfile, weather, biorhythm, location, lastDream, lang, mapData } = req.body || {};
+  const activeLang = (lang || "pt").toLowerCase();
   const birthDate = userProfile?.birthDate || "1998-03-12";
   const baseZodiac = getZodiacFromBirthDate(birthDate);
   const name = userProfile?.name ? userProfile.name.split(" ")[0] : "Buscador";
 
-  let userSunSign = baseZodiac;
-  let userMoonSign = "Aquário";
-  let userAscSign = "Sagitário";
-  let chartContext = "";
-
-  if (mapData) {
-    const sun = mapData.astros?.find((a: any) => a.name === "Sol")?.sign;
-    const moon = mapData.astros?.find((a: any) => a.name === "Lua")?.sign;
-    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente")?.sign;
-    if (sun) userSunSign = sun;
-    if (moon) userMoonSign = moon;
-    if (asc) userAscSign = asc;
-    
-    chartContext = `
-Mapa Astral Real do Usuário (FONTE ÚNICA DA VERDADE):
-- Sol: ${userSunSign}
-- Lua: ${userMoonSign}
-- Ascendente: ${userAscSign}
-`;
-    const elements = mapData.distribution?.elements;
-    if (elements) {
-      chartContext += `- Balanço dos Elementos: Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%\n`;
-    }
-    
-    const planets = mapData.astros?.filter((a: any) => ["Marte", "Vênus", "Mercúrio", "Saturno", "Júpiter"].includes(a.name));
-    if (planets && planets.length > 0) {
-      chartContext += `- Outros posicionamentos planetários: ` + planets.map((p: any) => `${p.name} em ${p.sign}`).join(", ") + "\n";
-    }
-  }
+  const { userSunSign, userMoonSign, userAscSign, elementsSummary, chartContext } = extractOrCalculateUserAstroContext(mapData, userProfile, activeLang);
 
   const zodiac = userSunSign;
 
@@ -5683,7 +5556,6 @@ Mapa Astral Real do Usuário (FONTE ÚNICA DA VERDADE):
   const year = today.getFullYear();
   const todayStr = `${year}-${month}-${day}`;
 
-  const activeLang = (lang || "pt").toLowerCase();
   const cacheKey = `osiris_dashboard:${name}:${birthDate}:${userProfile?.birthTime || ''}:${userProfile?.birthCity || ''}:${todayStr}:${weather?.temperature || '22'}:${activeLang}`;
   const cached = getCachedResponse(cacheKey);
   if (cached) {
@@ -6351,27 +6223,10 @@ app.post("/api/conselheira/chat", async (req, res) => {
   const lastUserMessage = messages[messages.length - 1].text;
   const activeLang = (lang || "pt").toLowerCase();
 
-  let solSign = "Aquário";
-  let moonSign = "Aquário";
-  let ascSign = "Sagitário";
-
-  if (mapData) {
-    const sun = mapData.astros?.find((a: any) => a.name === "Sol" || a.name === "Sun")?.sign;
-    const moon = mapData.astros?.find((a: any) => a.name === "Lua" || a.name === "Moon")?.sign;
-    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente" || a.name === "Ascendant")?.sign;
-    if (sun) solSign = translateAstroSign(sun, activeLang);
-    if (moon) moonSign = translateAstroSign(moon, activeLang);
-    if (asc) ascSign = translateAstroSign(asc, activeLang);
-  } else {
-    const birthDate = userProfile?.birthDate || "";
-    const solSignRaw = birthDate ? getAscendedAstrologicalSign(birthDate, 0) : "Aquário";
-    const moonSignRaw = birthDate ? getAscendedAstrologicalSign(birthDate, 5) : "Aquário";
-    const ascSignRaw = birthDate ? getAscendedAstrologicalSign(birthDate, 8) : "Sagitário";
-
-    solSign = translateAstroSign(solSignRaw, activeLang);
-    moonSign = translateAstroSign(moonSignRaw, activeLang);
-    ascSign = translateAstroSign(ascSignRaw, activeLang);
-  }
+  const { userSunSign, userMoonSign, userAscSign } = extractOrCalculateUserAstroContext(mapData, userProfile, activeLang);
+  const solSign = userSunSign || "Buscador";
+  const moonSign = userMoonSign || "";
+  const ascSign = userAscSign || "";
 
   const getFallbackResponse = (msg: string) => {
     const userName = userProfile?.name || "Buscador";
@@ -6688,40 +6543,7 @@ app.post("/api/tarot/draw", async (req, res) => {
   const { lang, mapData, userProfile } = req.body || {};
   const activeLang = (lang || "pt").toLowerCase();
   
-  let userSunSign = "";
-  let userMoonSign = "Aquário";
-  let userAscSign = "Sagitário";
-  let elementsSummary = "Fogo 25%, Terra 25%, Ar 25%, Água 25%";
-  let chartContext = "";
-
-  if (mapData) {
-    const sun = mapData.astros?.find((a: any) => a.name === "Sol" || a.name === "Sun")?.sign;
-    const moon = mapData.astros?.find((a: any) => a.name === "Lua" || a.name === "Moon")?.sign;
-    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente" || a.name === "Ascendant")?.sign;
-    if (sun) userSunSign = sun;
-    if (moon) userMoonSign = moon;
-    if (asc) userAscSign = asc;
-    
-    const elements = mapData.distribution?.elements;
-    if (elements) {
-      elementsSummary = `Fogo ${elements.fire}%, Terra ${elements.earth}%, Ar ${elements.air}%, Água ${elements.water}%`;
-    }
-    
-    chartContext = `
-Informações Reais do Mapa Astral Natal do Usuário (Fonte Única da Verdade):
-- Sol em: ${userSunSign}
-- Lua em: ${userMoonSign}
-- Ascendente em: ${userAscSign}
-- Distribuição de Elementos: ${elementsSummary}
-`;
-  } else if (userProfile?.birthDate) {
-    const zodiac = getZodiacFromBirthDate(userProfile.birthDate);
-    userSunSign = zodiac;
-    chartContext = `
-Informações Astrológicas do Usuário:
-- Signo Solar estimado: ${userSunSign}
-`;
-  }
+  const { userSunSign, userMoonSign, userAscSign, elementsSummary, chartContext } = extractOrCalculateUserAstroContext(mapData, userProfile, activeLang);
   
   const rawCard = shuffledDeck[0];
   const selectedCard = translateCard(rawCard, activeLang);
@@ -6905,46 +6727,7 @@ app.post("/api/tarot/interpret", async (req, res) => {
   };
   const targetLangName = langNames[activeLang] || "Português";
 
-  let userSunSign = "";
-  let userMoonSign = "";
-  let userAscSign = "";
-  let chartContext = "";
-
-  if (mapData) {
-    const sun = mapData.astros?.find((a: any) => a.name === "Sol" || a.name === "Sun")?.sign;
-    const moon = mapData.astros?.find((a: any) => a.name === "Lua" || a.name === "Moon")?.sign;
-    const asc = mapData.astros?.find((a: any) => a.name === "Ascendente" || a.name === "Ascendant")?.sign;
-    if (sun) userSunSign = sun;
-    if (moon) userMoonSign = moon;
-    if (asc) userAscSign = asc;
-    
-    chartContext = `Sol em ${userSunSign}, Lua em ${userMoonSign}, Ascendente em ${userAscSign}`;
-  } else if (birthDate || userProfile?.birthDate) {
-    try {
-      const bDate = birthDate || userProfile?.birthDate;
-      const bTime = birthTime || "12:00";
-      const lat = latitude !== undefined ? latitude : -23.5505;
-      const lon = longitude !== undefined ? longitude : -46.6333;
-      const chart = performAstroCalculation(bDate, bTime, lat, lon, undefined, activeLang);
-      if (chart && chart.astros) {
-        const solPlacement = chart.astros.find(a => a.name === "Sol" || a.name === "Sun");
-        const luaPlacement = chart.astros.find(a => a.name === "Lua" || a.name === "Moon");
-        const ascPlacement = chart.astros.find(a => a.name === "Ascendente" || a.name === "Ascendant");
-        
-        userSunSign = solPlacement ? solPlacement.sign : "";
-        userMoonSign = luaPlacement ? luaPlacement.sign : "";
-        userAscSign = ascPlacement ? ascPlacement.sign : "";
-        
-        const parts = [];
-        if (userSunSign) parts.push(`Sol em ${userSunSign}`);
-        if (userMoonSign) parts.push(`Lua em ${userMoonSign}`);
-        if (userAscSign) parts.push(`Ascendente em ${userAscSign}`);
-        chartContext = parts.join(", ");
-      }
-    } catch (e) {
-      console.error("[Tarot Astro Context Error]", e);
-    }
-  }
+  const { userSunSign, userMoonSign, userAscSign, chartContext } = extractOrCalculateUserAstroContext(mapData, userProfile || { birthDate, birthTime, latitude, longitude }, activeLang);
 
   let astroContextLine = "";
   if (chartContext) {

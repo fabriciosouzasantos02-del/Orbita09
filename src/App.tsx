@@ -181,51 +181,17 @@ function getZodiacSign(dateStr: string): string {
 }
 
 function getRisingSign(dateStr: string, timeStr: string, latitude?: number, longitude?: number): string {
-  if (!dateStr) return "Sagitário";
+  if (!dateStr) return "";
   const lat = latitude !== undefined ? latitude : -23.5505;
   const lng = longitude !== undefined ? longitude : -46.6333;
 
-  const deduceTimezone = (lLatitude: number, lLongitude: number): string => {
-    if (lLatitude < 5 && lLatitude > -35 && lLongitude < -30 && lLongitude > -75) {
-      if (lLongitude < -54) {
-        if (lLongitude < -65) {
-          return "America/Rio_Branco";
-        }
-        return "America/Manaus";
-      }
-      return "America/Sao_Paulo";
-    }
-    if (lLatitude > 24 && lLatitude < 49 && lLongitude < -66 && lLongitude > -125) {
-      if (lLongitude < -114) return "America/Los_Angeles";
-      if (lLongitude < -104) return "America/Denver";
-      if (lLongitude < -85) return "America/Chicago";
-      return "America/New_York";
-    }
-    if (lLatitude > 35 && lLatitude < 70 && lLongitude > -10 && lLongitude < 40) {
-      if (lLongitude < 2) return "Europe/London";
-      if (lLongitude < 20) return "Europe/Paris";
-      return "Europe/Athens";
-    }
-    return "America/Sao_Paulo";
-  };
-
   try {
-    const tzName = deduceTimezone(lat, lng);
-    const mt = moment.tz(`${dateStr} ${timeStr || "12:00"}`, "YYYY-MM-DD HH:mm", tzName);
-    const tzOffset = mt.utcOffset() / 60;
-
-    const chart = performAstroCalculation(dateStr, timeStr || "12:00", lat, lng, tzOffset);
+    const chart = performAstroCalculation(dateStr, timeStr || "12:00", lat, lng);
     const asc = chart.astros.find(a => a.name === "Ascendente");
-    return asc ? asc.sign : "Sagitário";
+    return asc ? asc.sign : "";
   } catch (err) {
-    console.error("Error in high-precision getRisingSign fallback:", err);
-    try {
-      const chart = performAstroCalculation(dateStr, timeStr || "12:00", lat, lng);
-      const asc = chart.astros.find(a => a.name === "Ascendente");
-      return asc ? asc.sign : "Sagitário";
-    } catch {
-      return "Sagitário";
-    }
+    console.error("Error calculating rising sign:", err);
+    return "";
   }
 }
 
@@ -2153,7 +2119,20 @@ export default function App() {
       const localProfileStr = localStorage.getItem("orbi_user_profile");
       let localProfile: any = null;
       try {
-        if (localProfileStr) localProfile = JSON.parse(localProfileStr);
+        if (localProfileStr) {
+          const parsed = JSON.parse(localProfileStr);
+          const isSameAccount = (!parsed.email && !parsed.uid) ||
+            (parsed.email && parsed.email.toLowerCase().trim() === emailLower) ||
+            (parsed.uid && parsed.uid === uid);
+          if (isSameAccount) {
+            localProfile = parsed;
+          } else {
+            console.log("[Account Isolation] Purging local profile from different account:", parsed.email);
+            localStorage.removeItem("orbi_user_profile");
+            localStorage.removeItem("orbi_map_data");
+            localStorage.removeItem("orbi_numerology_data");
+          }
+        }
       } catch {}
       
       const hasLocalMap = localProfile && localProfile.birthDate && localProfile.birthCity;
@@ -3268,7 +3247,8 @@ export default function App() {
         console.warn("[Migration Engine] Parse error:", e);
       }
       
-      const hasLocalMapParams = localProfile && localProfile.birthDate && localProfile.birthCity;
+      const isGuestOrSameUser = localProfile && (!localProfile.email || localProfile.email.toLowerCase().trim() === emailLower) && (!localProfile.uid || localProfile.uid === uid);
+      const hasLocalMapParams = isGuestOrSameUser && localProfile.birthDate && localProfile.birthCity;
       
       let cloudCharts: any[] = [];
       try {
@@ -7320,8 +7300,8 @@ export default function App() {
                   }>
                     <LunarCycle 
                       userName={user?.name} 
-                      userSunSign={mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Aquário")} 
-                      userAscendant={mapData?.astros?.find(a => a.name === "Ascendente")?.sign || (user?.birthDate && user?.birthTime ? getRisingSign(user.birthDate, user.birthTime, user.latitude, user.longitude) : "Sagitário")}
+                      userSunSign={mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "")} 
+                      userAscendant={mapData?.astros?.find(a => a.name === "Ascendente")?.sign || (user?.birthDate && user?.birthTime ? getRisingSign(user.birthDate, user.birthTime, user.latitude, user.longitude) : "")}
                       lang={currentLang}
                     />
                   </React.Suspense>

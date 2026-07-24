@@ -345,8 +345,8 @@ interface LunarCycleProps {
 
 export default function LunarCycle({ 
   userName, 
-  userSunSign = 'Aquário',
-  userAscendant = 'Sagitário',
+  userSunSign = '',
+  userAscendant = '',
   lang
 }: LunarCycleProps) {
   const { idioma } = useIdioma();
