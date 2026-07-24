@@ -26,23 +26,22 @@ import {
 } from './types';
 import { performAstroCalculation } from './components/astroMath';
 import { calculateNumerology } from './numerology';
-// Lazy load heavy computational views for faster initial loading
-const AstrologyView = React.lazy(() => import('./components/AstrologyView'));
-const NumerologyView = React.lazy(() => import('./components/NumerologyView'));
-const TransitMap = React.lazy(() => import('./components/TransitMap'));
-const CompatibilityView = React.lazy(() => import('./components/CompatibilityView'));
-const TransitHistory = React.lazy(() => import('./components/TransitHistory'));
+import AstrologyView from './components/AstrologyView';
+import NumerologyView from './components/NumerologyView';
+import TransitMap from './components/TransitMap';
+import CompatibilityView from './components/CompatibilityView';
+import TransitHistory from './components/TransitHistory';
 import MoonTipCard from './components/MoonTipCard';
 import AstroNotifications from './components/AstroNotifications';
 import TarotSystem from './TarotSystem';
-const LunarNodes = React.lazy(() => import('./components/LunarNodes'));
-const LunarCycle = React.lazy(() => import('./components/LunarCycle'));
-const BiorhythmView = React.lazy(() => import('./components/BiorhythmView'));
+import LunarNodes from './components/LunarNodes';
+import LunarCycle from './components/LunarCycle';
+import BiorhythmView from './components/BiorhythmView';
 import UserDashboardPortal from './components/UserDashboardPortal';
-const PremiumConversionScreen = React.lazy(() => import('./components/PremiumConversionScreen').then(m => ({ default: m.PremiumConversionScreen })));
-const AdminPanel = React.lazy(() => import('./components/AdminPanel'));
-const OrbiaAIAndOracle = React.lazy(() => import('./components/OrbiaAIAndOracle'));
-const OraculoDosSonhosCard = React.lazy(() => import('./components/OraculoDosSonhosCard'));
+import { PremiumConversionScreen } from './components/PremiumConversionScreen';
+import AdminPanel from './components/AdminPanel';
+import OrbiaAIAndOracle from './components/OrbiaAIAndOracle';
+import OraculoDosSonhosCard from './components/OraculoDosSonhosCard';
 import { CityAutocomplete } from './components/CityAutocomplete';
 import { SIGNS_ZODIAC_LIST, BLOG_ARTICLES_LIST, FAQ_LIST } from './data';
 import { getAvatarUrl, getAvatarsList } from './lib/avatars';
@@ -89,40 +88,6 @@ import { generatePersonalizedProsperityMap } from './prosperityEngine';
 import { generateDailyPrediction } from './components/dailyPredictionsEngine';
 import { Language } from './lib/translations';
 import { useIdioma } from './context/IdiomaContext';
-
-export function cleanStringForChartId(val: string): string {
-  if (!val) return "";
-  return val
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]/g, "_");
-}
-
-// High-end Elite Celestial Logo Component
-export const OrbitaLogo = ({ className = "w-8 h-8" }: { className?: string }) => {
-  return (
-    <div className={`relative flex items-center justify-center shrink-0 ${className}`}>
-      {/* Outer subtle rotating constellation circle */}
-      <svg className="absolute inset-0 w-full h-full animate-spin text-amber-500/20" style={{ animationDuration: '40s' }} viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="45" stroke="currentColor" strokeWidth="1" strokeDasharray="4 8" fill="none" />
-      </svg>
-      {/* Inner precise cosmic ring */}
-      <svg className="absolute w-[80%] h-[80%] text-amber-500/40" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="35" stroke="currentColor" strokeWidth="1.2" fill="none" />
-        <line x1="50" y1="0" x2="50" y2="100" stroke="currentColor" strokeWidth="0.5" strokeDasharray="2 2" />
-        <line x1="0" y1="50" x2="100" y2="50" stroke="currentColor" strokeWidth="0.5" strokeDasharray="2 2" />
-      </svg>
-      {/* Central gleaming geometric diamond representing cosmic precision */}
-      <div className="absolute w-[45%] h-[45%] bg-gradient-to-tr from-amber-400 via-amber-500 to-rose-500 rounded-sm rotate-45 border border-amber-300/30 flex items-center justify-center shadow-[0_0_12px_rgba(245,158,11,0.35)]">
-        <Sparkles className="w-3 text-slate-950 rotate-[-45deg] stroke-[2.5]" />
-      </div>
-      {/* Ambient orbit node */}
-      <div className="absolute w-2 h-2 bg-rose-500 rounded-full top-[10%] right-[10%] border border-slate-950 shadow-md animate-pulse" />
-    </div>
-  );
-};
 import { 
   Compass, 
   Orbit, 
@@ -166,6 +131,30 @@ import {
   Camera,
   ExternalLink
 } from 'lucide-react';
+
+export function cleanStringForChartId(val: string): string {
+  if (!val) return "";
+  return val
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]/g, "_");
+}
+
+// Official PORTAL ORBIT Brand Logo Component
+export const OrbitaLogo = ({ className = "w-8 h-8" }: { className?: string }) => {
+  return (
+    <div className={`relative flex items-center justify-center shrink-0 ${className}`}>
+      <img 
+        src="/icon.svg" 
+        alt="PORTAL ORBIT" 
+        className="w-full h-full object-contain rounded-lg drop-shadow-[0_0_10px_rgba(56,189,248,0.3)]"
+        referrerPolicy="no-referrer"
+      />
+    </div>
+  );
+};
 
 export function isPostTrialLocked(user: UserProfile): boolean {
   return false;
@@ -3021,8 +3010,8 @@ export default function App() {
   }, []);
 
   const handleInstallPWA = async () => {
-    // Detect if running inside an iframe
-    const isIframe = window.self !== window.top;
+    // Detect if running inside an iframe (such as AI Studio preview iframe)
+    const isIframe = typeof window !== 'undefined' && window.self !== window.top;
     if (isIframe) {
       triggerGlobalNotification(
         t("Abrindo Portal Órbita"),
@@ -3036,41 +3025,67 @@ export default function App() {
     const ua = typeof navigator !== 'undefined' && navigator.userAgent ? navigator.userAgent.toLowerCase() : "";
     const isIos = /iphone|ipad|ipod/.test(ua);
 
-    const promptEvent = deferredPrompt || (window as any).deferredPrompt;
+    let promptEvent = deferredPrompt || (window as any).deferredPrompt;
+
+    // If event is not ready immediately, retry for up to 800ms in case beforeinstallprompt is firing right after load
+    if (!promptEvent && !isIos) {
+      await new Promise<void>((resolve) => {
+        let attempts = 0;
+        const timer = setInterval(() => {
+          attempts++;
+          const captured = (window as any).deferredPrompt;
+          if (captured) {
+            promptEvent = captured;
+            clearInterval(timer);
+            resolve();
+          } else if (attempts >= 8) {
+            clearInterval(timer);
+            resolve();
+          }
+        }, 100);
+      });
+    }
+
     if (!promptEvent) {
       if (isIos) {
-        // Show PWA guide modal only for iOS (where native prompt is impossible)
         setShowPWAInstallGuide(true);
       } else {
-        // Android or Desktop - Rule: NEVER show any modal. Only show a clean toast notification.
-        triggerGlobalNotification(
-          t("Instalação do Portal"),
-          t("O aplicativo está pronto para ser instalado! Caso o prompt não tenha surgido ainda, você pode tocar no menu de opções (três pontinhos) do seu navegador e escolher 'Instalar aplicativo' ou 'Adicionar à tela de início'."),
-          "info"
-        );
+        if (isInstalled) {
+          triggerGlobalNotification(
+            t("Aplicativo Já Instalado"),
+            t("Portal Órbita já está instalado e ativo em seu dispositivo!"),
+            "success"
+          );
+        } else {
+          // Fallback if browser already prompted or native installation is handled by browser menu
+          triggerGlobalNotification(
+            t("Instalação do Portal"),
+            t("Caso a caixa de diálogo nativa do sistema não tenha surgido, selecione 'Instalar aplicativo' no menu (⋮) do seu navegador."),
+            "info"
+          );
+        }
       }
       return;
     }
 
     try {
-      // Trigger the native install prompt
+      // Trigger the native install prompt immediately
       await promptEvent.prompt();
       
-      // Clear the deferred prompt immediately as it can only be prompted once
       setDeferredPrompt(null);
       (window as any).deferredPrompt = null;
 
       const choiceResult = await promptEvent.userChoice;
-      if (choiceResult.outcome === 'accepted') {
+      if (choiceResult?.outcome === 'accepted') {
         setIsInstalled(true);
         triggerGlobalNotification(
-          t("Instalação Iniciada"),
-          t("Portal Órbita está sendo instalado em seu dispositivo!"),
+          t("Instalação Concluída"),
+          t("Portal Órbita foi instalado com sucesso em seu dispositivo!"),
           "success"
         );
       }
     } catch (err) {
-      console.error('Error during PWA installation choice:', err);
+      console.error('Erro ao acionar prompt nativo PWA:', err);
       setDeferredPrompt(null);
       (window as any).deferredPrompt = null;
     }

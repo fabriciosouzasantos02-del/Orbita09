@@ -67,6 +67,22 @@ import { setupDomI18nObserver } from './lib/domI18n.ts';
 // Initialize DOM Auto-I18n Observer for dynamic modals, titles and error messages
 setupDomI18nObserver();
 
+// Handle reset query param to force purge stale service workers and caches
+if (typeof window !== 'undefined' && window.location.search.includes('reset=')) {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      for (const reg of registrations) {
+        reg.unregister();
+      }
+    });
+  }
+  if ('caches' in window) {
+    caches.keys().then((keys) => {
+      keys.forEach((key) => caches.delete(key));
+    });
+  }
+}
+
 // Register PWA Service Worker
 const registerServiceWorker = () => {
   navigator.serviceWorker.register('/sw.js')
@@ -78,7 +94,7 @@ const registerServiceWorker = () => {
     });
 };
 
-if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator && !window.location.search.includes('reset=')) {
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
     registerServiceWorker();
   } else {

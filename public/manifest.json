@@ -1,34 +1,37 @@
 {
+  "id": "/",
   "name": "Portal Órbita",
   "short_name": "Portal Órbita",
   "description": "Portal Órbita - Sabedoria Celestial, Astrologia, Tarot de Precisão e Inteligência Artificial Orbia",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#030712",
   "theme_color": "#030712",
   "orientation": "portrait",
   "categories": ["lifestyle", "utilities"],
+  "prefer_related_applications": false,
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-512.png",
+      "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-maskable-192.png",
+      "src": "/icon-maskable-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "icon-maskable-512.png",
+      "src": "/icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

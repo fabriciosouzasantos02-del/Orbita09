@@ -2,158 +2,174 @@ import sharp from 'sharp';
 import fs from 'fs';
 import path from 'path';
 
-// High-fidelity planetary SVG representing Portal Órbita (based on user's logo)
-const makeSvg = (hasBackground: boolean) => `
+// High-fidelity Official PORTAL ORBIT Logo SVG
+const makeSvg = (isMaskable: boolean = false) => `
 <svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <!-- Background Gradient for Maskable Icons -->
-    <radialGradient id="bg-grad" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#0b0826" />
-      <stop offset="60%" stop-color="#040312" />
+    <!-- Background Space Gradient -->
+    <radialGradient id="bg-space" cx="50%" cy="50%" r="55%">
+      <stop offset="0%" stop-color="#0d0e26" />
+      <stop offset="60%" stop-color="#040510" />
       <stop offset="100%" stop-color="#010105" />
     </radialGradient>
 
-    <!-- Planet Gradient: Neon Blue to Purple -->
-    <linearGradient id="planet-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#38bdf8" /> <!-- Neon Cyan/Blue -->
-      <stop offset="35%" stop-color="#4f46e5" /> <!-- Vibrant Indigo -->
-      <stop offset="70%" stop-color="#8b5cf6" /> <!-- Royal Purple -->
-      <stop offset="100%" stop-color="#d946ef" /> <!-- Neon Magenta/Pink -->
+    <!-- Squircle Neon Frame Gradient -->
+    <linearGradient id="neon-frame-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e879f9" /> <!-- Neon Pink/Magenta -->
+      <stop offset="35%" stop-color="#a855f7" /> <!-- Purple -->
+      <stop offset="70%" stop-color="#38bdf8" /> <!-- Cyan -->
+      <stop offset="100%" stop-color="#0284c7" /> <!-- Deep Blue -->
     </linearGradient>
 
-    <!-- Planet 3D Shadow Gradient -->
-    <linearGradient id="planet-shadow-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#000000" stop-opacity="0" />
-      <stop offset="100%" stop-color="#020208" stop-opacity="0.7" />
+    <!-- Planet Spherical Gradient -->
+    <linearGradient id="planet-body-grad" x1="15%" y1="15%" x2="85%" y2="85%">
+      <stop offset="0%" stop-color="#38bdf8" /> <!-- Bright Cyan Highlight -->
+      <stop offset="30%" stop-color="#2563eb" /> <!-- Electric Blue -->
+      <stop offset="65%" stop-color="#4c1d95" /> <!-- Deep Indigo/Purple -->
+      <stop offset="100%" stop-color="#1e1b4b" /> <!-- Cosmic Dark Base -->
     </linearGradient>
 
-    <!-- Main Ring Gradient -->
-    <linearGradient id="ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#e879f9" /> <!-- Pink -->
-      <stop offset="50%" stop-color="#a78bfa" /> <!-- Purple -->
-      <stop offset="100%" stop-color="#38bdf8" /> <!-- Cyan -->
+    <!-- Planet 3D Volume Shadow -->
+    <radialGradient id="planet-3d-shadow" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.35" />
+      <stop offset="40%" stop-color="#000000" stop-opacity="0" />
+      <stop offset="85%" stop-color="#020208" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.95" />
+    </radialGradient>
+
+    <!-- Planetary Main Rings Gradient -->
+    <linearGradient id="ring-main-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f472b6" /> <!-- Pink -->
+      <stop offset="40%" stop-color="#c084fc" /> <!-- Purple -->
+      <stop offset="80%" stop-color="#38bdf8" /> <!-- Cyan -->
+      <stop offset="100%" stop-color="#a5f3fc" /> <!-- Ice Blue -->
     </linearGradient>
 
-    <!-- Star Glow -->
-    <radialGradient id="star-glow" cx="50%" cy="50%" r="50%">
+    <!-- Bottom Orbit Loop Gradient under ORBIT -->
+    <linearGradient id="bottom-orbit-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#818cf8" stop-opacity="0.2" />
+      <stop offset="30%" stop-color="#c084fc" stop-opacity="0.9" />
+      <stop offset="70%" stop-color="#38bdf8" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#67e8f9" stop-opacity="0.3" />
+    </linearGradient>
+
+    <!-- Star Flare Radial Glow -->
+    <radialGradient id="star-flare-glow" cx="50%" cy="50%" r="50%">
       <stop offset="0%" stop-color="#ffffff" stop-opacity="1" />
-      <stop offset="30%" stop-color="#38bdf8" stop-opacity="0.6" />
-      <stop offset="100%" stop-color="#38bdf8" stop-opacity="0" />
-    </radialGradient>
-
-    <!-- Nebula Cloud Gradient (Top) -->
-    <radialGradient id="nebula-top" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#4f46e5" stop-opacity="0.25" />
-      <stop offset="60%" stop-color="#1e1b4b" stop-opacity="0.1" />
+      <stop offset="25%" stop-color="#7dd3fc" stop-opacity="0.7" />
+      <stop offset="60%" stop-color="#a855f7" stop-opacity="0.2" />
       <stop offset="100%" stop-color="#000000" stop-opacity="0" />
     </radialGradient>
 
-    <!-- Nebula Cloud Gradient (Bottom) -->
-    <radialGradient id="nebula-bottom" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#a21caf" stop-opacity="0.22" />
-      <stop offset="60%" stop-color="#581c87" stop-opacity="0.08" />
-      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
-    </radialGradient>
-
-    <!-- Blur filter for Nebulas -->
-    <filter id="nebula-blur" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="30" />
-    </filter>
-
-    <!-- Soft glow filter for the star and rings -->
-    <filter id="soft-glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="8" result="blur" />
+    <!-- Glow Filters -->
+    <filter id="neon-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
       <feMerge>
         <feMergeNode in="blur" />
         <feMergeNode in="SourceGraphic" />
       </feMerge>
     </filter>
+
+    <filter id="text-light-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <!-- Nebula Cloud Top Left -->
+    <radialGradient id="nebula-purple" cx="30%" cy="30%" r="40%">
+      <stop offset="0%" stop-color="#d946ef" stop-opacity="0.35" />
+      <stop offset="50%" stop-color="#8b5cf6" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Nebula Cloud Bottom Right -->
+    <radialGradient id="nebula-cyan" cx="80%" cy="50%" r="45%">
+      <stop offset="0%" stop-color="#0284c7" stop-opacity="0.3" />
+      <stop offset="60%" stop-color="#0369a1" stop-opacity="0.1" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+
+    <filter id="blur-nebula">
+      <feGaussianBlur stdDeviation="40" />
+    </filter>
   </defs>
 
-  ${hasBackground ? `<!-- Background -->
-  <rect width="1024" height="1024" fill="url(#bg-grad)" />` : ''}
+  <!-- Base Space Canvas -->
+  <rect width="1024" height="1024" fill="url(#bg-space)" />
 
-  <!-- BACKGROUND NEBULAS / COSMIC CLOUDS -->
-  <!-- Top Nebula Cloud -->
-  <ellipse cx="450" cy="280" rx="280" ry="120" fill="url(#nebula-top)" filter="url(#nebula-blur)" transform="rotate(-15 450 280)" />
-  <!-- Bottom Nebula Cloud -->
-  <ellipse cx="580" cy="740" rx="260" ry="110" fill="url(#nebula-bottom)" filter="url(#nebula-blur)" transform="rotate(-15 580 740)" />
+  <!-- Outer Rounded Squircle Frame (Dark Metallic Container) -->
+  ${!isMaskable ? `
+  <rect x="28" y="28" width="968" height="968" rx="190" ry="190" fill="#030511" />
+  <rect x="28" y="28" width="968" height="968" rx="190" ry="190" fill="url(#bg-space)" />
+  <!-- Neon Outer Glowing Border -->
+  <rect x="28" y="28" width="968" height="968" rx="190" ry="190" fill="none" stroke="url(#neon-frame-grad)" stroke-width="14" filter="url(#neon-glow)" />
+  ` : ''}
 
-  <!-- TINY STELLAR SPARKLES IN BACKGROUND -->
-  <g fill="#ffffff" opacity="0.6">
-    <circle cx="150" cy="250" r="3" />
-    <circle cx="880" cy="300" r="2.5" />
-    <circle cx="200" cy="780" r="3" />
-    <circle cx="850" cy="800" r="2" />
-    <circle cx="500" cy="120" r="1.5" />
-    <circle cx="100" cy="550" r="2" />
-    <circle cx="920" cy="580" r="1.5" />
-    <circle cx="350" cy="880" r="2" />
+  <!-- COSMIC NEBULAE AND STARDUST -->
+  <ellipse cx="280" cy="280" rx="350" ry="250" fill="url(#nebula-purple)" filter="url(#blur-nebula)" />
+  <ellipse cx="800" cy="500" rx="300" ry="300" fill="url(#nebula-cyan)" filter="url(#blur-nebula)" />
+
+  <!-- Starfield background dots -->
+  <g fill="#ffffff" opacity="0.65">
+    <circle cx="120" cy="180" r="2.5" />
+    <circle cx="220" cy="120" r="1.8" />
+    <circle cx="850" cy="160" r="2.2" />
+    <circle cx="910" cy="320" r="1.5" />
+    <circle cx="150" cy="780" r="2" />
+    <circle cx="880" cy="820" r="2.5" />
+    <circle cx="200" cy="520" r="1.5" />
+    <circle cx="820" cy="620" r="1.8" />
+    <circle cx="480" cy="100" r="2" />
   </g>
 
-  <!-- CELESTIAL ELEMENTS DRAWING GROUP (Planet and Rings) -->
-  <!-- Rotated group to tilt the planet system by -22 degrees -->
-  <g transform="rotate(-22 512 512)">
-    
-    <!-- 1. BACK HALF OF THE RINGS (drawn behind the planet) -->
-    <!-- Inner main ring (back) -->
-    <path d="M 162 512 A 350 82 0 0 1 862 512" fill="none" stroke="url(#ring-grad)" stroke-width="24" stroke-opacity="0.85" stroke-linecap="round" />
-    <!-- Outer thin ring (back) -->
-    <path d="M 112 512 A 400 96 0 0 1 912 512" fill="none" stroke="url(#ring-grad)" stroke-width="6" stroke-opacity="0.4" stroke-linecap="round" />
+  <!-- CELESTIAL PLANET SYSTEM (Tilted -20deg around Planet Center at 512, 350) -->
+  <g transform="rotate(-20 512 350)">
+    <!-- 1. Back Ring Half -->
+    <path d="M 130 350 A 390 95 0 0 1 894 350" fill="none" stroke="url(#ring-main-grad)" stroke-width="28" stroke-opacity="0.85" stroke-linecap="round" />
+    <path d="M 80 350 A 440 110 0 0 1 944 350" fill="none" stroke="url(#ring-main-grad)" stroke-width="6" stroke-opacity="0.4" stroke-linecap="round" />
 
-     <!-- 2. CENTRAL PLANET SPHERE -->
-    <circle cx="512" cy="512" r="215" fill="url(#planet-grad)" />
+    <!-- 2. Planet Sphere Body -->
+    <circle cx="512" cy="350" r="225" fill="url(#planet-body-grad)" />
+    <!-- 3D Lighting Crescent Overlay -->
+    <circle cx="512" cy="350" r="225" fill="url(#planet-3d-shadow)" />
 
-    <!-- Spherical shadow overlay to give 3D depth -->
-    <circle cx="512" cy="512" r="215" fill="url(#planet-shadow-grad)" />
-    
-    <!-- Soft inner crescent glow to give volume -->
-    <path d="M 330 380 A 215 215 0 0 1 680 620 A 205 205 0 0 0 330 380 Z" fill="#ffffff" opacity="0.15" />
+    <!-- 3. Front Ring Half (Wraps in Front of Planet Body) -->
+    <path d="M 894 350 A 390 95 0 0 1 130 350" fill="none" stroke="url(#ring-main-grad)" stroke-width="28" stroke-linecap="round" filter="url(#neon-glow)" />
+    <!-- Bright White Core Line in Ring -->
+    <path d="M 880 350 A 376 90 0 0 1 144 350" fill="none" stroke="#ffffff" stroke-width="6" stroke-opacity="0.9" stroke-linecap="round" />
+    <path d="M 944 350 A 440 110 0 0 1 80 350" fill="none" stroke="url(#ring-main-grad)" stroke-width="6" stroke-opacity="0.6" stroke-linecap="round" />
 
-    <!-- Subtle atmospheric surface details (planetary bands/stripes) -->
-    <g opacity="0.12" fill="#ffffff">
-      <!-- Horizontal bands across the planet (pre-rotated with parent group) -->
-      <rect x="300" y="440" width="424" height="15" rx="7.5" />
-      <rect x="315" y="480" width="394" height="8" rx="4" />
-      <rect x="340" y="520" width="344" height="12" rx="6" />
-      <rect x="310" y="390" width="404" height="10" rx="5" />
-    </g>
-
-    <!-- Star clusters inside the planet for astronomical theme -->
-    <g fill="#ffffff" opacity="0.3">
-      <circle cx="480" cy="420" r="1.5" />
-      <circle cx="550" cy="460" r="2" />
-      <circle cx="430" cy="490" r="1.5" />
-      <circle cx="590" cy="520" r="2.5" />
-      <circle cx="510" cy="570" r="1.5" />
-    </g>
-
-    <!-- 3. FRONT HALF OF THE RINGS (drawn in front of the planet to wrap around) -->
-    <!-- Inner main ring (front) -->
-    <path d="M 862 512 A 350 82 0 0 1 162 512" fill="none" stroke="url(#ring-grad)" stroke-width="24" stroke-linecap="round" filter="url(#soft-glow)" />
-    <!-- Inner ring central white highlight (front) -->
-    <path d="M 850 512 A 338 78 0 0 1 174 512" fill="none" stroke="#ffffff" stroke-width="6" stroke-opacity="0.9" stroke-linecap="round" />
-    <!-- Outer thin ring (front) -->
-    <path d="M 912 512 A 400 96 0 0 1 112 512" fill="none" stroke="url(#ring-grad)" stroke-width="6" stroke-opacity="0.6" stroke-linecap="round" />
-
-    <!-- 4. CELESTIAL SPARKLE / STAR ON THE RING -->
-    <!-- Placed on the top-right part of the ring structure -->
-    <g transform="translate(760, 420)">
-      <!-- Radial flare background -->
-      <circle cx="0" cy="0" r="90" fill="url(#star-glow)" />
+    <!-- 4. Top-Right Brilliant Star Flare -->
+    <g transform="translate(775, 255)">
+      <!-- Radial Flare Glow -->
+      <circle cx="0" cy="0" r="100" fill="url(#star-flare-glow)" />
       
-      <!-- 4-pointed main star flares -->
-      <!-- Vertical long spike -->
-      <path d="M 0 -85 L 8 -16 L 85 0 L 8 16 L 0 85 L -8 16 L -85 0 L -8 -16 Z" fill="#ffffff" />
-      <!-- Diagonal smaller spike -->
-      <path d="M 0 -45 L 5 -10 L 45 0 L 5 10 L 0 45 L -5 10 L -45 0 L -5 -10 Z" fill="#ffffff" transform="rotate(45)" opacity="0.8" />
+      <!-- Primary Vertical 4-pointed Star -->
+      <path d="M 0 -95 L 9 -18 L 95 0 L 9 18 L 0 95 L -9 18 L -95 0 L -9 -18 Z" fill="#ffffff" />
+      <!-- Diagonal Secondary Star -->
+      <path d="M 0 -50 L 6 -10 L 50 0 L 6 10 L 0 50 L -6 10 L -50 0 L -6 -10 Z" fill="#ffffff" transform="rotate(45)" opacity="0.85" />
       
-      <!-- Bright white hot center core -->
-      <circle cx="0" cy="0" r="14" fill="#ffffff" />
-      <circle cx="0" cy="0" r="6" fill="#67e8f9" />
+      <!-- Intense Hot Core -->
+      <circle cx="0" cy="0" r="16" fill="#ffffff" />
+      <circle cx="0" cy="0" r="7" fill="#a5f3fc" />
     </g>
-
   </g>
+
+  <!-- OFFICIAL BRAND TYPOGRAPHY: PORTAL ORBIT -->
+  <g text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif">
+    <!-- PORTAL Text -->
+    <text x="512" y="715" font-size="120" font-weight="900" letter-spacing="12" fill="#ffffff" filter="url(#text-light-glow)">PORTAL</text>
+    
+    <!-- ORBIT Text -->
+    <text x="512" y="845" font-size="120" font-weight="900" letter-spacing="12" fill="#ffffff" filter="url(#text-light-glow)">ORBIT</text>
+  </g>
+
+  <!-- SWOOPING ORBITAL LOOP UNDERNEATH THE WORD 'ORBIT' -->
+  <path d="M 160 810 C 220 920, 800 930, 890 770" fill="none" stroke="url(#bottom-orbit-grad)" stroke-width="12" stroke-linecap="round" filter="url(#neon-glow)" />
+  <path d="M 160 810 C 220 920, 800 930, 890 770" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8" />
 </svg>
 `;
 
@@ -165,23 +181,23 @@ async function generate() {
 
   // Define targets
   const targets = [
-    { name: 'icon-192.png', size: 192, hasBackground: false },
-    { name: 'icon-512.png', size: 512, hasBackground: false },
-    { name: 'icon-maskable-192.png', size: 192, hasBackground: true },
-    { name: 'icon-maskable-512.png', size: 512, hasBackground: true },
+    { name: 'icon-192.png', size: 192, isMaskable: false },
+    { name: 'icon-512.png', size: 512, isMaskable: false },
+    { name: 'icon-maskable-192.png', size: 192, isMaskable: true },
+    { name: 'icon-maskable-512.png', size: 512, isMaskable: true },
   ];
 
-  console.log("🌌 Starting High-Fidelity Celestial Planetary Icon Generation via Sharp...");
+  console.log("🌌 Starting High-Fidelity Official PORTAL ORBIT Logo Generation via Sharp...");
 
   for (const target of targets) {
     const destPath = path.join(publicDir, target.name);
-    console.log(`✨ Rendering ${target.name} (${target.size}x${target.size}) [hasBackground: ${target.hasBackground}]...`);
+    console.log(`✨ Rendering ${target.name} (${target.size}x${target.size}) [maskable: ${target.isMaskable}]...`);
     
-    const svgStr = makeSvg(target.hasBackground);
+    const svgStr = makeSvg(target.isMaskable);
     
     await sharp(Buffer.from(svgStr))
       .resize(target.size, target.size)
-      .png()
+      .png({ quality: 100, compressionLevel: 9 })
       .toFile(destPath);
   }
 
@@ -190,10 +206,11 @@ async function generate() {
   fs.writeFileSync(path.join(publicDir, 'icon-maskable.svg'), makeSvg(true));
   console.log("✨ Master vector SVGs written to /public/icon.svg and /public/icon-maskable.svg...");
 
-  console.log("✅ All planetary PWA icons generated and optimized successfully in /public!");
+  console.log("✅ All PORTAL ORBIT PWA icons generated and optimized successfully in /public!");
 }
 
 generate().catch(err => {
   console.error("❌ Error generating icons:", err);
   process.exit(1);
 });
+
