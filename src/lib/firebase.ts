@@ -301,6 +301,9 @@ export interface UserProfileData {
   isUnknownTime?: boolean;
   latitude?: number;
   longitude?: number;
+  ascendant?: string;
+  risingSign?: string;
+  mapData?: any;
   createdAt?: string;
   isSubscribed?: boolean;
   subscriptionEndDate?: string;
@@ -430,6 +433,9 @@ export async function saveProfileToDatabase(email: string, profile: UserProfileD
     hasCreatedMap: profile.hasCreatedMap ?? (!!birthDateVal && !!birthCityVal),
     latitude: profile.latitude !== undefined ? profile.latitude : (existingLocal?.latitude ?? -23.55052),
     longitude: profile.longitude !== undefined ? profile.longitude : (existingLocal?.longitude ?? -46.633308),
+    ascendant: profile.ascendant || profile.risingSign || existingLocal?.ascendant || existingLocal?.risingSign || "",
+    risingSign: profile.risingSign || profile.ascendant || existingLocal?.risingSign || existingLocal?.ascendant || "",
+    mapData: profile.mapData || existingLocal?.mapData || null,
     isPremium: profile.isPremium !== undefined ? profile.isPremium : (existingLocal?.isPremium ?? false),
     followersCount: profile.followersCount !== undefined ? profile.followersCount : (existingLocal?.followersCount ?? 0),
     followingCount: profile.followingCount !== undefined ? profile.followingCount : (existingLocal?.followingCount ?? 0),
@@ -1392,9 +1398,10 @@ export async function saveNatalChartToDatabase(email: string, chartId: string, c
       }), { merge: true });
       console.log(`[FIRESTORE_WRITE_DEBUG] [saveNatalChartToDatabase] setDoc SUCCESS for path: ${path}`);
 
-      // Sync root user profile document so users/{docKey} always holds active birth details
+      // Sync root user profile document so users/{docKey} always holds active birth details and map data
       if (chartData.birthDate && chartData.birthCity) {
         const userRef = doc(db, "users", docKey);
+        const ascSign = chartData.mapData?.astros?.find((a: any) => a.name === "Ascendente")?.sign;
         await setDoc(userRef, sanitizeFirestoreData({
           birthDate: chartData.birthDate,
           birthTime: chartData.birthTime || "12:00",
@@ -1402,6 +1409,11 @@ export async function saveNatalChartToDatabase(email: string, chartId: string, c
           isUnknownTime: chartData.isUnknownTime ?? false,
           currentChartId: chartId,
           hasCreatedMap: true,
+          latitude: chartData.mapData?.latitude ?? chartData.latitude,
+          longitude: chartData.mapData?.longitude ?? chartData.longitude,
+          ascendant: ascSign || undefined,
+          risingSign: ascSign || undefined,
+          mapData: chartData.mapData || undefined,
           updatedAt: new Date().toISOString()
         }), { merge: true }).catch(err => console.warn("[Sync] Root profile sync from natal chart failed:", err));
       }

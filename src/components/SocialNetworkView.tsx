@@ -699,7 +699,56 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
     setListModalType(null); // Close active list modals for fluid screen traversal
     setShowCompatibility(false);
     setShowPublicMap(false);
-    await fetchActiveRelations(getUserKey(profile));
+
+    const profileKey = getUserKey(profile);
+    await fetchActiveRelations(profileKey);
+
+    // Load real user's saved natal chart & ascendant from Firestore if available
+    const db = getFirestoreDB();
+    const isSeed = SEED_USERS.some(s => s.email.toLowerCase().trim() === profile.email.toLowerCase().trim());
+    if (db && profileKey && !isSeed) {
+      try {
+        // 1. Check root user document for saved mapData, ascendant, risingSign, latitude, longitude
+        const userDocRef = doc(db, "users", profileKey);
+        const userSnap = await getDoc(userDocRef);
+        if (userSnap.exists()) {
+          const uData = userSnap.data();
+          const asc = uData.ascendant || uData.risingSign;
+          if (asc || uData.mapData || uData.latitude !== undefined) {
+            setActiveProfile(prev => prev ? ({
+              ...prev,
+              ...uData,
+              ascendant: asc || prev.ascendant,
+              risingSign: asc || prev.risingSign,
+              mapData: uData.mapData || prev.mapData,
+              latitude: uData.latitude ?? prev.latitude,
+              longitude: uData.longitude ?? prev.longitude
+            }) : null);
+          }
+        }
+
+        // 2. Check natalCharts subcollection for complete saved mapData
+        const natalColRef = collection(db, "users", profileKey, "natalCharts");
+        const natalSnap = await getDocs(natalColRef);
+        if (!natalSnap.empty) {
+          let targetDoc = natalSnap.docs.find(d => d.id === profile.currentChartId) || natalSnap.docs[0];
+          const chartData = targetDoc.data();
+          if (chartData && chartData.mapData) {
+            const savedAsc = chartData.mapData.astros?.find((a: any) => a.name === "Ascendente")?.sign;
+            setActiveProfile(prev => prev ? ({
+              ...prev,
+              mapData: chartData.mapData,
+              ascendant: savedAsc || prev.ascendant,
+              risingSign: savedAsc || prev.risingSign,
+              latitude: chartData.mapData.latitude ?? prev.latitude,
+              longitude: chartData.mapData.longitude ?? prev.longitude
+            }) : null);
+          }
+        }
+      } catch (err) {
+        console.warn("Aviso ao sincronizar mapa natal do perfil real:", err);
+      }
+    }
   };
 
   // Follow/Unfollow action
@@ -1330,18 +1379,34 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
 
               {/* CELESTIAL DISPLAY FOR MAP VIEW */}
               {showPublicMap && (() => {
-                const chart = performAstroCalculation(activeProfile.birthDate, activeProfile.birthTime || "12:00");
-                const sun = chart.astros.find(a => a.name === "Sol");
-                const moon = chart.astros.find(a => a.name === "Lua");
-                const ascObj = chart.astros.find(a => a.name === "Ascendente");
-                
+                // Use real saved mapData from Firestore if available for this profile
+                const savedMap = activeProfile.mapData;
+                let chart = savedMap;
+
+                if (!chart || !chart.astros) {
+                  // If no saved mapData, perform exact calculation passing birthDate, birthTime, latitude, longitude
+                  const lat = activeProfile.latitude !== undefined ? activeProfile.latitude : -23.5505;
+                  const lng = activeProfile.longitude !== undefined ? activeProfile.longitude : -46.6333;
+                  chart = performAstroCalculation(
+                    activeProfile.birthDate,
+                    activeProfile.birthTime || "12:00",
+                    lat,
+                    lng
+                  );
+                }
+
+                const sun = chart.astros.find((a: any) => a.name === "Sol");
+                const moon = chart.astros.find((a: any) => a.name === "Lua");
+                const ascObj = chart.astros.find((a: any) => a.name === "Ascendente");
+                const realAscendant = activeProfile.ascendant || activeProfile.risingSign || ascObj?.sign;
+
                 return (
                   <div className="bg-slate-950 p-6 rounded-3xl border border-amber-500/20 text-left space-y-4 animate-in duration-200 slide-in-from-top-3">
                     <div className="border-b border-slate-900 pb-2 flex justify-between items-center">
                       <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-amber-500">
                         {tI18n("Mapa Primordial de")} {activeProfile.name}
                       </h4>
-                      <button onClick={() => setShowPublicMap(false)} className="text-slate-500 hover:text-slate-200">✕</button>
+                      <button onClick={() => setShowPublicMap(false)} className="text-slate-500 hover:text-slate-200 cursor-pointer">✕</button>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -1359,7 +1424,7 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
 
                       <div className="p-3.5 bg-slate-900/60 rounded-2xl border border-slate-850 flex flex-col justify-between">
                         <span className="text-[8px] font-mono text-slate-500 uppercase font-black block">🧭 {tI18n("Ascendente")}</span>
-                        <strong className="text-sm font-black text-slate-100 block mt-1">{tI18n(ascObj?.sign || "Libra")}</strong>
+                        <strong className="text-sm font-black text-slate-100 block mt-1">{tI18n(realAscendant || "Libra")}</strong>
                         <span className="text-[9px] text-slate-500 font-mono mt-0.5">{tI18n("Foco de projeção física social externa")}</span>
                       </div>
                     </div>
@@ -1367,10 +1432,10 @@ export default function SocialNetworkView({ currentUser, onUpdateCurrentUser, la
                     <div className="space-y-2 pt-2 border-t border-slate-900">
                       <span className="text-[9px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{tI18n("Distribuição de Planetas Públicos")}</span>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px]">
-                        {chart.astros.slice(0, 8).map(a => (
+                        {chart.astros.slice(0, 8).map((a: any) => (
                           <div key={a.name} className="p-2 bg-slate-900/30 rounded-xl border border-slate-850 flex justify-between items-center">
                             <span className="text-slate-450 font-bold">{tI18n(a.name)}</span>
-                            <span className="font-mono text-amber-500">{tI18n(a.sign)}</span>
+                            <span className="font-mono text-amber-500">{tI18n(a.name === "Ascendente" ? (realAscendant || a.sign) : a.sign)}</span>
                           </div>
                         ))}
                       </div>

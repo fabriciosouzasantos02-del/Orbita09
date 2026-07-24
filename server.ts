@@ -6156,7 +6156,7 @@ O objeto deve conter:
 REGRA MANDATÓRIA DE COMUNICAÇÃO:
 NUNCA cite os nomes de signos (ex: Áries, Aquário...) ou do ascendente do usuário no texto gerado!
 Use SEMPRE termos como "sua energia natal", "seu campo vibracional", "suas frequências celestes" e "sua geometria de nascimento".
-Nas saudações ou mensagens contextuais, inicie como: "${userName}, sinto uma luz muito especial ao ler sua energia." (adaptado ao idioma de resposta).
+Nas saudações ou mensagens contextuais, inicie como: "${name}, sinto uma luz muito especial ao ler sua energia." (adaptado ao idioma de resposta).
 
 Retorne no formato JSON exato em ${targetLanguage}:
 {
