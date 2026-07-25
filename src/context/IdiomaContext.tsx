@@ -48,10 +48,19 @@ export function IdiomaProvider({ children }: IdiomaProviderProps) {
   const normalizeLanguage = (langStr: string): Idioma => {
     if (!langStr) return getInitialLanguage();
     const base = langStr.toLowerCase().split('-')[0];
-    return ['pt', 'en', 'es', 'de', 'fr'].includes(base) ? (base as Idioma) : 'pt';
+    return ['pt', 'en', 'es', 'de', 'fr'].includes(base) ? (base as Idioma) : getInitialLanguage();
   };
 
-  const [idioma, setIdioma] = useState<Idioma>(() => normalizeLanguage(i18n.language));
+  const [idioma, setIdioma] = useState<Idioma>(() => getInitialLanguage());
+
+  // Ensure initial language is synchronized on mount
+  useEffect(() => {
+    const initLang = getInitialLanguage();
+    if (i18n.language !== initLang) {
+      changeLanguage(initLang);
+      setIdioma(initLang);
+    }
+  }, []);
 
   // Keep state in sync with react-i18next
   useEffect(() => {

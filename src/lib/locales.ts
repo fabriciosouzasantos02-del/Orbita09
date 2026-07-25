@@ -435,6 +435,13 @@ export const pwaGuideTranslations: Record<SupportedLanguage, {
   title: string;
   subtitle: string;
   detectedDevice: string;
+  tiktokTitle: string;
+  tiktokDesc: string;
+  tiktokStep1: string;
+  tiktokStep2: string;
+  tiktokStep3: string;
+  copyLinkBtn: string;
+  copyLinkSuccess: string;
   iosTitle: string;
   iosStep1: string;
   iosStep2: string;
@@ -452,6 +459,13 @@ export const pwaGuideTranslations: Record<SupportedLanguage, {
     title: "Como Instalar o Aplicativo",
     subtitle: "Instale o Portal Órbita em seu celular ou computador para uma experiência nativa de alta velocidade e offline.",
     detectedDevice: "Dispositivo Detectado",
+    tiktokTitle: "🎵 Acessando pelo TikTok / Rede Social?",
+    tiktokDesc: "O navegador interno do TikTok e do Instagram bloqueia a instalação direta de aplicativos (PWA). Para instalar com 1 clique:",
+    tiktokStep1: "1. Toque nos 3 pontinhos (⋮) ou no ícone de opções no canto da tela do TikTok.",
+    tiktokStep2: "2. Selecione 'Abrir no Navegador' (ou 'Abrir no Chrome / Safari').",
+    tiktokStep3: "3. No navegador oficial, toque no botão 'Instalar Aplicativo' e a caixa de instalação surgirá!",
+    copyLinkBtn: "Copiar Link do Aplicativo",
+    copyLinkSuccess: "Link copiado! Cole no Google Chrome ou Safari.",
     iosTitle: "📱 No iPhone ou iPad (Safari)",
     iosStep1: "1. Toque no ícone de Compartilhar (aquele quadrado com uma seta para cima ↑ na barra inferior).",
     iosStep2: "2. Role a lista para baixo e toque em 'Adicionar à Tela de Início' (Add to Home Screen).",
@@ -469,6 +483,13 @@ export const pwaGuideTranslations: Record<SupportedLanguage, {
     title: "How to Install the Application",
     subtitle: "Install Portal Órbita on your mobile phone or computer for a high-speed, native, and offline experience.",
     detectedDevice: "Detected Device",
+    tiktokTitle: "🎵 Accessing via TikTok / Social Media?",
+    tiktokDesc: "TikTok's and Instagram's in-app browsers block direct app installation (PWA). To install in 1 click:",
+    tiktokStep1: "1. Tap the 3 dots (⋮) or options icon in the corner of TikTok's screen.",
+    tiktokStep2: "2. Select 'Open in Browser' (or 'Open in Chrome / Safari').",
+    tiktokStep3: "3. In the official browser, tap 'Install App' and the prompt will appear!",
+    copyLinkBtn: "Copy App Link",
+    copyLinkSuccess: "Link copied! Paste in Chrome or Safari.",
     iosTitle: "📱 On iPhone or iPad (Safari)",
     iosStep1: "1. Tap the Share icon (the square with an up arrow ↑ at the bottom bar).",
     iosStep2: "2. Scroll down the list and tap 'Add to Home Screen'.",
@@ -486,6 +507,13 @@ export const pwaGuideTranslations: Record<SupportedLanguage, {
     title: "Cómo Instalar la Aplicación",
     subtitle: "Instala Portal Órbita en tu teléfono móvil o computadora para una experiencia nativa offline de alta velocidad.",
     detectedDevice: "Dispositivo Detectado",
+    tiktokTitle: "🎵 ¿Accediendo desde TikTok / Redes Sociales?",
+    tiktokDesc: "El navegador interno de TikTok e Instagram bloquea la instalación directa de aplicaciones (PWA). Para instalar en 1 clic:",
+    tiktokStep1: "1. Toca los 3 puntos (⋮) o el ícono de opciones en la esquina de la pantalla de TikTok.",
+    tiktokStep2: "2. Selecciona 'Abrir en el navegador' (o 'Abrir en Chrome / Safari').",
+    tiktokStep3: "3. En el navegador oficial, toca 'Instalar aplicación' y ¡aparecerá la ventana de instalación!",
+    copyLinkBtn: "Copiar Enlace de la App",
+    copyLinkSuccess: "¡Enlace copiado! Pégalo en Chrome o Safari.",
     iosTitle: "📱 En iPhone o iPad (Safari)",
     iosStep1: "1. Toca el ícono de Compartir (el cuadrado con una flecha hacia arriba ↑ en la barra inferior).",
     iosStep2: "2. Desplázate hacia abajo en la lista y toca 'Agregar a la pantalla de inicio' (Add to Home Screen).",
@@ -503,6 +531,13 @@ export const pwaGuideTranslations: Record<SupportedLanguage, {
     title: "So installieren Sie die Anwendung",
     subtitle: "Installieren Sie Portal Órbita auf Ihrem Mobiltelefon oder Computer für ein schnelles, natives Offline-Erlebnis.",
     detectedDevice: "Erkanntes Gerät",
+    tiktokTitle: "🎵 Zugriff über TikTok / Soziale Medien?",
+    tiktokDesc: "Der interne Browser von TikTok und Instagram blockiert die direkte Installation von Apps (PWA). Zur Installation mit 1 Klick:",
+    tiktokStep1: "1. Tippen Sie auf die 3 Punkte (⋮) oder das Optionen-Symbol in der Ecke des TikTok-Bildschirms.",
+    tiktokStep2: "2. Wählen Sie 'Im Browser öffnen' (oder 'In Chrome / Safari öffnen').",
+    tiktokStep3: "3. Tippen Sie im offiziellen Browser auf 'App installieren', und das Installationsfenster erscheint!",
+    copyLinkBtn: "App-Link kopieren",
+    copyLinkSuccess: "Link kopiert! In Chrome oder Safari einfügen.",
     iosTitle: "📱 Auf dem iPhone oder iPad (Safari)",
     iosStep1: "1. Tippen Sie auf das Teilen-Symbol (das Quadrat mit einem Pfeil nach oben ↑ in der Fußleiste).",
     iosStep2: "2. Scrollen Sie nach unten und tippen Sie auf 'Zum Home-Bildschirm' (Add to Home Screen).",
@@ -520,6 +555,13 @@ export const pwaGuideTranslations: Record<SupportedLanguage, {
     title: "Comment Installer l'Application",
     subtitle: "Installez Portal Órbita sur votre téléphone portable ou votre ordinateur pour une expérience native, rapide et hors ligne.",
     detectedDevice: "Appareil Détecté",
+    tiktokTitle: "🎵 Accès via TikTok / Réseaux Sociaux ?",
+    tiktokDesc: "Le navigateur intégré de TikTok et d'Instagram bloque l'installation directe d'applications (PWA). Pour installer en 1 clic :",
+    tiktokStep1: "1. Appuyez sur les 3 points (⋮) ou l'icône d'options dans le coin de l'écran TikTok.",
+    tiktokStep2: "2. Sélectionnez 'Ouvrir dans le navigateur' (ou 'Ouvrir dans Chrome / Safari').",
+    tiktokStep3: "3. Dans le navigateur officiel, appuyez sur 'Installer l'application' et la fenêtre apparaîtra !",
+    copyLinkBtn: "Copier le lien de l'application",
+    copyLinkSuccess: "Lien copié ! Collez-le dans Chrome ou Safari.",
     iosTitle: "📱 Sur iPhone ou iPad (Safari)",
     iosStep1: "1. Appuyez sur l'icône de partage (le carré avec une flèche vers le haut ↑ dans la barre inférieure).",
     iosStep2: "2. Faites défiler la liste vers le bas et appuyez sur 'Sur l'écran d'accueil' (Add to Home Screen).",

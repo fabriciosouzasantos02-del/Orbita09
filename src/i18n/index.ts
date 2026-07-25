@@ -62,23 +62,64 @@ for (const lang of languages) {
 import i18next from 'i18next';
 
 export function getDeviceLanguage(): Language {
-  if (typeof window === 'undefined' || !navigator) return 'pt';
-  const systemLang = navigator.language || (navigator as any).userLanguage || '';
-  const langLower = systemLang.toLowerCase();
-  
-  if (langLower.startsWith('de')) return 'de';
-  if (langLower.startsWith('es')) return 'es';
-  if (langLower.startsWith('fr')) return 'fr';
-  if (langLower.startsWith('en')) return 'en';
-  return 'pt'; // Default is Portuguese
+  if (typeof window === 'undefined') return 'pt';
+
+  // 1. Check URL query parameters if present (e.g., ?lang=en, ?hl=es, ?locale=fr)
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const urlLang = (params.get('lang') || params.get('hl') || params.get('locale') || '').toLowerCase();
+    if (urlLang) {
+      if (urlLang.startsWith('es')) return 'es';
+      if (urlLang.startsWith('en')) return 'en';
+      if (urlLang.startsWith('de')) return 'de';
+      if (urlLang.startsWith('fr')) return 'fr';
+      if (urlLang.startsWith('pt')) return 'pt';
+    }
+  } catch (e) {
+    // Ignore URL parse errors
+  }
+
+  // 2. Gather candidates from navigator (languages array, language, webview parameters, etc.)
+  const candidates: string[] = [];
+
+  if (typeof navigator !== 'undefined' && navigator) {
+    if (Array.isArray(navigator.languages) && navigator.languages.length > 0) {
+      candidates.push(...navigator.languages);
+    }
+    if (navigator.language) candidates.push(navigator.language);
+    if ((navigator as any).userLanguage) candidates.push((navigator as any).userLanguage);
+    if ((navigator as any).browserLanguage) candidates.push((navigator as any).browserLanguage);
+    if ((navigator as any).systemLanguage) candidates.push((navigator as any).systemLanguage);
+  }
+
+  if (typeof document !== 'undefined' && document.documentElement && document.documentElement.lang) {
+    candidates.push(document.documentElement.lang);
+  }
+
+  // 3. Match against supported languages: 'es', 'en', 'de', 'fr', 'pt'
+  for (const item of candidates) {
+    if (!item || typeof item !== 'string') continue;
+    const clean = item.trim().toLowerCase();
+    if (clean.startsWith('es')) return 'es';
+    if (clean.startsWith('en')) return 'en';
+    if (clean.startsWith('de')) return 'de';
+    if (clean.startsWith('fr')) return 'fr';
+    if (clean.startsWith('pt')) return 'pt';
+  }
+
+  return 'pt'; // Default fallback
 }
 
 export function getInitialLanguage(): Language {
   if (typeof window === 'undefined') return 'pt';
-  const saved = localStorage.getItem('orbi_preferred_language');
-  if (saved && ['pt', 'en', 'es', 'de', 'fr'].includes(saved)) {
-    return saved as Language;
+
+  // Check if user explicitly chose a language manually
+  const explicitSaved = localStorage.getItem('orbi_user_explicit_lang');
+  if (explicitSaved && ['pt', 'en', 'es', 'de', 'fr'].includes(explicitSaved)) {
+    return explicitSaved as Language;
   }
+
+  // Always detect from device/browser/webview (TikTok, Instagram, Chrome, Safari)
   const detected = getDeviceLanguage();
   localStorage.setItem('orbi_preferred_language', detected);
   return detected;
@@ -86,6 +127,7 @@ export function getInitialLanguage(): Language {
 
 export function changeLanguage(novoIdioma: Language): void {
   if (typeof window !== 'undefined') {
+    localStorage.setItem('orbi_user_explicit_lang', novoIdioma);
     localStorage.setItem('orbi_preferred_language', novoIdioma);
     // Invalidate caches
     try {

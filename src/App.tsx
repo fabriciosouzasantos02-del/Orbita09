@@ -129,7 +129,8 @@ import {
   Home,
   Sliders,
   Camera,
-  ExternalLink
+  ExternalLink,
+  Copy
 } from 'lucide-react';
 
 export function cleanStringForChartId(val: string): string {
@@ -3009,11 +3010,12 @@ export default function App() {
 
     const ua = typeof navigator !== 'undefined' && navigator.userAgent ? navigator.userAgent.toLowerCase() : "";
     const isIos = /iphone|ipad|ipod/.test(ua);
+    const isInAppBrowser = /tiktok|musically|bytedance|instagram|fbav|fban|fb_iab|messenger|line\/|twitter|snapchat|pinterest|gsa\/|wv|webview/i.test(ua);
 
     let promptEvent = deferredPrompt || (window as any).deferredPrompt;
 
     // If event is not ready immediately, retry for up to 800ms in case beforeinstallprompt is firing right after load
-    if (!promptEvent && !isIos) {
+    if (!promptEvent && !isIos && !isInAppBrowser) {
       await new Promise<void>((resolve) => {
         let attempts = 0;
         const timer = setInterval(() => {
@@ -3031,25 +3033,22 @@ export default function App() {
       });
     }
 
-    if (!promptEvent) {
-      if (isIos) {
-        setShowPWAInstallGuide(true);
-      } else {
-        if (isInstalled) {
-          triggerGlobalNotification(
-            t("Aplicativo Já Instalado"),
-            t("Portal Órbita já está instalado e ativo em seu dispositivo!"),
-            "success"
-          );
-        } else {
-          // Fallback if browser already prompted or native installation is handled by browser menu
-          triggerGlobalNotification(
-            t("Instalação do Portal"),
-            t("Caso a caixa de diálogo nativa do sistema não tenha surgido, selecione 'Instalar aplicativo' no menu (⋮) do seu navegador."),
-            "info"
-          );
-        }
+    if (!promptEvent || isInAppBrowser) {
+      if (isInAppBrowser) {
+        triggerGlobalNotification(
+          t("Navegador do TikTok/Rede Social"),
+          t("O TikTok impede a instalação direta de PWA. Siga o passo a passo na tela para abrir no Chrome ou Safari!"),
+          "info"
+        );
+      } else if (isInstalled) {
+        triggerGlobalNotification(
+          t("Aplicativo Já Instalado"),
+          t("Portal Órbita já está instalado e ativo em seu dispositivo!"),
+          "success"
+        );
+        return;
       }
+      setShowPWAInstallGuide(true);
       return;
     }
 
@@ -8352,7 +8351,40 @@ export default function App() {
         const ua = typeof navigator !== 'undefined' && navigator.userAgent ? navigator.userAgent.toLowerCase() : "";
         const isIos = /iphone|ipad|ipod/.test(ua);
         const isAndroid = /android/.test(ua);
+        const isInAppBrowser = /tiktok|musically|bytedance|instagram|fbav|fban|fb_iab|messenger|line\/|twitter|snapchat|pinterest|gsa\/|wv|webview/i.test(ua);
         const isDesktop = !isIos && !isAndroid;
+
+        const handleCopyAppLink = () => {
+          const appUrl = typeof window !== 'undefined' ? window.location.origin : "https://portalorbit.vercel.app";
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(appUrl).then(() => {
+              triggerGlobalNotification(
+                t("Link Copiado"),
+                guide.copyLinkSuccess,
+                "success"
+              );
+            }).catch(() => {
+              triggerGlobalNotification(t("Link do App"), appUrl, "info");
+            });
+          } else {
+            triggerGlobalNotification(t("Link do App"), appUrl, "info");
+          }
+        };
+
+        const handleOpenExternalBrowser = () => {
+          const appUrl = typeof window !== 'undefined' ? window.location.href : "https://portalorbit.vercel.app";
+          if (isAndroid) {
+            // Chrome Intent URL for Android to force Chrome to open out of TikTok Webview
+            const cleanHost = appUrl.replace(/^https?:\/\//, '');
+            const intentUrl = `intent://${cleanHost}#Intent;scheme=https;package=com.android.chrome;end;`;
+            window.location.href = intentUrl;
+            setTimeout(() => {
+              window.open(appUrl, '_system');
+            }, 500);
+          } else {
+            window.open(appUrl, '_system');
+          }
+        };
 
         return (
           <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[500] flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-300">
@@ -8376,17 +8408,69 @@ export default function App() {
               <div className="px-3 py-1.5 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-between text-[11px]">
                 <span className="text-slate-400 font-medium">{guide.detectedDevice}:</span>
                 <span className="font-mono font-bold text-amber-400 uppercase">
-                  {isIos ? "iOS / iPhone" : isAndroid ? "Android" : "Desktop / Computer"}
+                  {isInAppBrowser 
+                    ? "TikTok / Rede Social (Navegador Interno)" 
+                    : isIos 
+                    ? "iOS / iPhone" 
+                    : isAndroid 
+                    ? "Android" 
+                    : "Desktop / Computer"}
                 </span>
               </div>
+
+              {/* In-App Browser / TikTok Warning Card */}
+              {(isInAppBrowser || true) && (
+                <div className={`p-4 rounded-2xl border ${isInAppBrowser ? 'bg-gradient-to-br from-rose-500/15 via-amber-500/10 to-slate-950 border-rose-500/40 shadow-lg' : 'bg-slate-950/40 border-slate-850 opacity-90'}`}>
+                  <h4 className="text-xs font-black text-rose-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    {guide.tiktokTitle}
+                    {isInAppBrowser && <span className="text-[10px] bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-full font-mono font-bold animate-pulse">DETECTADO</span>}
+                  </h4>
+                  <p className="text-xs text-slate-200 mb-3 leading-relaxed font-sans">
+                    {guide.tiktokDesc}
+                  </p>
+                  <ul className="text-xs text-slate-300 space-y-1.5 font-sans leading-relaxed mb-4">
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-amber-400 font-bold shrink-0">1.</span>
+                      <span>{guide.tiktokStep1}</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-amber-400 font-bold shrink-0">2.</span>
+                      <span>{guide.tiktokStep2}</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-amber-400 font-bold shrink-0">3.</span>
+                      <span>{guide.tiktokStep3}</span>
+                    </li>
+                  </ul>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={handleCopyAppLink}
+                      className="px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-amber-400" />
+                      <span>{guide.copyLinkBtn}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleOpenExternalBrowser}
+                      className="px-3 py-2 bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 text-xs font-black uppercase rounded-xl transition cursor-pointer shadow-md flex items-center justify-center gap-1.5"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>{guide.androidTitle.includes('Android') ? 'Abrir no Chrome' : 'Abrir no Safari/Chrome'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Guide Accordions or Blocks */}
               <div className="space-y-4">
                 {/* iOS section */}
-                <div className={`p-4 rounded-2xl border ${isIos ? 'bg-amber-500/5 border-amber-500/30' : 'bg-slate-950/40 border-slate-850 opacity-60'}`}>
+                <div className={`p-4 rounded-2xl border ${isIos && !isInAppBrowser ? 'bg-amber-500/5 border-amber-500/30' : 'bg-slate-950/40 border-slate-850 opacity-60'}`}>
                   <h4 className="text-xs font-black text-slate-100 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
                     {guide.iosTitle}
-                    {isIos && <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full font-mono font-bold">RECOMENDADO</span>}
+                    {isIos && !isInAppBrowser && <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full font-mono font-bold">RECOMENDADO</span>}
                   </h4>
                   <ul className="text-xs text-slate-300 space-y-2 font-sans leading-relaxed">
                     <li>{guide.iosStep1}</li>
@@ -8396,10 +8480,10 @@ export default function App() {
                 </div>
 
                 {/* Android section */}
-                <div className={`p-4 rounded-2xl border ${isAndroid ? 'bg-amber-500/5 border-amber-500/30' : 'bg-slate-950/40 border-slate-850 opacity-60'}`}>
+                <div className={`p-4 rounded-2xl border ${isAndroid && !isInAppBrowser ? 'bg-amber-500/5 border-amber-500/30' : 'bg-slate-950/40 border-slate-850 opacity-60'}`}>
                   <h4 className="text-xs font-black text-slate-100 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
                     {guide.androidTitle}
-                    {isAndroid && <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full font-mono font-bold">RECOMENDADO</span>}
+                    {isAndroid && !isInAppBrowser && <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full font-mono font-bold">RECOMENDADO</span>}
                   </h4>
                   <ul className="text-xs text-slate-300 space-y-2 font-sans leading-relaxed">
                     <li>{guide.androidStep1}</li>
