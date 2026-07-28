@@ -1048,14 +1048,25 @@ export function generateDynamicAmuletText(
 export interface DailyAstroRecommendations {
   casa: {
     aroma: string;
-    incenso: string;
-    planta: string;
-    ambiente_casa: string;
-    quarto_cor: string;
-    escritorio_cor: string;
     aroma_desc: string;
+    incenso: string;
     incenso_desc: string;
+    planta: string;
     planta_desc: string;
+    ambiente_casa: string;
+    ambiente_casa_desc: string;
+    quarto_cor: string;
+    quarto_cor_desc: string;
+    escritorio_cor: string;
+    escritorio_cor_desc: string;
+    cristal_casa: string;
+    cristal_casa_desc: string;
+    ritual_casa: string;
+    ritual_casa_desc: string;
+    direcao_cardeal: string;
+    direcao_cardeal_desc: string;
+    frequencia_som: string;
+    frequencia_som_desc: string;
   };
   desenvolvimento: {
     habilidade: string;
@@ -1122,9 +1133,13 @@ export function generateDailyAstroRecommendations(
     aromas: { name: string; desc: string }[];
     incenses: { name: string; desc: string }[];
     plants: { name: string; desc: string }[];
-    rooms: string[];
-    bedroomColors: string[];
-    officeColors: string[];
+    rooms: { name: string; desc: string }[];
+    bedroomColors: { name: string; desc: string }[];
+    officeColors: { name: string; desc: string }[];
+    crystals: { name: string; desc: string }[];
+    rituals: { title: string; desc: string }[];
+    directions: { name: string; desc: string }[];
+    frequencies: { name: string; desc: string }[];
     skills: { name: string; desc: string }[];
     blocks: { name: string; desc: string }[];
     virtues: string[];
@@ -1165,9 +1180,48 @@ export function generateDailyAstroRecommendations(
         { name: "Zamioculca da Fortuna", desc: "Ancora o magnetismo de dinheiro e prosperidade no elemento Terra." },
         { name: "Manjericão de Proteção", desc: "Irradia vitalidade e cura canais de cansaço molecular na cozinha ou sala." }
       ],
-      rooms: ["Canto Leste (Nascer do Sol)", "Canto Norte da sala de estar", "Proximidade de janelas arejadas", "Centro geométrico da casa"],
-      bedroomColors: ["Azul Lavanda", "Lilás Sutil", "Verde Menta Claro", "Cinza Cósmico Suave"],
-      officeColors: ["Azul Índigo Real", "Verde Esmeralda", "Cinza Grafite Puro", "Âmbar Claro"],
+      rooms: [
+        { name: "Canto Leste (Nascer do Sol)", desc: "Espaço de alta recepção prânica. Ideal para alongamentos, meditação ativa e clareza matinal." },
+        { name: "Canto Norte da sala de estar", desc: "Ancoragem do elemento Terra para estabilização de conversas familiares e acolhimento." },
+        { name: "Proximidade de janelas arejadas", desc: "Fluxo direto do elemento Ar que dissipa estagnação mental e estimula novas ideias." },
+        { name: "Centro geométrico do lar", desc: "Ponto focal de equilíbrio dos 4 elementos, harmonizando o campo biomagnético da casa." }
+      ],
+      bedroomColors: [
+        { name: "Azul Lavanda", desc: "Acalma o sistema nervoso central, harmonizando o sono profundo e despertando memórias lúcidas." },
+        { name: "Lilás Sutil", desc: "Eleva a vibração transmutadora do quarto, purificando resíduos emocionais acumulados." },
+        { name: "Verde Menta Claro", desc: "Regenera a vitalidade celular durante o repouso noturno e desacelera o ritmo cardíaco." },
+        { name: "Cinza Cósmico Suave", desc: "Proporciona neutralidade psíquica, ideal para filtrar interferências externas no descanso." }
+      ],
+      officeColors: [
+        { name: "Azul Índigo Real", desc: "Ativa os centros intelectuais superiores, elevando a clareza mental, foco e concentração profissional." },
+        { name: "Verde Esmeralda", desc: "Ancora a frequência de prosperidade e estabilidade em tomadas de decisões financeiras." },
+        { name: "Cinza Grafite Puro", desc: "Favorece a disciplina linear, minimizando distrações e organizando rotinas complexas." },
+        { name: "Âmbar Claro", desc: "Irradia entusiasmo solar e dinamismo criativo para negociações e projetos inovadores." }
+      ],
+      crystals: [
+        { name: "Selenita Branca de Purificação", desc: "Posicione na entrada principal ou perto de telas para criar um portal contínuo de limpeza áurica." },
+        { name: "Turmalina Negra de Proteção", desc: "Mantenha nos cantos da casa para repelir cargas pesadas e neutralizar radiações eletromagnéticas." },
+        { name: "Quartzo Rosa do Amor Incondicional", desc: "Coloque na mesa central ou quarto para suavizar tensões relacionais e irradiar harmonia." },
+        { name: "Pirita Dourada da Abundância", desc: "Deixe no escritório ou espaço de trabalho para magnetizar oportunidades de prosperidade e riqueza." }
+      ],
+      rituals: [
+        { title: "Limpeza de Fumaça Sagrada", desc: "Acenda um bastão de Palo Santo ou Incenso de Alecrim e percorra os cantos do lar no sentido horário." },
+        { title: "Renovação do Ar e Iluminação", desc: "Abra todas as janelas por 15 minutos ao amanhecer para substituir o ar estagnado pela luz solar." },
+        { title: "Organização do Fluxo de Entrada", desc: "Desobstrua a porta de entrada e remova objetos quebrados para permitir a livre circulação de chi." },
+        { title: "Harmonização com Elemento Água", desc: "Borrife água com gotas de óleo essencial de lavanda nos cortinados para suavizar o ambiente." }
+      ],
+      directions: [
+        { name: "Direção Leste", desc: "Alinhamento com o elemento Fogo e o nascer do Sol para impulsionar novos começos e vigor." },
+        { name: "Direção Norte", desc: "Sintonia com o elemento Terra para fortalecer a estabilidade material e a segurança do lar." },
+        { name: "Direção Oeste", desc: "Conexão com o elemento Água para promover o acolhimento afetivo e a paz nos relacionamentos." },
+        { name: "Direção Sul", desc: "Inspirado pelo elemento Ar para expandir a comunicação, criatividade e visão de futuro." }
+      ],
+      frequencies: [
+        { name: "Frequência de 528 Hz (Milagres)", desc: "Sintonize ao fundo no ambiente para harmonizar os átomos do espaço e promover cura celular." },
+        { name: "Frequência de 432 Hz (Sintonia Natural)", desc: "Toque durante momentos de descanso para alinhar o lar com a ressonância harmônica da Terra." },
+        { name: "Frequência de 639 Hz (Relacionamentos)", desc: "Ideal para a sala de estar para dissolver atritos e promover empatia no convívio diário." },
+        { name: "Frequência de 741 Hz (Intuição & Limpeza)", desc: "Utilize durante limpezas e arrumações para eliminar toxinas psíquicas do lar." }
+      ],
       skills: [
         { name: "Inteligência Compassiva & Aterramento", desc: "Aprender a canalizar ideais abstratos para ações práticas imediatas de manifestação." },
         { name: "Foco Singular Descomplicado", desc: "A capacidade de se isolar de distrações virtuais e terminar uma única tarefa robusta." },
@@ -1844,9 +1898,13 @@ export function generateDailyAstroRecommendations(
   const aromaObj = activeDict.aromas[seed % activeDict.aromas.length];
   const incenseObj = activeDict.incenses[(seed + 1) % activeDict.incenses.length];
   const plantObj = activeDict.plants[(seed + 2) % activeDict.plants.length];
-  const roomStr = activeDict.rooms[(seed + 3) % activeDict.rooms.length];
-  const bedColorStr = activeDict.bedroomColors[(seed + 4) % activeDict.bedroomColors.length];
-  const offColorStr = activeDict.officeColors[(seed + 5) % activeDict.officeColors.length];
+  const roomObj = activeDict.rooms[(seed + 3) % activeDict.rooms.length];
+  const bedColorObj = activeDict.bedroomColors[(seed + 4) % activeDict.bedroomColors.length];
+  const offColorObj = activeDict.officeColors[(seed + 5) % activeDict.officeColors.length];
+  const crystalObj = activeDict.crystals ? activeDict.crystals[(seed + 6) % activeDict.crystals.length] : { name: "Selenita", desc: "Purificação contínua" };
+  const ritualObj = activeDict.rituals ? activeDict.rituals[(seed + 7) % activeDict.rituals.length] : { title: "Limpeza de Fumaça", desc: "Purificação dos cantos" };
+  const directionObj = activeDict.directions ? activeDict.directions[(seed + 8) % activeDict.directions.length] : { name: "Direção Leste", desc: "Alinhamento com o nascer do Sol" };
+  const frequencyObj = activeDict.frequencies ? activeDict.frequencies[(seed + 9) % activeDict.frequencies.length] : { name: "Frequência 528 Hz", desc: "Harmonização do ambiente" };
 
   const skillObj = activeDict.skills[(seed + 1) % activeDict.skills.length];
   const blockObj = activeDict.blocks[(seed + 2) % activeDict.blocks.length];
@@ -1881,9 +1939,20 @@ export function generateDailyAstroRecommendations(
       incenso_desc: incenseObj.desc,
       planta: plantObj.name,
       planta_desc: plantObj.desc,
-      ambiente_casa: roomStr,
-      quarto_cor: bedColorStr,
-      escritorio_cor: offColorStr
+      ambiente_casa: roomObj.name,
+      ambiente_casa_desc: roomObj.desc,
+      quarto_cor: bedColorObj.name,
+      quarto_cor_desc: bedColorObj.desc,
+      escritorio_cor: offColorObj.name,
+      escritorio_cor_desc: offColorObj.desc,
+      cristal_casa: crystalObj.name,
+      cristal_casa_desc: crystalObj.desc,
+      ritual_casa: ritualObj.title,
+      ritual_casa_desc: ritualObj.desc,
+      direcao_cardeal: directionObj.name,
+      direcao_cardeal_desc: directionObj.desc,
+      frequencia_som: frequencyObj.name,
+      frequencia_som_desc: frequencyObj.desc
     },
     desenvolvimento: {
       habilidade: skillObj.name,

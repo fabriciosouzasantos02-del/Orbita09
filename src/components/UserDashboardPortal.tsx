@@ -3818,64 +3818,130 @@ export default function UserDashboardPortal({
           {/* TAB 14: ENERGIA DA CASA */}
           {areaSubTab === 'energia_casa' && (
             <div className="space-y-6">
-              <div className="bg-slate-900/40 p-5 rounded-3xl border border-slate-800 space-y-4">
-                <div className="space-y-0.5 pb-2 border-b border-slate-850 flex justify-between items-center sm:flex-nowrap flex-wrap gap-2">
+              <div className="bg-slate-900/40 p-5 rounded-3xl border border-slate-800 space-y-5">
+                {/* Header */}
+                <div className="space-y-0.5 pb-3 border-b border-slate-850 flex justify-between items-center sm:flex-nowrap flex-wrap gap-2">
                   <div>
-                    <h3 className="text-xs font-bold font-mono text-slate-201 uppercase tracking-widest flex items-center gap-1.5">
+                    <h3 className="text-xs font-bold font-mono text-slate-100 uppercase tracking-widest flex items-center gap-1.5">
                       <Home className="w-4 h-4 text-indigo-400" />
                       {t("Energia Cósmica da Casa & Harmonização")}
                     </h3>
-                    <p className="text-[10px] text-slate-500 mt-0.5">{t("Dicas sintonizadas para equilibrar o seu ecossistema físico domiciliar e escritório com seu mapa.")}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">{t("Dicas sintonizadas para equilibrar o seu ecossistema físico domiciliar e escritório com seu mapa.")}</p>
                   </div>
-                  <span className="px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 text-[9px] font-mono font-bold text-indigo-450 rounded-lg shrink-0">
-                    {t("Ambiente Físico")}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 bg-indigo-500/10 border border-indigo-500/20 text-[9px] font-mono font-bold text-indigo-400 rounded-lg shrink-0">
+                      {t("Ambiente Físico")}
+                    </span>
+                    <span className="px-2.5 py-0.5 bg-purple-500/10 border border-purple-500/20 text-[9px] font-mono font-bold text-purple-300 rounded-lg shrink-0">
+                      {t(preciseZodiacSign)} • {t("Caminho")} {lifePathNumber}
+                    </span>
+                  </div>
                 </div>
 
+                {/* Primary Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-left font-sans text-xs">
                   
                   {/* Aroma */}
-                  <div className="p-3.5 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col justify-between">
-                    <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold mb-1">{t("Melhor Aroma da Semana")}</span>
-                    <span className="text-xs font-black text-slate-200">{dailyAstroRecs.casa.aroma}</span>
-                    <p className="text-[9.5px] text-slate-400 leading-normal mt-1">{dailyAstroRecs.casa.aroma_desc}</p>
+                  <div className="p-4 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col justify-between hover:border-indigo-500/30 transition-all">
+                    <div>
+                      <span className="text-[8px] font-mono text-slate-400 block uppercase font-bold mb-1">{t("Melhor Aroma da Semana")}</span>
+                      <span className="text-xs font-black text-slate-200 block">{dailyAstroRecs.casa.aroma}</span>
+                    </div>
+                    <p className="text-[9.5px] text-slate-400 leading-normal mt-2">{dailyAstroRecs.casa.aroma_desc}</p>
                   </div>
 
                   {/* Incense */}
-                  <div className="p-3.5 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col justify-between">
-                    <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold mb-1">{t("Melhor Incenso Sugerido")}</span>
-                    <span className="text-xs font-black text-slate-200">{dailyAstroRecs.casa.incenso}</span>
-                    <p className="text-[9.5px] text-slate-400 leading-normal mt-1">{dailyAstroRecs.casa.incenso_desc}</p>
+                  <div className="p-4 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col justify-between hover:border-indigo-500/30 transition-all">
+                    <div>
+                      <span className="text-[8px] font-mono text-slate-400 block uppercase font-bold mb-1">{t("Melhor Incenso Sugerido")}</span>
+                      <span className="text-xs font-black text-slate-200 block">{dailyAstroRecs.casa.incenso}</span>
+                    </div>
+                    <p className="text-[9.5px] text-slate-400 leading-normal mt-2">{dailyAstroRecs.casa.incenso_desc}</p>
                   </div>
 
                   {/* Plant */}
-                  <div className="p-3.5 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col justify-between">
-                    <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold mb-1">{t("Melhor Planta Recomendada")}</span>
-                    <span className="text-xs font-black text-slate-200">{dailyAstroRecs.casa.planta}</span>
-                    <p className="text-[9.5px] text-slate-400 leading-normal mt-1">{dailyAstroRecs.casa.planta_desc}</p>
+                  <div className="p-4 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col justify-between hover:border-indigo-500/30 transition-all">
+                    <div>
+                      <span className="text-[8px] font-mono text-slate-400 block uppercase font-bold mb-1">{t("Melhor Planta Recomendada")}</span>
+                      <span className="text-xs font-black text-slate-200 block">{dailyAstroRecs.casa.planta}</span>
+                    </div>
+                    <p className="text-[9.5px] text-slate-400 leading-normal mt-2">{dailyAstroRecs.casa.planta_desc}</p>
                   </div>
 
                   {/* Best room corner */}
-                  <div className="p-4 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col justify-between h-[100px]">
-                    <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold">{t("Melhor Ambiente da Casa")}</span>
-                    <span className="text-xs font-black text-indigo-400 mt-1 block">{dailyAstroRecs.casa.ambiente_casa}</span>
-                    <span className="text-[9.5px] text-slate-505 leading-normal">{t("Ambiente ideal para alongamentos, meditação ativa e sintonia energética.")}</span>
+                  <div className="p-4 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col justify-between hover:border-indigo-500/30 transition-all">
+                    <div>
+                      <span className="text-[8px] font-mono text-indigo-400 block uppercase font-bold mb-1">{t("Melhor Ambiente da Casa")}</span>
+                      <span className="text-xs font-black text-indigo-300 block">{dailyAstroRecs.casa.ambiente_casa}</span>
+                    </div>
+                    <p className="text-[9.5px] text-slate-400 leading-normal mt-2">{dailyAstroRecs.casa.ambiente_casa_desc}</p>
                   </div>
 
                   {/* Bedroom color */}
-                  <div className="p-4 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col justify-between h-[100px]">
-                    <span className="text-[8px] font-mono text-purple-400 block uppercase font-bold">{t("Cor recomendada no Quarto")}</span>
-                    <span className="text-xs font-black text-purple-400 mt-1 block">{dailyAstroRecs.casa.quarto_cor}</span>
-                    <span className="text-[9.5px] text-slate-505 leading-normal">{t("Harmoniza o sono profundo e facilita o despertar de memórias oníricas lúcidas.")}</span>
+                  <div className="p-4 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col justify-between hover:border-purple-500/30 transition-all">
+                    <div>
+                      <span className="text-[8px] font-mono text-purple-400 block uppercase font-bold mb-1">{t("Cor recomendada no Quarto")}</span>
+                      <span className="text-xs font-black text-purple-300 block">{dailyAstroRecs.casa.quarto_cor}</span>
+                    </div>
+                    <p className="text-[9.5px] text-slate-400 leading-normal mt-2">{dailyAstroRecs.casa.quarto_cor_desc}</p>
                   </div>
 
                   {/* Office color */}
-                  <div className="p-4 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col justify-between h-[100px]">
-                    <span className="text-[8px] font-mono text-sky-400 block uppercase font-bold">{t("Cor recomendada no Escritório")}</span>
-                    <span className="text-xs font-black text-sky-450 mt-1 block">{dailyAstroRecs.casa.escritorio_cor}</span>
-                    <span className="text-[9.5px] text-slate-505 leading-normal">{t("Eleva a clareza mental, foco e concentração durante as tarefas diárias e negócios.")}</span>
+                  <div className="p-4 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col justify-between hover:border-sky-500/30 transition-all">
+                    <div>
+                      <span className="text-[8px] font-mono text-sky-400 block uppercase font-bold mb-1">{t("Cor recomendada no Escritório")}</span>
+                      <span className="text-xs font-black text-sky-300 block">{dailyAstroRecs.casa.escritorio_cor}</span>
+                    </div>
+                    <p className="text-[9.5px] text-slate-400 leading-normal mt-2">{dailyAstroRecs.casa.escritorio_cor_desc}</p>
                   </div>
                 </div>
+
+                {/* Advanced Harmonization Grid */}
+                <div className="pt-3 border-t border-slate-850">
+                  <h4 className="text-[11px] font-bold font-mono text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    {t("Harmonização Avançada & Alinhamento Domiciliar")}
+                  </h4>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-left font-sans text-xs">
+                    {/* Crystal */}
+                    <div className="p-3.5 bg-slate-950/80 border border-slate-850/80 rounded-xl flex flex-col justify-between">
+                      <div>
+                        <span className="text-[8px] font-mono text-amber-400 block uppercase font-bold mb-0.5">{t("Cristal de Ancoragem")}</span>
+                        <span className="text-[11px] font-extrabold text-slate-200 block">{dailyAstroRecs.casa.cristal_casa}</span>
+                      </div>
+                      <p className="text-[9px] text-slate-400 leading-normal mt-1.5">{dailyAstroRecs.casa.cristal_casa_desc}</p>
+                    </div>
+
+                    {/* Cleansing Ritual */}
+                    <div className="p-3.5 bg-slate-950/80 border border-slate-850/80 rounded-xl flex flex-col justify-between">
+                      <div>
+                        <span className="text-[8px] font-mono text-emerald-400 block uppercase font-bold mb-0.5">{t("Ritual do Espaço")}</span>
+                        <span className="text-[11px] font-extrabold text-slate-200 block">{dailyAstroRecs.casa.ritual_casa}</span>
+                      </div>
+                      <p className="text-[9px] text-slate-400 leading-normal mt-1.5">{dailyAstroRecs.casa.ritual_casa_desc}</p>
+                    </div>
+
+                    {/* Cardinal Direction */}
+                    <div className="p-3.5 bg-slate-950/80 border border-slate-850/80 rounded-xl flex flex-col justify-between">
+                      <div>
+                        <span className="text-[8px] font-mono text-cyan-400 block uppercase font-bold mb-0.5">{t("Direção Auspiciosa")}</span>
+                        <span className="text-[11px] font-extrabold text-slate-200 block">{dailyAstroRecs.casa.direcao_cardeal}</span>
+                      </div>
+                      <p className="text-[9px] text-slate-400 leading-normal mt-1.5">{dailyAstroRecs.casa.direcao_cardeal_desc}</p>
+                    </div>
+
+                    {/* Sound Frequency */}
+                    <div className="p-3.5 bg-slate-950/80 border border-slate-850/80 rounded-xl flex flex-col justify-between">
+                      <div>
+                        <span className="text-[8px] font-mono text-rose-400 block uppercase font-bold mb-0.5">{t("Frequência de Som")}</span>
+                        <span className="text-[11px] font-extrabold text-slate-200 block">{dailyAstroRecs.casa.frequencia_som}</span>
+                      </div>
+                      <p className="text-[9px] text-slate-400 leading-normal mt-1.5">{dailyAstroRecs.casa.frequencia_som_desc}</p>
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </div>
           )}
