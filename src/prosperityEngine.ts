@@ -1357,9 +1357,48 @@ export function generateDailyAstroRecommendations(
         { name: "Fortuna Zamioculca", desc: "Anchors the magnetism of money and prosperity in the Earth element." },
         { name: "Protective Basil", desc: "Radiates vitality and heals molecular fatigue channels in the kitchen or living room." }
       ],
-      rooms: ["East Corner (Sunrise)", "North Corner of the living room", "Proximity of well-ventilated windows", "Geometric center of the house"],
-      bedroomColors: ["Lavender Blue", "Subtle Lilac", "Light Mint Green", "Soft Cosmic Gray"],
-      officeColors: ["Royal Indigo Blue", "Emerald Green", "Pure Graphite Gray", "Light Amber"],
+      rooms: [
+        { name: "East Corner (Sunrise)", desc: "Space of high pranic reception. Ideal for stretching, active meditation, and morning clarity." },
+        { name: "North Corner of the living room", desc: "Anchoring of the Earth element for stabilizing family conversations and warmth." },
+        { name: "Proximity to well-ventilated windows", desc: "Direct flow of the Air element dissipating mental stagnation and inspiring new ideas." },
+        { name: "Geometric center of the home", desc: "Focal point of balance for the 4 elements, harmonizing the home's biomagnetic field." }
+      ],
+      bedroomColors: [
+        { name: "Lavender Blue", desc: "Calms the central nervous system, harmonizing deep sleep and awakening lucid memories." },
+        { name: "Subtle Lilac", desc: "Elevates the bedroom's transmuting vibration, purifying accumulated emotional residue." },
+        { name: "Light Mint Green", desc: "Regenerates cellular vitality during night rest and slows down the heart rate." },
+        { name: "Soft Cosmic Gray", desc: "Provides psychic neutrality, ideal for filtering external interferences during rest." }
+      ],
+      officeColors: [
+        { name: "Royal Indigo Blue", desc: "Activates higher intellectual centers, elevating mental clarity, focus, and professional concentration." },
+        { name: "Emerald Green", desc: "Anchors the frequency of prosperity and stability in financial decision making." },
+        { name: "Pure Graphite Gray", desc: "Favors linear discipline, minimizing distractions and organizing complex routines." },
+        { name: "Light Amber", desc: "Radiates solar enthusiasm and creative dynamism for negotiations and innovative projects." }
+      ],
+      crystals: [
+        { name: "White Selenite of Purification", desc: "Place at the main entrance or near screens to create a continuous portal of auric cleansing." },
+        { name: "Black Tourmaline of Protection", desc: "Keep in house corners to repel heavy energy and neutralize electromagnetic radiation." },
+        { name: "Rose Quartz of Unconditional Love", desc: "Place on the central table or bedroom to soften relational tension and radiate harmony." },
+        { name: "Golden Pyrite of Abundance", desc: "Keep in the office or workspace to magnetize opportunities for prosperity and wealth." }
+      ],
+      rituals: [
+        { title: "Sacred Smoke Cleansing", desc: "Light a Palo Santo or Rosemary incense stick and walk clockwise around house corners." },
+        { title: "Air Renewal & Lighting", desc: "Open all windows for 15 minutes at dawn to replace stale air with natural sunlight." },
+        { title: "Entrance Flow Organization", desc: "Clear the front door area and remove broken objects to allow the free circulation of chi." },
+        { title: "Water Element Harmonization", desc: "Mist water mixed with lavender essential oil on curtains to soften the room environment." }
+      ],
+      directions: [
+        { name: "East Direction", desc: "Alignment with the Fire element and sunrise to propel new beginnings and vigor." },
+        { name: "North Direction", desc: "Tuning with the Earth element to strengthen material stability and home security." },
+        { name: "West Direction", desc: "Connection with the Water element to promote affective warmth and peace in relationships." },
+        { name: "South Direction", desc: "Inspired by the Air element to expand communication, creativity, and future vision." }
+      ],
+      frequencies: [
+        { name: "528 Hz Frequency (Miracles)", desc: "Play softly in the background to harmonize space atoms and promote cellular healing." },
+        { name: "432 Hz Frequency (Natural Tuning)", desc: "Play during rest moments to align the home with Earth's harmonic resonance." },
+        { name: "639 Hz Frequency (Relationships)", desc: "Ideal for the living room to dissolve friction and foster empathy in daily living." },
+        { name: "741 Hz Frequency (Intuition & Cleansing)", desc: "Use during cleaning and organizing to eliminate psychic toxins from the home." }
+      ],
       skills: [
         { name: "Compassionate Intelligence & Grounding", desc: "Learning to channel abstract ideas into immediate practical steps of manifestation." },
         { name: "Uncomplicated Singular Focus", desc: "The ability to isolate yourself from virtual distractions and finish a single robust task." },
@@ -1495,9 +1534,48 @@ export function generateDailyAstroRecommendations(
         { name: "Zamioculca de la Fortuna", desc: "Ancla el magnetismo del dinero y la prosperidad en el elemento Tierra." },
         { name: "Albahaca Protectora", desc: "Irradia vitalidad y sana los canales de fatiga molecular en la cocina o sala." }
       ],
-      rooms: ["Rincón Este (Amanecer)", "Rincón Norte de la sala de estar", "Proximidad de ventanas bien ventiladas", "Centro geométrico de la casa"],
-      bedroomColors: ["Azul Lavanda", "Lila Sutil", "Verde Menta Claro", "Gris Cósmico Suave"],
-      officeColors: ["Azul Índigo Real", "Verde Esmeralda", "Gris Grafito Puro", "Ámbar Claro"],
+      rooms: [
+        { name: "Rincón Este (Amanecer)", desc: "Espacio de alta recepción pránica. Ideal para estiramientos, meditación activa y claridad matutina." },
+        { name: "Rincón Norte de la sala de estar", desc: "Anclaje del elemento Tierra para estabilizar conversaciones familiares y acogimiento." },
+        { name: "Proximidad de ventanas bien ventiladas", desc: "Flujo directo del elemento Aire que disipa la estancación mental e inspira nuevas ideas." },
+        { name: "Centro geométrico de la casa", desc: "Punto focal de equilibrio de los 4 elementos, armonizando el campo biomagnético de la casa." }
+      ],
+      bedroomColors: [
+        { name: "Azul Lavanda", desc: "Calma el sistema nervioso central, armonizando el sueño profundo y despertando memorias lúcidas." },
+        { name: "Lila Sutil", desc: "Eleva la vibración transmutadora del dormitorio, purificando residuos emocionales acumulados." },
+        { name: "Verde Menta Claro", desc: "Regenera la vitalidad celular durante el descanso nocturno y desacelera el ritmo cardíaco." },
+        { name: "Gris Cósmico Suave", desc: "Proporciona neutralidad psíquica, ideal para filtrar interferencias externas en el descanso." }
+      ],
+      officeColors: [
+        { name: "Azul Índigo Real", desc: "Activa los centros intelectuales superiores, elevando la claridad mental, enfoque y concentración profesional." },
+        { name: "Verde Esmeralda", desc: "Ancla la frecuencia de prosperidad y estabilidad en la toma de decisiones financieras." },
+        { name: "Gris Grafito Puro", desc: "Favorece la disciplina linear, minimizando distracciones y organizando rutinas complejas." },
+        { name: "Ámbar Claro", desc: "Irradia entusiasmo solar y dinamismo creativo para negociaciones y proyectos innovadores." }
+      ],
+      crystals: [
+        { name: "Selenita Blanca de Purificación", desc: "Colócala en la entrada principal o cerca de pantallas para crear un portal continuo de limpieza áurica." },
+        { name: "Turmalina Negra de Protección", desc: "Mantén en las esquinas de la casa para repeler cargas pesadas y neutralizar radiaciones electromagnéticas." },
+        { name: "Cuarzo Rosa de Amor Incondicional", desc: "Colócalo en la mesa central o dormitorio para suavizar tensiones relacionales e irradiar armonía." },
+        { name: "Pirita Dorada de la Abundancia", desc: "Déjala en la oficina o espacio de trabajo para magnetizar oportunidades de prosperidad y riqueza." }
+      ],
+      rituals: [
+        { title: "Limpieza de Humo Sagrado", desc: "Enciende un bastón de Palo Santo o Incienso de Romero y recorre las esquinas de la casa en sentido horario." },
+        { title: "Renovación del Aire e Iluminación", desc: "Abre todas las ventanas por 15 minutos al amanecer para reemplazar el aire estancado por luz solar." },
+        { title: "Organización del Flujo de Entrada", desc: "Despeja el área de la puerta de entrada y remueve objetos rotos para permitir la libre circulación de chi." },
+        { title: "Armonización con Elemento Agua", desc: "Rocía agua con gotas de aceite esencial de lavanda en las cortinas para suavizar el ambiente." }
+      ],
+      directions: [
+        { name: "Dirección Este", desc: "Alineación con el elemento Fuego y el amanecer para impulsar nuevos comienzos y vigor." },
+        { name: "Dirección Norte", desc: "Sintonía con el elemento Tierra para fortalecer la estabilidad material y la seguridad del hogar." },
+        { name: "Dirección Oeste", desc: "Conexión con el elemento Agua para promover el acogimiento afectivo y la paz en relaciones." },
+        { name: "Dirección Sur", desc: "Inspirado por el elemento Aire para expandir la comunicación, creatividad y visión de futuro." }
+      ],
+      frequencies: [
+        { name: "Frecuencia de 528 Hz (Milagros)", desc: "Sintoniza de fondo en el ambiente para armonizar los átomos del espacio y promover la curación celular." },
+        { name: "Frecuencia de 432 Hz (Sintonía Natural)", desc: "Suena durante momentos de descanso para alinear el hogar con la resonancia armónica de la Tierra." },
+        { name: "Frecuencia de 639 Hz (Relaciones)", desc: "Ideal para la sala de estar para disolver roces y promover empatía en la convivencia diaria." },
+        { name: "Frecuencia de 741 Hz (Intuición y Limpieza)", desc: "Utilízala durante limpiezas para eliminar toxinas psíquicas del hogar." }
+      ],
       skills: [
         { name: "Inteligencia Compasiva y Aterrizaje", desc: "Aprender a canalizar ideas abstractas en pasos prácticos inmediatos de manifestación." },
         { name: "Enfoque Singular Sencillo", desc: "La capacidad de aislarse de distracciones virtuales y terminar una sola tarea robusta." },
@@ -1633,9 +1711,48 @@ export function generateDailyAstroRecommendations(
         { name: "Glücksfeder (Zamioculca)", desc: "Verankert die Magnetkraft von Geld und Fülle fest im Element Erde." },
         { name: "Schützendes Basilikum", desc: "Strahlt Vitalität aus und heilt molekulare Erschöpfungskanäle in Küche oder Wohnzimmer." }
       ],
-      rooms: ["Ost-Ecke (Sonnenaufgang)", "Nord-Ecke des Wohnzimmers", "Nähe von gut belüfteten Fenstern", "Geometrisches Zentrum des Hauses"],
-      bedroomColors: ["Lavendelblau", "Zartes Lila", "Helles Minzgrün", "Weiches Kosmisches Grau"],
-      officeColors: ["Königliches Indigoblau", "Smaragdgrün", "Reines Graphitgrau", "Helles Bernstein"],
+      rooms: [
+        { name: "Ost-Ecke (Sonnenaufgang)", desc: "Raum hoher pranischer Aufnahme. Ideal für Dehnübungen, aktive Meditation und morgendliche Klarheit." },
+        { name: "Nord-Ecke des Wohnzimmers", desc: "Verankerung des Erdelements zur Stabilisierung von Familiengesprächen und Geborgenheit." },
+        { name: "Nähe von gut belüfteten Fenstern", desc: "Direkter Fluss des Luftelements, der mentale Stagnation auflöst und neue Ideen anregt." },
+        { name: "Geometrisches Zentrum des Hauses", desc: "Fokuspunkt des Gleichgewichts der 4 Elemente, der das biomagnetische Feld des Hauses harmonisiert." }
+      ],
+      bedroomColors: [
+        { name: "Lavendelblau", desc: "Beruhigt das zentrale Nervensystem, harmonisiert tiefen Schlaf und weckt luzide Erinnerungen." },
+        { name: "Zartes Lila", desc: "Erhöht die umwandelnde Schwingung des Schlafzimmers und reinigt angesammelte emotionale Rückstände." },
+        { name: "Helles Minzgrün", desc: "Regeneriert die zelluläre Vitalität während der Nachtruhe und verlangsamt die Herzfrequenz." },
+        { name: "Weiches Kosmisches Grau", desc: "Bietet psychische Neutralität, ideal zum Filtern äußerer Störungen in der Ruhephase." }
+      ],
+      officeColors: [
+        { name: "Königliches Indigoblau", desc: "Aktiviert höhere intellektuelle Zentren und steigert mentale Klarheit, Fokus und berufliche Konzentration." },
+        { name: "Smaragdgrün", desc: "Verankert die Frequenz von Wohlstand und Stabilität bei finanziellen Entscheidungen." },
+        { name: "Reines Graphitgrau", desc: "Fördert lineare Disziplin, minimiert Ablenkungen und organisiert komplexe Routinen." },
+        { name: "Helles Bernstein", desc: "Strahlt solaren Enthusiasmus und kreative Dynamik für Verhandlungen und innovative Projekte aus." }
+      ],
+      crystals: [
+        { name: "Weißer Selenit der Reinigung", desc: "Plazieren Sie ihn am Haupteingang oder in der Nähe von Bildschirmen für ein Portal kontinuierlicher aurischer Reinigung." },
+        { name: "Schwarzer Turmalin des Schutzes", desc: "In den Ecken des Hauses aufbewahren, um schwere Energien abzuwehren und elektromagnetische Strahlung zu neutralisieren." },
+        { name: "Rosenquarz bedingungsloser Liebe", desc: "Auf den zentralen Tisch oder ins Schlafzimmer stellen, um Beziehungspannungen zu mildern und Harmonie auszustrahlen." },
+        { name: "Goldener Pyrit der Fülle", desc: "Im Büro oder Arbeitsbereich aufbewahren, um Möglichkeiten für Wohlstand und Reichtum zu magnetisieren." }
+      ],
+      rituals: [
+        { title: "Heilige Rauchreinigung", desc: "Zünden Sie ein Palo Santo- oder Rosmarin-Räucherstäbchen an und gehen Sie im Uhrzeigersinn durch die Ecken des Hauses." },
+        { title: "Lufterneuerung & Beleuchtung", desc: "Öffnen Sie im Morgengrauen 15 Minuten lang alle Fenster, um abgestandene Luft durch Sonnenlicht zu ersetzen." },
+        { title: "Eingangsfluss-Organisation", desc: "Räumen Sie den Eingangsbereich auf und entfernen Sie kaputte Gegenstände, um die freie Chi-Zirkulation zu ermöglichen." },
+        { title: "Harmonisierung mit dem Wasserelement", desc: "Sprühen Sie mit Lavendelöl versetztes Wasser auf Vorhänge, um das Raumklima zu besänftigen." }
+      ],
+      directions: [
+        { name: "Richtung Osten", desc: "Ausrichtung auf das Feuerelement und den Sonnenaufgang, um Neuanfänge und Vitalität anzutreiben." },
+        { name: "Richtung Norden", desc: "Einstimmung auf das Erdelement zur Stärkung der materiellen Stabilität und der Sicherheit des Hauses." },
+        { name: "Richtung Westen", desc: "Verbindung mit dem Wasserelement zur Förderung gefühlvoller Wärme und Frieden in Beziehungen." },
+        { name: "Richtung Süden", desc: "Inspiriert vom Luftelement zur Erweiterung von Kommunikation, Kreativität und Zukunftsvision." }
+      ],
+      frequencies: [
+        { name: "528 Hz Frequenz (Wunder)", desc: "Im Hintergrund abspielen, um Raumatome zu harmonisieren und zelluläre Heilung zu fördern." },
+        { name: "432 Hz Frequenz (Natürliche Stimmung)", desc: "In Ruhephasen abspielen, um das Haus auf die harmonische Resonanz der Erde auszurichten." },
+        { name: "639 Hz Frequenz (Beziehungen)", desc: "Ideal für das Wohnzimmer, um Reibungen aufzulösen und Empathie im Alltag zu fördern." },
+        { name: "741 Hz Frequenz (Intuition & Reinigung)", desc: "Beim Reinigen und Aufräumen verwenden, um psychische Toxine aus dem Haus zu eliminieren." }
+      ],
       skills: [
         { name: "Mitfühlende Intelligenz & Erdung", desc: "Lernen, abstrakte Ideale in unmittelbare praktische Schritte der Manifestation umzusetzen." },
         { name: "Einfacher, einzigartiger Fokus", desc: "Die Fähigkeit, sich von virtuellen Ablenkungen zu isolieren und eine einzige Aufgabe abzuschließen." },
@@ -1771,9 +1888,48 @@ export function generateDailyAstroRecommendations(
         { name: "Zamioculca de la Fortune", desc: "Ancre le magnétisme de l'argent et de la prospérité dans l'élément Terre." },
         { name: "Basilic Protecteur", desc: "Irradie la vitalité et guérit les canaux de fatigue moléculaire dans la cuisine ou le salon." }
       ],
-      rooms: ["Coin Est (Lever du Soleil)", "Coin Nord du salon de séjour", "Proximité de fenêtres bien ventilées", "Centre géométrique de la maison"],
-      bedroomColors: ["Bleu Lavande", "Violet Subtil", "Vert Menthe Clair", "Gris Cosmique Doux"],
-      officeColors: ["Bleu Indigo Royal", "Vert Émeraude", "Gris Graphite Pur", "Ambre Clair"],
+      rooms: [
+        { name: "Coin Est (Lever du Soleil)", desc: "Espace de haute réception pranique. Idéal pour les étirements, la méditation active et la clarté matinale." },
+        { name: "Coin Nord du salon de séjour", desc: "Ancrage de l'élément Terre pour stabiliser les conversations familiales et le réconfort." },
+        { name: "Proximité de fenêtres bien ventilées", desc: "Flux direct de l'élément Air qui dissipe la stagnation mentale et inspire de nouvelles idées." },
+        { name: "Centre géométrique de la maison", desc: "Point focal d'équilibre des 4 éléments, harmonisant le champ biomagnétique du foyer." }
+      ],
+      bedroomColors: [
+        { name: "Bleu Lavande", desc: "Calme le système nerveux central, harmonisant le sommeil profond et éveillant des souvenirs lucides." },
+        { name: "Violet Subtil", desc: "Élève la vibration transmutatrice de la chambre, purifiant les résidus émotionnels accumulés." },
+        { name: "Vert Menthe Clair", desc: "Régénère la vitalité cellulaire pendant le repos nocturne et ralentit le rythme cardiaque." },
+        { name: "Gris Cosmique Doux", desc: "Procurant une neutralité psychique, idéale pour filtrer les interférences extérieures pendant le repos." }
+      ],
+      officeColors: [
+        { name: "Bleu Indigo Royal", desc: "Active les centres intellectuels supérieurs, élevant la clarté mentale, le focus et la concentration." },
+        { name: "Vert Émeraude", desc: "Ancre la fréquence de prospérité et de stabilité dans la prise de décisions financières." },
+        { name: "Gris Graphite Pur", desc: "Favorise la discipline linéaire, minimisant les distractions et organisant des routines complexes." },
+        { name: "Ambre Clair", desc: "Rayonne l'enthousiasme solaire et le dynamisme créatif pour les négociations et projets innovants." }
+      ],
+      crystals: [
+        { name: "Sélénite Blanche de Purification", desc: "Placez à l'entrée principale ou près des écrans pour créer un portail continu de nettoyage aurique." },
+        { name: "Tourmaline Noire de Protection", desc: "Gardez dans les coins de la maison pour repousser les énergies lourdes et neutraliser les radiations." },
+        { name: "Quartz Rose d'Amour Inconditionnel", desc: "Placez sur la table centrale ou dans la chambre pour adoucir les tensions relationnelles." },
+        { name: "Pyrite Dorée de l'Abundandance", desc: "Laissez dans le bureau pour magnétiser les opportunités de prospérité et de richesse." }
+      ],
+      rituals: [
+        { title: "Purification par Fumée Sacrée", desc: "Allumez un bâton de Palo Santo ou d'encens de Romarin et parcourez les coins de la maison dans le sens horaire." },
+        { title: "Renouvellement de l'Air & Éclairage", desc: "Ouvrez toutes les fenêtres pendant 15 minutes à l'aube pour remplacer l'air vicié par la lumière du soleil." },
+        { title: "Organisation du Flux d'Entrée", desc: "Dégagez la porte d'entrée et retirez les objets cassés pour permettre la libre circulation du chi." },
+        { title: "Harmonisation avec l'Élément Eau", desc: "Vaporisez de l'eau avec quelques gouttes d'huile essentielle de lavande sur les rideaux." }
+      ],
+      directions: [
+        { name: "Direction Est", desc: "Alignement avec l'élément Feu et le lever du Soleil pour impulser de nouveaux départs et du tonus." },
+        { name: "Direction Nord", desc: "Harmonie avec l'élément Terre pour renforcer la stabilité matérielle et la sécurité du foyer." },
+        { name: "Direction Ouest", desc: "Connexion avec l'élément Eau pour promouvoir la chaleur affective et la paix relationnelle." },
+        { name: "Direction Sud", desc: "Inspiré par l'élément Air pour étendre la communication, la créativité et la vision du futur." }
+      ],
+      frequencies: [
+        { name: "Fréquence 528 Hz (Miracles)", desc: "Diffusez en fond sonore pour harmoniser les atomes de l'espace et favoriser la guérison cellulaire." },
+        { name: "Fréquence 432 Hz (Syntonie Naturelle)", desc: "Jouez pendant les moments de repos pour aligner la maison avec la résonance harmonique de la Terre." },
+        { name: "Fréquence 639 Hz (Relations)", desc: "Idéal pour le salon pour dissoudre les frictions et promouvoir l'empathie au quotidien." },
+        { name: "Fréquence 741 Hz (Intuition & Nettoyage)", desc: "Utilisez pendant le nettoyage pour éliminer les toxines psychiques du foyer." }
+      ],
       skills: [
         { name: "Intelligence Compassionnelle & Ancrage", desc: "Apprendre à canaliser les idées abstraites vers des actions pratiques immédiates de manifestation." },
         { name: "Focalisation Singulière Simple", desc: "La capacité de s'isoler des distractions virtuelles et de terminer une seule tâche robuste." },
