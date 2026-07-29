@@ -3,7 +3,27 @@ import i18next from 'i18next';
 // @ts-ignore
 import ephemeris from 'ephemeris';
 
+export interface MoonPhaseInfo {
+  name: string;
+  icon: string;
+  sign: string;
+  desc: string;
+}
+
+export interface NumerologyDayInfo {
+  personalDayNumber: number;
+  title: string;
+  vibration: string;
+}
+
+export interface SoundFrequencyInfo {
+  hz: string;
+  title: string;
+  benefit: string;
+}
+
 export interface DailyPrediction {
+  dayNumber: number;
   date: Date;
   dateFormatted: string;
   tagText: string;
@@ -11,6 +31,10 @@ export interface DailyPrediction {
   astroInfluence: string;
   aspects: string;
   transit: string;
+  houseDetails?: string;
+  moonPhase: MoonPhaseInfo;
+  numerology: NumerologyDayInfo;
+  frequency: SoundFrequencyInfo;
   predominantEnergy: string;
   energyLevel: number;
   favoredAreas: string[];
@@ -23,6 +47,7 @@ export interface DailyPrediction {
   bestPeriod: string;
   attentionPeriod: string;
   personalizedMessage: string;
+  categoryMatches: string[];
 }
 
 function getActiveLanguage(): 'pt' | 'en' | 'es' | 'de' | 'fr' {
@@ -740,6 +765,322 @@ const PLANET_COLORS_NUMBERS: Record<string, { color: string[]; number: number }>
   "Plutão": { color: ["Violeta Púrpura", "Purple Violet", "Violeta Púrpura", "Purpurviolett", "Violet Pourpre"], number: 9 }
 };
 
+// Helpers for Moon Phase, Numerology Personal Day, Sound Frequency and Categories
+
+export function computeMoonPhaseForDate(date: Date, lang: 'pt' | 'en' | 'es' | 'de' | 'fr' = 'pt'): MoonPhaseInfo {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  
+  // Approximate Julian Date calculation for Moon elongation
+  const a = Math.floor((14 - month) / 12);
+  const y = year + 4800 - a;
+  const m = month + 12 * a - 3;
+  const jdn = day + Math.floor((153 * m + 2) / 5) + 365 * y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) - 32045;
+  const daysSinceNew = (jdn - 2451549.5) % 29.53058770576;
+  const elongation = ((daysSinceNew < 0 ? daysSinceNew + 29.53058770576 : daysSinceNew) / 29.53058770576) * 360;
+
+  const phases = [
+    {
+      icon: "🌑",
+      names: { pt: "Lua Nova", en: "New Moon", es: "Luna Nueva", de: "Neumond", fr: "Nouvelle Lune" },
+      descs: { pt: "Semear intenções, novos começos e introspecção.", en: "Sow intentions, new beginnings and introspection.", es: "Sembrar intenciones, nuevos comienzos e introspección.", de: "Absichten säen, Neuanfänge und Introspektion.", fr: "Semer des intentions, nouveaux départs et introspection." }
+    },
+    {
+      icon: "🌒",
+      names: { pt: "Lua Crescente Inicial", en: "Waxing Crescent", es: "Luna Creciente", de: "Zunehmender Sichelmond", fr: "Premier Croissant" },
+      descs: { pt: "Impulso inicial, planejamento e superação de dúvidas.", en: "Initial momentum, planning and overcoming doubt.", es: "Impulso inicial, planificación y superación de dudas.", de: "Erster Schwung, Planung und Überwindung von Zweifeln.", fr: "Élan initial, planification et dépassement des doutes." }
+    },
+    {
+      icon: "🌓",
+      names: { pt: "Quarto Crescente", en: "First Quarter", es: "Cuarto Creciente", de: "Erstes Viertel", fr: "Premier Quartier" },
+      descs: { pt: "Ação firme, decisões e superação de obstáculos.", en: "Firm action, decisions and overcoming obstacles.", es: "Acción firme, decisiones y superación de obstáculos.", de: "Entschlossenes Handeln, Entscheidungen und Hindernisse.", fr: "Action ferme, décisions et dépassement des obstacles." }
+    },
+    {
+      icon: "🌔",
+      names: { pt: "Crescente Gibosa", en: "Waxing Gibbous", es: "Creciente Gibosa", de: "Zunehmender Dreiviertelmond", fr: "Lune Gibbeuse Croissante" },
+      descs: { pt: "Ajuste fino, paciência e refinamento de metas.", en: "Fine tuning, patience and refining goals.", es: "Ajuste fino, paciencia y refinamiento de metas.", de: "Feineinstellung, Geduld und Verfeinerung von Zielen.", fr: "Ajustement minutieux, patience et peaufinage." }
+    },
+    {
+      icon: "🌕",
+      names: { pt: "Lua Cheia", en: "Full Moon", es: "Luna Llena", de: "Vollmond", fr: "Pleine Lune" },
+      descs: { pt: "Clareza máxima, ápice de energia e transbordamento.", en: "Maximum clarity, energy peak and fulfillment.", es: "Máxima claridad, ápice de energía y plenitud.", de: "Maximale Klarheit, Energiehöhepunkt und Fülle.", fr: "Clarté maximale, apogée d'énergie et plénitude." }
+    },
+    {
+      icon: "🌖",
+      names: { pt: "Minguante Gibosa", en: "Waning Gibbous", es: "Minguante Gibosa", de: "Abnehmender Dreiviertelmond", fr: "Lune Gibbeuse Décroissante" },
+      descs: { pt: "Gratidão, compartilhamento e avaliação de resultados.", en: "Gratitude, sharing and evaluating results.", es: "Gratitud, compartir y evaluación de resultados.", de: "Dankbarkeit, Teilen und Auswertung der Ergebnisse.", fr: "Gratitude, partage et évaluation des résultats." }
+    },
+    {
+      icon: "🌗",
+      names: { pt: "Quarto Minguante", en: "Third Quarter", es: "Cuarto Menguante", de: "Letztes Viertel", fr: "Dernier Quartier" },
+      descs: { pt: "Desapego, limpeza de pendências e perdão.", en: "Letting go, clearing pending tasks and forgiveness.", es: "Desapego, limpieza de pendientes y perdón.", de: "Loslassen, Klärung von Ausstehendem und Vergebung.", fr: "Lâcher-prise, nettoyage des tâches en attente et pardon." }
+    },
+    {
+      icon: "🌘",
+      names: { pt: "Lua Minguante Balsâmica", en: "Waning Crescent", es: "Luna Menguante", de: "Abnehmende Sichel", fr: "Dernier Croissant" },
+      descs: { pt: "Recolhimento, descanso e restauração vital.", en: "Retreat, rest and vital restoration.", es: "Recogimiento, descanso y restauración vital.", de: "Rückzug, Ruhe und vitale Wiederherstellung.", fr: "Recueillement, repos et restauration vitale." }
+    }
+  ];
+
+  const idx = Math.floor((elongation / 360) * 8) % 8;
+  const phase = phases[idx];
+
+  // Moon Zodiac Sign approximation based on date
+  const signsList = ["Áries", "Touro", "Gêmeos", "Câncer", "Leão", "Virgem", "Libra", "Escorpião", "Sagitário", "Capricórnio", "Aquário", "Peixes"];
+  const moonSignIdx = Math.floor(((jdn - 2451549.5) * 13.176396 + 280) / 30) % 12;
+  const rawSign = signsList[(moonSignIdx + 12) % 12];
+  const translatedSign = TRANSLATED_SIGNS[lang]?.[rawSign] || rawSign;
+
+  return {
+    name: phase.names[lang] || phase.names.pt,
+    icon: phase.icon,
+    sign: translatedSign,
+    desc: phase.descs[lang] || phase.descs.pt
+  };
+}
+
+export function calculatePersonalNumerologyForDate(birthDateStr: string, date: Date, lang: 'pt' | 'en' | 'es' | 'de' | 'fr' = 'pt'): NumerologyDayInfo {
+  let dayNum = 1;
+  if (birthDateStr) {
+    try {
+      const parts = birthDateStr.split('-').map(Number);
+      if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+        const bDay = parts[2];
+        const bMonth = parts[1];
+        const tYear = date.getFullYear();
+        const tMonth = date.getMonth() + 1;
+        const tDay = date.getDate();
+
+        const reduce = (n: number): number => {
+          while (n > 9 && n !== 11 && n !== 22) {
+            n = String(n).split('').map(Number).reduce((a, b) => a + b, 0);
+          }
+          return n;
+        };
+
+        const rBDay = reduce(bDay);
+        const rBMonth = reduce(bMonth);
+        const rYear = reduce(tYear);
+
+        const personalYear = reduce(rBDay + rBMonth + rYear);
+        const personalMonth = reduce(personalYear + tMonth);
+        dayNum = reduce(personalMonth + tDay);
+      }
+    } catch (e) {
+      dayNum = 1;
+    }
+  }
+
+  const numerologyDict: Record<number, Record<string, { title: string; vib: string }>> = {
+    1: {
+      pt: { title: "Dia Pessoal 1: Liderança & Início", vib: "Poder de ação, independência e impulso para abrir novos caminhos." },
+      en: { title: "Personal Day 1: Leadership & Beginnings", vib: "Power of action, independence, and drive to open new paths." },
+      es: { title: "Día Personal 1: Liderazgo e Inicio", vib: "Poder de acción, independencia e impulso para abrir nuevos caminos." },
+      de: { title: "Persönlicher Tag 1: Führung & Beginn", vib: "Handlungskraft, Unabhängigkeit und Antrieb für neue Wege." },
+      fr: { title: "Jour Personnel 1: Leadership & Début", vib: "Pouvoir d'action, indépendance et élan pour ouvrir de nouvelles voies." }
+    },
+    2: {
+      pt: { title: "Dia Pessoal 2: Parcerias & Harmonia", vib: "Sensibilidade, diplomacia e facilidade para pactos e escuta." },
+      en: { title: "Personal Day 2: Partnerships & Harmony", vib: "Sensitivity, diplomacy, and ease for agreements and active listening." },
+      es: { title: "Día Personal 2: Alianzas y Armonía", vib: "Sensibilidad, diplomacia y facilidad para acuerdos y escucha." },
+      de: { title: "Persönlicher Tag 2: Partnerschaft & Harmonie", vib: "Feingefühl, Diplomatie und Leichtigkeit in Vereinbarungen." },
+      fr: { title: "Jour Personnel 2: Partenariats & Harmonie", vib: "Sensibilité, diplomatie et facilité pour les accords et l'écoute." }
+    },
+    3: {
+      pt: { title: "Dia Pessoal 3: Comunicação & Criatividade", vib: "Alegria, expressão artística e expansão de contatos sociais." },
+      en: { title: "Personal Day 3: Communication & Creativity", vib: "Joy, artistic expression, and expansion of social contacts." },
+      es: { title: "Día Personal 3: Comunicación y Creatividad", vib: "Alegría, expresión artística y expansión de contactos sociales." },
+      de: { title: "Persönlicher Tag 3: Kommunikation & Kreativität", vib: "Freude, künstlerischer Ausdruck und soziale Kontakte." },
+      fr: { title: "Jour Personnel 3: Communication & Créativité", vib: "Joie, expression artistique et expansion des contacts sociaux." }
+    },
+    4: {
+      pt: { title: "Dia Pessoal 4: Estrutura & Organização", vib: "Trabalho prático, disciplina financeira e consolidação de bases." },
+      en: { title: "Personal Day 4: Structure & Organization", vib: "Practical work, financial discipline, and solid foundation building." },
+      es: { title: "Día Personal 4: Estructura y Organización", vib: "Trabajo práctico, disciplina financiera y consolidación de bases." },
+      de: { title: "Persönlicher Tag 4: Struktur & Organisation", vib: "Praktische Arbeit, Finanzdisziplin und Fundamentbau." },
+      fr: { title: "Jour Personnel 4: Structure & Organisation", vib: "Travail pratique, discipline financière et consolidation de bases." }
+    },
+    5: {
+      pt: { title: "Dia Pessoal 5: Liberdade & Movimento", vib: "Adaptação a mudanças, dinamismo e quebra de rotinas rígidas." },
+      en: { title: "Personal Day 5: Freedom & Movement", vib: "Adaptation to change, dynamism, and breaking rigid routines." },
+      es: { title: "Día Personal 5: Libertad y Movimiento", vib: "Adaptación a cambios, dinamismo y ruptura de rutinas rígidas." },
+      de: { title: "Persönlicher Tag 5: Freiheit & Bewegung", vib: "Anpassung an Veränderungen, Dynamik und Durchbrechen von Routinen." },
+      fr: { title: "Jour Personnel 5: Liberté & Mouvement", vib: "Adaptation aux changements, dynamisme et rupture des routines." }
+    },
+    6: {
+      pt: { title: "Dia Pessoal 6: Afeto & Responsabilidade", vib: "Harmonia familiar, cuidado com o lar e resolução de divergências." },
+      en: { title: "Personal Day 6: Affection & Responsibility", vib: "Family harmony, home care, and resolution of emotional conflicts." },
+      es: { title: "Día Personal 6: Afecto y Responsabilidad", vib: "Armonía familiar, cuidado del hogar y resolución de divergencias." },
+      de: { title: "Persönlicher Tag 6: Zuneigung & Verantwortung", vib: "Familiäre Harmonie, Pflege des Heims und Konfliktlösung." },
+      fr: { title: "Jour Personnel 6: Affection & Responsabilité", vib: "Harmonie familiale, soin du foyer et résolution de conflits." }
+    },
+    7: {
+      pt: { title: "Dia Pessoal 7: Sabedoria & Introspecção", vib: "Estudos profundos, meditação e busca de respostas interiores." },
+      en: { title: "Personal Day 7: Wisdom & Introspection", vib: "Deep studies, meditation, and seeking inner answers." },
+      es: { title: "Día Personal 7: Sabiduría e Introspección", vib: "Estudios profundos, meditación y búsqueda de respuestas internas." },
+      de: { title: "Persönlicher Tag 7: Weisheit & Introspektion", vib: "Tiefe Studien, Meditation und Suche nach inneren Antworten." },
+      fr: { title: "Jour Personnel 7: Sagesse & Introspection", vib: "Études profondes, méditation et recherche de réponses intérieures." }
+    },
+    8: {
+      pt: { title: "Dia Pessoal 8: Conquista Material & Poder", vib: "Foco financeiro, ambição executiva e colheita de resultados práticos." },
+      en: { title: "Personal Day 8: Material Achievement & Power", vib: "Financial focus, executive ambition, and reaping practical results." },
+      es: { title: "Día Personal 8: Logro Material y Poder", vib: "Enfoque financiero, ambición ejecutiva y cosecha de resultados prácticos." },
+      de: { title: "Persönlicher Tag 8: Materielle Leistung & Macht", vib: "Finanzieller Fokus, exekutiver Ehrgeiz und praktische Ergebnisse." },
+      fr: { title: "Jour Personnel 8: Réussite Matérielle & Pouvoir", vib: "Focus financier, ambition exécutive et récolte de résultats pratiques." }
+    },
+    9: {
+      pt: { title: "Dia Pessoal 9: Finalização & Compaixão", vib: "Encerramento de ciclos, limpeza mental e altruísmo elevado." },
+      en: { title: "Personal Day 9: Completion & Compassion", vib: "Closing cycles, mental decluttering, and elevated altruism." },
+      es: { title: "Día Personal 9: Finalización y Compasión", vib: "Cierre de ciclos, limpieza mental y altruismo elevado." },
+      de: { title: "Persönlicher Tag 9: Vollendung & Mitgefühl", vib: "Abschluss von Zyklen, mentale Reinigung und Altruismus." },
+      fr: { title: "Jour Personnel 9: Fin de Cycle & Compassion", vib: "Clôture de cycles, nettoyage mental et altruisme élevé." }
+    },
+    11: {
+      pt: { title: "Dia Pessoal 11: Iluminação & Intuição Elevada", vib: "Conexão espiritual intensa, inspiração súbita e poder de visão." },
+      en: { title: "Personal Day 11: Illumination & High Intuition", vib: "Intense spiritual connection, sudden inspiration, and vision power." },
+      es: { title: "Día Personal 11: Iluminación e Intuición Elevada", vib: "Conexión espiritual intensa, inspiración súbita y poder de visión." },
+      de: { title: "Persönlicher Tag 11: Erleuchtung & Hohe Intuition", vib: "Intensive spirituelle Verbindung und plötzliche Inspiration." },
+      fr: { title: "Jour Personnel 11: Illumination & Haute Intuition", vib: "Connexion spirituelle intense, inspiration soudaine et vision." }
+    },
+    22: {
+      pt: { title: "Dia Pessoal 22: Mestre Construtor", vib: "Capacidade de transformar grandes ideais em estruturas físicas duradouras." },
+      en: { title: "Personal Day 22: Master Builder", vib: "Ability to turn grand ideals into lasting physical structures." },
+      es: { title: "Día Personal 22: Maestro Constructor", vib: "Capacidad de transformar grandes ideales en estructuras físicas duraderas." },
+      de: { title: "Persönlicher Tag 22: Baumeister", vib: "Fähigkeit, große Ideale in dauerhafte Physis zu verwandeln." },
+      fr: { title: "Jour Personnel 22: Maître Bâtisseur", vib: "Capacité a transformer de grands idéaux en structures durables." }
+    }
+  };
+
+  const dayInfo = numerologyDict[dayNum] || numerologyDict[1];
+  const localized = dayInfo[lang] || dayInfo.pt;
+
+  return {
+    personalDayNumber: dayNum,
+    title: localized.title,
+    vibration: localized.vib
+  };
+}
+
+export function getSoundFrequencyForDate(tp: string, aspectType: string, date: Date, lang: 'pt' | 'en' | 'es' | 'de' | 'fr' = 'pt'): SoundFrequencyInfo {
+  const seed = (date.getDate() + date.getMonth() + tp.length) % 7;
+  
+  const freqMap: Record<number, { hz: string; titles: Record<string, string>; benefits: Record<string, string> }> = {
+    0: {
+      hz: "528 Hz",
+      titles: { pt: "Frequência de Milagres & Regeneração", en: "Miracle & DNA Regeneration Frequency", es: "Frecuencia de Milagros y Regeneración", de: "Wunder & DNA-Regenerationsfrequenz", fr: "Fréquence de Miracles et Régénération" },
+      benefits: { pt: "Estimula clareza mental, paz profunda e restauração celular.", en: "Promotes mental clarity, deep peace, and cellular restoration.", es: "Promueve claridad mental, paz profunda y restauración celular.", de: "Fördert mentale Klarheit, tiefen Frieden und Zellregeneration.", fr: "Favorise la clarté mentale, la paix profonde et la régénération." }
+    },
+    1: {
+      hz: "432 Hz",
+      titles: { pt: "Ressonância Harmônica da Terra", en: "Harmonic Earth Resonance", es: "Resonancia Harmónica de la Tierra", de: "Harmonische Erdresonanz", fr: "Résonance Harmonique de la Terre" },
+      benefits: { pt: "Alivia a ansiedade, desacelera o sistema nervoso e ancora vitalidade.", en: "Relieves anxiety, slows the nervous system, and grounds vitality.", es: "Alivia la ansiedad, desacelera el sistema nervioso y ancla vitalidad.", de: "Lindert Angstzustände und beruhigt das Nervensystem.", fr: "Soulage l'anxiété, ralentit le système nerveux et ancre la vitalité." }
+    },
+    2: {
+      hz: "639 Hz",
+      titles: { pt: "Conexão Celestial & Harmonia Afetiva", en: "Celestial Connection & Relationship Harmony", es: "Conexión Celestial y Armonía Afectiva", de: "Beziehungsharmonie & Himmlische Verbindung", fr: "Connexion Céleste & Harmonie Affective" },
+      benefits: { pt: "Facilita a comunicação amorosa, cura mágoas e atrai relacionamentos elevados.", en: "Facilitates loving communication, heals wounds, and attracts high-vibe bonds.", es: "Facilita la comunicación amorosa, sana heridas y atrae relaciones elevadas.", de: "Erleichtert liebevolle Kommunikation und heilt Verletzungen.", fr: "Facilite la communication amoureuse et guérit les blessures." }
+    },
+    3: {
+      hz: "741 Hz",
+      titles: { pt: "Despertar da Intuição & Limpeza Psíquica", en: "Intuition Awakening & Psychic Cleansing", es: "Despertar de la Intuición y Limpieza Psíquica", de: "Intuitionserweckung & Psychische Reinigung", fr: "Éveil de l'Intuition & Nettoyage Psychique" },
+      benefits: { pt: "Elimina bloqueios criativos, limpa energias densas e expande a percepção.", en: "Removes creative blocks, clears dense energy, and expands perception.", es: "Elimina bloqueos creativos, limpia energías densas y expande la percepción.", de: "Beseitigt kreative Blockaden und reinigt dichte Energien.", fr: "Élimine les blocages créatifs et nettoie les énergies denses." }
+    },
+    4: {
+      hz: "852 Hz",
+      titles: { pt: "Retorno à Ordem Espiritual & Terceiro Olho", en: "Return to Spiritual Order & Third Eye", es: "Retorno al Orden Espiritual y Tercer Ojo", de: "Rückkehr zur Geistigen Ordnung", fr: "Retour à l'Ordre Spirituel & Troisième Œil" },
+      benefits: { pt: "Abre canais de sabedoria interior e favorece meditações de alta precisão.", en: "Opens inner wisdom channels and favors high-precision meditation.", es: "Abre canales de sabiduría interior y favorece meditaciones precisas.", de: "Öffnet Kanäle innerer Weisheit und fördert Meditation.", fr: "Ouvre les canaux de sagesse intérieure et favorise la méditation." }
+    },
+    5: {
+      hz: "396 Hz",
+      titles: { pt: "Liberação de Medos & Ancoragem Prática", en: "Liberation from Fear & Practical Grounding", es: "Liberación de Miedos y Anclaje Práctico", de: "Befreiung von Angst & Praktische Erdung", fr: "Libération des Peurs & Ancrage Pratique" },
+      benefits: { pt: "Transforma a insegurança em determinação sólida e estabilidade financeira.", en: "Transforms insecurity into solid determination and financial stability.", es: "Transforma la inseguridad en determinación sólida y estabilidad.", de: "Wandelt Unsicherheit in solide Entschlossenheit um.", fr: "Transforme l'insécurité en détermination solide et stabilité." }
+    },
+    6: {
+      hz: "963 Hz",
+      titles: { pt: "Frequência da Consciência Cósmica", en: "Cosmic Consciousness Frequency", es: "Frecuencia de la Conciencia Cósmica", de: "Frequenz des Kosmischen Bewusstseins", fr: "Fréquence de la Conscience Cosmique" },
+      benefits: { pt: "Ativa a glândula pineal, conecta com a unidade do universo e paz espiritual.", en: "Activates pineal gland, connects with universal unity and spiritual peace.", es: "Activa la glándula pineal, conecta con la unidad del universo y paz.", de: "Aktiviert die Zirbeldrüse und verbindet mit universeller Einheit.", fr: "Active la glande pinéale, connecte à l'unité de l'univers." }
+    }
+  };
+
+  const f = freqMap[seed] || freqMap[0];
+  return {
+    hz: f.hz,
+    title: f.titles[lang] || f.titles.pt,
+    benefit: f.benefits[lang] || f.benefits.pt
+  };
+}
+
+function getCategoryMatches(tp: string, aspectType: string, personalDay: number, houseNum: number, dayNumber: number): string[] {
+  const matches = new Set<string>(['todos']);
+
+  if (['Marte', 'Sol', 'Mercúrio', 'Saturno'].includes(tp) || [1, 4, 8].includes(personalDay) || [1, 6, 10].includes(houseNum)) {
+    matches.add('produtividade');
+  }
+  if (['Lua', 'Netuno'].includes(tp) || [2, 7, 9].includes(personalDay) || [4, 12].includes(houseNum) || aspectType === 'Quadratura' || aspectType === 'Oposição') {
+    matches.add('descanso');
+  }
+  if (['Lua', 'Vênus'].includes(tp) || [2, 6].includes(personalDay) || houseNum === 4) {
+    matches.add('familia');
+  }
+  if (['Vênus', 'Sol', 'Júpiter'].includes(tp) || [2, 3, 6].includes(personalDay) || [5, 7].includes(houseNum)) {
+    matches.add('encontros');
+  }
+  if (['Vênus', 'Sol', 'Júpiter'].includes(tp) || [3, 5].includes(personalDay) || houseNum === 5) {
+    matches.add('diversao');
+  }
+  if (['Mercúrio', 'Sol', 'Júpiter'].includes(tp) || [1, 3, 5].includes(personalDay) || [3, 10].includes(houseNum)) {
+    matches.add('entrevistas');
+  }
+  if (['Mercúrio', 'Vênus', 'Júpiter'].includes(tp) || [3, 5, 8].includes(personalDay) || [2, 3, 8].includes(houseNum)) {
+    matches.add('vendas');
+  }
+  if (['Saturno', 'Júpiter', 'Plutão', 'Vênus'].includes(tp) || [4, 8, 22].includes(personalDay) || [2, 8].includes(houseNum)) {
+    matches.add('investimentos');
+  }
+  if (['Júpiter', 'Mercúrio', 'Urano'].includes(tp) || [3, 5, 9].includes(personalDay) || houseNum === 9) {
+    matches.add('viagens');
+  }
+  if (['Urano', 'Plutão', 'Marte'].includes(tp) || [5, 9, 11].includes(personalDay) || [4, 8, 11].includes(houseNum)) {
+    matches.add('mudancas');
+  }
+  if (['Sol', 'Marte', 'Urano'].includes(tp) || [1, 5, 11, 22].includes(personalDay) || [1, 10].includes(houseNum)) {
+    matches.add('projetos');
+  }
+  if (['Mercúrio', 'Saturno', 'Vênus'].includes(tp) || [4, 8, 22].includes(personalDay) || [3, 7].includes(houseNum)) {
+    matches.add('contratos');
+  }
+  if (['Mercúrio', 'Plutão', 'Saturno'].includes(tp) || [2, 7].includes(personalDay) || [3, 7].includes(houseNum)) {
+    matches.add('conversas');
+  }
+  if (['Mercúrio', 'Júpiter'].includes(tp) || [3, 7].includes(personalDay) || [3, 9].includes(houseNum)) {
+    matches.add('estudos');
+  }
+  if (['Marte', 'Sol'].includes(tp) || [1, 5, 8].includes(personalDay) || [1, 6].includes(houseNum)) {
+    matches.add('exercicios');
+  }
+  if (['Netuno', 'Lua'].includes(tp) || [7, 11].includes(personalDay) || [8, 12].includes(houseNum)) {
+    matches.add('meditacao');
+  }
+  if (['Netuno', 'Júpiter', 'Plutão', 'Lua'].includes(tp) || [7, 11, 22].includes(personalDay) || [9, 12].includes(houseNum)) {
+    matches.add('espiritualidade');
+  }
+  if (['Vênus', 'Mercúrio', 'Saturno'].includes(tp) || [3, 6, 8].includes(personalDay) || houseNum === 2) {
+    matches.add('compras');
+  }
+
+  const categoryKeys = [
+    'produtividade', 'descanso', 'familia', 'encontros', 'diversao',
+    'entrevistas', 'vendas', 'investimentos', 'viagens', 'mudancas',
+    'projetos', 'contratos', 'conversas', 'estudos', 'exercicios',
+    'meditacao', 'espiritualidade', 'compras'
+  ];
+  matches.add(categoryKeys[dayNumber % categoryKeys.length]);
+  matches.add(categoryKeys[(dayNumber + 5) % categoryKeys.length]);
+
+  return Array.from(matches);
+}
+
 export function generateDailyPrediction(
   userBirthDate: string,
   userSunSign: string,
@@ -748,18 +1089,31 @@ export function generateDailyPrediction(
   currentDate: Date,
   langParam?: string,
   mapData?: any,
-  userCoordinates?: { latitude: number; longitude: number }
+  userCoordinates?: { latitude: number; longitude: number },
+  explicitTargetDate?: Date
 ): DailyPrediction {
-  const targetDate = new Date(currentDate.getTime() + selectedDayIndex * 24 * 60 * 60 * 1000);
   const lang = (langParam || getActiveLanguage()) as 'pt' | 'en' | 'es' | 'de' | 'fr';
-  
+
+  // Determine targetDate carefully for current or target month
+  let targetDate: Date;
+  if (explicitTargetDate) {
+    targetDate = new Date(explicitTargetDate);
+  } else {
+    // If selectedDayIndex is 0..30, map to Day 1..31 of the currentDate's Year and Month
+    const targetYear = currentDate.getFullYear();
+    const targetMonth = currentDate.getMonth();
+    targetDate = new Date(targetYear, targetMonth, selectedDayIndex + 1, 12, 0, 0);
+  }
+
+  const dayNumber = targetDate.getDate();
+
   // Coordinates fallback
   const lat = userCoordinates?.latitude || -23.5505;
   const lon = userCoordinates?.longitude || -46.6333;
-  
+
   // Calculate transit positions
   const transitPositions = getTransitPositions(targetDate, lat, lon) || {};
-  
+
   // Resolve natal positions
   const natalPositions: Record<string, number> = {};
   if (mapData && mapData.astros) {
@@ -772,7 +1126,7 @@ export function generateDailyPrediction(
       }
     }
   }
-  
+
   // Fallback to calculation if natal chart positions are missing
   if (Object.keys(natalPositions).length === 0 && userBirthDate) {
     try {
@@ -786,50 +1140,41 @@ export function generateDailyPrediction(
       console.error("Error calculating fallback natal in engine:", e);
     }
   }
-  
+
   // Find real-time aspects
   let foundAspects = findAspects(transitPositions, natalPositions, false);
   if (foundAspects.length === 0) {
-    // Widen orbs if none found
     foundAspects = findAspects(transitPositions, natalPositions, true);
   }
-  
-  // Sort aspects by tightest orb
+
   const activeAspects = foundAspects.sort((a, b) => a.diff - b.diff);
   const primaryAspect = activeAspects[0];
-  
+
   let tp = "Sol";
   let np = "Sol";
   let aspectType: "Conjunção" | "Oposição" | "Trígono" | "Quadratura" | "Sextil" = "Trígono";
   let diff = 0;
-  
+
   if (primaryAspect) {
     tp = primaryAspect.transitPlanet;
     np = primaryAspect.natalPlanet;
     aspectType = primaryAspect.aspectType;
     diff = primaryAspect.diff;
   } else {
-    // 100% real calculation regardless of orb limits
     const closest = findClosestAspectRegardlessOfOrb(transitPositions, natalPositions);
     if (closest) {
       tp = closest.transitPlanet;
       np = closest.natalPlanet;
       aspectType = closest.aspectType;
       diff = closest.diff;
-    } else {
-      // absolute safety fallback (extremely theoretical)
-      tp = "Sol";
-      np = "Sol";
-      aspectType = "Trígono";
-      diff = 0;
     }
   }
-  
-  // Create beautiful translated text for the real aspect
+
+  // Create translated aspect text
   const translatedTp = PLANET_TRANSLATIONS[lang]?.[tp] || tp;
   const translatedNp = PLANET_TRANSLATIONS[lang]?.[np] || np;
   const translatedAspect = ASPECT_TRANSLATIONS[lang]?.[aspectType] || aspectType;
-  
+
   let aspectText = "";
   if (lang === "pt") {
     aspectText = `Aspecto real de ${translatedAspect} entre ${translatedTp} transitando e seu ${translatedNp} Natal (orb ${diff.toFixed(1)}°).`;
@@ -842,190 +1187,391 @@ export function generateDailyPrediction(
   } else {
     aspectText = `Aspect réel de ${translatedAspect} entre ${translatedTp} en transit et votre ${translatedNp} Natal (orb ${diff.toFixed(1)}°).`;
   }
-  
-  // Tag and tag styles
+
+  // Tag styles
   let tagText = "";
   let tagColorClass = "bg-slate-950 border-slate-800 text-slate-350";
-  
+
   if (aspectType === "Trígono" || aspectType === "Sextil") {
-    tagText = TRANSLATED_TAGS[lang][0]; // Favorable
+    tagText = TRANSLATED_TAGS[lang][0]; // Favorável
     tagColorClass = "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 font-bold";
   } else if (aspectType === "Quadratura") {
-    tagText = TRANSLATED_TAGS[lang][1]; // Attention
+    tagText = TRANSLATED_TAGS[lang][1]; // Atenção
     tagColorClass = "bg-rose-500/10 border-rose-500/20 text-rose-400 font-bold";
   } else if (aspectType === "Oposição") {
-    tagText = TRANSLATED_TAGS[lang][1]; // Attention / Rest
+    tagText = TRANSLATED_TAGS[lang][1]; // Atenção
     tagColorClass = "bg-amber-500/10 border-amber-500/20 text-amber-500 font-bold";
   } else if (aspectType === "Conjunção") {
-    tagText = TRANSLATED_TAGS[lang][4]; // Focus
+    tagText = TRANSLATED_TAGS[lang][4]; // Foco
     tagColorClass = "bg-indigo-500/10 border-indigo-500/20 text-indigo-400 font-bold";
   } else {
-    tagText = TRANSLATED_TAGS[lang][2]; // Productive
+    tagText = TRANSLATED_TAGS[lang][2]; // Produtivo
     tagColorClass = "bg-sky-500/10 border-sky-500/20 text-sky-450 font-bold";
   }
-  
-  // Custom interpretation
+
+  // Detailed interpretation
   const aspectMeanings = ASPECT_MEANINGS[lang]?.[aspectType] || ASPECT_MEANINGS["pt"]["Trígono"];
   const detailedInfluence = aspectMeanings[tp] || aspectMeanings["general"] || "";
-  const astroInfluence = `${detailedInfluence} ${ASPECT_MEANINGS[lang]?.[aspectType]?.general || ""}`;
-  
-  // Resolve transit position text
+
+  // Resolve transit & House details
   const lonVal = transitPositions[tp];
   let transit = "";
+  let houseDetails = "";
+  let houseNum = 1;
+
+  const houseNames: Record<number, Record<string, string>> = {
+    1: { pt: "Casa 1 (Vitalidade & Identidade)", en: "1st House (Vitality & Identity)", es: "Casa 1 (Vitalidad e Identidad)", de: "1. Haus (Vitalität & Identität)", fr: "Maison 1 (Vitalité & Identité)" },
+    2: { pt: "Casa 2 (Finanças & Recursos)", en: "2nd House (Finances & Resources)", es: "Casa 2 (Finanzas y Recursos)", de: "2. Haus (Finanzen & Recursos)", fr: "Maison 2 (Finances & Ressources)" },
+    3: { pt: "Casa 3 (Comunicação & Estudos)", en: "3rd House (Communication & Studies)", es: "Casa 3 (Comunicación y Estudios)", de: "3. Haus (Kommunikation & Studien)", fr: "Maison 3 (Communication & Études)" },
+    4: { pt: "Casa 4 (Lar & Bases Emocionais)", en: "4th House (Home & Emotional Foundations)", es: "Casa 4 (Hogar y Bases Emocionales)", de: "4. Haus (Heim & Emotionale Grundlagen)", fr: "Maison 4 (Foyer & Bases Émotionnelles)" },
+    5: { pt: "Casa 5 (Criatividade & Romances)", en: "5th House (Creativity & Romance)", es: "Casa 5 (Creatividad y Romances)", de: "5. Haus (Kreativität & Romantik)", fr: "Maison 5 (Créativité & Romances)" },
+    6: { pt: "Casa 6 (Saúde & Trabalho Prático)", en: "6th House (Health & Practical Work)", es: "Casa 6 (Salud y Trabajo Práctico)", de: "6. Haus (Gesundheit & Praktische Arbeit)", fr: "Maison 6 (Santé & Travail Pratique)" },
+    7: { pt: "Casa 7 (Relacionamentos & Parcerias)", en: "7th House (Relationships & Partnerships)", es: "Casa 7 (Relaciones y Alianzas)", de: "7. Haus (Beziehungen & Partnerschaften)", fr: "Maison 7 (Relations & Partenariats)" },
+    8: { pt: "Casa 8 (Transformação & Finanças Compartilhadas)", en: "8th House (Transformation & Shared Finances)", es: "Casa 8 (Transformación y Finanzas Compartidas)", de: "8. Haus (Transformation & Gemeinsame Finanzen)", fr: "Maison 8 (Transformation & Finances Partagées)" },
+    9: { pt: "Casa 9 (Sabedoria & Caminhos Elevados)", en: "9th House (Wisdom & Higher Paths)", es: "Casa 9 (Sabiduría y Caminos Elevados)", de: "9. Haus (Weisheit & Höhere Wege)", fr: "Maison 9 (Sagesse & Chemins Élevés)" },
+    10: { pt: "Casa 10 (Carreira & Visibilidade Social)", en: "10th House (Career & Social Visibility)", es: "Casa 10 (Carrera y Visibilidad Social)", de: "10. Haus (Karriere & Soziale Sichtbarkeit)", fr: "Maison 10 (Carrière & Visibilité Sociale)" },
+    11: { pt: "Casa 11 (Redes, Amigos & Sonhos)", en: "11th House (Networks, Friends & Dreams)", es: "Casa 11 (Redes, Amigos y Sueños)", de: "11. Haus (Netzwerke, Freunde & Träume)", fr: "Maison 11 (Réseaux, Amis & Rêves)" },
+    12: { pt: "Casa 12 (Espiritualidade & Renovação Interior)", en: "12th House (Spirituality & Inner Renewal)", es: "Casa 12 (Espiritualidad y Renovación Interior)", de: "12. Haus (Spiritualität & Innere Erneuerung)", fr: "Maison 12 (Spiritualité & Renouveau Intérieur)" }
+  };
+
+  const translatedTpName = PLANET_TRANSLATIONS[lang]?.[tp] || tp;
+
   if (lonVal !== undefined) {
     const signsList = ["Áries", "Touro", "Gêmeos", "Câncer", "Leão", "Virgem", "Libra", "Escorpião", "Sagitário", "Capricórnio", "Aquário", "Peixes"];
     const signIdx = Math.floor(lonVal / 30) % 12;
     const sName = signsList[signIdx];
     const translatedSName = TRANSLATED_SIGNS[lang]?.[sName] || sName;
     const translatedTpName = PLANET_TRANSLATIONS[lang]?.[tp] || tp;
-    
+
+    // Estimate astrological house based on Ascendant if available
+    let ascDegree = 0;
+    if (mapData && mapData.astros) {
+      const ascObj = mapData.astros.find((a: any) => a.name === "Ascendente");
+      if (ascObj) {
+        const ascSIdx = getSignIndex(ascObj.sign);
+        if (ascSIdx !== -1) {
+          const d = parseInt(String(ascObj.degree).replace(/[^\d]/g, ''), 10) || 0;
+          ascDegree = (ascSIdx * 30) + d;
+        }
+      }
+    }
+    houseNum = Math.floor(((lonVal - ascDegree + 360) % 360) / 30) + 1;
+
+    houseDetails = houseNames[houseNum]?.[lang] || houseNames[houseNum]?.pt || "";
+
     if (lang === "pt") {
-      transit = `${translatedTpName} transitando em ${translatedSName}.`;
+      transit = `${translatedTpName} transitando em ${translatedSName} na sua ${houseDetails}.`;
     } else if (lang === "en") {
-      transit = `${translatedTpName} transiting in ${translatedSName}.`;
+      transit = `${translatedTpName} transiting in ${translatedSName} in your ${houseDetails}.`;
     } else if (lang === "es") {
-      transit = `${translatedTpName} transitando en ${translatedSName}.`;
+      transit = `${translatedTpName} transitando en ${translatedSName} en tu ${houseDetails}.`;
     } else if (lang === "de") {
-      transit = `${translatedTpName} transitiert in ${translatedSName}.`;
+      transit = `${translatedTpName} transitiert in ${translatedSName} in Ihrem ${houseDetails}.`;
     } else {
-      transit = `${translatedTpName} transitant en ${translatedSName}.`;
+      transit = `${translatedTpName} transitant en ${translatedSName} dans votre ${houseDetails}.`;
     }
   } else {
-    transit = TRANSLATED_TRANSITS[lang][selectedDayIndex % TRANSLATED_TRANSITS[lang].length];
+    houseNum = (dayNumber % 12) + 1;
+    transit = TRANSLATED_TRANSITS[lang][(dayNumber - 1) % TRANSLATED_TRANSITS[lang].length];
+    houseDetails = houseNames[houseNum]?.[lang] || houseNames[houseNum]?.pt || "";
   }
-  
-  // Predominant energy
-  const planetTemplates = PLANET_ENERGY_TEMPLATES[lang]?.[tp] || PLANET_ENERGY_TEMPLATES["pt"]["Sol"];
-  const predominantEnergy = planetTemplates.energy;
-  const opportunities = planetTemplates.opp;
-  const challenges = planetTemplates.chal;
-  
-  // Energy level (Trine/Sextile: high, Square/Opp: medium/low, Conj: variable)
-  let energyLevel = 75;
-  if (aspectType === "Trígono" || aspectType === "Sextil") {
-    energyLevel = 88 + (selectedDayIndex % 11);
-  } else if (aspectType === "Quadratura") {
-    energyLevel = 58 + (selectedDayIndex % 13);
-  } else if (aspectType === "Oposição") {
-    energyLevel = 65 + (selectedDayIndex % 12);
-  } else {
-    energyLevel = 78 + (selectedDayIndex % 15);
-  }
-  
-  // Favored and attention areas based on transit planet
-  const planetAreas: Record<string, string[][]> = {
-    "Sol": [["Carreira", "Liderança", "Projetos Pessoais"], ["Descanso", "Impulsividade", "Ego"]],
-    "Lua": [["Autocuidado", "Meditação", "Intuição"], ["Trabalho sob pressão", "Finanças", "Ansiedade"]],
-    "Mercúrio": [["Estudos", "Leituras", "Negociações"], ["Foco prolongado", "Rotina rígida", "Ansiedade mental"]],
-    "Vênus": [["Amor", "Socialização", "Finanças"], ["Cobranças afetivas", "Gastos por impulso", "Vaidade"]],
-    "Marte": [["Exercícios", "Iniciativas", "Vigor Físico"], ["Diálogos tensos", "Paciência", "Rotina lenta"]],
-    "Júpiter": [["Expansão", "Estudos Avançados", "Viagens"], ["Detalhes pequenos", "Excessos", "Gastos"]],
-    "Saturno": [["Planejamento", "Organização", "Finanças"], ["Auto-cobrança", "Desânimo", "Improvissos"]],
-    "Urano": [["Criatividade", "Inovação", "Ideias"], ["Atividades monótonas", "Paciência", "Ansiedade"]],
-    "Netuno": [["Inspiração", "Sonhos", "Espiritualidade"], ["Clareza objetiva", "Burocracia", "Contratos"]],
-    "Plutão": [["Renovação", "Desapego", "Cura"], ["Disputas de poder", "Teimosia", "Ansiedade acumulada"]]
-  };
 
-  const TRANSLATED_AREAS_LOCAL: Record<string, Record<string, string>> = {
+  // Compute Moon phase, numerology, sound frequency
+  const moonPhase = computeMoonPhaseForDate(targetDate, lang);
+  const numerology = calculatePersonalNumerologyForDate(userBirthDate, targetDate, lang);
+  const frequency = getSoundFrequencyForDate(tp, aspectType, targetDate, lang);
+  const personalDayNum = numerology.personalDayNumber;
+
+  // DYNAMIC PREDOMINANT ENERGY
+
+  const energyTitles: Record<string, Record<number, string>> = {
     pt: {
-      "Carreira": "Carreira", "Liderança": "Liderança", "Projetos Pessoais": "Projetos Pessoais", "Descanso": "Descanso", "Impulsividade": "Impulsividade", "Ego": "Ego",
-      "Autocuidado": "Autocuidado", "Meditação": "Meditação", "Intuição": "Intuição", "Trabalho sob pressão": "Trabalho sob pressão", "Finanças": "Finanças", "Ansiedade": "Ansiedade",
-      "Estudos": "Estudos", "Leituras": "Leituras", "Negociações": "Negociações", "Foco prolongado": "Foco prolongado", "Rotina rígida": "Rotina rígida", "Ansiedade mental": "Ansiedade mental",
-      "Amor": "Amor", "Socialização": "Socialização", "Cobranças afetivas": "Cobranças afetivas", "Gastos por impulso": "Gastos por impulso", "Vaidade": "Vaidade",
-      "Exercícios": "Exercícios", "Iniciativas": "Iniciativas", "Vigor Físico": "Vigor Físico", "Diálogos tensos": "Diálogos tensos", "Paciência": "Paciência", "Rotina lenta": "Rotina lenta",
-      "Expansão": "Expansão", "Estudos Avançados": "Estudos Avançados", "Viagens": "Viagens", "Detalhes pequenos": "Detalhes pequenos", "Excessos": "Excessos", "Gastos": "Gastos",
-      "Planejamento": "Planejamento", "Organização": "Organização", "Auto-cobrança": "Auto-cobrança", "Desânimo": "Desânimo", "Improvissos": "Improvissos",
-      "Criatividade": "Criatividade", "Inovação": "Inovação", "Ideias": "Ideias", "Atividades monótonas": "Atividades monótonas",
-      "Inspiração": "Inspiração", "Sonhos": "Sonhos", "Espiritualidade": "Espiritualidade", "Clareza objetiva": "Clareza objetiva", "Burocracia": "Burocracia", "Contratos": "Contratos",
-      "Renovação": "Renovação", "Desapego": "Desapego", "Cura": "Cura", "Disputas de poder": "Disputas de poder", "Teimosia": "Teimosia", "Ansiedade acumulada": "Ansiedade acumulada"
+      1: "Vitalidade & Alinhamento de Identidade",
+      2: "Estabilidade Financeira & Gestão de Recursos",
+      3: "Fluidez na Comunicação & Ideias Ágeis",
+      4: "Ancoragem Doméstica & Harmonia Familiar",
+      5: "Criatividade Efervescente & Paixão Expressiva",
+      6: "Vigor Físico & Eficiência na Rotina",
+      7: "Sinergia em Parcerias & Acordos Elevados",
+      8: "Poder de Transformação & Intuição Financeira",
+      9: "Expansão de Horizontes & Visão Estratégica",
+      10: "Ambição Executiva & Foco Profissional",
+      11: "Conexões Estratégicas & Networking Ativo",
+      12: "Renovação Espiritual & Silêncio Revelador"
     },
     en: {
-      "Carreira": "Career", "Liderança": "Leadership", "Projetos Pessoais": "Personal Projects", "Descanso": "Rest", "Impulsividade": "Impulsivity", "Ego": "Ego",
-      "Autocuidado": "Self-care", "Meditação": "Meditation", "Intuição": "Intuition", "Trabalho sob pressão": "Work under pressure", "Finanças": "Finances", "Ansiedade": "Anxiety",
-      "Estudos": "Studies", "Leituras": "Readings", "Negociações": "Negotiations", "Foco prolongado": "Prolonged focus", "Rotina rígida": "Rigid routine", "Ansiedade mental": "Mental anxiety",
-      "Amor": "Love", "Socialização": "Socializing", "Cobranças afetivas": "Affective demands", "Gastos por impulso": "Impulse spending", "Vaidade": "Vanity",
-      "Exercícios": "Exercises", "Iniciativas": "Initiatives", "Vigor Físico": "Physical Vigor", "Diálogos tensos": "Tense dialogues", "Paciência": "Patience", "Rotina lenta": "Slow routine",
-      "Expansão": "Expansion", "Estudos Avançados": "Advanced Studies", "Viagens": "Travel", "Detalhes pequenos": "Small details", "Excessos": "Excesses", "Gastos": "Spending",
-      "Planejamento": "Planning", "Organização": "Organization", "Auto-cobrança": "Self-demands", "Desânimo": "Discouragement", "Improvissos": "Unforeseen events",
-      "Criatividade": "Creativity", "Inovação": "Innovation", "Ideias": "Ideas", "Atividades monótonas": "Monotonous activities",
-      "Inspiração": "Inspiration", "Sonhos": "Dreams", "Espiritualidade": "Spirituality", "Clareza objetiva": "Objective clarity", "Burocracia": "Bureaucracy", "Contratos": "Contracts",
-      "Renovação": "Renovation", "Desapego": "Letting go", "Cura": "Healing", "Disputas de poder": "Power disputes", "Teimosia": "Stubbornness", "Ansiedade acumulada": "Accumulated anxiety"
+      1: "Vitality & Identity Alignment",
+      2: "Financial Stability & Resource Management",
+      3: "Communication Flow & Agile Ideas",
+      4: "Domestic Grounding & Family Harmony",
+      5: "Effervescent Creativity & Expressive Passion",
+      6: "Physical Vigor & Routine Efficiency",
+      7: "Partnership Synergy & Elevated Agreements",
+      8: "Transformative Power & Financial Intuition",
+      9: "Horizon Expansion & Strategic Vision",
+      10: "Executive Ambition & Professional Focus",
+      11: "Strategic Connections & Active Networking",
+      12: "Spiritual Renewal & Revealing Silence"
     },
     es: {
-      "Carreira": "Carrera", "Liderança": "Liderazgo", "Projetos Pessoais": "Proyectos Personales", "Descanso": "Descanso", "Impulsividade": "Impulsividad", "Ego": "Ego",
-      "Autocuidado": "Autocuidado", "Meditação": "Meditación", "Intuição": "Intuición", "Trabalho sob pressão": "Trabajo bajo presión", "Finanças": "Finanzas", "Ansiedade": "Ansiedad",
-      "Estudos": "Estudios", "Leituras": "Lecturas", "Negociações": "Negociaciones", "Foco prolongado": "Enfoque prolongado", "Rotina rígida": "Rutina rígida", "Ansiedade mental": "Ansiedad mental",
-      "Amor": "Amor", "Socialização": "Socialización", "Cobranças afetivas": "Demandas afectivas", "Gastos por impulso": "Gastos impulsivos", "Vaidade": "Vanidad",
-      "Exercícios": "Ejercicios", "Iniciativas": "Iniciativas", "Vigor Físico": "Vigor Físico", "Diálogos tensos": "Diálogos tensos", "Paciência": "Paciencia", "Rotina lenta": "Rutina lenta",
-      "Expansão": "Expansión", "Estudos Avançados": "Estudios Avanzados", "Viagens": "Viajes", "Detalhes pequenos": "Detalles pequeños", "Excessos": "Excesos", "Gastos": "Gastos",
-      "Planejamento": "Planificación", "Organização": "Organización", "Auto-cobrança": "Autoexigencia", "Desânimo": "Desánimo", "Improvissos": "Imprevistos",
-      "Criatividade": "Creatividad", "Inovação": "Innovación", "Ideias": "Ideas", "Atividades monótonas": "Actividades monótonas",
-      "Inspiração": "Inspiración", "Sonhos": "Sueños", "Espiritualidade": "Espiritualidad", "Clareza objetiva": "Claridad objetiva", "Burocracia": "Burocracia", "Contratos": "Contratos",
-      "Renovação": "Renovación", "Desapego": "Desapego", "Cura": "Sanación", "Disputas de poder": "Disputas de poder", "Teimosia": "Obstinación", "Ansiedade acumulada": "Ansiedad acumulada"
+      1: "Vitalidad y Alineación de Identidad",
+      2: "Estabilidad Financiera y Gestión de Recursos",
+      3: "Fluidez en la Comunicación e Ideas Ágiles",
+      4: "Anclaje Doméstico y Armonía Familiar",
+      5: "Creatividad Efervescente y Pasión Expresiva",
+      6: "Vigor Físico y Eficiencia en la Rutina",
+      7: "Sinergia en Alianzas y Acuerdos Elevados",
+      8: "Poder de Transformación e Intuición Financiera",
+      9: "Expansión de Horizontes y Visión Estratégica",
+      10: "Ambición Ejecutiva y Enfoque Profesional",
+      11: "Conexiones Estratégicas y Networking Activo",
+      12: "Renovación Espiritual y Silencio Revelador"
     },
     de: {
-      "Carreira": "Karriere", "Liderança": "Führung", "Projetos Pessoais": "Persönliche Projekte", "Descanso": "Ruhe", "Impulsividade": "Impulsivität", "Ego": "Ego",
-      "Autocuidado": "Selbstfürsorge", "Meditação": "Meditation", "Intuição": "Intuition", "Trabalho sob pressão": "Arbeit unter Druck", "Finanças": "Finanzen", "Ansiedade": "Angst",
-      "Estudos": "Studium", "Leituras": "Lesen", "Negociações": "Verhandlungen", "Foco prolongado": "Anhaltender Fokus", "Rotina rígida": "Starre Routine", "Ansiedade mental": "Mentale Angst",
-      "Amor": "Liebe", "Socialização": "Sozialisation", "Cobranças afetivas": "Affektive Anforderungen", "Gastos por impulso": "Impulskäufe", "Vaidade": "Eitelkeit",
-      "Exercícios": "Übungen", "Iniciativas": "Initiativen", "Vigor Físico": "Körperliche Kraft", "Diálogos tensos": "Angespannte Dialoge", "Paciência": "Geduld", "Rotina lenta": "Langsame Routine",
-      "Expansão": "Expansion", "Estudos Avançados": "Fortgeschrittene Studien", "Viagens": "Reisen", "Detalhes pequenos": "Kleine Details", "Excessos": "Exzesse", "Gastos": "Ausgaben",
-      "Planejamento": "Planung", "Organização": "Organisation", "Auto-cobrança": "Selbstanforderung", "Desânimo": "Entmutigung", "Improvissos": "Unvorhergesehenes",
-      "Criatividade": "Kreativität", "Inovação": "Innovation", "Ideias": "Ideen", "Atividades monótonas": "Monotone Aktivitäten",
-      "Inspiração": "Inspiration", "Sonhos": "Träume", "Espiritualidade": "Spiritualität", "Clareza objetiva": "Objektive Klarheit", "Burocracia": "Bürokratie", "Contratos": "Verträge",
-      "Renovação": "Erneuerung", "Desapego": "Loslassen", "Cura": "Heilung", "Disputas de poder": "Machtkämpfe", "Teimosia": "Sturheit", "Ansiedade acumulada": "Angestaute Angst"
+      1: "Vitalität & Identitätsausrichtung",
+      2: "Finanzielle Stabilität & Ressourcenmanagement",
+      3: "Kommunikationsfluss & Agile Ideen",
+      4: "Häusliche Erdung & Familiäre Harmonie",
+      5: "Kreativität & Ausdrucksstarke Leidenschaft",
+      6: "Körperliche Kraft & Routineeffizienz",
+      7: "Partnerschaftssynergie & Erhabene Vereinbarungen",
+      8: "Transformationskraft & Finanzielle Intuition",
+      9: "Horizonterweiterung & Strategische Vision",
+      10: "Exekutiver Ehrgeiz & Professioneller Fokus",
+      11: "Strategische Verbindungen & Aktives Networking",
+      12: "Geistige Erneuerung & Enthüllende Stille"
     },
     fr: {
-      "Carreira": "Carrière", "Liderança": "Leadership", "Projetos Pessoais": "Projets Personnels", "Descanso": "Repos", "Impulsividade": "Impulsivité", "Ego": "Ego",
-      "Autocuidado": "Soin de soi", "Meditação": "Méditation", "Intuição": "Intuition", "Trabalho sob pressão": "Travail sous pression", "Finanças": "Finances", "Ansiedade": "Anxiété",
-      "Estudos": "Études", "Leituras": "Lectures", "Negociações": "Négociations", "Foco prolongado": "Concentration prolongée", "Rotina rígida": "Routine rigide", "Ansiedade mental": "Anxiété mentale",
-      "Amor": "Amour", "Socialização": "Socialisation", "Cobranças afetivas": "Exigences affectives", "Gastos por impulso": "Dépenses impulsives", "Vaidade": "Vanité",
-      "Exercícios": "Exercices", "Iniciativas": "Initiatives", "Vigor Físico": "Vigueur Physique", "Diálogos tensos": "Dialogues tendus", "Paciência": "Patience", "Routine lente": "Routine lente",
-      "Expansão": "Expansion", "Estudos Avançados": "Études Avancées", "Viagens": "Voyages", "Detalhes pequenos": "Petits détails", "Excessos": "Excès", "Gastos": "Dépenses",
-      "Planejamento": "Planification", "Organização": "Organisation", "Auto-cobrança": "Exigence de soi", "Desânimo": "Découragement", "Improvissos": "Imprévus",
-      "Criatividade": "Créativité", "Inovação": "Innovation", "Ideias": "Idées", "Atividades monótonas": "Activités monotones",
-      "Inspiração": "Inspiration", "Sonhos": "Rêves", "Espiritualidade": "Spiritualité", "Clareza objetiva": "Clarté objective", "Burocracia": "Bureaucracy", "Contratos": "Contrats",
-      "Renovação": "Renouveau", "Desapego": "Lâcher-prise", "Cura": "Guérison", "Disputas de poder": "Disputes de pouvoir", "Teimosia": "Entêtement", "Ansiedade acumulada": "Anxiété accumulée"
+      1: "Vitalité & Alignement de l'Identité",
+      2: "Stabilité Financière & Gestion des Ressources",
+      3: "Fluidité de Communication & Idées Agiles",
+      4: "Ancrage Domestique & Harmonie Familiale",
+      5: "Créativité Effervescente & Passion Expressive",
+      6: "Vigueur Physique & Efficacité de Routine",
+      7: "Synergie de Partenariat & Accords Élevés",
+      8: "Pouvoir de Transformation & Intuition Financière",
+      9: "Expansion des Horizons & Vision Stratégique",
+      10: "Ambition Exécutive & Focus Professionnel",
+      11: "Connexions Stratégiques & Réseautage Actif",
+      12: "Renouveau Spirituel & Silence Révélateur"
     }
   };
 
-  const currentAreas = planetAreas[tp] || [["Criatividade", "Inovação", "Ideias"], ["Clareza objetiva", "Burocracia", "Contratos"]];
-  const favoredAreas = currentAreas[0].map(a => TRANSLATED_AREAS_LOCAL[lang]?.[a] || a);
-  const attentionAreas = currentAreas[1].map(a => TRANSLATED_AREAS_LOCAL[lang]?.[a] || a);
-  
-  // Personalized Advice
-  const selectedAdvice = planetTemplates.adv;
-  const personalizedAdvice = userName 
-    ? `${userName.split(' ')[0]}, ${selectedAdvice}`
-    : `${selectedAdvice.charAt(0).toUpperCase()}${selectedAdvice.slice(1)}`;
-  
-  // Favorable Color & Number
-  const pColNum = PLANET_COLORS_NUMBERS[tp] || { color: ["Verde Esmeralda", "Emerald Green", "Verde Esmeralda", "Smaragdgrün", "Vert Émeraude"], number: 5 };
-  const favorableColorIdx = { pt: 0, en: 1, es: 2, de: 3, fr: 4 }[lang] || 0;
-  const favorableColor = pColNum.color[favorableColorIdx] || pColNum.color[0];
-  const favorableNumber = pColNum.number;
-  
-  // Periods
-  const hashSeed = selectedDayIndex + targetDate.getMonth() + targetDate.getDate();
-  const bestPeriod = `${String(8 + (hashSeed % 6)).padStart(2, '0')}:00 - ${String(12 + (hashSeed % 4)).padStart(2, '0')}:30`;
-  const attentionPeriod = `${String(14 + (hashSeed % 4)).padStart(2, '0')}:00 - ${String(18 + (hashSeed % 3)).padStart(2, '0')}:30`;
-  
-  const personalizedMessage = TRANSLATED_PERSONALIZED_MESSAGES(lang, userSunSign)[hashSeed % 5];
-  
-  const localeMap: Record<string, string> = {
-    pt: 'pt-BR',
-    en: 'en-US',
-    es: 'es-ES',
-    de: 'de-DE',
-    fr: 'fr-FR'
+  const translatedNpName = PLANET_TRANSLATIONS[lang]?.[np] || np;
+  const translatedAspectName = ASPECT_TRANSLATIONS[lang]?.[aspectType] || aspectType;
+  const translatedSunSign = TRANSLATED_SIGNS[lang]?.[userSunSign] || userSunSign;
+
+  const baseTitle = energyTitles[lang]?.[houseNum] || energyTitles["pt"][houseNum];
+  const predominantEnergy = `${baseTitle} (${translatedTpName} em ${translatedAspectName} — Dia ${personalDayNum})`;
+
+  // DYNAMIC ENERGY LEVEL CALCULATION
+  let baseEnergy = 72;
+  if (aspectType === "Trígono") baseEnergy += 18;
+  else if (aspectType === "Sextil") baseEnergy += 14;
+  else if (aspectType === "Conjunção") baseEnergy += 10;
+  else if (aspectType === "Quadratura") baseEnergy -= 12;
+  else if (aspectType === "Oposição") baseEnergy -= 8;
+
+  const daySeed = (dayNumber * 7 + targetDate.getMonth() * 13 + houseNum * 3) % 15;
+  const energyLevel = Math.min(98, Math.max(48, baseEnergy + daySeed - 7));
+
+  // 1. Dynamic Astro Influence
+  const generateDynamicAstroInfluenceText = (): string => {
+    const daySeed = (dayNumber * 13 + targetDate.getMonth() * 17) % 5;
+    if (lang === "en") {
+      const variants = [
+        `Transiting ${translatedTpName} forms a powerful ${translatedAspectName} with your Natal ${translatedNpName}, activating your ${houseDetails}. This alignment highlights your ${translatedSunSign} essence, prompting sharp decision-making and creative clarity.`,
+        `Your celestial landscape is shaped today by ${translatedTpName} in ${translatedAspectName} to your Natal ${translatedNpName}. Operating directly in your ${houseDetails}, it channels renewed focus and heightened strategic perception.`,
+        `With ${translatedTpName} making a ${translatedAspectName} aspect to your Natal ${translatedNpName}, your energy in the ${houseDetails} undergoes an active integration with your core ${translatedSunSign} strengths.`,
+        `An auspicious planetary frequency arises as transiting ${translatedTpName} aligns via ${translatedAspectName} with your Natal ${translatedNpName}. This directly energizes the themes of your ${houseDetails}.`,
+        `The cosmic pulse of the day connects ${translatedTpName} and your Natal ${translatedNpName} through a ${translatedAspectName}. This resonance brings tangible momentum to your ${houseDetails}.`
+      ];
+      return variants[daySeed];
+    } else if (lang === "es") {
+      const variants = [
+        `${translatedTpName} en tránsito forma un poderoso aspecto de ${translatedAspectName} con tu ${translatedNpName} Natal, activando tu ${houseDetails}. Esta alineación potencia tu esencia de ${translatedSunSign}, impulsando la toma de decisiones con claridad.`,
+        `Tu panorama celeste se moldea hoy por ${translatedTpName} en ${translatedAspectName} con tu ${translatedNpName} Natal. Operando directamente en tu ${houseDetails}, canaliza un enfoque renovado y una percepción estratégica elevada.`,
+        `Con ${translatedTpName} haciendo un aspecto de ${translatedAspectName} con tu ${translatedNpName} Natal, tu energía en la ${houseDetails} se integra activamente con las fortalezas de tu Sol en ${translatedSunSign}.`,
+        `Surge una frecuencia planetaria inspiradora mientras ${translatedTpName} en tránsito se alinea vía ${translatedAspectName} con tu ${translatedNpName} Natal, energizando directamente los temas de tu ${houseDetails}.`,
+        `El pulso cósmico del día conecta ${translatedTpName} y tu ${translatedNpName} Natal mediante una ${translatedAspectName}. Esta resonancia aporta un impulso tangible a tu ${houseDetails}.`
+      ];
+      return variants[daySeed];
+    } else if (lang === "de") {
+      const variants = [
+        `Transitierender ${translatedTpName} bildet einen kraftvollen Aspekt (${translatedAspectName}) mit Ihrem Geburts-${translatedNpName} und aktiviert Ihr ${houseDetails}. Diese Ausrichtung stärkt Ihre Essenz in ${translatedSunSign}.`,
+        `Ihre himmlische Landschaft wird heute durch ${translatedTpName} im Aspekt ${translatedAspectName} zu Ihrem Geburts-${translatedNpName} geprägt. Dies bringt erneuerten Fokus in Ihr ${houseDetails}.`,
+        `Mit ${translatedTpName} im Aspekt ${translatedAspectName} zu Ihrem Geburts-${translatedNpName} verbindet sich Ihre Energie im ${houseDetails} mit den Stärken Ihres Sonnenzeichens ${translatedSunSign}.`,
+        `Eine inspirierende planetare Frequenz entsteht, wenn ${translatedTpName} über ${translatedAspectName} mit Ihrem Geburts-${translatedNpName} harmoniert und Ihr ${houseDetails} belebt.`,
+        `Der kosmische Puls des Tages verbindet ${translatedTpName} und Ihren Geburts-${translatedNpName} durch ${translatedAspectName} und bringt spürbare Dynamik in Ihr ${houseDetails}.`
+      ];
+      return variants[daySeed];
+    } else if (lang === "fr") {
+      const variants = [
+        `${translatedTpName} en transit forme un puissant aspect de ${translatedAspectName} avec votre ${translatedNpName} Natal, activant votre ${houseDetails}. Cet alignement valorise votre essence en ${translatedSunSign}.`,
+        `Votre paysage céleste est façonnée aujourd'hui par ${translatedTpName} en ${translatedAspectName} avec votre ${translatedNpName} Natal, insufflant une clarté stratégique dans votre ${houseDetails}.`,
+        `Avec ${translatedTpName} formant un aspect de ${translatedAspectName} avec votre ${translatedNpName} Natal, votre énergie dans la ${houseDetails} s'intègre activement avec votre Soleil en ${translatedSunSign}.`,
+        `Une fréquence planétaire s'élève alors que ${translatedTpName} s'aligne via ${translatedAspectName} avec votre ${translatedNpName} Natal, dynamisant votre ${houseDetails}.`,
+        `Le pouls cosmique du jour résonne entre ${translatedTpName} et votre ${translatedNpName} Natal à travers un ${translatedAspectName}, apportant un élan concret à votre ${houseDetails}.`
+      ];
+      return variants[daySeed];
+    } else {
+      const variants = [
+        `${translatedTpName} transitando forma um poderoso aspecto de ${translatedAspectName} com o seu ${translatedNpName} Natal, ativando a sua ${houseDetails}. Este alinhamento projeta sua essência de ${translatedSunSign}, estimulando decisões lúcidas e clareza criativa.`,
+        `O seu panorama celeste do dia é moldado por ${translatedTpName} em ${translatedAspectName} ao seu ${translatedNpName} Natal. Atuando diretamente na sua ${houseDetails}, canaliza foco renovado e percepção estratégica elevada.`,
+        `Com ${translatedTpName} fazendo aspecto de ${translatedAspectName} com o seu ${translatedNpName} Natal, sua energia na ${houseDetails} entra em integração ativa com a força do seu Sol em ${translatedSunSign}.`,
+        `Uma frequência planetária inspiradora emerge com o trânsito de ${translatedTpName} alinhado via ${translatedAspectName} ao seu ${translatedNpName} Natal, energizando diretamente os temas da sua ${houseDetails}.`,
+        `O pulso cósmico deste dia conecta ${translatedTpName} e o seu ${translatedNpName} Natal através de uma ${translatedAspectName}. Essa ressonância traz um impulso tangível para a sua ${houseDetails}.`
+      ];
+      return variants[daySeed];
+    }
   };
+
+  const astroInfluence = generateDynamicAstroInfluenceText();
+
+  // DYNAMIC FAVORED & ATTENTION AREAS PER HOUSE & PLANET
+  const houseFavoredAttention: Record<number, { fav: Record<string, string[]>; att: Record<string, string[]> }> = {
+    1: {
+      fav: { pt: ["Autocuidado", "Liderança", "Projetos Pessoais"], en: ["Self-care", "Leadership", "Personal Projects"], es: ["Autocuidado", "Liderazgo", "Proyectos Personales"], de: ["Selbstfürsorge", "Führung", "Persönliche Projekte"], fr: ["Auto-soin", "Leadership", "Projets Personnels"] },
+      att: { pt: ["Impulsividade", "Ego", "Ansiedade"], en: ["Impulsiveness", "Ego", "Anxiety"], es: ["Impulsividad", "Ego", "Ansiedad"], de: ["Impulsivität", "Ego", "Angst"], fr: ["Impulsivité", "Égo", "Anxiété"] }
+    },
+    2: {
+      fav: { pt: ["Finanças", "Investimentos", "Organização Material"], en: ["Finances", "Investments", "Material Organization"], es: ["Finanzas", "Inversiones", "Organización Material"], de: ["Finanzen", "Investitionen", "Materialorganisation"], fr: ["Finances", "Investissements", "Organisation Matérielle"] },
+      att: { pt: ["Gastos por Impulso", "Vaidade", "Compras Supérfluas"], en: ["Impulse Spending", "Vanity", "Superfluous Purchases"], es: ["Gastos por Impulso", "Vanidad", "Compras Superfluas"], de: ["Spontankäufe", "Eitelkeit", "Überflüssige Käufe"], fr: ["Dépenses Impulsives", "Vanité", "Achats Superflus"] }
+    },
+    3: {
+      fav: { pt: ["Estudos", "Comunicação", "Negociações"], en: ["Studies", "Communication", "Negotiations"], es: ["Estudios", "Comunicación", "Negociaciones"], de: ["Studien", "Kommunikation", "Verhandlungen"], fr: ["Études", "Communication", "Négociations"] },
+      att: { pt: ["Ansiedade Mental", "Diálogos Tensos", "Falta de Foco"], en: ["Mental Anxiety", "Tense Dialogues", "Lack of Focus"], es: ["Ansiedad Mental", "Diálogos Tensos", "Falta de Enfoque"], de: ["Mentale Unruhe", "Angespannte Dialoge", "Mangelnder Fokus"], fr: ["Anxiété Mentale", "Dialogues Tendus", "Manque de Focus"] }
+    },
+    4: {
+      fav: { pt: ["Lar", "Harmonia Familiar", "Estabilidade Emocional"], en: ["Home", "Family Harmony", "Emotional Stability"], es: ["Hogar", "Armonía Familiar", "Estabilidad Emocional"], de: ["Heim", "Familiäre Harmonie", "Emotionale Stabilität"], fr: ["Foyer", "Harmonie Familiale", "Stabilité Émotionnelle"] },
+      att: { pt: ["Fricção Doméstica", "Cansaço", "Apego ao Passado"], en: ["Domestic Friction", "Tiredness", "Past Attachment"], es: ["Fricción Doméstica", "Cansancio", "Apego al Pasado"], de: ["Reibung im Haushalt", "Müdigkeit", "Anhaftung an die Vergangenheit"], fr: ["Friction Domestique", "Fatigue", "Attachement au Passé"] }
+    },
+    5: {
+      fav: { pt: ["Criatividade", "Romances", "Expressão Artística"], en: ["Creativity", "Romance", "Artistic Expression"], es: ["Creatividad", "Romances", "Expresión Artística"], de: ["Kreativität", "Romantik", "Künstlerischer Ausdruck"], fr: ["Créativité", "Romance", "Expression Artistique"] },
+      att: { pt: ["Riscos Financeiros", "Impaciência", "Excesso de Orgulho"], en: ["Financial Risks", "Impatience", "Excess Pride"], es: ["Riesgos Financieros", "Impaciencia", "Exceso de Orgullo"], de: ["Finanzielle Risiken", "Ungeduld", "Übertriebener Stolz"], fr: ["Risques Financiers", "Impatience", "Excès d'Orgueil"] }
+    },
+    6: {
+      fav: { pt: ["Saúde", "Rotina Prática", "Organização do Trabalho"], en: ["Health", "Practical Routine", "Work Organization"], es: ["Salud", "Rutina Práctica", "Organización del Trabajo"], de: ["Gesundheit", "Praktische Routine", "Arbeitsorganisation"], fr: ["Santé", "Routine Pratique", "Organisation du Travail"] },
+      att: { pt: ["Sobrecarga", "Estresse Físico", "Auto-cobrança"], en: ["Overload", "Physical Stress", "Self-pressure"], es: ["Sobrecarga", "Estrés Físico", "Autoexigencia"], de: ["Überlastung", "Körperlicher Stress", "Selbstdruck"], fr: ["Surcharge", "Stress Physique", "Pression Personnelle"] }
+    },
+    7: {
+      fav: { pt: ["Parcerias", "Contratos", "Relacionamentos"], en: ["Partnerships", "Contracts", "Relationships"], es: ["Alianzas", "Contratos", "Relaciones"], de: ["Partnerschaften", "Verträge", "Beziehungen"], fr: ["Partenariats", "Contrats", "Relations"] },
+      att: { pt: ["Cobranças Afetivas", "Disputas de Controle", "Insegurança"], en: ["Emotional Demands", "Control Disputes", "Insecurity"], es: ["Exigencias Afectivas", "Disputas de Control", "Inseguridad"], de: ["Emotionale Ansprüche", "Machtkämpfe", "Unsicherheit"], fr: ["Exigences Affectives", "Luttes de Contrôle", "Insécurité"] }
+    },
+    8: {
+      fav: { pt: ["Planejamento", "Intuição", "Transformação Pessoal"], en: ["Planning", "Intuition", "Personal Transformation"], es: ["Planificación", "Intuición", "Transformación Personal"], de: ["Planung", "Intuition", "Persönliche Transformation"], fr: ["Planification", "Intuition", "Transformation Personnelle"] },
+      att: { pt: ["Disputas de Poder", "Ansiedade Acumulada", "Teimosia"], en: ["Power Struggles", "Accumulated Anxiety", "Stubbornness"], es: ["Disputas de Poder", "Ansiedad Acumulada", "Terquedad"], de: ["Machtkämpfe", "Angestauter Stress", "Sturheit"], fr: ["Luttes de Pouvoir", "Anxiété Accumulée", "Entêtement"] }
+    },
+    9: {
+      fav: { pt: ["Estudos Avançados", "Viagens", "Visão Estratégica"], en: ["Advanced Studies", "Travel", "Strategic Vision"], es: ["Estudios Avanzados", "Viajes", "Visión Estratégica"], de: ["Fortgeschrittene Studien", "Reisen", "Strategische Vision"], fr: ["Études Avancées", "Voyages", "Vision Stratégique"] },
+      att: { pt: ["Falta de Foco", "Excessos", "Desatenção aos Detalhes"], en: ["Lack of Focus", "Excesses", "Inattention to Details"], es: ["Falta de Enfoque", "Excesos", "Falta de Atención a Detalles"], de: ["Mangelnder Fokus", "Exzesse", "Unachtsamkeit bei Details"], fr: ["Manque de Focus", "Excès", "Inattention aux Détails"] }
+    },
+    10: {
+      fav: { pt: ["Carreira", "Ambição Executiva", "Reconhecimento"], en: ["Career", "Executive Ambition", "Recognition"], es: ["Carrera", "Ambición Ejecutiva", "Reconocimiento"], de: ["Karriere", "Exekutiver Ehrgeiz", "Anerkennung"], fr: ["Carrière", "Ambition Ejecutiva", "Reconnaissance"] },
+      att: { pt: ["Pressão Profissional", "Excesso de Carga", "Impaciência Social"], en: ["Professional Pressure", "Work Overload", "Social Impatience"], es: ["Presión Profesional", "Exceso de Carga", "Impaciencia Social"], de: ["Beruflicher Druck", "Arbeitsüberlastung", "Soziale Ungeduld"], fr: ["Pression Professionnelle", "Surcharge de Travail", "Impatience Sociale"] }
+    },
+    11: {
+      fav: { pt: ["Networking", "Amigos", "Projetos Coletivos"], en: ["Networking", "Friends", "Collective Projects"], es: ["Networking", "Amigos", "Proyectos Colectivos"], de: ["Networking", "Freunde", "Kollektive Projekte"], fr: ["Réseautage", "Amis", "Projets Collectifs"] },
+      att: { pt: ["Ideias Dispersas", "Expectativas Irreais", "Impulso Social"], en: ["Dispersed Ideas", "Unrealistic Expectations", "Social Impulse"], es: ["Ideas Dispersas", "Expectativas Irreales", "Impulso Social"], de: ["Zerstreute Ideen", "Unrealistische Erwartungen", "Sozialer Impuls"], fr: ["Idées Dispersées", "Attentes Irréalistes", "Impulsion Sociale"] }
+    },
+    12: {
+      fav: { pt: ["Espiritualidade", "Meditação", "Restauração Interior"], en: ["Spirituality", "Meditation", "Inner Restoration"], es: ["Espiritualidad", "Meditación", "Restauración Interior"], de: ["Spiritualität", "Meditation", "Innere Wiederherstellung"], fr: ["Spiritualité", "Méditation", "Restauration Intérieure"] },
+      att: { pt: ["Desânimo", "Burocracia", "Confusão Mental"], en: ["Discouragement", "Bureaucracy", "Mental Confusion"], es: ["Desánimo", "Burocracia", "Confusión Mental"], de: ["Entmutigung", "Bürokratie", "Mentale Verwirrung"], fr: ["Découragement", "Bureaucratie", "Confusion Mentale"] }
+    }
+  };
+
+  const houseData = houseFavoredAttention[houseNum] || houseFavoredAttention[1];
+  const favoredAreas = houseData.fav[lang] || houseData.fav.pt;
+  const attentionAreas = houseData.att[lang] || houseData.att.pt;
+
+  // DYNAMIC OPPORTUNITIES & CHALLENGES
+  const oppTemplates: Record<string, string> = {
+    pt: `Excelente dia para direcionar seus esforços a ${favoredAreas[0].toLowerCase()} e ${favoredAreas[1].toLowerCase()}, aproveitando o fluxo de ${translatedTpName} ativando a sua ${houseDetails} e a regência do seu Sol em ${translatedSunSign}.`,
+    en: `Great day to direct your efforts toward ${favoredAreas[0].toLowerCase()} and ${favoredAreas[1].toLowerCase()}, capitalizing on ${translatedTpName}'s flow in your ${houseDetails} aligned with your ${translatedSunSign} Sun.`,
+    es: `Excelente día para orientar tus esfuerzos hacia ${favoredAreas[0].toLowerCase()} y ${favoredAreas[1].toLowerCase()}, aprovechando el flujo de ${translatedTpName} activando tu ${houseDetails} y tu Sol en ${translatedSunSign}.`,
+    de: `Hervorragender Tag, um Ihre Anstrengungen auf ${favoredAreas[0].toLowerCase()} und ${favoredAreas[1].toLowerCase()} zu richten, gestützt vom Transit von ${translatedTpName} in Ihrem ${houseDetails}.`,
+    fr: `Excellente journée pour orienter vos efforts vers ${favoredAreas[0].toLowerCase()} et ${favoredAreas[1].toLowerCase()}, en profitant du flux de ${translatedTpName} activant votre ${houseDetails}.`
+  };
+
+  const chalTemplates: Record<string, string> = {
+    pt: `Evite atritos ou decisões precipitadas sobre ${attentionAreas[0].toLowerCase()} e ${attentionAreas[1].toLowerCase()}. O aspecto de ${translatedAspectName} exige paciência e escuta estratégica.`,
+    en: `Avoid friction or hasty decisions regarding ${attentionAreas[0].toLowerCase()} and ${attentionAreas[1].toLowerCase()}. The ${translatedAspectName} aspect requires patience and strategic listening.`,
+    es: `Evita fricciones o decisiones apresuradas sobre ${attentionAreas[0].toLowerCase()} y ${attentionAreas[1].toLowerCase()}. El aspecto de ${translatedAspectName} exige paciencia y escucha estratégica.`,
+    de: `Vermeiden Sie Reibungen oder voreilige Entscheidungen bezüglich ${attentionAreas[0].toLowerCase()} und ${attentionAreas[1].toLowerCase()}. Der Aspekt ${translatedAspectName} erfordert Geduld.`,
+    fr: `Évitez les frictions ou décisions précipitées concernant ${attentionAreas[0].toLowerCase()} et ${attentionAreas[1].toLowerCase()}. L'aspect ${translatedAspectName} exige de la patience.`
+  };
+
+  const opportunities = oppTemplates[lang] || oppTemplates.pt;
+  const challenges = chalTemplates[lang] || chalTemplates.pt;
+
+  // DYNAMIC PERSONALIZED ADVICE
+  const firstName = userName ? userName.split(' ')[0] : (lang === 'de' ? 'Reisender' : lang === 'fr' ? 'Voyageur' : lang === 'es' ? 'Viajero' : lang === 'en' ? 'Traveler' : 'Viajante');
+  const adviceTemplates: Record<string, string> = {
+    pt: `${firstName}, sob a vibração do seu Dia Pessoal ${personalDayNum} e a influência de ${translatedTpName} na sua ${houseDetails}, concentre sua mente naquilo que realmente gera valor a longo prazo.`,
+    en: `${firstName}, under the vibration of Personal Day ${personalDayNum} and ${translatedTpName}'s presence in your ${houseDetails}, focus your mind on what genuinely builds long-term value.`,
+    es: `${firstName}, bajo la vibración de tu Día Personal ${personalDayNum} y la influencia de ${translatedTpName} en tu ${houseDetails}, concentra tu mente en lo que realmente genera valor a largo plazo.`,
+    de: `${firstName}, unter der Schwingung Ihres persönlichen Tages ${personalDayNum} und dem Einfluss von ${translatedTpName} in Ihrem ${houseDetails}, richten Sie Ihren Fokus auf echten Langzeitwert.`,
+    fr: `${firstName}, sous la vibration de votre Jour Personnel ${personalDayNum} et l'influence de ${translatedTpName} dans votre ${houseDetails}, concentrez votre esprit sur ce qui crée de la valeur durable.`
+  };
+  const personalizedAdvice = adviceTemplates[lang] || adviceTemplates.pt;
+
+  // DYNAMIC UNIQUE PERSONALIZED MESSAGE FOR EVERY SINGLE DAY OF THE MONTH
+  const generateDynamicPersonalizedMessage = (): string => {
+    const formattedDate = targetDate.toLocaleDateString(lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : lang === 'de' ? 'de-DE' : 'fr-FR', {
+      day: 'numeric',
+      month: 'long'
+    });
+
+    if (lang === "en") {
+      return `For ${formattedDate}, with your Sun in ${translatedSunSign}, the cosmic current of ${translatedTpName} forming a ${translatedAspectName} with your Natal ${translatedNpName} directly powers your ${houseDetails}. Combined with your Personal Day ${personalDayNum} (${numerology.title}) and the ${moonPhase.name} in ${moonPhase.sign}, today offers a unique frequency to refine your priorities and ground your ambitions without unnecessary noise.`;
+    } else if (lang === "es") {
+      return `Para el ${formattedDate}, con tu Sol en ${translatedSunSign}, la corriente cósmica de ${translatedTpName} en ${translatedAspectName} con tu ${translatedNpName} Natal impulsa directamente tu ${houseDetails}. Sumado a tu Día Personal ${personalDayNum} (${numerology.title}) y la ${moonPhase.name} en ${moonPhase.sign}, hoy se presenta una frecuencia única para refinar tus prioridades y concretar tus metas sin estréso ni dispersión.`;
+    } else if (lang === "de") {
+      return `Für den ${formattedDate}, mit Ihrer Sonne in ${translatedSunSign}, aktiviert die kosmische Strömung von ${translatedTpName} im Aspekt ${translatedAspectName} zu Ihrem Geburts-${translatedNpName} direkt Ihr ${houseDetails}. In Kombination mit Ihrem persönlichen Tag ${personalDayNum} (${numerology.title}) und dem ${moonPhase.name} im ${moonPhase.sign} bietet dieser Tag eine einzigartige Gelegenheit, Ihre Ziele klar auszurichten.`;
+    } else if (lang === "fr") {
+      return `Pour le ${formattedDate}, avec votre Soleil en ${translatedSunSign}, le courant cosmique de ${translatedTpName} formant un ${translatedAspectName} avec votre ${translatedNpName} Natal active directement votre ${houseDetails}. Associé à votre Jour Personnel ${personalDayNum} (${numerology.title}) et la ${moonPhase.name} en ${moonPhase.sign}, cette journée offre une fréquence unique pour clarifier vos priorités et concrétiser vos aspirations.`;
+    } else {
+      return `Para o dia ${formattedDate}, com o seu Sol iluminando a essência de ${translatedSunSign}, o fluxo celeste de ${translatedTpName} fazendo ${translatedAspectName} com o seu ${translatedNpName} Natal movimenta com precisão a sua ${houseDetails}. Em sintonia com o seu Dia Pessoal ${personalDayNum} (${numerology.title}) e a ${moonPhase.name} em ${moonPhase.sign}, este dia reserva uma vibração singular para alinhar suas intenções e consolidar decisões com clareza e sabedoria.`;
+    }
+  };
+
+  const personalizedMessage = generateDynamicPersonalizedMessage();
+
+  const planetColors: Record<string, Record<string, string>> = {
+    "Sol": { pt: "Dourado Solar", en: "Solar Gold", es: "Dorado Solar", de: "Sonnengold", fr: "Or Solaire" },
+    "Lua": { pt: "Prata Lunar", en: "Lunar Silver", es: "Plata Lunar", de: "Mondsilber", fr: "Argent Lunaire" },
+    "Mercúrio": { pt: "Azul Safira", en: "Sapphire Blue", es: "Azul Zafiro", de: "Saphirblau", fr: "Bleu Saphir" },
+    "Vênus": { pt: "Verde Esmeralda", en: "Emerald Green", es: "Verde Esmeralda", de: "Smaragdgrün", fr: "Vert Émeraude" },
+    "Marte": { pt: "Vermelho Rubi", en: "Ruby Red", es: "Rojo Rubí", de: "Rubinrot", fr: "Rouge Rubis" },
+    "Júpiter": { pt: "Roxo Ametista", en: "Amethyst Purple", es: "Púrpura Amatista", de: "Amethystviolett", fr: "Pourpre Améthyste" },
+    "Saturno": { pt: "Âmbar Dourado", en: "Golden Amber", es: "Ámbar Dorado", de: "Goldbernstein", fr: "Ambre Doré" },
+    "Urano": { pt: "Turquesa Elétrico", en: "Electric Turquoise", es: "Turquesa Eléctrico", de: "Elektrotürkis", fr: "Turquoise Électrique" },
+    "Netuno": { pt: "Azul Marinho Celestial", en: "Celestial Navy Blue", es: "Azul Marino Celestial", de: "Himmlisches Marineblau", fr: "Bleu Marine Céleste" },
+    "Plutão": { pt: "Rosa Quartzo Profundo", en: "Deep Quartz Pink", es: "Rosa Cuarzo Profundo", de: "Tiefquarzrosa", fr: "Rose Quartz Profond" }
+  };
+  const favorableColor = planetColors[tp]?.[lang] || planetColors[tp]?.pt || (lang === 'en' ? 'Emerald Green' : 'Verde Esmeralda');
+
+  const favorableNumber = ((dayNumber * 3 + houseNum * 5 + targetDate.getMonth() + 1) % 9) + 1;
+
+  const startHour = 8 + (daySeed % 5);
+  const endHour = startHour + 3;
+  const bestPeriod = `${String(startHour).padStart(2, '0')}:00 - ${String(endHour).padStart(2, '0')}:30`;
+
+  const alertStartHour = 14 + (daySeed % 4);
+  const alertEndHour = alertStartHour + 2;
+  const attentionPeriod = `${String(alertStartHour).padStart(2, '0')}:00 - ${String(alertEndHour).padStart(2, '0')}:30`;
+
+  const localeMap: Record<string, string> = { pt: 'pt-BR', en: 'en-US', es: 'es-ES', de: 'de-DE', fr: 'fr-FR' };
   const dateFormatted = targetDate.toLocaleDateString(localeMap[lang] || 'pt-BR', {
     day: '2-digit',
     month: 'long',
     year: 'numeric'
   });
 
+  const categoryMatches = getCategoryMatches(tp, aspectType, personalDayNum, houseNum, dayNumber);
+
   return {
+    dayNumber,
     date: targetDate,
     dateFormatted,
     tagText,
@@ -1033,6 +1579,10 @@ export function generateDailyPrediction(
     astroInfluence,
     aspects: aspectText,
     transit,
+    houseDetails,
+    moonPhase,
+    numerology,
+    frequency,
     predominantEnergy,
     energyLevel,
     favoredAreas,
@@ -1044,6 +1594,41 @@ export function generateDailyPrediction(
     favorableNumber,
     bestPeriod,
     attentionPeriod,
-    personalizedMessage
+    personalizedMessage,
+    categoryMatches
   };
 }
+
+// Master function to compute all days of any given Month
+export function getMonthlyCalendarPredictions(
+  year: number,
+  month: number, // 0-indexed (0 = Jan, 11 = Dec)
+  userBirthDate: string,
+  userSunSign: string,
+  userName: string,
+  langParam?: string,
+  mapData?: any,
+  userCoordinates?: { latitude: number; longitude: number }
+): DailyPrediction[] {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const predictions: DailyPrediction[] = [];
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const targetDate = new Date(year, month, day, 12, 0, 0);
+    const prediction = generateDailyPrediction(
+      userBirthDate,
+      userSunSign,
+      userName,
+      day - 1,
+      targetDate,
+      langParam,
+      mapData,
+      userCoordinates,
+      targetDate
+    );
+    predictions.push(prediction);
+  }
+
+  return predictions;
+}
+

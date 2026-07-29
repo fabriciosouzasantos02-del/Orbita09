@@ -5,7 +5,7 @@ import {
   DollarSign, Heart, Users, Star, Moon, Home, Eye, Sliders,
   Compass, AlertCircle, TrendingUp, Sparkle, ArrowRight, Check, CheckCircle,
   Clock, Zap, Smile, Flame, Shield, HelpCircle, MessageSquare, Send, Bell, X,
-  Search, Smartphone, Download, Share2, Copy, ChevronDown, ChevronRight
+  Search, Smartphone, Download, Share2, Copy, ChevronDown, ChevronRight, ChevronLeft
 } from 'lucide-react';
 import SocialCompatibility from './SocialCompatibility';
 import SocialNetworkView from './SocialNetworkView';
@@ -20,7 +20,7 @@ import {
   generateDynamicAmuletText,
   generateDailyAstroRecommendations
 } from '../prosperityEngine';
-import { generateDailyPrediction } from './dailyPredictionsEngine';
+import { generateDailyPrediction, getMonthlyCalendarPredictions } from './dailyPredictionsEngine';
 import { SIGNS_ZODIAC_LIST, BLOG_ARTICLES_LIST } from '../data';
 import { loadCalculationCache, saveCalculationCache, saveWeeklyMissionsToDatabase, loadWeeklyMissionsFromDatabase, saveProfileToDatabase } from '../lib/firebase';
 import { scanAndTranslateDOM } from '../lib/locales';
@@ -1445,18 +1445,57 @@ export default function UserDashboardPortal({
     activeLang
   );
 
-  // Interactive states
-  const [selectedCalendarDay, setSelectedCalendarDay] = useState<number>(9);
+  // Interactive states & Monthly Predictions
+  const todayRef = useMemo(() => new Date(), []);
+  const currentYear = todayRef.getFullYear();
+  const currentMonth = todayRef.getMonth();
+  const currentDayNum = todayRef.getDate();
 
-  const selectedDayPrediction = generateDailyPrediction(
-    user?.hasCreatedMap ? user.birthDate : "1997-02-11",
-    mapData?.astros?.find((a: any) => a.name === "Sol")?.sign || getZodiacSign(user?.birthDate),
-    user?.hasCreatedMap ? user?.name : "",
-    selectedCalendarDay - 1,
-    new Date(),
-    idioma,
-    mapData
-  );
+  const [calendarYear, setCalendarYear] = useState<number>(() => currentYear);
+  const [calendarMonth, setCalendarMonth] = useState<number>(() => currentMonth);
+  const [selectedCalendarDay, setSelectedCalendarDay] = useState<number>(() => currentDayNum || 1);
+
+  const handlePrevMonth = () => {
+    if (calendarMonth === 0) {
+      setCalendarMonth(11);
+      setCalendarYear(prev => prev - 1);
+    } else {
+      setCalendarMonth(prev => prev - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (calendarMonth === 11) {
+      setCalendarMonth(0);
+      setCalendarYear(prev => prev + 1);
+    } else {
+      setCalendarMonth(prev => prev + 1);
+    }
+  };
+
+  const displayMonthName = useMemo(() => {
+    const dateObj = new Date(calendarYear, calendarMonth, 1);
+    const localeMap: Record<string, string> = { pt: 'pt-BR', en: 'en-US', es: 'es-ES', de: 'de-DE', fr: 'fr-FR' };
+    const rawMonth = dateObj.toLocaleDateString(localeMap[activeLang] || 'pt-BR', { month: 'long' });
+    return rawMonth.charAt(0).toUpperCase() + rawMonth.slice(1);
+  }, [calendarYear, calendarMonth, activeLang]);
+
+  const monthlyPredictions = useMemo(() => {
+    return getMonthlyCalendarPredictions(
+      calendarYear,
+      calendarMonth,
+      user?.hasCreatedMap ? user.birthDate : "1997-02-11",
+      mapData?.astros?.find((a: any) => a.name === "Sol")?.sign || getZodiacSign(user?.birthDate),
+      user?.hasCreatedMap ? user?.name : "Viajante",
+      activeLang,
+      mapData
+    );
+  }, [calendarYear, calendarMonth, user?.birthDate, user?.name, user?.hasCreatedMap, mapData, activeLang]);
+
+  const selectedDayPrediction = useMemo(() => {
+    const idx = Math.max(0, Math.min(monthlyPredictions.length - 1, selectedCalendarDay - 1));
+    return monthlyPredictions[idx] || monthlyPredictions[0];
+  }, [monthlyPredictions, selectedCalendarDay]);
 
   // Navigation tabs inside User Portal - synced securely with parent Context
   const [localAreaSubTab, setLocalAreaSubTab] = useState<any>('universo_mostrando');
@@ -2157,47 +2196,71 @@ export default function UserDashboardPortal({
   };
 
   // 2. INTELLIGENT CALENDAR CONFIGURATION
-  // Day categories maps for June 2026
+  const CATEGORY_EMOJIS: Record<string, string> = {
+    todos: "🌟",
+    produtividade: "🎯",
+    descanso: "🌙",
+    familia: "🏡",
+    encontros: "💖",
+    diversao: "🥳",
+    entrevistas: "🎙️",
+    vendas: "💰",
+    investimentos: "💸",
+    viagens: "✈️",
+    mudancas: "📦",
+    projetos: "🚀",
+    contratos: "📜",
+    conversas: "💬",
+    estudos: "📚",
+    exercicios: "🏃‍♂️",
+    meditacao: "🧘",
+    espiritualidade: "✨",
+    compras: "🛍️"
+  };
+
   const calendarCategories = [
     { id: 'todos', label: 'Todos os Dias', icon: Calendar, color: 'text-slate-400', list: [] },
-    { id: 'produtividade', label: 'Produtividade', icon: Activity, color: 'text-orange-400', list: [3, 7, 12, 15, 21, 28] },
-    { id: 'descanso', label: 'Descanso', icon: ShieldCheck, color: 'text-teal-400', list: [6, 11, 14, 20, 24, 30] },
-    { id: 'familia', label: 'Família', icon: Users, color: 'text-blue-400', list: [2, 9, 16, 23, 29] },
-    { id: 'encontros', label: 'Encontros', icon: Heart, color: 'text-rose-400', list: [5, 10, 18, 22, 27] },
-    { id: 'diversao', label: 'Diversão', icon: Smile, color: 'text-yellow-405', list: [4, 13, 17, 25] },
-    { id: 'entrevistas', label: 'Entrevistas', icon: Sparkle, color: 'text-indigo-400', list: [1, 8, 19, 26] },
-    { id: 'vendas', label: 'Vendas', icon: DollarSign, color: 'text-emerald-400', list: [3, 12, 18, 28] },
-    { id: 'investimentos', label: 'Investimentos', icon: Zap, color: 'text-amber-500', list: [8, 15, 22] },
-    { id: 'viagens', label: 'Viagens', icon: Compass, color: 'text-sky-400', list: [10, 20, 29] },
-    { id: 'mudancas', label: 'Mudanças', icon: Flame, color: 'text-rose-500', list: [11, 25] },
-    { id: 'projetos', label: 'Iniciar Projetos', icon: Award, color: 'text-pink-400', list: [1, 7, 15, 21] },
-    { id: 'contratos', label: 'Assinar Contratos', icon: BookOpen, color: 'text-purple-400', list: [5, 12, 22] },
-    { id: 'conversas', label: 'Conversas Difíceis', icon: AlertCircle, color: 'text-red-450', list: [9, 16, 30] },
-    { id: 'estudos', label: 'Estudos', icon: Star, color: 'text-emerald-505', list: [2, 6, 13, 19, 27] },
-    { id: 'exercicios', label: 'Exercícios Físicos', icon: Activity, color: 'text-amber-400', list: [4, 11, 18, 25] },
-    { id: 'meditacao', label: 'Meditação', icon: Eye, color: 'text-teal-400', list: [6, 14, 20, 28] },
-    { id: 'espiritualidade', label: 'Espiritualidade', icon: Sparkles, color: 'text-purple-400', list: [8, 17, 26] },
-    { id: 'compras', label: 'Compras Importantes', icon: DollarSign, color: 'text-amber-450', list: [5, 15, 22] }
+    { id: 'produtividade', label: 'Produtividade', icon: Activity, color: 'text-orange-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('produtividade')).map(p => p.dayNumber + 1) },
+    { id: 'descanso', label: 'Descanso', icon: ShieldCheck, color: 'text-teal-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('descanso')).map(p => p.dayNumber + 1) },
+    { id: 'familia', label: 'Família', icon: Users, color: 'text-blue-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('familia')).map(p => p.dayNumber + 1) },
+    { id: 'encontros', label: 'Encontros', icon: Heart, color: 'text-rose-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('encontros')).map(p => p.dayNumber + 1) },
+    { id: 'diversao', label: 'Diversão', icon: Smile, color: 'text-yellow-405', list: monthlyPredictions.filter(p => p.categoryMatches.includes('diversao')).map(p => p.dayNumber + 1) },
+    { id: 'entrevistas', label: 'Entrevistas', icon: Sparkle, color: 'text-indigo-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('entrevistas')).map(p => p.dayNumber + 1) },
+    { id: 'vendas', label: 'Vendas', icon: DollarSign, color: 'text-emerald-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('vendas')).map(p => p.dayNumber + 1) },
+    { id: 'investimentos', label: 'Investimentos', icon: Zap, color: 'text-amber-500', list: monthlyPredictions.filter(p => p.categoryMatches.includes('investimentos')).map(p => p.dayNumber + 1) },
+    { id: 'viagens', label: 'Viagens', icon: Compass, color: 'text-sky-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('viagens')).map(p => p.dayNumber + 1) },
+    { id: 'mudancas', label: 'Mudanças', icon: Flame, color: 'text-rose-500', list: monthlyPredictions.filter(p => p.categoryMatches.includes('mudancas')).map(p => p.dayNumber + 1) },
+    { id: 'projetos', label: 'Iniciar Projetos', icon: Award, color: 'text-pink-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('projetos')).map(p => p.dayNumber + 1) },
+    { id: 'contratos', label: 'Assinar Contratos', icon: BookOpen, color: 'text-purple-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('contratos')).map(p => p.dayNumber + 1) },
+    { id: 'conversas', label: 'Conversas Difíceis', icon: AlertCircle, color: 'text-red-450', list: monthlyPredictions.filter(p => p.categoryMatches.includes('conversas')).map(p => p.dayNumber + 1) },
+    { id: 'estudos', label: 'Estudos', icon: Star, color: 'text-emerald-505', list: monthlyPredictions.filter(p => p.categoryMatches.includes('estudos')).map(p => p.dayNumber + 1) },
+    { id: 'exercicios', label: 'Exercícios Físicos', icon: Activity, color: 'text-amber-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('exercicios')).map(p => p.dayNumber + 1) },
+    { id: 'meditacao', label: 'Meditação', icon: Eye, color: 'text-teal-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('meditacao')).map(p => p.dayNumber + 1) },
+    { id: 'espiritualidade', label: 'Espiritualidade', icon: Sparkles, color: 'text-purple-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('espiritualidade')).map(p => p.dayNumber + 1) },
+    { id: 'compras', label: 'Compras Importantes', icon: DollarSign, color: 'text-amber-450', list: monthlyPredictions.filter(p => p.categoryMatches.includes('compras')).map(p => p.dayNumber + 1) }
   ];
 
   const getCalendarDayIconAndBg = (day: number) => {
-    const calLabels: Record<string, string[]> = {
-      pt: ["Descanso", "Produtividade", "Encontros", "Avisos", "Financeiro", "Social"],
-      en: ["Rest", "Productivity", "Meetings", "Alerts", "Financial", "Social"],
-      de: ["Erholung", "Produktivität", "Treffen", "Warnungen", "Finanzen", "Soziales"],
-      es: ["Descanso", "Productividad", "Encuentros", "Avisos", "Financiero", "Social"],
-    };
-    const labels = calLabels[activeLang] || calLabels['pt'];
-    const syms = ["🌙", "🎯", "💖", "⚡", "💸", "💬"];
-    if (activeCalendarFilter === 'todos') {
-      return { sym: syms[day % 6], label: labels[day % 6] };
+    const dayPred = monthlyPredictions[day - 1];
+    if (!dayPred) {
+      return { sym: "☀️", label: "Energia", isMatched: true };
     }
 
-    const matchedCat = calendarCategories.find(c => c.id === activeCalendarFilter);
-    if (matchedCat && matchedCat.list.includes(day)) {
-      return { sym: "⭐️", label: t(matchedCat.label), isMatched: true };
+    const isMatched = activeCalendarFilter === 'todos' || dayPred.categoryMatches.includes(activeCalendarFilter);
+
+    let sym = dayPred.moonPhase?.icon || "☀️";
+    if (activeCalendarFilter !== 'todos' && isMatched) {
+      sym = CATEGORY_EMOJIS[activeCalendarFilter] || dayPred.moonPhase?.icon || "🎯";
+    } else if (activeCalendarFilter === 'todos') {
+      const primaryCat = dayPred.categoryMatches.find(c => c !== 'todos');
+      sym = (primaryCat && CATEGORY_EMOJIS[primaryCat]) || dayPred.moonPhase?.icon || "🌟";
     }
-    return { sym: "", label: "", isMatched: false };
+
+    return {
+      sym,
+      label: dayPred.tagText,
+      isMatched
+    };
   };
 
   const getDetailedDayGuidance = (day: number) => {
@@ -2746,13 +2809,31 @@ export default function UserDashboardPortal({
                   <div>
                     <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
                       <Calendar className="w-4 h-4 text-teal-400" />
-                      {t('Painel do Mês')} {t('de')} {personalProsperity.monthName} {t('de')} {personalProsperity.year}
+                      {t('Painel do Mês')} {t('de')} {displayMonthName} {t('de')} {calendarYear}
                     </h3>
-                    <p className="text-[10px] text-slate-500 mt-0.5">{t('Seu mapa de forças, proteção e ressonâncias para atravessar o mês de')} {personalProsperity.monthName} {t('em segurança vibracional.')}</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">{t('Seu mapa de forças, proteção e ressonâncias para atravessar o mês de')} {displayMonthName} {t('em segurança vibracional.')}</p>
                   </div>
-                  <span className="px-2 py-0.5 bg-teal-500/10 border border-teal-500/20 text-[9px] font-mono font-bold text-teal-400 rounded-lg shrink-0">
-                    {t('Mês Ativo')}
-                  </span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={handlePrevMonth}
+                      className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition cursor-pointer"
+                      title={t("Mês Anterior")}
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="px-2.5 py-1 bg-teal-500/10 border border-teal-500/20 text-[10px] font-mono font-bold text-teal-400 rounded-lg shrink-0">
+                      {displayMonthName} {calendarYear}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleNextMonth}
+                      className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition cursor-pointer"
+                      title={t("Próximo Mês")}
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Bento Grid layout of requested variables */}
@@ -2844,7 +2925,7 @@ export default function UserDashboardPortal({
 
                   {/* Frase de poder */}
                   <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-teal-500/20 col-span-1 sm:col-span-3 text-center">
-                    <span className="text-[8px] font-mono text-teal-400 block uppercase tracking-wider font-bold mb-1">{t('Frase de Poder de')} {personalProsperity.monthName}</span>
+                    <span className="text-[8px] font-mono text-teal-400 block uppercase tracking-wider font-bold mb-1">{t('Frase de Poder de')} {displayMonthName}</span>
                     <p className="font-serif italic text-sm text-slate-200 py-1 font-semibold leading-relaxed">
                       "{dailyAstroRecs.painel.frase_poder}"
                     </p>
@@ -2864,11 +2945,29 @@ export default function UserDashboardPortal({
                       <Calendar className="w-4 h-4 text-sky-400" />
                       {t('Calendário Interativo de Tendências (30 Dias)')}
                     </h3>
-                    <p className="text-[10px] text-slate-500 mt-0.5">{t('Selecione filtros de atividades para vibrar e fazer brilhar os dias indicativos do mês de')} {personalProsperity.monthName} {t('de')} {personalProsperity.year}.</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">{t('Selecione filtros de atividades para vibrar e fazer brilhar os dias indicativos do mês de')} {displayMonthName} {t('de')} {calendarYear}.</p>
                   </div>
-                  <span className="px-2 py-0.5 bg-sky-500/10 border border-sky-500/20 text-[9px] font-mono font-bold text-sky-400 rounded-lg shrink-0">
-                    {personalProsperity.monthName} {personalProsperity.year}
-                  </span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={handlePrevMonth}
+                      className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition cursor-pointer"
+                      title={t("Mês Anterior")}
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="px-2.5 py-1 bg-sky-500/10 border border-sky-500/20 text-[10px] font-mono font-bold text-sky-400 rounded-lg shrink-0">
+                      {displayMonthName} {calendarYear}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleNextMonth}
+                      className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition cursor-pointer"
+                      title={t("Próximo Mês")}
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Categories filtering list */}
@@ -2897,12 +2996,12 @@ export default function UserDashboardPortal({
                   </div>
                 </div>
 
-                {/* The 30 days grid */}
+                {/* The dynamic days grid */}
                 <div className="space-y-3 pt-3">
                   <span className="text-[8px] font-mono text-slate-500 block uppercase font-bold text-left">{t('Grade de Datas (Clique em um dia para ler os detalhes):')}</span>
                   
                   <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 font-mono">
-                    {Array.from({ length: 30 }, (_, index) => {
+                    {Array.from({ length: monthlyPredictions.length }, (_, index) => {
                       const day = index + 1;
                       const isSelected = selectedCalendarDay === day;
                       const metadata = getCalendarDayIconAndBg(day);
@@ -2962,8 +3061,27 @@ export default function UserDashboardPortal({
                       </div>
 
                       <div>
-                        <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{t('Trânsito Celeste:')}</span>
-                        <p className="text-sky-300 font-mono text-[10.5px]">{t(selectedDayPrediction.transit)}</p>
+                        <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{t('Trânsito Celeste & Fase da Lua:')}</span>
+                        <p className="text-sky-300 font-mono text-[10.5px]">
+                          {selectedDayPrediction.moonPhase?.icon} {t(selectedDayPrediction.moonPhase?.name || '')} ({t(selectedDayPrediction.moonPhase?.sign || '')}) — {t(selectedDayPrediction.transit)}
+                        </p>
+                      </div>
+
+                      {/* Numerology and Sound Frequency Cards */}
+                      <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
+                        <div className="p-2 bg-purple-950/20 border border-purple-800/30 rounded-xl">
+                          <span className="text-[7.5px] text-purple-400 font-bold uppercase block">{t('Dia Pessoal (Numerologia)')}</span>
+                          <span className="text-slate-100 font-bold block mt-0.5">
+                            {t(selectedDayPrediction.numerology?.title || '')} (Vibração {selectedDayPrediction.numerology?.personalDayNumber})
+                          </span>
+                        </div>
+
+                        <div className="p-2 bg-indigo-950/20 border border-indigo-800/30 rounded-xl">
+                          <span className="text-[7.5px] text-indigo-400 font-bold uppercase block">{t('Frequência Solfeggio')}</span>
+                          <span className="text-slate-100 font-bold block mt-0.5">
+                            🎵 {selectedDayPrediction.frequency?.hz} - {t(selectedDayPrediction.frequency?.title || '')}
+                          </span>
+                        </div>
                       </div>
 
                       <div className="flex items-center gap-4 p-2 bg-slate-900/50 rounded-xl border border-slate-850">
@@ -3869,54 +3987,54 @@ export default function UserDashboardPortal({
                   <div className="p-4 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col justify-between hover:border-indigo-500/30 transition-all">
                     <div>
                       <span className="text-[8px] font-mono text-slate-400 block uppercase font-bold mb-1">{t("Melhor Aroma da Semana")}</span>
-                      <span className="text-xs font-black text-slate-200 block">{dailyAstroRecs.casa.aroma}</span>
+                      <span className="text-xs font-black text-slate-200 block">{t(dailyAstroRecs.casa.aroma)}</span>
                     </div>
-                    <p className="text-[9.5px] text-slate-400 leading-normal mt-2">{dailyAstroRecs.casa.aroma_desc}</p>
+                    <p className="text-[9.5px] text-slate-400 leading-normal mt-2">{t(dailyAstroRecs.casa.aroma_desc)}</p>
                   </div>
 
                   {/* Incense */}
                   <div className="p-4 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col justify-between hover:border-indigo-500/30 transition-all">
                     <div>
                       <span className="text-[8px] font-mono text-slate-400 block uppercase font-bold mb-1">{t("Melhor Incenso Sugerido")}</span>
-                      <span className="text-xs font-black text-slate-200 block">{dailyAstroRecs.casa.incenso}</span>
+                      <span className="text-xs font-black text-slate-200 block">{t(dailyAstroRecs.casa.incenso)}</span>
                     </div>
-                    <p className="text-[9.5px] text-slate-400 leading-normal mt-2">{dailyAstroRecs.casa.incenso_desc}</p>
+                    <p className="text-[9.5px] text-slate-400 leading-normal mt-2">{t(dailyAstroRecs.casa.incenso_desc)}</p>
                   </div>
 
                   {/* Plant */}
                   <div className="p-4 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col justify-between hover:border-indigo-500/30 transition-all">
                     <div>
                       <span className="text-[8px] font-mono text-slate-400 block uppercase font-bold mb-1">{t("Melhor Planta Recomendada")}</span>
-                      <span className="text-xs font-black text-slate-200 block">{dailyAstroRecs.casa.planta}</span>
+                      <span className="text-xs font-black text-slate-200 block">{t(dailyAstroRecs.casa.planta)}</span>
                     </div>
-                    <p className="text-[9.5px] text-slate-400 leading-normal mt-2">{dailyAstroRecs.casa.planta_desc}</p>
+                    <p className="text-[9.5px] text-slate-400 leading-normal mt-2">{t(dailyAstroRecs.casa.planta_desc)}</p>
                   </div>
 
                   {/* Best room corner */}
                   <div className="p-4 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col justify-between hover:border-indigo-500/30 transition-all">
                     <div>
                       <span className="text-[8px] font-mono text-indigo-400 block uppercase font-bold mb-1">{t("Melhor Ambiente da Casa")}</span>
-                      <span className="text-xs font-black text-indigo-300 block">{dailyAstroRecs.casa.ambiente_casa}</span>
+                      <span className="text-xs font-black text-indigo-300 block">{t(dailyAstroRecs.casa.ambiente_casa)}</span>
                     </div>
-                    <p className="text-[9.5px] text-slate-400 leading-normal mt-2">{dailyAstroRecs.casa.ambiente_casa_desc}</p>
+                    <p className="text-[9.5px] text-slate-400 leading-normal mt-2">{t(dailyAstroRecs.casa.ambiente_casa_desc)}</p>
                   </div>
 
                   {/* Bedroom color */}
                   <div className="p-4 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col justify-between hover:border-purple-500/30 transition-all">
                     <div>
                       <span className="text-[8px] font-mono text-purple-400 block uppercase font-bold mb-1">{t("Cor recomendada no Quarto")}</span>
-                      <span className="text-xs font-black text-purple-300 block">{dailyAstroRecs.casa.quarto_cor}</span>
+                      <span className="text-xs font-black text-purple-300 block">{t(dailyAstroRecs.casa.quarto_cor)}</span>
                     </div>
-                    <p className="text-[9.5px] text-slate-400 leading-normal mt-2">{dailyAstroRecs.casa.quarto_cor_desc}</p>
+                    <p className="text-[9.5px] text-slate-400 leading-normal mt-2">{t(dailyAstroRecs.casa.quarto_cor_desc)}</p>
                   </div>
 
                   {/* Office color */}
                   <div className="p-4 bg-slate-950 border border-slate-850 rounded-2xl flex flex-col justify-between hover:border-sky-500/30 transition-all">
                     <div>
                       <span className="text-[8px] font-mono text-sky-400 block uppercase font-bold mb-1">{t("Cor recomendada no Escritório")}</span>
-                      <span className="text-xs font-black text-sky-300 block">{dailyAstroRecs.casa.escritorio_cor}</span>
+                      <span className="text-xs font-black text-sky-300 block">{t(dailyAstroRecs.casa.escritorio_cor)}</span>
                     </div>
-                    <p className="text-[9.5px] text-slate-400 leading-normal mt-2">{dailyAstroRecs.casa.escritorio_cor_desc}</p>
+                    <p className="text-[9.5px] text-slate-400 leading-normal mt-2">{t(dailyAstroRecs.casa.escritorio_cor_desc)}</p>
                   </div>
                 </div>
 
@@ -3932,36 +4050,36 @@ export default function UserDashboardPortal({
                     <div className="p-3.5 bg-slate-950/80 border border-slate-850/80 rounded-xl flex flex-col justify-between">
                       <div>
                         <span className="text-[8px] font-mono text-amber-400 block uppercase font-bold mb-0.5">{t("Cristal de Ancoragem")}</span>
-                        <span className="text-[11px] font-extrabold text-slate-200 block">{dailyAstroRecs.casa.cristal_casa}</span>
+                        <span className="text-[11px] font-extrabold text-slate-200 block">{t(dailyAstroRecs.casa.cristal_casa)}</span>
                       </div>
-                      <p className="text-[9px] text-slate-400 leading-normal mt-1.5">{dailyAstroRecs.casa.cristal_casa_desc}</p>
+                      <p className="text-[9px] text-slate-400 leading-normal mt-1.5">{t(dailyAstroRecs.casa.cristal_casa_desc)}</p>
                     </div>
 
                     {/* Cleansing Ritual */}
                     <div className="p-3.5 bg-slate-950/80 border border-slate-850/80 rounded-xl flex flex-col justify-between">
                       <div>
                         <span className="text-[8px] font-mono text-emerald-400 block uppercase font-bold mb-0.5">{t("Ritual do Espaço")}</span>
-                        <span className="text-[11px] font-extrabold text-slate-200 block">{dailyAstroRecs.casa.ritual_casa}</span>
+                        <span className="text-[11px] font-extrabold text-slate-200 block">{t(dailyAstroRecs.casa.ritual_casa)}</span>
                       </div>
-                      <p className="text-[9px] text-slate-400 leading-normal mt-1.5">{dailyAstroRecs.casa.ritual_casa_desc}</p>
+                      <p className="text-[9px] text-slate-400 leading-normal mt-1.5">{t(dailyAstroRecs.casa.ritual_casa_desc)}</p>
                     </div>
 
                     {/* Cardinal Direction */}
                     <div className="p-3.5 bg-slate-950/80 border border-slate-850/80 rounded-xl flex flex-col justify-between">
                       <div>
                         <span className="text-[8px] font-mono text-cyan-400 block uppercase font-bold mb-0.5">{t("Direção Auspiciosa")}</span>
-                        <span className="text-[11px] font-extrabold text-slate-200 block">{dailyAstroRecs.casa.direcao_cardeal}</span>
+                        <span className="text-[11px] font-extrabold text-slate-200 block">{t(dailyAstroRecs.casa.direcao_cardeal)}</span>
                       </div>
-                      <p className="text-[9px] text-slate-400 leading-normal mt-1.5">{dailyAstroRecs.casa.direcao_cardeal_desc}</p>
+                      <p className="text-[9px] text-slate-400 leading-normal mt-1.5">{t(dailyAstroRecs.casa.direcao_cardeal_desc)}</p>
                     </div>
 
                     {/* Sound Frequency */}
                     <div className="p-3.5 bg-slate-950/80 border border-slate-850/80 rounded-xl flex flex-col justify-between">
                       <div>
                         <span className="text-[8px] font-mono text-rose-400 block uppercase font-bold mb-0.5">{t("Frequência de Som")}</span>
-                        <span className="text-[11px] font-extrabold text-slate-200 block">{dailyAstroRecs.casa.frequencia_som}</span>
+                        <span className="text-[11px] font-extrabold text-slate-200 block">{t(dailyAstroRecs.casa.frequencia_som)}</span>
                       </div>
-                      <p className="text-[9px] text-slate-400 leading-normal mt-1.5">{dailyAstroRecs.casa.frequencia_som_desc}</p>
+                      <p className="text-[9px] text-slate-400 leading-normal mt-1.5">{t(dailyAstroRecs.casa.frequencia_som_desc)}</p>
                     </div>
                   </div>
                 </div>

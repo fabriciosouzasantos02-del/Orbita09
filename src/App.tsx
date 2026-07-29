@@ -318,76 +318,33 @@ function getZodiacSignForMissions(dateString: string): string {
 
 function generateDailyRadar(user: any, activeLang?: Language, dateParam?: Date): DailyRadar {
   const currentL = activeLang || 'pt';
-  const name = user?.name ? user.name.split(" ")[0] : "Viajante";
-  const birthDate = user?.birthDate || "2000-01-01";
+  const name = user?.name || "Viajante";
+  const birthDate = user?.birthDate || "1997-02-11";
   
   const today = dateParam || new Date();
   const day = today.getDate();
   const month = today.getMonth() + 1;
   const year = today.getFullYear();
   
-  const seedVal = (day + month * 7 + year + name.length) % 5;
-  const dispositionLevel = 80 + ((day + name.length) % 18); // 80% to 98%
-  
-  const energyPoolPT = [
-    "Intuição Harmoniosa & Foco Singular",
-    "Alta Vibração Mental & Comunicação Clara",
-    "Estabilidade Prática & Retiro Espiritual",
-    "Sensibilidade Expandida & Conexão de Alma",
-    "Impulso Criativo & Força Vital Ativa"
-  ];
-  const energyPoolEN = [
-    "Harmonious Intuition & Singular Focus",
-    "High Mental Vibration & Clear Communication",
-    "Practical Stability & Spiritual Retreat",
-    "Expanded Sensitivity & Soul Connection",
-    "Creative Impulse & Active Vital Force"
-  ];
-  const energyPoolES = [
-    "Intuición Armoniosa & Enfoque Singular",
-    "Alta Vibración Mental & Comunicación Clara",
-    "Estabilidad Práctica & Retiro Espiritual",
-    "Sensibilidad Expandida & Conexión de Alma",
-    "Impulso Creativo & Fuerza Vital Activa"
-  ];
-  const energyPoolDE = [
-    "Harmonische Intuition & Einzigartiger Fokus",
-    "Hohe Mentale Schwingung & Klare Kommunikation",
-    "Praktische Stabilität & Spiritueller Rückzug",
-    "Erweiterte Sensibilität & Seelenverbindung",
-    "Kreativer Impuls & Aktive Lebenskraft"
-  ];
-  const energyPoolFR = [
-    "Intuition Harmonieuse & Focus Singulier",
-    "Haute Vibration Mentale & Communication Claire",
-    "Stabilité Pratique & Retraite Spirituelle",
-    "Sensibilité Élargie & Connexion d'Âme",
-    "Impulsion Créative & Force Vitale Active"
-  ];
-
-  let energyOfDay = energyPoolPT[seedVal];
-  if (currentL === 'en') energyOfDay = energyPoolEN[seedVal];
-  if (currentL === 'es') energyOfDay = energyPoolES[seedVal];
-  if (currentL === 'de') energyOfDay = energyPoolDE[seedVal];
-  if (currentL === 'fr') energyOfDay = energyPoolFR[seedVal];
-
-  const hourOffsets = [
-    { prod: "10:00 - 12:30", rel: "18:00 - 20:30", stud: "14:15 - 16:45", org: "08:30 - 09:45" },
-    { prod: "09:00 - 11:30", rel: "19:00 - 21:30", stud: "15:00 - 17:30", org: "07:30 - 08:45" },
-    { prod: "10:30 - 13:00", rel: "17:30 - 19:45", stud: "13:30 - 15:45", org: "09:00 - 10:15" },
-    { prod: "08:15 - 11:00", rel: "18:30 - 21:00", stud: "16:00 - 18:15", org: "11:30 - 12:45" },
-    { prod: "11:00 - 13:30", rel: "20:00 - 22:00", stud: "14:00 - 16:00", org: "08:00 - 09:15" }
-  ];
-  const times = hourOffsets[seedVal];
+  const sunSign = user?.birthDate ? getZodiacSign(user.birthDate) : "Touro";
+  const prediction = generateDailyPrediction(
+    birthDate,
+    sunSign,
+    name,
+    day - 1,
+    today,
+    currentL,
+    user?.mapData
+  );
 
   return {
     date: `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`,
-    energyOfDay,
-    dispositionLevel,
-    bestTimeProductivity: times.prod,
-    bestTimeRelationships: times.rel,
-    bestTimeStudies: times.stud,
-    bestTimeOrganization: times.org
+    energyOfDay: prediction.predominantEnergy,
+    dispositionLevel: prediction.energyLevel,
+    bestTimeProductivity: prediction.bestPeriod,
+    bestTimeRelationships: prediction.attentionPeriod,
+    bestTimeStudies: `${String((day % 5) + 13).padStart(2, '0')}:00 - ${String((day % 5) + 15).padStart(2, '0')}:30`,
+    bestTimeOrganization: `${String((day % 4) + 7).padStart(2, '0')}:30 - ${String((day % 4) + 9).padStart(2, '0')}:30`
   };
 }
 
@@ -7368,24 +7325,17 @@ export default function App() {
                         const dayNum = idx + 1;
                         const isSelected = selectedProsperityDay === dayNum;
                         
-                        // Assign color tags to certain days
-                        let dayColor = "bg-slate-900/40 border-slate-850 text-slate-500 hover:border-slate-700";
-                        let tagText = "Tranquilo";
-                        
-                        if ([2, 9, 16, 23, 30].includes(dayNum)) {
-                          dayColor = "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 font-bold hover:border-emerald-500/40";
-                          tagText = "Favorável";
-                        } else if ([5, 12, 19, 26].includes(dayNum)) {
-                          dayColor = "bg-rose-500/10 border-rose-500/20 text-rose-400 font-bold hover:border-rose-500/40";
-                          tagText = "Atenção";
-                        } else if ([7, 14, 21, 28].includes(dayNum)) {
-                          dayColor = "bg-amber-500/10 border-amber-500/20 text-amber-500 font-bold hover:border-amber-500/40";
-                          tagText = "Produtivo";
-                        } else if ([4, 11, 18, 25].includes(dayNum)) {
-                          dayColor = "bg-sky-500/10 border-sky-500/20 text-sky-400 font-bold hover:border-sky-500/40";
-                          tagText = "Descanso";
-                        }
+                        const tilePred = generateDailyPrediction(
+                          user?.birthDate || "1997-02-11",
+                          mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Touro"),
+                          user?.name || "Viajante",
+                          idx,
+                          systemDate,
+                          currentLang,
+                          mapData
+                        );
 
+                        let dayColor = tilePred.tagColorClass;
                         if (isSelected) {
                           dayColor = "bg-sky-500/20 border-sky-400 text-sky-200 ring-1 ring-sky-550 font-black shadow-md";
                         }
@@ -7395,11 +7345,11 @@ export default function App() {
                             key={idx} 
                             type="button"
                             onClick={() => setSelectedProsperityDay(isSelected ? null : dayNum)}
-                            title={`${t("Dia")} ${dayNum}: ${t("energia de foco")} ${t(tagText)}`}
+                            title={`${t("Dia")} ${dayNum}: ${tilePred.dateFormatted} - ${tilePred.tagText}`}
                             className={`p-2 rounded-xl border text-center transition cursor-pointer flex flex-col justify-between items-center h-12 ${dayColor}`}
                           >
                             <span className="block font-mono text-xs font-bold leading-none">{dayNum.toString().padStart(2, '0')}</span>
-                            <span className="text-[7.5px] font-mono block leading-none uppercase tracking-tight">{t(tagText).slice(0, 3)}</span>
+                            <span className="text-[7.5px] font-mono block leading-none uppercase tracking-tight">{tilePred.tagText.slice(0, 3)}</span>
                           </button>
                         );
                       })}
@@ -7777,11 +7727,11 @@ export default function App() {
                             type="button"
                             onClick={() => {
                               if (!settingsBirthCity || !settingsBirthCity.includes(',')) {
-                                alert("Por favor, digite e selecione uma cidade válida da lista de sugestões (contendo Cidade e Estado/País) para obter coordenadas precisas.");
+                                alert(t("Por favor, digite e selecione uma cidade válida da lista de sugestões (contendo Cidade e Estado/País) para obter coordenadas precisas."));
                                 return;
                               }
                               if (!settingsBirthDate || !settingsBirthTime) {
-                                alert("Por favor, preencha a data e a hora de nascimento corretamente.");
+                                alert(t("Por favor, preencha a data e a hora de nascimento corretamente."));
                                 return;
                               }
                               handleUpdateUserProfile({
@@ -7791,7 +7741,7 @@ export default function App() {
                                 latitude: settingsLatitude,
                                 longitude: settingsLongitude
                               });
-                              alert("Seu mapa astral e dados de nascimento foram recalculados com sucesso com coordenadas e fuso horário de alta precisão!");
+                              alert(t("Seu mapa astral e dados de nascimento foram recalculados com sucesso com coordenadas e fuso horário de alta precisão!"));
                             }}
                             className="w-full py-2.5 rounded-xl bg-linear-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-slate-950 font-sans font-bold text-xs uppercase tracking-wider transition-all duration-300 shadow-md shadow-amber-950/20 active:scale-98 cursor-pointer"
                           >
