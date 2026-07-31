@@ -2354,4 +2354,110 @@ export async function deleteUserAccountFirebase(email: string): Promise<void> {
   }
 }
 
+// -------------------------------------------------------------------------
+// FIRESTORE CALENDAR PERSISTENCE FOR 30-DAY ASTROLOGICAL MODULES
+// -------------------------------------------------------------------------
+
+export async function saveMonthlyCalendarToDatabase(
+  userKey: string,
+  yearMonth: string,
+  lang: string,
+  calendarDays: any[]
+): Promise<void> {
+  const docKey = getUserDocKey(userKey);
+  if (!docKey || !yearMonth) return;
+
+  const nowIso = new Date().toISOString();
+  const cacheId = `calendar_${yearMonth}_${lang}`;
+
+  const payload = {
+    docId: `${yearMonth}_${lang}`,
+    yearMonth,
+    year: parseInt(yearMonth.split('-')[0], 10),
+    month: parseInt(yearMonth.split('-')[1], 10),
+    lang,
+    days: calendarDays,
+    generatedAt: nowIso,
+    updatedAt: nowIso,
+    userId: docKey
+  };
+
+  // 1. Local storage cache for offline redundancy and speed
+  const storageKey = `orbi_calendar_${docKey}_${yearMonth}_${lang}`;
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(payload));
+  } catch (e) {
+    console.warn("[Calendar Cache] Storage quota or disabled:", e);
+  }
+
+  // 2. Calculation cache
+  await saveCalculationCache(userKey, cacheId, calendarDays);
+
+  // 3. Firestore subcollection: users/{uid}/calendar/{yearMonth}_{lang}
+  const db = getFirestoreDB();
+  if (db) {
+    const calendarRef = doc(db, "users", docKey, "calendar", `${yearMonth}_${lang}`);
+    try {
+      await setDoc(calendarRef, payload, { merge: true });
+      console.log(`[Calendar DB] Salvo com sucesso no Firestore: users/${docKey}/calendar/${yearMonth}_${lang}`);
+    } catch (e) {
+      console.warn(`[Calendar DB] Erro ao salvar no Firestore:`, e);
+      handleFirestoreError(e, OperationType.WRITE, `users/${docKey}/calendar/${yearMonth}_${lang}`);
+    }
+  }
+}
+
+export async function loadMonthlyCalendarFromDatabase(
+  userKey: string,
+  yearMonth: string,
+  lang: string
+): Promise<any[] | null> {
+  const docKey = getUserDocKey(userKey);
+  if (!docKey || !yearMonth) return null;
+
+  // 1. Local storage cache
+  const storageKey = `orbi_calendar_${docKey}_${yearMonth}_${lang}`;
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.days) && parsed.days.length > 0) {
+        return parsed.days;
+      }
+    }
+  } catch (e) {
+    // continue
+  }
+
+  // 2. Calculation cache
+  const cacheId = `calendar_${yearMonth}_${lang}`;
+  const cachedFromCalc = await loadCalculationCache(userKey, cacheId);
+  if (cachedFromCalc && Array.isArray(cachedFromCalc) && cachedFromCalc.length > 0) {
+    return cachedFromCalc;
+  }
+
+  // 3. Firestore subcollection
+  const db = getFirestoreDB();
+  if (db) {
+    try {
+      const calendarRef = doc(db, "users", docKey, "calendar", `${yearMonth}_${lang}`);
+      const snap = await getDocWithTimeout(calendarRef, 3000);
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data && Array.isArray(data.days) && data.days.length > 0) {
+          try {
+            localStorage.setItem(storageKey, JSON.stringify(data));
+          } catch (_) {}
+          return data.days;
+        }
+      }
+    } catch (e) {
+      console.warn(`[Calendar DB] Falha ao ler Firestore para users/${docKey}/calendar/${yearMonth}_${lang}`, e);
+    }
+  }
+
+  return null;
+}
+
+
 

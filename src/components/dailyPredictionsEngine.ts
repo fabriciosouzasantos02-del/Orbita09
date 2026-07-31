@@ -24,30 +24,122 @@ export interface SoundFrequencyInfo {
 
 export interface DailyPrediction {
   dayNumber: number;
-  date: Date;
+  date: Date | string;
   dateFormatted: string;
   tagText: string;
   tagColorClass: string;
+
+  // 1. Resumo Energético do Dia
+  summary: string;
   astroInfluence: string;
+
+  // 2. Cor Favorável
+  favorableColor: string;
+  favorableColorReason: string;
+  favorableColorUsage: string;
+  favorableColorExamples: string;
+
+  // 3. Números Favoráveis
+  favorableNumber: number;
+  favorableNumbersList: number[];
+  favorableNumbersMeaning: string;
+  favorableNumbersSuggestions: string;
+
+  // 4 & 16. Melhor Horário / Período do Dia
+  bestPeriod: string;
+  bestPeriodReason: string;
+  bestPeriodActivities: string[];
+
+  // 5 & 17. Horário / Período de Atenção (Alerta)
+  attentionPeriod: string;
+  attentionPeriodChallenges: string;
+  attentionPeriodStrategies: string;
+
+  // 6. Influência Astrológica
+  astroIntensity: string;
+  personalImpact: string;
+
+  // 7. Aspectos Planetários do Dia
   aspects: string;
+  aspectsPracticalInfluence: string;
+  aspectsInterpretation: string;
+
+  // 8. Trânsitos Celestes
   transit: string;
-  houseDetails?: string;
+  transitNatalImpact: string;
+  transitOpportunities: string;
+
+  // 9. Lua
   moonPhase: MoonPhaseInfo;
+  moonEmotionalInfluence: string;
+  moonPracticalApplications: string;
+
+  // 10. Energia Predominante
+  predominantEnergy: string;
+  energyDetails: {
+    emotional: string;
+    spiritual: string;
+    mental: string;
+    physical: string;
+  };
+
+  // 11. Oportunidades do Dia
+  opportunities: string;
+  sectorOpportunities: {
+    work: string;
+    studies: string;
+    love: string;
+    money: string;
+    family: string;
+    creativity: string;
+    spirituality: string;
+  };
+
+  // 12. Áreas Favorecidas
+  favoredAreas: string[];
+  favoredAreasDetail: string;
+
+  // 13. Áreas de Atenção
+  attentionAreas: string[];
+  attentionAreasDetail: string;
+  riskMitigation: string;
+
+  // 14. Desafios Projetados
+  challenges: string;
+  challengeOrigin: string;
+  challengeStrategy: string;
+
+  // 15 & 18. Conselho Estratégico & Conselho Personalizado
+  personalizedAdvice: string;
+
+  // 19. Mensagem Exclusiva
+  personalizedMessage: string;
+
+  // Novos Atributos e Métricas Solicitados
+  keyword: string;
+  predominantEmotion: string;
+  dominantElement: string;
+  rulingPlanet: string;
+  mostActivatedHouse: number;
+  mostActivatedHouseDetails: string;
+
+  energyLevel: number;
+  productivityIndex: number;
+  emotionalIndex: number;
+  spiritualIndex: number;
+  socialIndex: number;
+  financialIndex: number;
+
+  bestTimeDecisions: string;
+  bestTimeRest: string;
+  bestTimeStudies: string;
+  bestTimeRelationships: string;
+  recommendedRitual: string;
+
+  categoryMatches: string[];
+  houseDetails?: string;
   numerology: NumerologyDayInfo;
   frequency: SoundFrequencyInfo;
-  predominantEnergy: string;
-  energyLevel: number;
-  favoredAreas: string[];
-  attentionAreas: string[];
-  opportunities: string;
-  challenges: string;
-  personalizedAdvice: string;
-  favorableColor: string;
-  favorableNumber: number;
-  bestPeriod: string;
-  attentionPeriod: string;
-  personalizedMessage: string;
-  categoryMatches: string[];
 }
 
 function getActiveLanguage(): 'pt' | 'en' | 'es' | 'de' | 'fr' {
@@ -1570,32 +1662,442 @@ export function generateDailyPrediction(
 
   const categoryMatches = getCategoryMatches(tp, aspectType, personalDayNum, houseNum, dayNumber);
 
+  // 1. Resumo Energético do Dia
+  const summary = astroInfluence;
+
+  // 2. Cor Favorável
+  const colorReasons: Record<string, string> = {
+    pt: `A vibração de ${translatedTpName} ativando sua ${houseDetails} sintoniza a frequência luminosa de ${favorableColor}.`,
+    en: `The vibration of transiting ${translatedTpName} in your ${houseDetails} aligns with the luminous frequency of ${favorableColor}.`,
+    es: `La vibración de ${translatedTpName} activando tu ${houseDetails} sintoniza la frecuencia luminosa de ${favorableColor}.`,
+    de: `Die Schwingung von ${translatedTpName} in Ihrem ${houseDetails} stimmt sich mit der Lichtfrequenz von ${favorableColor} ein.`,
+    fr: `La vibration de ${translatedTpName} activant votre ${houseDetails} s'harmonise avec la fréquence lumineuse de ${favorableColor}.`
+  };
+  const favorableColorReason = colorReasons[lang] || colorReasons.pt;
+
+  const colorUsages: Record<string, string> = {
+    pt: `Vista roupas ou utilize acessórios na tonalidade ${favorableColor} durante compromissos importantes para ancorar foco e proteção.`,
+    en: `Wear clothing or accessories in ${favorableColor} during key meetings to anchor focus and protection.`,
+    es: `Usa prendas o accesorios en tono ${favorableColor} durante compromisos clave para anclar enfoque y protección.`,
+    de: `Tragen Sie Kleidung oder Accessoires in ${favorableColor} bei wichtigen Terminen zur Stärkung von Fokus und Schutz.`,
+    fr: `Portez des vêtements ou accessoires en teinte ${favorableColor} lors de vos rendez-vous clés pour ancrer votre protection.`
+  };
+  const favorableColorUsage = colorUsages[lang] || colorUsages.pt;
+
+  const colorExamplesDict: Record<string, string> = {
+    pt: `${favorableColor}, Velas ${favorableColor}, Pedras e Acessórios Sintonizados`,
+    en: `${favorableColor}, ${favorableColor} Candles, Tuned Stones & Accessories`,
+    es: `${favorableColor}, Velas ${favorableColor}, Piedras y Accesorios Sintonizados`,
+    de: `${favorableColor}, ${favorableColor} Kerzen, Abgestimmte Steine & Accessoires`,
+    fr: `${favorableColor}, Bougies ${favorableColor}, Pierres & Accessoires Harmonisés`
+  };
+  const favorableColorExamples = colorExamplesDict[lang] || colorExamplesDict.pt;
+
+  // 3. Números Favoráveis
+  const num2 = ((favorableNumber + 3) % 9) + 1;
+  const num3 = ((favorableNumber + 6) % 9) + 1;
+  const favorableNumbersList = [favorableNumber, num2, num3];
+
+  const favorableNumbersMeaningDict: Record<string, string> = {
+    pt: `O número ${favorableNumber} conecta-se com o seu Dia Pessoal ${personalDayNum} (${numerology.title}), favorecendo escolhas de alto impacto.`,
+    en: `Number ${favorableNumber} aligns with Personal Day ${personalDayNum} (${numerology.title}), favoring strategic alignment.`,
+    es: `El número ${favorableNumber} se conecta con tu Día Personal ${personalDayNum} (${numerology.title}), favoreciendo decisiones certeras.`,
+    de: `Die Zahl ${favorableNumber} verbindet sich mit Ihrem persönlichen Tag ${personalDayNum} (${numerology.title}) und begünstigt strategische Ausrichtung.`,
+    fr: `Le nombre ${favorableNumber} s'aligne avec votre Jour Personnel ${personalDayNum} (${numerology.title}), favorisant un alignement stratégique.`
+  };
+  const favorableNumbersMeaning = favorableNumbersMeaningDict[lang] || favorableNumbersMeaningDict.pt;
+
+  const favorableNumbersSuggestionsDict: Record<string, string> = {
+    pt: `Utilize os números ${favorableNumbersList.join(', ')} para horários de reuniões, decisões ou planejamentos estratégicos.`,
+    en: `Use numbers ${favorableNumbersList.join(', ')} for key time slots, scheduling, or financial decisions.`,
+    es: `Utiliza los números ${favorableNumbersList.join(', ')} para horarios de reuniones, decisiones o planificaciones estratégicas.`,
+    de: `Nutzen Sie die Zahlen ${favorableNumbersList.join(', ')} für Besprechungszeiten, Entscheidungen oder strategische Planungen.`,
+    fr: `Utilisez les nombres ${favorableNumbersList.join(', ')} pour les créneaux de réunion, les décisions ou la planification stratégique.`
+  };
+  const favorableNumbersSuggestions = favorableNumbersSuggestionsDict[lang] || favorableNumbersSuggestionsDict.pt;
+
+  // 4 & 16. Melhor Horário
+  const bestPeriodReasonDict: Record<string, string> = {
+    pt: `Pico de harmonização planetária entre ${translatedTpName} transitando e seu ${translatedNpName} natal.`,
+    en: `Peak alignment between transiting ${translatedTpName} and your natal ${translatedNpName}.`,
+    es: `Pico de armonización planetaria entre ${translatedTpName} en tránsito y tu ${translatedNpName} natal.`,
+    de: `Höchste planetare Harmonie zwischen dem transitierenden ${translatedTpName} und Ihrem gebürtigen ${translatedNpName}.`,
+    fr: `Pics d'harmonisation planétaire entre ${translatedTpName} en transit et votre ${translatedNpName} natal.`
+  };
+  const bestPeriodReason = bestPeriodReasonDict[lang] || bestPeriodReasonDict.pt;
+
+  const bestPeriodActivitiesDict: Record<string, string[]> = {
+    pt: ["Planejamento estratégico", "Diálogos importantes", "Tomada de decisões"],
+    en: ["Strategic planning", "Important dialogues", "Decision making"],
+    es: ["Planificación estratégica", "Diálogos importantes", "Toma de decisiones"],
+    de: ["Strategische Planung", "Wichtige Dialoge", "Entscheidungsfindung"],
+    fr: ["Planification stratégique", "Dialogues importants", "Prise de décision"]
+  };
+  const bestPeriodActivities = bestPeriodActivitiesDict[lang] || bestPeriodActivitiesDict.pt;
+
+  // 5 & 17. Horário de Atenção
+  const attentionPeriodChallengesDict: Record<string, string> = {
+    pt: `Possível fricção mental ou dispersão externa em relação a ${attentionAreas[0]}.`,
+    en: `Potential mental friction or external pressure related to ${attentionAreas[0]}.`,
+    es: `Posible fricción mental o dispersión externa relacionada con ${attentionAreas[0]}.`,
+    de: `Mögliche mentale Reibung oder externe Zerstreuung in Bezug auf ${attentionAreas[0]}.`,
+    fr: `Friction mentale potentielle ou dispersion externe concernant ${attentionAreas[0]}.`
+  };
+  const attentionPeriodChallenges = attentionPeriodChallengesDict[lang] || attentionPeriodChallengesDict.pt;
+
+  const attentionPeriodStrategiesDict: Record<string, string> = {
+    pt: `Mantenha a serenidade emocional, evite compras por impulso e pratique respiração consciente.`,
+    en: `Maintain emotional stillness, postpone impulse purchases, and practice conscious breathing.`,
+    es: `Mantén la serenidad emocional, evita compras por impulso y practica respiración consciente.`,
+    de: `Bewahren Sie emotionale Gelassenheit, vermeiden Sie Impulskäufe und üben Sie bewusstes Atmen.`,
+    fr: `Maintenez la sérénité émotionnelle, évitez les achats impulsifs et pratiquez la respiration consciente.`
+  };
+  const attentionPeriodStrategies = attentionPeriodStrategiesDict[lang] || attentionPeriodStrategiesDict.pt;
+
+  // 6. Influência Astrológica e Intensidade
+  const intensityMap: Record<string, { high: string; mod: string; int: string }> = {
+    pt: { high: "Alta / Expansiva", mod: "Moderada / Fluida", int: "Intensa / Reflexiva" },
+    en: { high: "High / Expansive", mod: "Moderate / Fluid", int: "Intense / Reflective" },
+    es: { high: "Alta / Expansiva", mod: "Moderada / Fluida", int: "Intensa / Reflexiva" },
+    de: { high: "Hoch / Expansiv", mod: "Moderat / Fließend", int: "Intensiv / Reflektiert" },
+    fr: { high: "Élevée / Expansive", mod: "Modérée / Fluide", int: "Intense / Réfléchie" }
+  };
+  const currentIntensity = intensityMap[lang] || intensityMap.pt;
+  const astroIntensity = (energyLevel > 80) ? currentIntensity.high : (energyLevel > 65) ? currentIntensity.mod : currentIntensity.int;
+
+  const personalImpactDict: Record<string, string> = {
+    pt: `Ativa diretamente o seu Sol em ${translatedSunSign}, fortalecendo a essência do seu propósito.`,
+    en: `Directly activates your Sun in ${translatedSunSign}, strengthening core identity and purpose.`,
+    es: `Activa directamente tu Sol en ${translatedSunSign}, fortaleciendo la esencia de tu propósito.`,
+    de: `Aktiviert direkt Ihre Sonne in ${translatedSunSign} und stärkt den Kern Ihres Zwecks.`,
+    fr: `Active directement votre Soleil en ${translatedSunSign}, renforçant l'essence de votre objectif.`
+  };
+  const personalImpact = personalImpactDict[lang] || personalImpactDict.pt;
+
+  // 7. Aspectos Planetários do Dia
+  const aspectsPracticalInfluenceDict: Record<string, string> = {
+    pt: `Aspecto de ${translatedAspectName} gera um impulso dinâmico nos assuntos da sua ${houseDetails}.`,
+    en: `Aspect of ${translatedAspectName} generates dynamic momentum in ${houseDetails}.`,
+    es: `Aspecto de ${translatedAspectName} genera un impulso dinámico en los asuntos de tu ${houseDetails}.`,
+    de: `Der Aspekt ${translatedAspectName} erzeugt einen dynamischen Impuls in Ihrem ${houseDetails}.`,
+    fr: `L'aspect ${translatedAspectName} génère un élan dynamique dans votre ${houseDetails}.`
+  };
+  const aspectsPracticalInfluence = aspectsPracticalInfluenceDict[lang] || aspectsPracticalInfluenceDict.pt;
+
+  const aspectsInterpretationDict: Record<string, string> = {
+    pt: `Harmoniza a passagem de ${translatedTpName} pelo seu mapa natal com foco em progresso consciente.`,
+    en: `Harmonizes transiting ${translatedTpName} with natal ${translatedNpName} for constructive progress.`,
+    es: `Armoniza el paso de ${translatedTpName} por tu mapa natal enfocado en el progreso consciente.`,
+    de: `Harmonisiert den Transit von ${translatedTpName} mit Ihrem gebürtigen ${translatedNpName} für bewussten Fortschritt.`,
+    fr: `Harmonise le passage de ${translatedTpName} sur votre thème natal avec un accent sur le progrès conscient.`
+  };
+  const aspectsInterpretation = aspectsInterpretationDict[lang] || aspectsInterpretationDict.pt;
+
+  // 8. Trânsitos Celestes
+  const transitNatalImpactDict: Record<string, string> = {
+    pt: `${translatedTpName} em trânsito movimenta a sua ${houseDetails}, abrindo espaço para desenvolvimento.`,
+    en: `Transiting ${translatedTpName} activates your ${houseDetails}, opening space for development.`,
+    es: `${translatedTpName} en tránsito mueve tu ${houseDetails}, abriendo espacio para el desarrollo.`,
+    de: `Der transitierende ${translatedTpName} bewegt Ihr ${houseDetails} und eröffnet Raum für Entwicklung.`,
+    fr: `${translatedTpName} en transit active votre ${houseDetails}, ouvrant de l'espace pour le développement.`
+  };
+  const transitNatalImpact = transitNatalImpactDict[lang] || transitNatalImpactDict.pt;
+
+  const transitOpportunitiesDict: Record<string, string> = {
+    pt: `Direcione esforços para ${favoredAreas.join(', ')}.`,
+    en: `Focus efforts on ${favoredAreas.join(', ')}.`,
+    es: `Dirige esfuerzos hacia ${favoredAreas.join(', ')}.`,
+    de: `Richten Sie Ihre Anstrengungen auf ${favoredAreas.join(', ')}.`,
+    fr: `Orientez vos efforts vers ${favoredAreas.join(', ')}.`
+  };
+  const transitOpportunities = transitOpportunitiesDict[lang] || transitOpportunitiesDict.pt;
+
+  // 9. Lua
+  const moonEmotionalInfluenceDict: Record<string, string> = {
+    pt: `A ${moonPhase.name} em ${moonPhase.sign} estabiliza as reações emocionais e eleva a percepção intuitiva.`,
+    en: `${moonPhase.name} in ${moonPhase.sign} stabilizes emotional reactions and heightens intuitive clarity.`,
+    es: `La ${moonPhase.name} en ${moonPhase.sign} estabiliza las reacciones emocionales y eleva la percepción intuitiva.`,
+    de: `Der ${moonPhase.name} im ${moonPhase.sign} stabilisiert emotionale Reaktionen und erhöht die intuitive Klarheit.`,
+    fr: `La ${moonPhase.name} en ${moonPhase.sign} stabilise les réactions émotionnelles et élève la clarté intuitive.`
+  };
+  const moonEmotionalInfluence = moonEmotionalInfluenceDict[lang] || moonEmotionalInfluenceDict.pt;
+
+  const moonPracticalApplicationsDict: Record<string, string> = {
+    pt: `Fase ideal para alinhar prioridades, organizar compromissos e eliminar ruídos desnecessários.`,
+    en: `Ideal phase to align priorities, organize commitments, and clear clutter.`,
+    es: `Fase ideal para alinear prioridades, organizar compromisos y eliminar ruidos innecesarios.`,
+    de: `Ideale Phase, um Prioritäten auszurichten, Verpflichtungen zu organisieren und Störungen zu beseitigen.`,
+    fr: `Phase idéale pour aligner les priorités, organiser les engagements et éliminer le bruit inutile.`
+  };
+  const moonPracticalApplications = moonPracticalApplicationsDict[lang] || moonPracticalApplicationsDict.pt;
+
+  // 10. Energia Predominante
+  const energyDetailsDict: Record<string, { emotional: string; spiritual: string; mental: string; physical: string }> = {
+    pt: { emotional: "Equilibrada & Consciente", spiritual: "Elevada & Sintonizada", mental: "Estratégica & Ágil", physical: "Vigorosa & Ancorada" },
+    en: { emotional: "Balanced & Conscious", spiritual: "Elevated & Connected", mental: "Strategic & Agile", physical: "Vigorous & Grounded" },
+    es: { emotional: "Equilibrada y Consciente", spiritual: "Elevada y Sintonizada", mental: "Estratégica y Ágil", physical: "Vigorosa y Anclada" },
+    de: { emotional: "Ausgeglichen & Bewusst", spiritual: "Erhöht & Einstimmt", mental: "Strategisch & Agil", physical: "Kraftvoll & Verankert" },
+    fr: { emotional: "Équilibrée & Consciente", spiritual: "Élevée & Connectée", mental: "Stratégique & Agile", physical: "Vigoureuse & Ancrée" }
+  };
+  const energyDetails = energyDetailsDict[lang] || energyDetailsDict.pt;
+
+  // 11. Oportunidades por Setor
+  const sectorOpportunitiesDict: Record<string, Record<string, string>> = {
+    pt: {
+      work: `Foco elevado para execução em ${favoredAreas[0]}`,
+      studies: `Excelente clareza mental e absorção de conhecimentos`,
+      love: `Diálogos harmoniosos e expressão autêntica`,
+      money: `Consciência na gestão de recursos e despesas`,
+      family: `Acolhimento e estabilidade no ambiente familiar`,
+      creativity: `Solução fluida de problemas e surgimento de ideias`,
+      spirituality: `Frequência receptiva para meditação e intuição`
+    },
+    en: {
+      work: `High focus on execution in ${favoredAreas[0]}`,
+      studies: `Excellent mental clarity and absorption`,
+      love: `Harmonious dialogues and authentic expression`,
+      money: `Awareness in resource management`,
+      family: `Warmth and stability in domestic circle`,
+      creativity: `Fluid problem solving and ideas`,
+      spirituality: `Receptive frequency for meditation`
+    },
+    es: {
+      work: `Gran enfoque de ejecución en ${favoredAreas[0]}`,
+      studies: `Excelente claridad mental y absorción de conocimientos`,
+      love: `Diálogos armoniosos y expresión auténtica`,
+      money: `Conciencia en la gestión de recursos y gastos`,
+      family: `Acogida y estabilidad en el entorno familiar`,
+      creativity: `Solución fluida de problemas y surgimiento de ideas`,
+      spirituality: `Frecuencia receptiva para meditación e intuición`
+    },
+    de: {
+      work: `Hoher Ausführungsfokus bei ${favoredAreas[0]}`,
+      studies: `Hervorragende mentale Klarheit und Aufnahme von Wissen`,
+      love: `Harmonische Dialoge und authentischer Ausdruck`,
+      money: `Bewusstsein bei der Verwaltung von Ressourcen`,
+      family: `Wärme und Stabilität im familiären Umfeld`,
+      creativity: `Flüssige Problemlösung und Entstehen von Ideen`,
+      spirituality: `Empfängliche Frequenz für Meditation und Intuition`
+    },
+    fr: {
+      work: `Fort accent sur l'exécution dans ${favoredAreas[0]}`,
+      studies: `Excellente clarté mentale et absorption des connaissances`,
+      love: `Dialogues harmonieux et expression authentique`,
+      money: `Prise de conscience dans la gestion des ressources`,
+      family: `Chaleur et stabilité dans le cercle familial`,
+      creativity: `Résolution fluide des problèmes et émergence d'idées`,
+      spirituality: `Fréquence réceptive pour la méditation et l'intuition`
+    }
+  };
+  const sectorOpportunities = sectorOpportunitiesDict[lang] || sectorOpportunitiesDict.pt;
+
+  // 12 & 13. Áreas Favorecidas & Atenção Detalhadas
+  const favoredAreasDetailDict: Record<string, string> = {
+    pt: `Sua geometria planetária do dia favorece expressivamente avanços em ${favoredAreas.join(', ')}.`,
+    en: `Your planetary geometry strongly supports progress in ${favoredAreas.join(', ')}.`,
+    es: `Tu geometría planetaria del día favorece expresivamente avances en ${favoredAreas.join(', ')}.`,
+    de: `Ihre tägliche planetare Geometrie unterstützt Fortschritte in ${favoredAreas.join(', ')} stark.`,
+    fr: `Votre géométrie planétaire du jour favorise fortement les progrès dans ${favoredAreas.join(', ')}.`
+  };
+  const favoredAreasDetail = favoredAreasDetailDict[lang] || favoredAreasDetailDict.pt;
+
+  const attentionAreasDetailDict: Record<string, string> = {
+    pt: `Exercite prudência com ${attentionAreas.join(', ')} para evitar desgastes desnecessários.`,
+    en: `Exercise caution around ${attentionAreas.join(', ')} to prevent unnecessary friction.`,
+    es: `Ejercita prudencia con ${attentionAreas.join(', ')} para evitar desgastes innecesarios.`,
+    de: `Üben Sie Vorsicht bei ${attentionAreas.join(', ')}, um unnötige Reibungen zu vermeiden.`,
+    fr: `Faites preuve de prudence concernant ${attentionAreas.join(', ')} pour éviter les frictions inutiles.`
+  };
+  const attentionAreasDetail = attentionAreasDetailDict[lang] || attentionAreasDetailDict.pt;
+
+  const riskMitigationDict: Record<string, string> = {
+    pt: `Pause antes de responder, confira detalhes e evite ações precipitadas.`,
+    en: `Pause before reacting, verify details, and avoid impulse actions.`,
+    es: `Pausa antes de responder, verifica detalles y evita acciones precipitadas.`,
+    de: `Halten Sie inne, bevor Sie reagieren, überprüfen Sie Details und vermeiden Sie Impulshandlungen.`,
+    fr: `Faites une pause avant de réagir, vérifiez les détails et évitez les actions impulsives.`
+  };
+  const riskMitigation = riskMitigationDict[lang] || riskMitigationDict.pt;
+
+  // 14. Desafios Projetados
+  const challengeOriginDict: Record<string, string> = {
+    pt: `Tensão ou exigência decorrente do trânsito de ${translatedTpName} sobre o ${translatedNpName} natal.`,
+    en: `Tension or demand arising from transiting ${translatedTpName} relative to natal ${translatedNpName}.`,
+    es: `Tensión o exigencia derivada del tránsito de ${translatedTpName} sobre tu ${translatedNpName} natal.`,
+    de: `Spannung oder Anforderung aus dem Transit von ${translatedTpName} in Bezug auf Ihren gebürtigen ${translatedNpName}.`,
+    fr: `Tension ou exigence découlant du transit de ${translatedTpName} par rapport à votre ${translatedNpName} natal.`
+  };
+  const challengeOrigin = challengeOriginDict[lang] || challengeOriginDict.pt;
+
+  const challengeStrategyDict: Record<string, string> = {
+    pt: `Aplique observação paciente e pautando decisões estritamente em fatos.`,
+    en: `Apply patient observation and ground decisions strictly in facts.`,
+    es: `Aplica observación paciente y basa decisiones strictly en hechos.`,
+    de: `Wenden Sie geduldige Beobachtung an und stützen Sie Entscheidungen streng auf Fakten.`,
+    fr: `Appliquez une observation patiente et basez vos décisions strictement sur les faits.`
+  };
+  const challengeStrategy = challengeStrategyDict[lang] || challengeStrategyDict.pt;
+
+  // Novos Atributos
+  const keywordsListDict: Record<string, string[]> = {
+    pt: ["Clareza", "Foco", "Expansão", "Ancoragem", "Liderança", "Harmonia", "Visão", "Domínio"],
+    en: ["Clarity", "Focus", "Expansion", "Grounding", "Leadership", "Harmony", "Vision", "Mastery"],
+    es: ["Claridad", "Enfoque", "Expansión", "Anclaje", "Liderazgo", "Armonía", "Visión", "Dominio"],
+    de: ["Klarheit", "Fokus", "Expansion", "Verankerung", "Führung", "Harmonie", "Vision", "Meisterschaft"],
+    fr: ["Clarté", "Focus", "Expansion", "Ancrage", "Leadership", "Harmonie", "Vision", "Maîtrise"]
+  };
+  const keywordsList = keywordsListDict[lang] || keywordsListDict.pt;
+  const keyword = keywordsList[daySeed % keywordsList.length];
+
+  const emotionsListDict: Record<string, string[]> = {
+    pt: ["Entusiasmo Construtivo", "Serenidade Focada", "Calma Confiante", "Determinação Inspirada"],
+    en: ["Constructive Enthusiasm", "Focused Serenity", "Confident Calm", "Inspired Determination"],
+    es: ["Entusiasmo Constructivo", "Serenidad Enfocada", "Calma Confiante", "Determinación Inspirada"],
+    de: ["Konstruktiver Enthusiasmus", "Fokussierte Gelassenheit", "Zuversichtliche Ruhe", "Inspirierte Entschlossenheit"],
+    fr: ["Enthousiasme Constructif", "Sérénité Focalisée", "Calme Confiant", "Détermination Inspirée"]
+  };
+  const emotionsList = emotionsListDict[lang] || emotionsListDict.pt;
+  const predominantEmotion = emotionsList[daySeed % emotionsList.length];
+
+  const elementsByHouseDict: Record<string, Record<number, string>> = {
+    pt: { 1: "Fogo", 2: "Terra", 3: "Ar", 4: "Água", 5: "Fogo", 6: "Terra", 7: "Ar", 8: "Água", 9: "Fogo", 10: "Terra", 11: "Ar", 12: "Água" },
+    en: { 1: "Fire", 2: "Earth", 3: "Air", 4: "Water", 5: "Fire", 6: "Earth", 7: "Air", 8: "Water", 9: "Fire", 10: "Earth", 11: "Air", 12: "Water" },
+    es: { 1: "Fuego", 2: "Tierra", 3: "Aire", 4: "Agua", 5: "Fuego", 6: "Tierra", 7: "Aire", 8: "Agua", 9: "Fuego", 10: "Tierra", 11: "Aire", 12: "Agua" },
+    de: { 1: "Feuer", 2: "Erde", 3: "Luft", 4: "Wasser", 5: "Feuer", 6: "Erde", 7: "Luft", 8: "Wasser", 9: "Feuer", 10: "Erde", 11: "Luft", 12: "Wasser" },
+    fr: { 1: "Feu", 2: "Terre", 3: "Air", 4: "Eau", 5: "Feu", 6: "Terre", 7: "Air", 8: "Eau", 9: "Feu", 10: "Terre", 11: "Air", 12: "Eau" }
+  };
+  const elementsByHouse = elementsByHouseDict[lang] || elementsByHouseDict.pt;
+  const dominantElement = elementsByHouse[houseNum] || elementsByHouse[1];
+
+  const rulingPlanet = translatedTpName;
+  const mostActivatedHouse = houseNum;
+  const mostActivatedHouseDetails = houseDetails;
+
+  const productivityIndex = Math.min(99, Math.max(50, energyLevel + 2));
+  const emotionalIndex = Math.min(98, Math.max(45, energyLevel - 3));
+  const spiritualIndex = Math.min(99, Math.max(52, 100 - Math.abs(energyLevel - 80)));
+  const socialIndex = Math.min(98, Math.max(42, energyLevel + (houseNum % 4) * 3 - 5));
+  const financialIndex = Math.min(98, Math.max(48, energyLevel - (houseNum % 3) * 2));
+
+  const bestTimeDecisions = bestPeriod;
+  const bestTimeRest = `${String((alertStartHour + 6) % 24).padStart(2, '0')}:30 - 23:00`;
+  const bestTimeStudies = `${String((startHour + 5) % 24).padStart(2, '0')}:00 - ${String((startHour + 7) % 24).padStart(2, '0')}:30`;
+  const bestTimeRelationships = `${String((startHour + 10) % 24).padStart(2, '0')}:00 - ${String((startHour + 12) % 24).padStart(2, '0')}:30`;
+
+  const ritualsByPlanet: Record<string, string> = {
+    pt: `Pratique 5 minutos de respiração diafragmática ao acordar e anote sua meta principal do dia em papel com a cor ${favorableColor}.`,
+    en: `Practice 5 minutes of deep breathing upon waking and write your primary goal on a paper using ${favorableColor} tones.`,
+    es: `Práctica 5 minutos de respiración profunda al despertar e instruye tu meta principal en papel con la luz de ${favorableColor}.`,
+    de: `Atemübung für 5 Minuten nach dem Aufstehen und Notieren des Hauptziels des Tages.`,
+    fr: `Pratiquez 5 minutes de respiration profonde au réveil et notez votre objectif principal de la journée.`
+  };
+  const recommendedRitual = ritualsByPlanet[lang] || ritualsByPlanet.pt;
+
   return {
     dayNumber,
     date: targetDate,
     dateFormatted,
     tagText,
     tagColorClass,
+
+    // 1
+    summary,
     astroInfluence,
-    aspects: aspectText,
-    transit,
-    houseDetails,
-    moonPhase,
-    numerology,
-    frequency,
-    predominantEnergy,
-    energyLevel,
-    favoredAreas,
-    attentionAreas,
-    opportunities,
-    challenges,
-    personalizedAdvice,
+
+    // 2
     favorableColor,
+    favorableColorReason,
+    favorableColorUsage,
+    favorableColorExamples,
+
+    // 3
     favorableNumber,
+    favorableNumbersList,
+    favorableNumbersMeaning,
+    favorableNumbersSuggestions,
+
+    // 4 & 16
     bestPeriod,
+    bestPeriodReason,
+    bestPeriodActivities,
+
+    // 5 & 17
     attentionPeriod,
+    attentionPeriodChallenges,
+    attentionPeriodStrategies,
+
+    // 6
+    astroIntensity,
+    personalImpact,
+
+    // 7
+    aspects: aspectText,
+    aspectsPracticalInfluence,
+    aspectsInterpretation,
+
+    // 8
+    transit,
+    transitNatalImpact,
+    transitOpportunities,
+
+    // 9
+    moonPhase,
+    moonEmotionalInfluence,
+    moonPracticalApplications,
+
+    // 10
+    predominantEnergy,
+    energyDetails,
+
+    // 11
+    opportunities,
+    sectorOpportunities,
+
+    // 12
+    favoredAreas,
+    favoredAreasDetail,
+
+    // 13
+    attentionAreas,
+    attentionAreasDetail,
+    riskMitigation,
+
+    // 14
+    challenges,
+    challengeOrigin,
+    challengeStrategy,
+
+    // 15 & 18
+    personalizedAdvice,
+
+    // 19
     personalizedMessage,
-    categoryMatches
+
+    // Novos Atributos
+    keyword,
+    predominantEmotion,
+    dominantElement,
+    rulingPlanet,
+    mostActivatedHouse,
+    mostActivatedHouseDetails,
+
+    energyLevel,
+    productivityIndex,
+    emotionalIndex,
+    spiritualIndex,
+    socialIndex,
+    financialIndex,
+
+    bestTimeDecisions,
+    bestTimeRest,
+    bestTimeStudies,
+    bestTimeRelationships,
+    recommendedRitual,
+
+    categoryMatches,
+    houseDetails,
+    numerology,
+    frequency
   };
 }
 

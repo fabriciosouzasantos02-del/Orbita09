@@ -22,7 +22,15 @@ import {
 } from '../prosperityEngine';
 import { generateDailyPrediction, getMonthlyCalendarPredictions } from './dailyPredictionsEngine';
 import { SIGNS_ZODIAC_LIST, BLOG_ARTICLES_LIST } from '../data';
-import { loadCalculationCache, saveCalculationCache, saveWeeklyMissionsToDatabase, loadWeeklyMissionsFromDatabase, saveProfileToDatabase } from '../lib/firebase';
+import { 
+  loadCalculationCache, 
+  saveCalculationCache, 
+  saveWeeklyMissionsToDatabase, 
+  loadWeeklyMissionsFromDatabase, 
+  saveProfileToDatabase,
+  saveMonthlyCalendarToDatabase,
+  loadMonthlyCalendarFromDatabase
+} from '../lib/firebase';
 import { scanAndTranslateDOM } from '../lib/locales';
 import { getAvatarUrl } from '../lib/avatars';
 import { Language } from '../lib/translations';
@@ -406,7 +414,52 @@ const localPortalTranslations: Record<string, Record<string, string>> = {
     "Painel do mês e orientações cósmicas.": "Monthly panel and cosmic guidance.",
     "Ver tudo →": "See all →",
     "Intuição Harmoniosa & Foco Singular (Sol e Mercúrio em Trígono)": "Harmonious Intuition & Singular Focus (Sun and Mercury in Trine)",
-    "Navegação Cósmica": "Cosmic Navigation"
+    "Navegação Cósmica": "Cosmic Navigation",
+    "Oráculo de Entrada": "Entry Oracle",
+    "Práticas & Evolução": "Practices & Evolution",
+    "Estatísticas Diárias": "Daily Statistics",
+    "Planejamento Astrológico": "Astrological Planning",
+    "Pilares do Destino": "Pillars of Destiny",
+    "Elias & Sinais": "Elias & Signs",
+    "Missões do Portal": "Portal Missions",
+    "Símbolos & Amuletos": "Symbols & Amulets",
+    "Chakras Cósmicos": "Cosmic Chakras",
+    "Rituais Diários": "Daily Rituals",
+    "Radar do Dia": "Daily Radar",
+    "Radar Oportunidades": "Opportunities Radar",
+    "Painel do Mês": "Monthly Panel",
+    "Calendário Inteligente": "Smart Calendar",
+    "Cores do Mês": "Colors of the Month",
+    "Mensagem & Alertas": "Message & Alerts",
+    "cupido_tab": "Cupid & Synergy",
+    "Prosperidade e Capital": "Prosperity & Capital",
+    "Amor & Intimidade": "Love & Intimacy",
+    "Sinergia Social": "Social Synergy",
+    "Relacionamentos": "Relationships",
+    "Desenv. Pessoal": "Personal Dev.",
+    "Energia da Casa": "Home Energy",
+    "Centro de Sonhos": "Dream Center",
+    "Grade de Datas (Clique em um dia para ler os detalhes):": "Date Grid (Click a day to read details):",
+    "Filtros de Harmonização e Atividades:": "Harmonization & Activity Filters:",
+    "Aspectos Planetários do Dia:": "Planetary Aspects of the Day:",
+    "Trânsito Celeste & Fase da Lua:": "Celestial Transit & Moon Phase:",
+    "Dia Pessoal (Numerologia)": "Personal Day (Numerology)",
+    "Frequência Solfeggio": "Solfeggio Frequency",
+    "Janelas Temporais Recomendadas do Dia:": "Recommended Time Windows of the Day:",
+    "Tomar Decisões": "Make Decisions",
+    "Foco / Estudos": "Focus / Studies",
+    "Pausa / Descanso": "Pause / Rest",
+    "Cor Favorável & Uso Prático": "Favorable Color & Practical Use",
+    "Números Favoráveis & Vibração": "Favorable Numbers & Vibration",
+    "Ritual Sugerido para o Dia:": "Suggested Ritual for the Day:",
+    "Mensagem do seu Mapa:": "Message from your Chart:",
+    "Índices de Performance Diária:": "Daily Performance Indexes:",
+    "Resumo Energético & Influência:": "Energy Summary & Influence:",
+    "Áreas Favorecidas:": "Favored Areas:",
+    "Áreas de Atenção:": "Areas of Attention:",
+    "Oportunidades observadas:": "Observed Opportunities:",
+    "Desafios projetados:": "Projected Challenges:",
+    "Conselho Estratégico:": "Strategic Advice:"
   },
   "es": {
     "Olá, meu caro buscador stelar! Eu sou OSÍRIS, seu mentor astrológico supremo e guia de cura energética. Estou em plena sintonia com suas frequências cósmicas de hoje para alinhar seu dharma e afastar de forma precisa as negatividades kármicas. O que você gostaria de desvendar no momento? Me pergunte sobre o clima, biorritmo celular ou seus sonhos profundos.": "¡Hola, mi querido buscador estelar! Soy OSIRIS, tu mentor astrológico supremo y guía de sanación energética. Estoy en plena sintonía con tus frecuencias cósmicas de hoy para alinear tu dharma y alejar de forma precisa las negatividades kármicas. ¿Qué te gustaría desvelar en este momento? Pregúntame sobre el clima, biorritmo celular o tus sueños profundos.",
@@ -708,7 +761,52 @@ const localPortalTranslations: Record<string, Record<string, string>> = {
     "Painel do mês e orientações cósmicas.": "Panel del mes y orientaciones cósmicas.",
     "Ver tudo →": "Ver todo →",
     "Intuição Harmoniosa & Foco Singular (Sol e Mercúrio em Trígono)": "Intuición Armoniosa y Enfoque Singular (Sol y Mercurio en Trígono)",
-    "Navegação Cósmica": "Navegación Cósmica"
+    "Navegação Cósmica": "Navegación Cósmica",
+    "Oráculo de Entrada": "Oráculo de Entrada",
+    "Práticas & Evolução": "Prácticas & Evolución",
+    "Estatísticas Diárias": "Estadísticas Diarias",
+    "Planejamento Astrológico": "Planificación Astrológica",
+    "Pilares do Destino": "Pilares del Destino",
+    "Elias & Sinais": "Elías & Señales",
+    "Missões do Portal": "Misiones del Portal",
+    "Símbolos & Amuletos": "Símbolos & Amuletos",
+    "Chakras Cósmicos": "Chakras Cósmicos",
+    "Rituais Diários": "Rituales Diarios",
+    "Radar do Dia": "Radar del Día",
+    "Radar Oportunidades": "Radar de Oportunidades",
+    "Painel do Mês": "Panel del Mes",
+    "Calendário Inteligente": "Calendario Inteligente",
+    "Cores do Mês": "Colores del Mes",
+    "Mensagem & Alertas": "Mensaje & Alertas",
+    "cupido_tab": "Cupido y Sinergia",
+    "Prosperidade e Capital": "Prosperidad y Capital",
+    "Amor & Intimidade": "Amor e Intimidad",
+    "Sinergia Social": "Sinergia Social",
+    "Relacionamentos": "Relaciones",
+    "Desenv. Pessoal": "Desarr. Personal",
+    "Energia da Casa": "Energía del Hogar",
+    "Centro de Sonhos": "Centro de Sueños",
+    "Grade de Datas (Clique em um dia para ler os detalhes):": "Cuadrícula de Fechas (Haga clic en un día para leer los detalles):",
+    "Filtros de Harmonização e Atividades:": "Filtros de Armonización y Actividades:",
+    "Aspectos Planetários do Dia:": "Aspectos Planetarios del Día:",
+    "Trânsito Celeste & Fase da Lua:": "Tránsito Celeste y Fase Lunar:",
+    "Dia Pessoal (Numerologia)": "Día Personal (Numerología)",
+    "Frequência Solfeggio": "Frecuencia Solfeggio",
+    "Janelas Temporais Recomendadas do Dia:": "Ventanas Temporales Recomendadas del Día:",
+    "Tomar Decisões": "Tomar Decisiones",
+    "Foco / Estudos": "Enfoque / Estudios",
+    "Pausa / Descanso": "Pausa / Descanso",
+    "Cor Favorável & Uso Prático": "Color Favorable y Uso Práctico",
+    "Números Favoráveis & Vibração": "Números Favorables y Vibración",
+    "Ritual Sugerido para o Dia:": "Ritual Sugerido para el Día:",
+    "Mensagem do seu Mapa:": "Mensaje de su Carta:",
+    "Índices de Performance Diária:": "Índices de Rendimiento Diario:",
+    "Resumo Energético & Influência:": "Resumen Energético e Influencia:",
+    "Áreas Favorecidas:": "Áreas Favorecidas:",
+    "Áreas de Atenção:": "Áreas de Atención:",
+    "Oportunidades observadas:": "Oportunidades observadas:",
+    "Desafios projetados:": "Desafíos proyectados:",
+    "Conselho Estratégico:": "Consejo Estratégico:"
   },
   "fr": {
     "Você": "Vous",
@@ -1011,7 +1109,52 @@ const localPortalTranslations: Record<string, Record<string, string>> = {
     "Painel do mês e orientações cósmicas.": "Tableau du mois et orientations cosmiques.",
     "Ver tudo →": "Voir tout →",
     "Intuição Harmoniosa & Foco Singular (Sol e Mercúrio em Trígono)": "Intuition Harmonieuse & Concentration Singulière (Soleil et Mercure en Trigone)",
-    "Navegação Cósmica": "Navigation Cosmique"
+    "Navegação Cósmica": "Navigation Cosmique",
+    "Oráculo de Entrada": "Oracle d'Entrée",
+    "Práticas & Evolução": "Pratiques & Évolution",
+    "Estatísticas Diárias": "Statistiques Quotidiennes",
+    "Planejamento Astrológico": "Planification Astrologique",
+    "Pilares do Destino": "Piliers du Destin",
+    "Elias & Sinais": "Élias & Signes",
+    "Missões do Portal": "Missions du Portail",
+    "Símbolos & Amuletos": "Symboles & Amulettes",
+    "Chakras Cósmicos": "Chakras Cosmiques",
+    "Rituais Diários": "Rituels Quotidiens",
+    "Radar do Dia": "Radar du Jour",
+    "Radar Oportunidades": "Radar d'Opportunités",
+    "Painel do Mês": "Tableau du Mois",
+    "Calendário Inteligente": "Calendrier Intelligent",
+    "Cores do Mês": "Couleurs du Mois",
+    "Mensagem & Alertas": "Message & Alertes",
+    "cupido_tab": "Cupidon & Synergie",
+    "Prosperidade e Capital": "Prospérité et Capital",
+    "Amor & Intimidade": "Amour & Intimité",
+    "Sinergia Social": "Synergie Sociale",
+    "Relacionamentos": "Relations",
+    "Desenv. Pessoal": "Développement Perso",
+    "Energia da Casa": "Énergie de la Maison",
+    "Centro de Sonhos": "Centre des Rêves",
+    "Grade de Datas (Clique em um dia para ler os detalhes):": "Grille de Dates (Cliquez sur un jour pour lire les détails) :",
+    "Filtros de Harmonização e Atividades:": "Filtres d'Harmonisation et d'Activités :",
+    "Aspectos Planetários do Dia:": "Aspects Planétaires du Jour :",
+    "Trânsito Celeste & Fase da Lua:": "Transit Céleste & Phase de la Lune :",
+    "Dia Pessoal (Numerologia)": "Jour Personnel (Numérologie)",
+    "Frequência Solfeggio": "Fréquence Solfeggio",
+    "Janelas Temporais Recomendadas do Dia:": "Fenêtres Temporelles Recommandées du Jour :",
+    "Tomar Decisões": "Prendre des Décisions",
+    "Foco / Estudos": "Concentration / Études",
+    "Pausa / Descanso": "Pause / Repos",
+    "Cor Favorável & Uso Prático": "Couleur Favorable & Usage Pratique",
+    "Números Favoráveis & Vibração": "Nombres Favorables & Vibration",
+    "Ritual Sugerido para o Dia:": "Rituel Suggéré pour le Jour :",
+    "Mensagem do seu Mapa:": "Message de votre Carte :",
+    "Índices de Performance Diária:": "Indices de Performance Quotidienne :",
+    "Resumo Energético & Influência:": "Résumé Énergétique & Influence :",
+    "Áreas Favorecidas:": "Zones Favorisées :",
+    "Áreas de Atenção:": "Zones d'Attention :",
+    "Oportunidades observadas:": "Opportunités observées :",
+    "Desafios projetados:": "Défis projetés :",
+    "Conselho Estratégico:": "Conseil Stratégique :"
   },
   "de": {
     "Você": "Du",
@@ -1314,9 +1457,76 @@ const localPortalTranslations: Record<string, Record<string, string>> = {
     "Painel do mês e orientações cósmicas.": "Monatspanel und kosmische Orientierungen.",
     "Ver tudo →": "Alles sehen →",
     "Intuição Harmoniosa & Foco Singular (Sol e Mercúrio em Trígono)": "Harmonische Intuition & Einzigartiger Fokus (Sonne und Merkur im Trigon)",
-    "Navegação Cósmica": "Kosmische Navigation"
+    "Navegação Cósmica": "Kosmische Navigation",
+    "Oráculo de Entrada": "Eingangs-Orakel",
+    "Práticas & Evolução": "Praktiken & Evolution",
+    "Estatísticas Diárias": "Tägliche Statistiken",
+    "Planejamento Astrológico": "Astrologische Planung",
+    "Pilares do Destino": "Pfeiler des Schicksals",
+    "Elias & Sinais": "Elias & Zeichen",
+    "Missões do Portal": "Portal-Missionen",
+    "Símbolos & Amuletos": "Symbole & Amulette",
+    "Chakras Cósmicos": "Kosmische Chakren",
+    "Rituais Diários": "Tägliche Rituale",
+    "Radar do Dia": "Radar des Tages",
+    "Radar Oportunidades": "Chancen-Radar",
+    "Painel do Mês": "Monatsübersicht",
+    "Calendário Inteligente": "Intelligenter Kalender",
+    "Cores do Mês": "Farben des Monats",
+    "Mensagem & Alertas": "Botschaft & Warnungen",
+    "cupido_tab": "Amor & Synergie",
+    "Prosperidade e Capital": "Wohlstand & Kapital",
+    "Amor & Intimidade": "Liebe & Intimität",
+    "Sinergia Social": "Soziale Synergie",
+    "Relacionamentos": "Beziehungen",
+    "Desenv. Pessoal": "Persönl. Entw.",
+    "Energia da Casa": "Hausenergie",
+    "Centro de Sonhos": "Traum-Zentrum",
+    "Grade de Datas (Clique em um dia para ler os detalhes):": "Datumsraster (Klicken Sie auf einen Tag für Details):",
+    "Filtros de Harmonização e Atividades:": "Harmonisierungs- und Aktivitätsfilter:",
+    "Aspectos Planetários do Dia:": "Planetare Aspekte des Tages:",
+    "Trânsito Celeste & Fase da Lua:": "Himmlischer Transit & Mondphase:",
+    "Dia Pessoal (Numerologia)": "Persönlicher Tag (Numerologie)",
+    "Frequência Solfeggio": "Solfeggio-Frequenz",
+    "Janelas Temporais Recomendadas do Dia:": "Empfohlene Zeitfenster des Tages:",
+    "Tomar Decisões": "Entscheidungen Treffen",
+    "Foco / Estudos": "Fokus / Studien",
+    "Pausa / Descanso": "Pause / Ruhe",
+    "Cor Favorável & Uso Prático": "Günstige Farbe & Praktischer Nutzen",
+    "Números Favoráveis & Vibração": "Günstige Zahlen & Schwingung",
+    "Ritual Sugerido para o Dia:": "Vorgeschlagenes Tagesritual:",
+    "Mensagem do seu Mapa:": "Botschaft Ihrer Karte:",
+    "Índices de Performance Diária:": "Tägliche Leistungsindizes:",
+    "Resumo Energético & Influência:": "Energieübersicht & Einfluss:",
+    "Áreas Favorecidas:": "Begünstigte Bereiche:",
+    "Áreas de Atenção:": "Aufmerksamkeitsbereiche:",
+    "Oportunidades observadas:": "Beobachtete Gelegenheiten:",
+    "Desafios projetados:": "Prognostizierte Herausforderungen:",
+    "Conselho Estratégico:": "Strategischer Rat:"
   }
-};;
+};
+
+const CATEGORY_EMOJIS: Record<string, string> = {
+  todos: "✨",
+  produtividade: "⚡",
+  descanso: "🌙",
+  familia: "🏡",
+  encontros: "💖",
+  diversao: "😊",
+  entrevistas: "✨",
+  vendas: "💲",
+  investimentos: "💎",
+  viagens: "✈️",
+  mudancas: "🔥",
+  projetos: "🚀",
+  contratos: "📜",
+  conversas: "🗣️",
+  estudos: "📚",
+  exercicios: "🏃",
+  meditacao: "🧘",
+  espiritualidade: "🔮",
+  compras: "🛍️"
+};
 
 export default function UserDashboardPortal({
   user,
@@ -1480,7 +1690,52 @@ export default function UserDashboardPortal({
     return rawMonth.charAt(0).toUpperCase() + rawMonth.slice(1);
   }, [calendarYear, calendarMonth, activeLang]);
 
+  const [cachedMonthlyPredictions, setCachedMonthlyPredictions] = useState<any[] | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const yearMonth = `${calendarYear}-${String(calendarMonth + 1).padStart(2, '0')}`;
+    const userKey = user?.email || (user as any)?.uid || 'guest';
+
+    async function loadCalendar() {
+      try {
+        const dbData = await loadMonthlyCalendarFromDatabase(userKey, yearMonth, activeLang);
+        if (isMounted && dbData && Array.isArray(dbData) && dbData.length > 0) {
+          setCachedMonthlyPredictions(dbData);
+          return;
+        }
+      } catch (err) {
+        console.warn("Calendar DB fetch failed, generating fallback:", err);
+      }
+
+      const generated = getMonthlyCalendarPredictions(
+        calendarYear,
+        calendarMonth,
+        user?.hasCreatedMap ? user.birthDate : "1997-02-11",
+        mapData?.astros?.find((a: any) => a.name === "Sol")?.sign || getZodiacSign(user?.birthDate),
+        user?.hasCreatedMap ? user?.name : "Viajante",
+        activeLang,
+        mapData
+      );
+
+      if (isMounted) {
+        setCachedMonthlyPredictions(generated);
+      }
+
+      saveMonthlyCalendarToDatabase(userKey, yearMonth, activeLang, generated).catch(e => {
+        console.warn("Failed to persist calendar to Firestore:", e);
+      });
+    }
+
+    loadCalendar();
+
+    return () => { isMounted = false; };
+  }, [calendarYear, calendarMonth, activeLang, user?.birthDate, user?.name, user?.email, user?.hasCreatedMap, mapData]);
+
   const monthlyPredictions = useMemo(() => {
+    if (cachedMonthlyPredictions && cachedMonthlyPredictions.length > 0) {
+      return cachedMonthlyPredictions;
+    }
     return getMonthlyCalendarPredictions(
       calendarYear,
       calendarMonth,
@@ -1490,7 +1745,7 @@ export default function UserDashboardPortal({
       activeLang,
       mapData
     );
-  }, [calendarYear, calendarMonth, user?.birthDate, user?.name, user?.hasCreatedMap, mapData, activeLang]);
+  }, [cachedMonthlyPredictions, calendarYear, calendarMonth, user?.birthDate, user?.name, user?.hasCreatedMap, mapData, activeLang]);
 
   const selectedDayPrediction = useMemo(() => {
     const idx = Math.max(0, Math.min(monthlyPredictions.length - 1, selectedCalendarDay - 1));
@@ -2195,36 +2450,13 @@ export default function UserDashboardPortal({
     }
   };
 
-  // 2. INTELLIGENT CALENDAR CONFIGURATION
-  const CATEGORY_EMOJIS: Record<string, string> = {
-    todos: "🌟",
-    produtividade: "🎯",
-    descanso: "🌙",
-    familia: "🏡",
-    encontros: "💖",
-    diversao: "🥳",
-    entrevistas: "🎙️",
-    vendas: "💰",
-    investimentos: "💸",
-    viagens: "✈️",
-    mudancas: "📦",
-    projetos: "🚀",
-    contratos: "📜",
-    conversas: "💬",
-    estudos: "📚",
-    exercicios: "🏃‍♂️",
-    meditacao: "🧘",
-    espiritualidade: "✨",
-    compras: "🛍️"
-  };
-
-  const calendarCategories = [
-    { id: 'todos', label: 'Todos os Dias', icon: Calendar, color: 'text-slate-400', list: [] },
-    { id: 'produtividade', label: 'Produtividade', icon: Activity, color: 'text-orange-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('produtividade')).map(p => p.dayNumber + 1) },
-    { id: 'descanso', label: 'Descanso', icon: ShieldCheck, color: 'text-teal-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('descanso')).map(p => p.dayNumber + 1) },
-    { id: 'familia', label: 'Família', icon: Users, color: 'text-blue-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('familia')).map(p => p.dayNumber + 1) },
-    { id: 'encontros', label: 'Encontros', icon: Heart, color: 'text-rose-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('encontros')).map(p => p.dayNumber + 1) },
-    { id: 'diversao', label: 'Diversão', icon: Smile, color: 'text-yellow-405', list: monthlyPredictions.filter(p => p.categoryMatches.includes('diversao')).map(p => p.dayNumber + 1) },
+  const calendarCategories = useMemo(() => [
+    { id: 'todos', label: 'Todos os Dias', icon: Calendar, color: 'text-sky-400', list: monthlyPredictions.map(p => p.dayNumber + 1) },
+    { id: 'produtividade', label: 'Foco & Produtividade', icon: Zap, color: 'text-amber-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('produtividade')).map(p => p.dayNumber + 1) },
+    { id: 'descanso', label: 'Descanso & Repouso', icon: Moon, color: 'text-indigo-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('descanso')).map(p => p.dayNumber + 1) },
+    { id: 'familia', label: 'Família', icon: Home, color: 'text-emerald-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('familia')).map(p => p.dayNumber + 1) },
+    { id: 'encontros', label: 'Encontros', icon: Heart, color: 'text-pink-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('encontros')).map(p => p.dayNumber + 1) },
+    { id: 'diversao', label: 'Diversão', icon: Smile, color: 'text-yellow-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('diversao')).map(p => p.dayNumber + 1) },
     { id: 'entrevistas', label: 'Entrevistas', icon: Sparkle, color: 'text-indigo-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('entrevistas')).map(p => p.dayNumber + 1) },
     { id: 'vendas', label: 'Vendas', icon: DollarSign, color: 'text-emerald-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('vendas')).map(p => p.dayNumber + 1) },
     { id: 'investimentos', label: 'Investimentos', icon: Zap, color: 'text-amber-500', list: monthlyPredictions.filter(p => p.categoryMatches.includes('investimentos')).map(p => p.dayNumber + 1) },
@@ -2232,13 +2464,13 @@ export default function UserDashboardPortal({
     { id: 'mudancas', label: 'Mudanças', icon: Flame, color: 'text-rose-500', list: monthlyPredictions.filter(p => p.categoryMatches.includes('mudancas')).map(p => p.dayNumber + 1) },
     { id: 'projetos', label: 'Iniciar Projetos', icon: Award, color: 'text-pink-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('projetos')).map(p => p.dayNumber + 1) },
     { id: 'contratos', label: 'Assinar Contratos', icon: BookOpen, color: 'text-purple-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('contratos')).map(p => p.dayNumber + 1) },
-    { id: 'conversas', label: 'Conversas Difíceis', icon: AlertCircle, color: 'text-red-450', list: monthlyPredictions.filter(p => p.categoryMatches.includes('conversas')).map(p => p.dayNumber + 1) },
-    { id: 'estudos', label: 'Estudos', icon: Star, color: 'text-emerald-505', list: monthlyPredictions.filter(p => p.categoryMatches.includes('estudos')).map(p => p.dayNumber + 1) },
+    { id: 'conversas', label: 'Conversas Difíceis', icon: AlertCircle, color: 'text-red-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('conversas')).map(p => p.dayNumber + 1) },
+    { id: 'estudos', label: 'Estudos', icon: Star, color: 'text-emerald-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('estudos')).map(p => p.dayNumber + 1) },
     { id: 'exercicios', label: 'Exercícios Físicos', icon: Activity, color: 'text-amber-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('exercicios')).map(p => p.dayNumber + 1) },
     { id: 'meditacao', label: 'Meditação', icon: Eye, color: 'text-teal-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('meditacao')).map(p => p.dayNumber + 1) },
     { id: 'espiritualidade', label: 'Espiritualidade', icon: Sparkles, color: 'text-purple-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('espiritualidade')).map(p => p.dayNumber + 1) },
-    { id: 'compras', label: 'Compras Importantes', icon: DollarSign, color: 'text-amber-450', list: monthlyPredictions.filter(p => p.categoryMatches.includes('compras')).map(p => p.dayNumber + 1) }
-  ];
+    { id: 'compras', label: 'Compras Importantes', icon: DollarSign, color: 'text-amber-400', list: monthlyPredictions.filter(p => p.categoryMatches.includes('compras')).map(p => p.dayNumber + 1) }
+  ], [monthlyPredictions]);
 
   const getCalendarDayIconAndBg = (day: number) => {
     const dayPred = monthlyPredictions[day - 1];
@@ -2271,13 +2503,15 @@ export default function UserDashboardPortal({
       }
     });
 
-    const neutralInfluences = activeLang === 'de' ? 'Allgemeine neutrale Einflüsse' : activeLang === 'en' ? 'General Neutral Influences' : activeLang === 'es' ? 'Influencias Generales Neutras' : 'Influências Gerais Neutras';
+    const neutralInfluences = activeLang === 'de' ? 'Allgemeine neutrale Einflüsse' : activeLang === 'en' ? 'General Neutral Influences' : activeLang === 'es' ? 'Influencias Generales Neutras' : activeLang === 'fr' ? 'Influences Générales Neutres' : 'Influências Gerais Neutras';
     const guidanceEven = activeLang === 'de'
       ? "Ein Tag, der von der reflektiven Energie des Mondes dominiert wird. Ideal, um alte Geschäftsideen zu strukturieren oder den Finanzfluss mit saturnischem Urteil zu überprüfen. Müdigkeit ist heilig — respektiere natürliche Pausen."
       : activeLang === 'en'
       ? "A day dominated by the Moon's reflective energy. Perfect for structuring old business ideas or reviewing the flow of finances with Saturnian discernment. Tiredness is sacred — respect natural pauses."
       : activeLang === 'es'
       ? "Un día dominado por la energía reflexiva de la Luna. Perfecto para estructurar ideas antiguas de negocios o revisar el flujo de las finanzas con criterio saturnino. El cansancio es sagrado, respeta las pausas naturales."
+      : activeLang === 'fr'
+      ? "Une journée dominée par l'énergie réflexive de la Lune. Parfait pour structurer d'anciennes idées d'affaires ou revoir le flux des finances avec un discernement saturnien. La fatigue est sacrée, respectez les pauses naturelles."
       : "Dia dominado pela energia reflexiva da Lua. Perfeito para estruturar ideias antigas de negócios ou revisar o fluxo das finanças com critério saturnino. O cansaço é sagrado, respeite as pausas naturais.";
     const guidanceOdd = activeLang === 'de'
       ? "Ein Tag, der vom Sonnenimpuls des Luftelements geprägt ist. Ausgezeichnet, um Geschäftsvorschläge mündlich zu äußern, Ideen mit Partnern ungezwungen zu diskutieren oder über onirologische Spiritualität zu lesen."
@@ -2285,6 +2519,8 @@ export default function UserDashboardPortal({
       ? "A day marked by the solar impulse of the Air element. Excellent for verbally expressing business proposals, discussing ideas casually with partners or reading about oneiric spirituality."
       : activeLang === 'es'
       ? "Un día marcado por el impulso solar del elemento Aire. Excelente para expressar verbalmente propuestas comerciales, debatir ideas de forma distendida con socios o leer sobre espiritualidad onírica."
+      : activeLang === 'fr'
+      ? "Une journée marquée par l'impulsion solaire de l'élément Air. Excellent pour exprimer verbalement des propositions commerciales, discuter de manière décontractée avec des partenaires ou lire sur la spiritualité onirique."
       : "Dia marcado pelo impulso solar do elemento Ar. Excelente para expressar verbalmente propostas comerciais, debater ideias de forma descontraída com parceiros ou ler sobre espiritualidade onírica.";
     const tips: Record<string, string[]> = {
       pt: [
@@ -2307,6 +2543,11 @@ export default function UserDashboardPortal({
         "Evita comprar artículos superfluos al final del día. Espera 24 horas antes de decidir.",
         "Haz estiramientos respiratorios intensificados de 5 minutos al despertar."
       ],
+      fr: [
+        "Allumez un bâton de bois de santal le matin pour vous accorder à la sagesse et nettoyez votre bureau.",
+        "Évitez d'acheter des articles superflus en fin de journée. Attendez 24 heures avant de décider.",
+        "Faites 5 minutes d'étirements respiratoires intensifs dès le réveil."
+      ]
     };
     const langTips = tips[activeLang] || tips['pt'];
 
@@ -3025,7 +3266,7 @@ export default function UserDashboardPortal({
                           </span>
                           <span className="text-xs pt-0.5 block">{metadata.sym || "☀️"}</span>
                           <span className="text-[7px] text-slate-500 font-sans block truncate max-w-full leading-none">
-                            {metadata.label}
+                            {t(metadata.label)}
                           </span>
                         </button>
                       );
@@ -3042,22 +3283,108 @@ export default function UserDashboardPortal({
                         {selectedDayPrediction.dateFormatted}
                       </span>
                     </div>
-                    <span className={`px-2.5 py-0.5 rounded-md text-[9px] font-mono border ${selectedDayPrediction.tagColorClass}`}>
-                      {t('Vibração:')} {t(selectedDayPrediction.tagText)}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {selectedDayPrediction.keyword && (
+                        <span className="px-2 py-0.5 rounded-md text-[9px] font-mono border border-amber-500/30 bg-amber-500/10 text-amber-300">
+                          {t('Foco:')} {t(selectedDayPrediction.keyword)}
+                        </span>
+                      )}
+                      <span className={`px-2.5 py-0.5 rounded-md text-[9px] font-mono border ${selectedDayPrediction.tagColorClass}`}>
+                        {t('Vibração:')} {t(selectedDayPrediction.tagText)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 5 Key Daily Attributes Bar */}
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[9.5px] font-mono">
+                    <div className="p-2 bg-slate-900/60 rounded-xl border border-slate-800 text-center">
+                      <span className="text-[7.5px] text-slate-500 uppercase block">{t('Emoção Predominante')}</span>
+                      <span className="text-slate-200 font-bold block mt-0.5">{t(selectedDayPrediction.predominantEmotion || 'Serenidade')}</span>
+                    </div>
+                    <div className="p-2 bg-slate-900/60 rounded-xl border border-slate-800 text-center">
+                      <span className="text-[7.5px] text-slate-500 uppercase block">{t('Elemento Dominante')}</span>
+                      <span className="text-amber-400 font-bold block mt-0.5">{t(selectedDayPrediction.dominantElement || 'Fogo')}</span>
+                    </div>
+                    <div className="p-2 bg-slate-900/60 rounded-xl border border-slate-800 text-center">
+                      <span className="text-[7.5px] text-slate-500 uppercase block">{t('Planeta Regente')}</span>
+                      <span className="text-indigo-300 font-bold block mt-0.5">{t(selectedDayPrediction.rulingPlanet || 'Sol')}</span>
+                    </div>
+                    <div className="p-2 bg-slate-900/60 rounded-xl border border-slate-800 text-center">
+                      <span className="text-[7.5px] text-slate-500 uppercase block">{t('Casa Ativada')}</span>
+                      <span className="text-sky-300 font-bold block mt-0.5">{t('Casa')} {selectedDayPrediction.mostActivatedHouse || 1}</span>
+                    </div>
+                    <div className="p-2 bg-slate-900/60 rounded-xl border border-slate-800 text-center col-span-2 sm:col-span-1">
+                      <span className="text-[7.5px] text-slate-500 uppercase block">{t('Nível Energético')}</span>
+                      <span className="text-emerald-400 font-bold block mt-0.5">{selectedDayPrediction.energyLevel}%</span>
+                    </div>
+                  </div>
+
+                  {/* Daily Indices Radar / Progress Grid */}
+                  <div className="p-3 bg-slate-900/40 rounded-xl border border-slate-850 space-y-2 text-[10px]">
+                    <span className="text-[8px] font-mono text-slate-400 uppercase tracking-wider block font-bold">{t('Índices de Performance Diária:')}</span>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                      <div>
+                        <div className="flex justify-between text-[8px] font-mono text-slate-400 mb-1">
+                          <span>{t('Produtividade')}</span>
+                          <span className="text-amber-400 font-bold">{selectedDayPrediction.productivityIndex || 85}%</span>
+                        </div>
+                        <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                          <div className="bg-amber-400 h-full rounded-full" style={{ width: `${selectedDayPrediction.productivityIndex || 85}%` }} />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-[8px] font-mono text-slate-400 mb-1">
+                          <span>{t('Emocional')}</span>
+                          <span className="text-sky-400 font-bold">{selectedDayPrediction.emotionalIndex || 78}%</span>
+                        </div>
+                        <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                          <div className="bg-sky-400 h-full rounded-full" style={{ width: `${selectedDayPrediction.emotionalIndex || 78}%` }} />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-[8px] font-mono text-slate-400 mb-1">
+                          <span>{t('Espiritual')}</span>
+                          <span className="text-purple-400 font-bold">{selectedDayPrediction.spiritualIndex || 90}%</span>
+                        </div>
+                        <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                          <div className="bg-purple-400 h-full rounded-full" style={{ width: `${selectedDayPrediction.spiritualIndex || 90}%` }} />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-[8px] font-mono text-slate-400 mb-1">
+                          <span>{t('Social')}</span>
+                          <span className="text-emerald-400 font-bold">{selectedDayPrediction.socialIndex || 72}%</span>
+                        </div>
+                        <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                          <div className="bg-emerald-400 h-full rounded-full" style={{ width: `${selectedDayPrediction.socialIndex || 72}%` }} />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-[8px] font-mono text-slate-400 mb-1">
+                          <span>{t('Financeiro')}</span>
+                          <span className="text-indigo-400 font-bold">{selectedDayPrediction.financialIndex || 80}%</span>
+                        </div>
+                        <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                          <div className="bg-indigo-400 h-full rounded-full" style={{ width: `${selectedDayPrediction.financialIndex || 80}%` }} />
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-sans">
                     {/* Column 1 - Astrological Mechanics */}
                     <div className="space-y-3">
                       <div>
-                        <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{t('Influência Astrológica:')}</span>
-                        <p className="text-slate-200 font-medium leading-relaxed">{t(selectedDayPrediction.astroInfluence)}</p>
+                        <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{t('Resumo Energético & Influência:')}</span>
+                        <p className="text-slate-200 font-medium leading-relaxed text-[11px]">{t(selectedDayPrediction.summary || selectedDayPrediction.astroInfluence)}</p>
                       </div>
 
                       <div>
                         <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">{t('Aspectos Planetários do Dia:')}</span>
                         <p className="text-slate-300 italic font-mono text-[10.5px]">{t(selectedDayPrediction.aspects)}</p>
+                        {selectedDayPrediction.aspectsPracticalInfluence && (
+                          <p className="text-slate-400 text-[10px] mt-0.5">{t(selectedDayPrediction.aspectsPracticalInfluence)}</p>
+                        )}
                       </div>
 
                       <div>
@@ -3065,6 +3392,9 @@ export default function UserDashboardPortal({
                         <p className="text-sky-300 font-mono text-[10.5px]">
                           {selectedDayPrediction.moonPhase?.icon} {t(selectedDayPrediction.moonPhase?.name || '')} ({t(selectedDayPrediction.moonPhase?.sign || '')}) — {t(selectedDayPrediction.transit)}
                         </p>
+                        {selectedDayPrediction.moonEmotionalInfluence && (
+                          <p className="text-slate-400 text-[10px] mt-0.5">{t(selectedDayPrediction.moonEmotionalInfluence)}</p>
+                        )}
                       </div>
 
                       {/* Numerology and Sound Frequency Cards */}
@@ -3083,17 +3413,6 @@ export default function UserDashboardPortal({
                           </span>
                         </div>
                       </div>
-
-                      <div className="flex items-center gap-4 p-2 bg-slate-900/50 rounded-xl border border-slate-850">
-                        <div className="flex-1">
-                          <span className="text-[8px] font-mono text-slate-500 uppercase block">{t('Energia Predominante:')}</span>
-                          <span className="text-[10px] font-bold text-slate-200">{t(selectedDayPrediction.predominantEnergy)}</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-[8px] font-mono text-slate-500 block">{t('Nível Energético:')}</span>
-                          <span className="text-xs font-bold font-mono text-amber-400">{selectedDayPrediction.energyLevel}%</span>
-                        </div>
-                      </div>
                     </div>
 
                     {/* Column 2 - Personal Guidance */}
@@ -3102,10 +3421,16 @@ export default function UserDashboardPortal({
                         <div className="p-2 bg-[#16A340]/10 border border-[#16A340]/20 rounded-lg">
                           <strong className="text-[8px] font-mono text-emerald-400 uppercase block mb-0.5">{t('Áreas Favorecidas:')}</strong>
                           <span className="text-slate-200 text-[10px] font-mono block">{selectedDayPrediction.favoredAreas.map(a => t(a)).join(', ')}</span>
+                          {selectedDayPrediction.favoredAreasDetail && (
+                            <p className="text-slate-400 text-[9px] mt-1 font-sans">{t(selectedDayPrediction.favoredAreasDetail)}</p>
+                          )}
                         </div>
                         <div className="p-2 bg-rose-500/10 border border-rose-500/20 rounded-lg">
                           <strong className="text-[8px] font-mono text-rose-400 uppercase block mb-0.5">{t('Áreas de Atenção:')}</strong>
                           <span className="text-slate-200 text-[10px] font-mono block">{selectedDayPrediction.attentionAreas.map(a => t(a)).join(', ')}</span>
+                          {selectedDayPrediction.attentionAreasDetail && (
+                            <p className="text-slate-400 text-[9px] mt-1 font-sans">{t(selectedDayPrediction.attentionAreasDetail)}</p>
+                          )}
                         </div>
                       </div>
 
@@ -3126,25 +3451,62 @@ export default function UserDashboardPortal({
                     </div>
                   </div>
 
-                  {/* Footer Stats Row */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-slate-900 text-xs text-left font-mono">
-                    <div className="p-2 bg-slate-900/30 rounded-lg border border-slate-850">
-                      <span className="text-[7.5px] text-slate-500 uppercase block">{t('Cor Favorecida')}</span>
-                      <span className="text-[10px] text-slate-350 font-bold block mt-0.5">{t(selectedDayPrediction.favorableColor)}</span>
-                    </div>
-                    <div className="p-2 bg-slate-900/30 rounded-lg border border-slate-850">
-                      <span className="text-[7.5px] text-slate-500 uppercase block">{t('Número da Sorte')}</span>
-                      <span className="text-[10px] text-slate-350 font-bold block mt-0.5">{t('Nº')} {selectedDayPrediction.favorableNumber}</span>
-                    </div>
-                    <div className="p-2 bg-slate-900/30 rounded-lg border border-slate-850">
-                      <span className="text-[7.5px] text-slate-500 block uppercase">{t('Melhor Período')}</span>
-                      <span className="text-[10px] text-indigo-300 font-bold block mt-0.5">{t(selectedDayPrediction.bestPeriod)}</span>
-                    </div>
-                    <div className="p-2 bg-slate-900/30 rounded-lg border border-slate-850">
-                      <span className="text-[7.5px] text-slate-500 block uppercase">{t('Alerta de Período')}</span>
-                      <span className="text-[10px] text-rose-400 font-bold block mt-0.5">{t(selectedDayPrediction.attentionPeriod)}</span>
+                  {/* Ideal Time Windows Bar */}
+                  <div className="p-3 bg-slate-900/50 rounded-xl border border-slate-850 space-y-1.5 font-mono text-[9.5px]">
+                    <span className="text-[8px] text-slate-500 uppercase block font-bold">{t('Janelas Temporais Recomendadas do Dia:')}</span>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <div className="p-1.5 bg-slate-950 rounded-lg border border-slate-800">
+                        <span className="text-[7px] text-slate-500 block uppercase">{t('Tomar Decisões')}</span>
+                        <span className="text-indigo-300 font-bold">{selectedDayPrediction.bestTimeDecisions || selectedDayPrediction.bestPeriod}</span>
+                      </div>
+                      <div className="p-1.5 bg-slate-950 rounded-lg border border-slate-800">
+                        <span className="text-[7px] text-slate-500 block uppercase">{t('Foco / Estudos')}</span>
+                        <span className="text-sky-300 font-bold">{selectedDayPrediction.bestTimeStudies || '14:00 - 16:30'}</span>
+                      </div>
+                      <div className="p-1.5 bg-slate-950 rounded-lg border border-slate-800">
+                        <span className="text-[7px] text-slate-500 block uppercase">{t('Relacionamentos')}</span>
+                        <span className="text-emerald-300 font-bold">{selectedDayPrediction.bestTimeRelationships || '18:00 - 20:00'}</span>
+                      </div>
+                      <div className="p-1.5 bg-slate-950 rounded-lg border border-slate-800">
+                        <span className="text-[7px] text-slate-500 block uppercase">{t('Pausa / Descanso')}</span>
+                        <span className="text-purple-300 font-bold">{selectedDayPrediction.bestTimeRest || '21:30 - 23:00'}</span>
+                      </div>
                     </div>
                   </div>
+
+                  {/* Color & Numbers Details */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs font-mono">
+                    <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850 space-y-1">
+                      <span className="text-[8px] text-amber-400 font-bold uppercase block">{t('Cor Favorável & Uso Prático')}</span>
+                      <span className="text-[11px] text-slate-100 font-bold block">{t(selectedDayPrediction.favorableColor)}</span>
+                      {selectedDayPrediction.favorableColorReason && (
+                        <p className="text-[9.5px] text-slate-400 font-sans leading-relaxed">{t(selectedDayPrediction.favorableColorReason)}</p>
+                      )}
+                      {selectedDayPrediction.favorableColorUsage && (
+                        <p className="text-[9px] text-amber-300/80 font-sans italic">{t(selectedDayPrediction.favorableColorUsage)}</p>
+                      )}
+                    </div>
+
+                    <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850 space-y-1">
+                      <span className="text-[8px] text-indigo-400 font-bold uppercase block">{t('Números Favoráveis & Vibração')}</span>
+                      <span className="text-[11px] text-slate-100 font-bold block">
+                        {selectedDayPrediction.favorableNumbersList ? selectedDayPrediction.favorableNumbersList.join(', ') : selectedDayPrediction.favorableNumber}
+                      </span>
+                      {selectedDayPrediction.favorableNumbersMeaning && (
+                        <p className="text-[9.5px] text-slate-400 font-sans leading-relaxed">{t(selectedDayPrediction.favorableNumbersMeaning)}</p>
+                      )}
+                      {selectedDayPrediction.favorableNumbersSuggestions && (
+                        <p className="text-[9px] text-indigo-300/80 font-sans italic">{t(selectedDayPrediction.favorableNumbersSuggestions)}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Daily Recommended Ritual */}
+                  {selectedDayPrediction.recommendedRitual && (
+                    <div className="p-3 bg-purple-950/20 rounded-xl border border-purple-900/40 text-[10.5px] text-purple-200 font-sans leading-relaxed">
+                      🧘‍♀️ <strong className="text-purple-300">{t('Ritual Sugerido para o Dia:')}</strong> {t(selectedDayPrediction.recommendedRitual)}
+                    </div>
+                  )}
 
                   {/* Astro Map Custom message */}
                   <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-850/60 text-[10.5px] text-slate-400 font-sans leading-relaxed">

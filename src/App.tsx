@@ -4245,15 +4245,34 @@ export default function App() {
     }
   };
 
-  const biorhythmToday = calculateBiorhythm(user.birthDate, systemDate.toISOString().split('T')[0]);
+  const biorhythmToday = React.useMemo(() => {
+    return calculateBiorhythm(user.birthDate, systemDate.toISOString().split('T')[0]);
+  }, [user.birthDate, systemDate]);
 
-  const personalProsperity = generatePersonalizedProsperityMap(
-    user?.hasCreatedMap ? user.birthDate : "1997-02-11",
-    mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Touro"),
-    user?.hasCreatedMap ? user.name : "Viajante",
-    systemDate,
-    currentLang
-  );
+  const personalProsperity = React.useMemo(() => {
+    return generatePersonalizedProsperityMap(
+      user?.hasCreatedMap ? user.birthDate : "1997-02-11",
+      mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Touro"),
+      user?.hasCreatedMap ? user.name : "Viajante",
+      systemDate,
+      currentLang
+    );
+  }, [user?.hasCreatedMap, user.birthDate, user.name, mapData, systemDate, currentLang]);
+
+  const transit30DaysPredictions = React.useMemo(() => {
+    const sunSign = mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Touro");
+    return Array.from({ length: 30 }, (_, idx) => {
+      return generateDailyPrediction(
+        user?.birthDate || "1997-02-11",
+        sunSign,
+        user?.name || "Viajante",
+        idx,
+        systemDate,
+        currentLang,
+        mapData
+      );
+    });
+  }, [user?.birthDate, user?.name, systemDate, currentLang, mapData]);
 
   // Automated Real-Time Biorhythm Sync Hook
   useEffect(() => {
@@ -7325,15 +7344,7 @@ export default function App() {
                         const dayNum = idx + 1;
                         const isSelected = selectedProsperityDay === dayNum;
                         
-                        const tilePred = generateDailyPrediction(
-                          user?.birthDate || "1997-02-11",
-                          mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Touro"),
-                          user?.name || "Viajante",
-                          idx,
-                          systemDate,
-                          currentLang,
-                          mapData
-                        );
+                        const tilePred = transit30DaysPredictions[idx] || transit30DaysPredictions[0];
 
                         let dayColor = tilePred.tagColorClass;
                         if (isSelected) {
@@ -7357,15 +7368,7 @@ export default function App() {
 
                     {/* Expandable Details Panel for Selected Day */}
                     {selectedProsperityDay !== null && (() => {
-                      const prediction = generateDailyPrediction(
-                        user?.birthDate || "1997-02-11",
-                        mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Touro"),
-                        user?.name || "Viajante",
-                        selectedProsperityDay - 1,
-                        systemDate,
-                        currentLang,
-                        mapData
-                      );
+                      const prediction = transit30DaysPredictions[selectedProsperityDay - 1] || transit30DaysPredictions[0];
                       
                       return (
                         <div className="p-5 bg-slate-950/95 rounded-2xl border border-sky-500/20 text-left space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
