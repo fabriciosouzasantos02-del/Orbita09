@@ -5630,7 +5630,7 @@ export default function App() {
                   </li>
                   <li>
                     <a 
-                      href="https://portal-orbita-excluir-conta.vercel.app"
+                      href="https://portal-orbita-delete-account.vercel.app/"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="hover:text-red-400 cursor-pointer transition text-left block text-slate-400 hover:underline"
