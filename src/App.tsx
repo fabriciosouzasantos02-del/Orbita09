@@ -5547,31 +5547,34 @@ export default function App() {
                 <h4 className="text-[10px] font-mono uppercase text-amber-500 tracking-widest mb-3 font-bold">{t("Diretrizes Legais")}</h4>
                 <ul className="text-[11px] text-slate-400 space-y-2 font-sans">
                   <li>
-                    <button 
-                      type="button" 
-                      onClick={() => setLandingFooterModal('terms')} 
-                      className="hover:text-amber-400 cursor-pointer transition text-left"
+                    <a 
+                      href="https://portal-orbita.blogspot.com/2026/08/portal-terms-of-use.html"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-amber-400 cursor-pointer transition text-left block"
                     >
                       {t("Termos de Uso do Portal")}
-                    </button>
+                    </a>
                   </li>
                   <li>
-                    <button 
-                      type="button" 
-                      onClick={() => setLandingFooterModal('privacy')} 
-                      className="hover:text-amber-400 cursor-pointer transition text-left"
+                    <a 
+                      href="https://portal-orbita.blogspot.com/2026/08/privacy-policy.html"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-amber-400 cursor-pointer transition text-left block"
                     >
                       {t("Políticas de Privacidade")}
-                    </button>
+                    </a>
                   </li>
                   <li>
-                    <button 
-                      type="button" 
-                      onClick={() => setLandingFooterModal('security')} 
-                      className="hover:text-amber-400 cursor-pointer transition text-left"
+                    <a 
+                      href="https://portal-orbita.blogspot.com/2026/08/security-guidelines.html"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-amber-400 cursor-pointer transition text-left block"
                     >
                       {t("Diretrizes de Segurança")}
-                    </button>
+                    </a>
                   </li>
                 </ul>
               </div>
@@ -5624,6 +5627,16 @@ export default function App() {
                     >
                       {t("✉️ Fale Conosco / Suporte")}
                     </button>
+                  </li>
+                  <li>
+                    <a 
+                      href="https://portal-orbita-excluir-conta.vercel.app"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-red-400 cursor-pointer transition text-left block text-slate-400 hover:underline"
+                    >
+                      {t("Excluir conta")}
+                    </a>
                   </li>
                   <li>
                     <select 
