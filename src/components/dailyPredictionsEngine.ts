@@ -1842,7 +1842,16 @@ export function generateDailyPrediction(
   const energyDetails = energyDetailsDict[lang] || energyDetailsDict.pt;
 
   // 11. Oportunidades por Setor
-  const sectorOpportunitiesDict: Record<string, Record<string, string>> = {
+  type SectorOpps = {
+    work: string;
+    studies: string;
+    love: string;
+    money: string;
+    family: string;
+    creativity: string;
+    spirituality: string;
+  };
+  const sectorOpportunitiesDict: Record<string, SectorOpps> = {
     pt: {
       work: `Foco elevado para execução em ${favoredAreas[0]}`,
       studies: `Excelente clareza mental e absorção de conhecimentos`,

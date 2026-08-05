@@ -689,10 +689,13 @@ export default function App() {
 
   // Millionaire footer interactive modal states
   const [landingFooterModal, setLandingFooterModal] = useState<'privacy' | 'terms' | 'security' | 'about' | 'support' | null>(null);
-  const [supportCategory, setSupportCategory] = useState<string>('technical');
-  const [supportMessage, setSupportMessage] = useState<string>('');
+  const [supportName, setSupportName] = useState<string>('');
+  const [supportEmail, setSupportEmail] = useState<string>('');
+  const [supportReason, setSupportReason] = useState<string>('');
   const [supportSending, setSupportSending] = useState<boolean>(false);
   const [supportSuccessMessage, setSupportSuccessMessage] = useState<string>('');
+  const [supportTicketId, setSupportTicketId] = useState<string>('');
+  const [supportError, setSupportError] = useState<string>('');
 
   // High contrast visual accessibility states
   const [highContrast, setHighContrast] = useState<boolean>(() => {
@@ -5620,7 +5623,10 @@ export default function App() {
                       type="button" 
                       onClick={() => {
                         setSupportSuccessMessage('');
-                        setSupportMessage('');
+                        setSupportError('');
+                        setSupportName(user?.name || user?.displayName || '');
+                        setSupportEmail(user?.email || loggedEmail || '');
+                        setSupportReason('');
                         setLandingFooterModal('support');
                       }} 
                       className="hover:text-amber-400 cursor-pointer transition text-left font-semibold text-amber-500"
@@ -5751,91 +5757,135 @@ export default function App() {
 
                 {landingFooterModal === 'support' && (
                   <div className="space-y-4">
-                    <span className="text-[9px] font-mono text-amber-400 uppercase tracking-widest font-bold">{t("Central de Incidentes")}</span>
+                    <span className="text-[9px] font-mono text-amber-400 uppercase tracking-widest font-bold">{t("Contato & Ajuda")}</span>
                     <h3 className="text-xl font-sans font-black text-slate-100 uppercase">{t("Canal de Atendimento Órbita")}</h3>
                     
                     {supportSuccessMessage ? (
                       <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-3 animate-in zoom-in-95">
                         <div className="flex items-center gap-2.5">
                           <span className="p-1 rounded-full bg-emerald-500/20 text-emerald-400">✓</span>
-                          <span className="text-sm font-bold text-emerald-300">{t("Mensagem Recebida com Sucesso!")}</span>
+                          <span className="text-sm font-bold text-emerald-300">{t("Mensagem Enviada com Sucesso!")}</span>
                         </div>
                         <p className="text-xs text-slate-300 leading-normal">
                           {supportSuccessMessage}
                         </p>
-                        <p className="text-[10px] font-mono text-slate-500">
-                          {t("ID de Rastreamento:")} <strong className="text-amber-400 font-bold">ORB-TKT-{(Math.random()*100000).toFixed(0)}-2026</strong>
-                        </p>
+                        {supportTicketId && (
+                          <p className="text-[10px] font-mono text-slate-400">
+                            {t("ID do Atendimento:")} <strong className="text-amber-400 font-bold">{supportTicketId}</strong>
+                          </p>
+                        )}
                         <button 
                           type="button"
                           onClick={() => setLandingFooterModal(null)}
                           className="px-4 py-2 bg-emerald-500 text-slate-950 font-bold rounded-xl text-xs uppercase tracking-wider hover:bg-emerald-400 transition cursor-pointer"
                         >
-                          {t("Entendido, Fechar Canal")}
+                          {t("Entendido, Fechar")}
                         </button>
                       </div>
                     ) : (
                       <form 
-                        onSubmit={(e) => {
+                        onSubmit={async (e) => {
                           e.preventDefault();
-                          if (!supportMessage.trim()) return;
+                          if (!supportName.trim() || !supportEmail.trim() || !supportReason.trim()) return;
                           setSupportSending(true);
-                          setTimeout(() => {
+                          setSupportError('');
+                          try {
+                            const response = await fetch('/api/enviar', {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                'X-App-Lang': lang
+                              },
+                              body: JSON.stringify({
+                                nome: supportName,
+                                email: supportEmail,
+                                motivo: supportReason,
+                                lang: lang,
+                                confirmed: true
+                              })
+                            });
+                            const data = await response.json();
                             setSupportSending(false);
-                            setSupportSuccessMessage(t("Seu chamado técnico foi catalogado no Consórcio de Engenheiros Estelares. Uma resposta personalizada contendo a resposta astrológica ou suporte técnico correspondente será enviada ao seu e-mail cadastrado em um prazo máximo de 12 horas úteis."));
-                          }, 1100);
+                            if (data.success) {
+                              setSupportTicketId(data.id || `ORB-TKT-${Math.floor(Math.random() * 100000)}-2026`);
+                              setSupportSuccessMessage(t("Sua mensagem foi entregue com sucesso ao nosso suporte. Em breve você receberá uma resposta diretamente no seu e-mail cadastrado."));
+                            } else {
+                              setSupportError(data.error || t("Erro ao enviar mensagem. Tente novamente mais tarde."));
+                            }
+                          } catch (err: any) {
+                            setSupportSending(false);
+                            setSupportError(t("Erro ao enviar mensagem. Tente novamente mais tarde."));
+                          }
                         }}
                         className="space-y-4"
                       >
-                        <p className="text-xs text-slate-400">
-                          {t("Preencha a categoria correspondente e detalhe sua solicitação técnico-astrológica. Nossa guilda investigará imediatamente.")}
+                        <p className="text-xs text-slate-400 leading-relaxed">
+                          {t("Preencha seus dados e descreva sua solicitação ou dúvida abaixo. Nossa equipe analisará e responderá diretamente ao seu e-mail.")}
                         </p>
- 
+
+                        {supportError && (
+                          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-semibold">
+                            ⚠️ {supportError}
+                          </div>
+                        )}
+
                         <div>
-                          <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("Categoria do Chamado")}</label>
-                          <select 
-                            value={supportCategory}
-                            onChange={(e) => setSupportCategory(e.target.value)}
-                            className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 font-sans text-xs text-slate-300 cursor-pointer text-slate-300"
-                          >
-                            <option value="technical">{t("Suporte Técnico de Calculadora")}</option>
-                            <option value="map_help">{t("Dúvidas sobre Nodos Lunares / Plácidus")}</option>
-                            <option value="firebase_issue">{t("Problema de Login / Firebase")}</option>
-                            <option value="collaboration">{t("Parceria de Negócios / Imprensa")}</option>
-                          </select>
+                          <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("Seu Nome")}</label>
+                          <input 
+                            type="text"
+                            required
+                            placeholder={t("Digite seu nome completo")}
+                            value={supportName}
+                            onChange={(e) => setSupportName(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 font-sans text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50"
+                          />
                         </div>
- 
+
                         <div>
-                          <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("Sua Mensagem / Relatório")}</label>
+                          <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("Seu E-mail")}</label>
+                          <input 
+                            type="email"
+                            required
+                            placeholder={t("Digite seu e-mail para contato")}
+                            value={supportEmail}
+                            onChange={(e) => setSupportEmail(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 font-sans text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("Motivo do Contato / Mensagem")}</label>
                           <textarea 
                             required
-                            placeholder={t("Descreva sua questão em detalhes...")}
-                            value={supportMessage}
-                            onChange={(e) => setSupportMessage(e.target.value)}
+                            placeholder={t("Descreva em detalhes sua dúvida, problema de login, questão de pagamento ou solicitação...")}
+                            value={supportReason}
+                            onChange={(e) => setSupportReason(e.target.value)}
                             rows={4}
                             className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 font-sans text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50"
                           />
                         </div>
- 
+
                         <div className="flex justify-end gap-3 pt-2">
                           <button 
                             type="button" 
                             onClick={() => setLandingFooterModal(null)}
-                            className="px-4 py-2.5 bg-slate-800 text-slate-300 hover:bg-slate-705 text-xs font-bold rounded-xl cursor-pointer"
+                            className="px-4 py-2.5 bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-bold rounded-xl cursor-pointer"
                           >
                             {t("Cancelar")}
                           </button>
                           <button 
                             type="submit" 
                             disabled={supportSending}
-                            className="px-6 py-2.5 bg-amber-500 hover:bg-amber-450 text-slate-950 text-xs font-black uppercase tracking-wider rounded-xl transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
+                            className="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider rounded-xl transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
                           >
                             {supportSending ? (
                               <>
                                 <span className="w-3 h-3 rounded-full border border-slate-950 border-t-transparent animate-spin inline-block" />
-                                {t("Transmitindo...")}
+                                {t("Enviando...")}
                               </>
-                            ) : t("Enviar Chamado seguro")}
+                            ) : (
+                              t("Enviar Mensagem ao Suporte")
+                            )}
                           </button>
                         </div>
                       </form>
@@ -7893,13 +7943,14 @@ export default function App() {
                       {tLocal('logout_app_btn')}
                     </button>
 
-                    <button 
-                      onClick={() => setShowDeleteConfirm(true)}
-                      type="button"
-                      className="w-full py-3 bg-rose-950/35 hover:bg-rose-950/50 border border-rose-500/20 hover:border-rose-500/30 rounded-2xl text-xs font-bold text-rose-400 font-sans uppercase tracking-wider transition active:scale-98 cursor-pointer"
+                    <a 
+                      href="https://portal-orbita-delete-account.vercel.app/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-3 bg-rose-950/35 hover:bg-rose-950/50 border border-rose-500/20 hover:border-rose-500/30 rounded-2xl text-xs font-bold text-rose-400 font-sans uppercase tracking-wider transition active:scale-98 cursor-pointer block text-center"
                     >
                       {tLocal('delete_acc_btn')}
-                    </button>
+                    </a>
                   </div>
                 </div>
 

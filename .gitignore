@@ -1,9 +1,23 @@
 node_modules/
 build/
-# dist/
+dist/
 coverage/
 .DS_Store
 *.log
 .env*
 !.env.example
 keys_config.json
+.vercel
+*.json.patch
+i18n-audit-report.json
+untranslated-report.json
+missing-translations-map.json
+audit-translations-output.json
+all-pt-strings.json
+missing-keys.json
+i18n-report.txt
+github-api-test.js
+search-repos.js
+test-*.js
+test_*.ts
+/translations.ts
