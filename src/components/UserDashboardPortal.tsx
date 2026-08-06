@@ -1511,7 +1511,9 @@ export default function UserDashboardPortal({
       ...art,
       title: t(art.title),
       summary: t(art.summary),
-      content: t(art.content)
+      content: t(art.content),
+      author: t(art.author),
+      date: t(art.date)
     })).filter(art => 
       art.title.toLowerCase().includes(query) || 
       art.summary.toLowerCase().includes(query) || 

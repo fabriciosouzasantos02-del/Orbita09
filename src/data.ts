@@ -528,7 +528,9 @@ function translateBlogItem(item: any, lang: Language) {
     ...item,
     title: translateUiText(item.title, lang),
     summary: translateUiText(item.summary, lang),
-    content: translateUiText(item.content, lang)
+    content: translateUiText(item.content, lang),
+    author: translateUiText(item.author, lang),
+    date: translateUiText(item.date, lang)
   };
 }
 

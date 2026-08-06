@@ -4212,7 +4212,9 @@ export default function App() {
       ...item,
       title: i18nT(item.title),
       summary: i18nT(item.summary),
-      content: i18nT(item.content)
+      content: i18nT(item.content),
+      author: i18nT(item.author),
+      date: i18nT(item.date)
     }));
   }, [i18nT]);
 
