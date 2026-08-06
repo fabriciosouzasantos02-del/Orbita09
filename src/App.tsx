@@ -4198,6 +4198,8 @@ export default function App() {
   const signsZodiacList = React.useMemo(() => {
     return SIGNS_ZODIAC_LIST.map(item => ({
       ...item,
+      rawName: item.name,
+      rawElement: item.element,
       name: i18nT(item.name),
       element: i18nT(item.element),
       regente: i18nT(item.regente),
@@ -5286,24 +5288,24 @@ export default function App() {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-12 gap-3 max-w-6xl mx-auto">
               {signsZodiacList.map((sz, szIdx) => {
-                const isActive = selectedZodiacSign === sz.name;
+                const isActive = selectedZodiacSign === sz.rawName || selectedZodiacSign === sz.name;
                 let glowColor = 'from-amber-500/10 to-transparent';
                 let borderColor = isActive ? 'border-amber-500/50' : 'border-slate-800/80';
                 let textColor = isActive ? 'text-amber-300 font-bold' : 'text-slate-400';
 
-                if (sz.element === "Fogo") {
+                if (sz.rawElement === "Fogo") {
                   glowColor = isActive ? 'from-rose-500/25 to-rose-950/10' : 'from-rose-500/5 to-transparent';
                   borderColor = isActive ? 'border-rose-500/60 shadow-lg shadow-rose-500/15' : 'border-slate-800/80 hover:border-rose-500/20';
                   textColor = isActive ? 'text-rose-300 font-semibold' : 'text-slate-400 hover:text-rose-100';
-                } else if (sz.element === "Terra") {
+                } else if (sz.rawElement === "Terra") {
                   glowColor = isActive ? 'from-emerald-500/25 to-emerald-950/10' : 'from-emerald-500/5 to-transparent';
                   borderColor = isActive ? 'border-emerald-500/60 shadow-lg shadow-emerald-500/15' : 'border-slate-800/80 hover:border-emerald-500/20';
                   textColor = isActive ? 'text-emerald-300 font-semibold' : 'text-slate-400 hover:text-emerald-100';
-                } else if (sz.element === "Ar") {
+                } else if (sz.rawElement === "Ar") {
                   glowColor = isActive ? 'from-sky-500/25 to-sky-950/10' : 'from-sky-500/5 to-transparent';
                   borderColor = isActive ? 'border-sky-500/60 shadow-lg shadow-sky-500/15' : 'border-slate-800/80 hover:border-sky-500/20';
                   textColor = isActive ? 'text-sky-300 font-semibold' : 'text-slate-400 hover:text-sky-100';
-                } else if (sz.element === "Água") {
+                } else if (sz.rawElement === "Água") {
                   glowColor = isActive ? 'from-indigo-500/25 to-indigo-950/10' : 'from-indigo-500/5 to-transparent';
                   borderColor = isActive ? 'border-indigo-500/60 shadow-lg shadow-indigo-500/15' : 'border-slate-800/80 hover:border-indigo-500/20';
                   textColor = isActive ? 'text-indigo-300 font-semibold' : 'text-slate-400 hover:text-indigo-100';
@@ -5311,9 +5313,9 @@ export default function App() {
 
                 return (
                   <motion.button
-                    key={sz.name}
-                    id={`zodiac-btn-${sz.name.toLowerCase()}`}
-                    onClick={() => setSelectedZodiacSign(sz.name)}
+                    key={sz.rawName}
+                    id={`zodiac-btn-${sz.rawName.toLowerCase()}`}
+                    onClick={() => setSelectedZodiacSign(sz.rawName)}
                     initial={{ opacity: 0, scale: 0.9 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
@@ -5355,7 +5357,7 @@ export default function App() {
 
             {/* Selected Sign Details Card */}
             {(() => {
-              const currentSign = signsZodiacList.find(s => s.name === selectedZodiacSign);
+              const currentSign = signsZodiacList.find(s => s.rawName === selectedZodiacSign || s.name === selectedZodiacSign) || signsZodiacList[0];
               if (!currentSign) return null;
               return (
                 <motion.div 
@@ -5386,13 +5388,13 @@ export default function App() {
                             </span>
                           </h4>
                           <span className="text-[10px] uppercase tracking-widest font-mono text-slate-400">
-                            Regente Planetário: <strong className="text-amber-400">{currentSign.regente}</strong>
+                            {t("Regente Planetário")}: <strong className="text-amber-400">{currentSign.regente}</strong>
                           </span>
                         </div>
                       </div>
 
                       <div className="mt-5 space-y-1 bg-slate-950/40 p-4 rounded-2xl border border-slate-850">
-                        <strong className="text-[10px] font-mono text-amber-500/80 uppercase tracking-widest block mb-1">Assinatura Energética & Atributos</strong>
+                        <strong className="text-[10px] font-mono text-amber-500/80 uppercase tracking-widest block mb-1">{t("Assinatura Energética & Atributos")}</strong>
                         <p className="text-xs text-slate-300 leading-relaxed font-sans">{currentSign.traits}</p>
                       </div>
                     </div>
@@ -5419,7 +5421,7 @@ export default function App() {
 
                     <div className="text-[9px] text-slate-500 font-mono mt-6 border-t border-slate-850 pt-3 flex justify-between items-center">
                       <span>{t("Atualizado às 00:00 UTC")}</span>
-                      <span>Sincronizado: 2026-06-12T07:45:00Z</span>
+                      <span>{t("Sincronizado")}: 2026-06-12T07:45:00Z</span>
                     </div>
                   </div>
                 </motion.div>
