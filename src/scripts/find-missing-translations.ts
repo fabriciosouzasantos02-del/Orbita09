@@ -2,9 +2,6 @@ import * as fs from 'fs';
 import { uiTranslations } from '../lib/translations';
 import { mergedTranslations } from '../i18n';
 import { staticTranslations } from '../translations';
-import { applyTranslationPatches } from '../lib/translationPatch';
-
-applyTranslationPatches();
 
 const ptList: string[] = JSON.parse(fs.readFileSync('all-pt-strings.json', 'utf8'));
 const langs = ['en', 'es', 'de', 'fr'] as const;

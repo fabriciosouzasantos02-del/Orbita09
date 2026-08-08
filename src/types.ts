@@ -79,6 +79,7 @@ export interface AstroAstroPosition {
   name: string;      // e.g. "Sol", "Lua"
   sign: string;      // e.g. "Aquário"
   degree: string;    // e.g. "22°"
+  house?: number;    // e.g. 1 to 12
   extraInfo?: string; // e.g. "3º decanato", "exílio", "combustão"
   description: string;
 }

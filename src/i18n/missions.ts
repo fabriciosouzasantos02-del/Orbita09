@@ -13,7 +13,27 @@ export const missionsTranslations: Record<Language, Record<string, string>> = {
     mission_dream: 'Registrar o último sonho lembrado',
     claimed: 'Reivindicado',
     claim: 'Reivindicar',
-    bonus_ready: 'Seu Sussurro Lunar do dia está disponível!'
+    bonus_ready: 'Seu Sussurro Lunar do dia está disponível!',
+
+    // Weekly Missions Module (Retenção Ativa)
+    "Missões da Semana (Retenção Ativa)": "Missões da Semana (Retenção Ativa)",
+    "Principais metas desta semana para impulsionar conexões e estancar vazos de capital.": "Principais metas desta semana para impulsionar conexões e estancar vazios de capital.",
+    "A conclusão semanal das missões estabiliza seu score material e clareia o Sol em Aquário.": "A conclusão semanal das missões estabiliza seu score material e eleva sua vibração solar.",
+    "Suas bênçãos e pontuações semanais foram integradas ao seu mapa de evolução pessoal!": "Suas bênçãos e pontuações semanais foram integradas ao seu mapa de evolução pessoal!",
+    "Resgatar Recompensas Semanais": "Resgatar Recompensas Semanais",
+    "Resgatado": "Resgatado",
+    "Recolher": "Recolher",
+    "Detalhes da Missão Semanal": "Detalhes da Missão Semanal",
+    "Orientação Cósmica da IA Orbia": "Orientação Cósmica da IA Orbia",
+    "Prompt da IA Personalizado": "Prompt da IA Personalizado",
+    "Consultar IA Orbia para esta Missão": "Consultar IA Orbia para esta Missão",
+    "Sintonizando Orientação da IA...": "Sintonizando Orientação da IA...",
+    "Esta semana tente resolver uma pendência antiga": "Esta semana tente resolver uma pendência antiga",
+    "Identifique uma pendência material ou burocrática acumulada sob a força de {{zodiac}} e tome uma ação para resolvê-la, liberando fluxo de Saturno.": "Identifique uma pendência material ou burocrática acumulada sob a força de {{zodiac}} e tome uma ação para resolvê-la, liberando fluxo de Saturno.",
+    "Esta semana fortaleça um relacionamento importante": "Esta semana fortaleça um relacionamento importante",
+    "Envie uma mensagem genuína de carinho ou faça um gesto de consideração a alguém do seu círculo íntimo de {{zodiac}}.": "Envie uma mensagem genuína de carinho ou faça um gesto de consideração a alguém do seu círculo íntimo de {{zodiac}}.",
+    "Esta semana dedique tempo ao aprendizado": "Esta semana dedique tempo ao aprendizado",
+    "Invista pelo menos 1 hora em um livro, curso ou áudio de meditação voltado ao desenvolvimento pessoal de {{zodiac}}.": "Invista pelo menos 1 hora em um livro, curso ou áudio de meditação voltado ao desenvolvimento pessoal de {{zodiac}}."
   },
   en: {
     missions_title: 'Daily Cosmic Missions',
@@ -27,7 +47,27 @@ export const missionsTranslations: Record<Language, Record<string, string>> = {
     mission_dream: 'Log the last remembered dream',
     claimed: 'Claimed',
     claim: 'Claim',
-    bonus_ready: 'Your Lunar Whisper of the day is ready!'
+    bonus_ready: 'Your Lunar Whisper of the day is ready!',
+
+    // Weekly Missions Module (Active Retention)
+    "Missões da Semana (Retenção Ativa)": "Weekly Missions (Active Alignment)",
+    "Principais metas desta semana para impulsionar conexões e estancar vazos de capital.": "Main weekly goals to boost connections and prevent capital drains.",
+    "A conclusão semanal das missões estabiliza seu score material e clareia o Sol em Aquário.": "Weekly completion of missions stabilizes your material score and elevates your solar vibration.",
+    "Suas bênçãos e pontuações semanais foram integradas ao seu mapa de evolução pessoal!": "Your weekly blessings and scores have been integrated into your personal evolution map!",
+    "Resgatar Recompensas Semanais": "Claim Weekly Rewards",
+    "Resgatado": "Redeemed",
+    "Recolher": "Collect",
+    "Detalhes da Missão Semanal": "Weekly Mission Details",
+    "Orientação Cósmica da IA Orbia": "Orbia Cosmic AI Guidance",
+    "Prompt da IA Personalizado": "Personalized AI Prompt",
+    "Consultar IA Orbia para esta Missão": "Consult Orbia AI for this Mission",
+    "Sintonizando Orientação da IA...": "Tuning AI Guidance...",
+    "Esta semana tente resolver uma pendência antiga": "This week try to resolve an old pending matter",
+    "Identifique uma pendência material ou burocrática acumulada sob a força de {{zodiac}} e tome uma ação para resolvê-la, liberando fluxo de Saturno.": "Identify an accumulated material or bureaucratic pending issue under the power of {{zodiac}} and take action to resolve it, releasing Saturn's flow.",
+    "Esta semana fortaleça um relacionamento importante": "This week strengthen an important relationship",
+    "Envie uma mensagem genuína de carinho ou faça um gesto de consideração a alguém do seu círculo íntimo de {{zodiac}}.": "Send a genuine message of affection or make a gesture of consideration to someone in your inner circle of {{zodiac}}.",
+    "Esta semana dedique tempo ao aprendizado": "This week dedicate time to learning",
+    "Invista pelo menos 1 hora em um livro, curso ou áudio de meditação voltado ao desenvolvimento pessoal de {{zodiac}}.": "Invest at least 1 hour in a book, course or meditation audio focused on personal development for {{zodiac}}."
   },
   es: {
     missions_title: 'Misiones Cósmicas Diarias',
@@ -41,7 +81,27 @@ export const missionsTranslations: Record<Language, Record<string, string>> = {
     mission_dream: 'Registrar el último sueño recordado',
     claimed: 'Reclamado',
     claim: 'Reclamar',
-    bonus_ready: '¡Tu Susurro Lunar del día está disponible!'
+    bonus_ready: '¡Tu Susurro Lunar del día está disponible!',
+
+    // Weekly Missions Module (Retención Activa)
+    "Missões da Semana (Retenção Ativa)": "Misiones de la Semana (Alineación Activa)",
+    "Principais metas desta semana para impulsionar conexões e estancar vazos de capital.": "Principales metas de esta semana para impulsar conexiones y detener fugas de capital.",
+    "A conclusão semanal das missões estabiliza seu score material e clareia o Sol em Aquário.": "La conclusión semanal de las misiones estabiliza tu puntuación material y eleva tu vibración solar.",
+    "Suas bênçãos e pontuações semanais foram integradas ao seu mapa de evolução pessoal!": "¡Tus bendiciones y puntuaciones semanales se han integrado en tu mapa de evolución personal!",
+    "Resgatar Recompensas Semanais": "Reclamar Recompensas Semanales",
+    "Resgatado": "Canjeado",
+    "Recolher": "Recoger",
+    "Detalhes da Missão Semanal": "Detalles de la Misión Semanal",
+    "Orientação Cósmica da IA Orbia": "Orientación Cósmica de la IA Orbia",
+    "Prompt da IA Personalizado": "Prompt de IA Personalizado",
+    "Consultar IA Orbia para esta Missão": "Consultar IA Orbia para esta Misión",
+    "Sintonizando Orientação da IA...": "Sintonizando Orientación de la IA...",
+    "Esta semana tente resolver uma pendência antiga": "Esta semana intente resolver un asunto pendiente antiguo",
+    "Identifique uma pendência material ou burocrática acumulada sob a força de {{zodiac}} e tome uma ação para resolvê-la, liberando fluxo de Saturno.": "Identifique un asunto pendiente material o burocrático acumulado bajo la fuerza de {{zodiac}} y tome medidas para resolverlo, liberando el flujo de Saturno.",
+    "Esta semana fortaleça um relacionamento importante": "Esta semana fortalezca una relación importante",
+    "Envie uma mensagem genuína de carinho ou faça um gesto de consideração a alguém do seu círculo íntimo de {{zodiac}}.": "Envíe un mensaje genuino de afecto o tenga un gesto de consideración hacia alguien de su círculo íntimo de {{zodiac}}.",
+    "Esta semana dedique tempo ao aprendizado": "Esta semana dedique tiempo al aprendizaje",
+    "Invista pelo menos 1 hora em um livro, curso ou áudio de meditação voltado ao desenvolvimento pessoal de {{zodiac}}.": "Invierta al menos 1 hora en un libro, curso o audio de meditación enfocado en el desarrollo personal para {{zodiac}}."
   },
   de: {
     missions_title: 'Tägliche kosmische Missionen',
@@ -55,7 +115,27 @@ export const missionsTranslations: Record<Language, Record<string, string>> = {
     mission_dream: 'Den letzten erinnerten Traum protokollieren',
     claimed: 'Eingefordert',
     claim: 'Einfordern',
-    bonus_ready: 'Dein Mondflüstern des Tages ist bereit!'
+    bonus_ready: 'Dein Mondflüstern des Tages ist bereit!',
+
+    // Weekly Missions Module (Aktive Bindung)
+    "Missões da Semana (Retenção Ativa)": "Wochenmissionen (Aktive Ausrichtung)",
+    "Principais metas desta semana para impulsionar conexões e estancar vazos de capital.": "Hauptziele dieser Woche zur Stärkung von Verbindungen und Stoppen von Kapitalverlusten.",
+    "A conclusão semanal das missões estabiliza seu score material e clareia o Sol em Aquário.": "Der wöchentliche Abschluss der Missionen stabilisiert Ihren materiellen Score und erhöht Ihre Sonnenvibration.",
+    "Suas bênçãos e pontuações semanais foram integradas ao seu mapa de evolução pessoal!": "Ihre wöchentlichen Segnungen und Punkte wurden in Ihre persönliche Evolutionskarte integriert!",
+    "Resgatar Recompensas Semanais": "Wöchentliche Belohnungen einlösen",
+    "Resgatado": "Eingelöst",
+    "Recolher": "Einsammeln",
+    "Detalhes da Missão Semanal": "Details der Wochenmission",
+    "Orientação Cósmica da IA Orbia": "Kosmische Orbia-KI-Orientierung",
+    "Prompt da IA Personalizado": "Personalisiertes KI-Prompt",
+    "Consultar IA Orbia para esta Missão": "Orbia-KI für diese Mission konsultieren",
+    "Sintonizando Orientação da IA...": "KI-Orientierung wird eingestimmt...",
+    "Esta semana tente resolver uma pendência antiga": "Versuchen Sie diese Woche, eine alte Angelegenheit zu klären",
+    "Identifique uma pendência material ou burocrática acumulada sob a força de {{zodiac}} e tome uma ação para resolvê-la, liberando fluxo de Saturno.": "Identifizieren Sie eine aufgelaufene materielle oder bürokratische Angelegenheit unter der Kraft von {{zodiac}} und handeln Sie, um den Fluss Saturns freizusetzen.",
+    "Esta semana fortaleça um relacionamento importante": "Stärken Sie diese Woche eine wichtige Beziehung",
+    "Envie uma mensagem genuína de carinho ou faça um gesto de consideração a alguém do seu círculo íntimo de {{zodiac}}.": "Senden Sie eine aufrichtige Botschaft der Zuneigung oder zeigen Sie jemandem aus Ihrem engsten Kreis von {{zodiac}} eine Geste der Aufmerksamkeit.",
+    "Esta semana dedique tempo ao aprendizado": "Widmen Sie diese Woche Zeit dem Lernen",
+    "Invista pelo menos 1 hora em um livro, curso ou áudio de meditação voltado ao desenvolvimento pessoal de {{zodiac}}.": "Investieren Sie mindestens 1 Stunde in ein Buch, einen Kurs oder ein Meditationsaudio zur persönlichen Entwicklung für {{zodiac}}."
   },
   fr: {
     missions_title: 'Missions Cosmiques Quotidiennes',
@@ -69,6 +149,26 @@ export const missionsTranslations: Record<Language, Record<string, string>> = {
     mission_dream: 'Enregistrer le dernier rêve mémorisé',
     claimed: 'Réclamé',
     claim: 'Réclamer',
-    bonus_ready: 'Votre Chuchotement Lunaire du jour est disponible !'
+    bonus_ready: 'Votre Chuchotement Lunaire du jour est disponible !',
+
+    // Weekly Missions Module (Rétention Active)
+    "Missões da Semana (Retenção Ativa)": "Missions de la Semaine (Alignement Actif)",
+    "Principais metas desta semana para impulsionar conexões e estancar vazos de capital.": "Objectifs principaux de cette semaine pour stimuler les connexions et stopper les fuites de capital.",
+    "A conclusão semanal das missões estabiliza seu score material e clareia o Sol em Aquário.": "L'achèvement hebdomadaire des missions stabilise votre score matériel et élève votre vibration solaire.",
+    "Suas bênçãos e pontuações semanais foram integradas ao seu mapa de evolução pessoal!": "Vos bénédictions et scores hebdomadaires ont été intégrés à votre carte d'évolution personnelle !",
+    "Resgatar Recompensas Semanais": "Réclamer les Récompenses Hebdomadaires",
+    "Resgatado": "Racheté",
+    "Recolher": "Récupérer",
+    "Detalhes da Missão Semanal": "Détails de la Mission Hebdomadaire",
+    "Orientação Cósmica da IA Orbia": "Orientation Cosmique de l'IA Orbia",
+    "Prompt da IA Personalizado": "Prompt d'IA Personnalisé",
+    "Consultar IA Orbia para esta Missão": "Consulter l'IA Orbia pour cette Mission",
+    "Sintonizando Orientação da IA...": "Syntonisation de l'orientation de l'IA...",
+    "Esta semana tente resolver uma pendência antiga": "Cette semaine essayez de résoudre une affaire en suspens ancienne",
+    "Identifique uma pendência material ou burocrática acumulada sob a força de {{zodiac}} e tome uma ação para resolvê-la, liberando fluxo de Saturno.": "Identifiez une question en suspens matérielle ou bureaucratique accumulée sous la force de {{zodiac}} et agissez pour la résoudre, libérant le flux de Saturne.",
+    "Esta semana fortaleça um relacionamento importante": "Cette semaine renforcez une relation importante",
+    "Envie uma mensagem genuína de carinho ou faça um gesto de consideração a alguém do seu círculo íntimo de {{zodiac}}.": "Envoyez un message sincère d'affection ou faites un geste de considération envers quelqu'un de votre entourage proche de {{zodiac}}.",
+    "Esta semana dedique tempo ao aprendizado": "Cette semaine consacrez du temps à l'apprentissage",
+    "Invista pelo menos 1 hora em um livro, curso ou áudio de meditação voltado ao desenvolvimento pessoal de {{zodiac}}.": "Investissez au moins 1 heure dans un livre, un cours ou un enregistrement de méditation axé sur le développement personnel pour {{zodiac}}."
   }
 };

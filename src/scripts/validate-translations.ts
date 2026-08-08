@@ -29,8 +29,8 @@ for (const lang of languages) {
 }
 
 // 2. Scan components to enforce i18n usage and prevent hardcoded text
-console.log('\n🔍 Scanning components for hardcoded text and enforcing i18n rules...');
-const componentsDir = path.resolve(process.cwd(), 'src/components');
+console.log('\n🔍 Scanning frontend files for hardcoded text and enforcing i18n rules...');
+const srcDir = path.resolve(process.cwd(), 'src');
 
 function scanDirectory(dir: string) {
   if (!fs.existsSync(dir)) return;
@@ -38,38 +38,41 @@ function scanDirectory(dir: string) {
   const files = fs.readdirSync(dir);
   for (const file of files) {
     const fullPath = path.join(dir, file);
+    const relativePath = path.relative(srcDir, fullPath);
     const stat = fs.statSync(fullPath);
     
     if (stat.isDirectory()) {
+      if (['i18n', 'scripts', 'node_modules'].includes(file)) continue;
       scanDirectory(fullPath);
-    } else if (file.endsWith('.tsx') || file.endsWith('.ts')) {
+    } else if ((file.endsWith('.tsx') || file.endsWith('.ts')) && !file.endsWith('.d.ts')) {
+      if (['translations.ts', 'check-translations.ts', 'check-numerology-translations.ts'].includes(file)) continue;
       const content = fs.readFileSync(fullPath, 'utf8');
       
-      // Look for raw Portuguese text pattern or un-internationalized strings
-      // Exclude comments, imports, etc.
       const lines = content.split('\n');
       lines.forEach((line, index) => {
-        // Skip lines that are clearly imports, logs, comments, or already using translation hooks/functions
+        const trimmed = line.trim();
         if (
-          line.trim().startsWith('import') ||
-          line.trim().startsWith('//') ||
-          line.trim().startsWith('*') ||
+          trimmed.startsWith('import') ||
+          trimmed.startsWith('//') ||
+          trimmed.startsWith('*') ||
+          trimmed.startsWith('/*') ||
+          trimmed.startsWith('interface ') ||
+          trimmed.startsWith('type ') ||
           line.includes('console.log') ||
+          line.includes('console.error') ||
           line.includes('useTranslation') ||
           line.includes('translateUiText') ||
           line.includes('t(') ||
-          line.includes('tI18n')
+          line.includes('tI18n') ||
+          line.includes(': Record<')
         ) {
           return;
         }
 
-        // Detect raw Portuguese strings inside JSX text elements, e.g. <span>Salvar</span> or >Salvar<
-        // Also look for common hardcoded texts
         const rawTextMatch = line.match(/>([^<>{}\s\d\r\n\t]+(?: [^<>{}\s\d\r\n\t]+)*)</);
         if (rawTextMatch && rawTextMatch[1]) {
           const matchedText = rawTextMatch[1].trim();
-          // Exclude punctuation or short brackets
-          if (matchedText.length > 2 && !['&times;', '...', '||'].includes(matchedText)) {
+          if (matchedText.length > 2 && !['&times;', '...', '||', '•', '→', '←', '↑', '↓', '★', '⚡'].includes(matchedText)) {
             console.warn(`⚠️  Hardcoded text warning in ${path.relative(process.cwd(), fullPath)}:${index + 1}:`);
             console.warn(`   Line: "${line.trim()}"`);
             console.warn(`   Found raw text: "${matchedText}". Please register a translation key instead!`);
@@ -80,7 +83,7 @@ function scanDirectory(dir: string) {
   }
 }
 
-scanDirectory(componentsDir);
+scanDirectory(srcDir);
 
 console.log('--------------------------------------------------');
 if (hasErrors) {

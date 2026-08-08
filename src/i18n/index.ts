@@ -59,6 +59,13 @@ for (const lang of languages) {
   }
 }
 
+import { applyTranslationPatches } from '../lib/translationPatch';
+try {
+  applyTranslationPatches(mergedTranslations);
+} catch (e) {
+  console.warn('Note: applyTranslationPatches deferred or already merged.');
+}
+
 import i18next from 'i18next';
 
 export function getDeviceLanguage(): Language {
@@ -129,40 +136,11 @@ export function changeLanguage(novoIdioma: Language): void {
   if (typeof window !== 'undefined') {
     localStorage.setItem('orbi_user_explicit_lang', novoIdioma);
     localStorage.setItem('orbi_preferred_language', novoIdioma);
-    // Invalidate caches
     try {
-      Object.keys(localStorage).forEach(key => {
-        if (
-          key.startsWith('orbi_natal_chart_') ||
-          key.startsWith('orbi_transit_') ||
-          key.startsWith('orbi_daily_insight_') ||
-          key.startsWith('orbi_weekly_insight_') ||
-          key.startsWith('orbi_missions_') ||
-          key.startsWith('orbi_numerology_') ||
-          key.startsWith('orbi_prosperity_') ||
-          key.startsWith('orbi_biorhythm_') ||
-          key.startsWith('orbi_lunarnodes_') ||
-          key.startsWith('tarot_saved_') ||
-          key.startsWith('tarot_last_draw_') ||
-          key.startsWith('orbi_calc_cache_') ||
-          key.includes('_insight_') ||
-          key === 'orbi_map_data' ||
-          key === 'orbi_numerology_data'
-        ) {
-          localStorage.removeItem(key);
-        }
-      });
-
-      // Clear relevant session storage caches
-      Object.keys(sessionStorage).forEach(key => {
-        if (key.startsWith('astrological_')) {
-          sessionStorage.removeItem(key);
-        }
-      });
-      // Dispatch global change event
+      // Dispatch global change event for UI re-rendering
       window.dispatchEvent(new Event('orbi_language_changed'));
     } catch (e) {
-      console.error('Error invalidating caches for language change:', e);
+      console.error('Error dispatching language change event:', e);
     }
   }
   i18next.changeLanguage(novoIdioma);

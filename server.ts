@@ -306,31 +306,29 @@ function translateServerMessage(key: string, lang: Language, replacements?: Reco
   return text;
 }
 
-// Global Language Middleware
+// Global Language Middleware (Unified Backend Resolution)
 app.use((req: any, res, next) => {
-  let lang: any = req.headers['x-app-lang'] || req.headers['x-language'];
+  let rawLang: any = req.headers['x-app-lang'] || req.headers['x-language'];
   
-  if (!lang) {
-    lang = req.body?.lang || req.query?.lang;
+  if (!rawLang) {
+    rawLang = req.body?.lang || req.body?.language || req.body?.idioma || req.query?.lang || req.query?.language || req.query?.idioma;
   }
   
-  if (!lang && req.body?.userProfile?.lang) {
-    lang = req.body.userProfile.lang;
+  if (!rawLang) {
+    rawLang = req.body?.userProfile?.lang || req.body?.userProfile?.language || req.body?.userProfile?.idioma || 
+              req.body?.profile?.lang || req.body?.profile?.language || req.body?.profile?.idioma;
   }
   
-  if (!lang) {
+  if (!rawLang) {
     const acceptLang = req.headers['accept-language'];
     if (typeof acceptLang === 'string') {
-      const preferred = acceptLang.split(',')[0].split(';')[0].split('-')[0].trim().toLowerCase();
-      if (['pt', 'en', 'es', 'de', 'fr'].includes(preferred)) {
-        lang = preferred;
-      }
+      rawLang = acceptLang.split(',')[0].split(';')[0].trim();
     }
   }
   
   let resolvedLang: Language = 'pt';
-  if (lang && typeof lang === 'string') {
-    const cleanLang = lang.trim().toLowerCase();
+  if (rawLang && typeof rawLang === 'string') {
+    const cleanLang = rawLang.split('-')[0].split('_')[0].trim().toLowerCase();
     if (['pt', 'en', 'es', 'de', 'fr'].includes(cleanLang)) {
       resolvedLang = cleanLang as Language;
     }
@@ -343,6 +341,58 @@ app.use((req: any, res, next) => {
   
   next();
 });
+
+export function getLanguageName(lang: Language | string): string {
+  const clean = (lang || 'pt').toString().toLowerCase().split('-')[0].split('_')[0].trim();
+  switch (clean) {
+    case 'en': return 'English';
+    case 'es': return 'Español (Spanish)';
+    case 'fr': return 'Français (French)';
+    case 'de': return 'Deutsch (German)';
+    case 'pt':
+    default: return 'Português (Portuguese)';
+  }
+}
+
+export interface LocalizedPromptOptions {
+  basePrompt: string;
+  lang: Language | string;
+  systemInstruction?: string;
+  jsonFormat?: boolean;
+}
+
+export function buildLocalizedPrompt(options: LocalizedPromptOptions): {
+  contents: string;
+  systemInstruction: string;
+} {
+  const { basePrompt, lang, systemInstruction, jsonFormat = false } = options;
+  const targetLang = (lang || 'pt').toString().toLowerCase().split('-')[0].split('_')[0].trim() as Language;
+  const langName = getLanguageName(targetLang);
+
+  const langDirective = [
+    `=== CRITICAL MULTILINGUAL DIRECTIVE ===`,
+    `TARGET OUTPUT LANGUAGE: ${langName} (${targetLang.toUpperCase()}).`,
+    `1. You MUST generate ALL user-facing text, explanations, titles, guidance, and response content EXCLUSIVELY in ${langName}.`,
+    `2. STRICTLY DO NOT MIX LANGUAGES. Do not output Portuguese, English, Spanish, German, or French text unless it matches the requested TARGET OUTPUT LANGUAGE (${langName}).`,
+    `3. ASTROLOGICAL & DATA INTEGRITY: Do not translate, mutate, or alter core internal astronomical/astrological calculation data (such as dates, times, planetary positions, numerical degrees, house numbers, or mathematical coordinates) in a way that alters the underlying astrological logic or chart calculation. The interpretation and conclusion MUST be identical in meaning regardless of language.`,
+    jsonFormat
+      ? `4. OUTPUT FORMAT: Respond ONLY with valid JSON. Keep all JSON keys intact as specified in the schema, but translate all string values into ${langName}. Do not wrap with extra text.`
+      : `4. OUTPUT FORMAT: Provide fluid, elegant, high-precision content exclusively in ${langName}.`
+  ].join('\n');
+
+  const combinedSystemInstruction = systemInstruction
+    ? `${systemInstruction}\n\n${langDirective}`
+    : langDirective;
+
+  const finalPrompt = jsonFormat
+    ? `${basePrompt}\n\nIMPORTANT: Produce ALL text values inside the JSON EXCLUSIVELY in ${langName}.`
+    : `${basePrompt}\n\nIMPORTANT: Respond EXCLUSIVELY in ${langName}.`;
+
+  return {
+    contents: finalPrompt,
+    systemInstruction: combinedSystemInstruction
+  };
+}
 
 // Initialize Google Gen AI
 const apiKey = process.env.GEMINI_API_KEY;
@@ -1684,7 +1734,9 @@ app.post("/api/enviar", async (req, res) => {
 // API: Astrological Map and Numerology Generation using Gemini
 app.post("/api/astrology/generate", async (req, res) => {
   try {
-    const { name, email, birthDate, birthTime, birthCity, isUnknownTime, latitude, longitude, lang } = req.body || {};
+    const { name, email, birthDate, birthTime, birthCity, isUnknownTime, latitude, longitude } = req.body || {};
+    const activeLang = (req as any).lang || 'pt';
+
     if (!name) {
       return res.status(400).json({ error: (req as any).t('api.astrology.name_required') });
     }
@@ -1718,7 +1770,7 @@ app.post("/api/astrology/generate", async (req, res) => {
       safeBirthCity = "São Paulo";
     }
 
-    const cacheKey = `astrology:${name}:${safeBirthDate}:${safeBirthTime}:${safeBirthCity}:${isUnknownTime}:${lang || 'pt'}`;
+    const cacheKey = `astrology:${name}:${safeBirthDate}:${safeBirthTime}:${safeBirthCity}:${isUnknownTime}:${activeLang}`;
     const cached = getCachedResponse(cacheKey);
     if (cached) {
       return res.json(cached);
@@ -1756,9 +1808,9 @@ app.post("/api/astrology/generate", async (req, res) => {
       astroDate, 
       astroTime,
       timezoneOffsetHours,
-      lang
+      activeLang
     );
-    (localMap as any).lang = lang || 'pt';
+    (localMap as any).lang = activeLang;
 
     if (!aiClient) {
       // Return high-quality calculated local mapping if Gemini is unavailable
@@ -1771,8 +1823,6 @@ app.post("/api/astrology/generate", async (req, res) => {
     const { existingMap, existingNumerology } = req.body || {};
     let existingMapData = existingMap;
     let existingNumerologyData = existingNumerology;
-
-    const activeLang = lang || 'pt';
 
     if (!existingMapData) {
       // 1. Check in-memory cache for any other language version of the same natal chart
@@ -1861,7 +1911,6 @@ app.post("/api/astrology/generate", async (req, res) => {
     const housesSummary = localMap.houses.map(h => `- Casa ${h.number}: em ${h.sign} ${h.planet ? `(contém o(s) planeta(s): ${h.planet})` : ''}`).join('\n');
     const aspectsSummary = localMap.aspects.map(asp => `- ${asp.planet1} ${asp.aspectType} com ${asp.planet2} (Orbe: ${asp.orb})`).join('\n');
 
-    const activeLang = lang || 'pt';
     const languageNames: Record<string, string> = {
       pt: "Português",
       en: "English (Inglês)",
@@ -2013,6 +2062,9 @@ app.post("/api/dreams/interpret", async (req, res) => {
 
   const { userSunSign, userMoonSign, userAscSign, elementsSummary, chartContext: astroContext } = extractOrCalculateUserAstroContext(mapData, userProfile, activeLang);
   let chartContext = astroContext;
+
+  const userName = userProfile?.name || "Sonhador(a)";
+  chartContext += `- Nome do Usuário (Nome Oficial no Perfil do Firestore): ${userName}\n`;
 
   if (userProfile?.birthTime) {
     chartContext += `- Hora de Nascimento: ${userProfile.birthTime}\n`;
@@ -2256,7 +2308,8 @@ Informações de Numerologia Cabalística do Usuário:
 
   const fallbackInterpretation = fallbackInterpretationMap[activeLang] || fallbackInterpretationMap["pt"];
 
-  const cacheKey = `oraculo_dreams:${description}:${activeLang}:${userSunSign}`;
+  const userIdentifier = userProfile?.email || userProfile?.name || "anon";
+  const cacheKey = `oraculo_dreams:${description}:${activeLang}:${userSunSign}:${userIdentifier}`;
   const cached = getCachedResponse(cacheKey);
   if (cached) {
     return res.json(cached);
@@ -2270,14 +2323,14 @@ Informações de Numerologia Cabalística do Usuário:
 
   try {
     const prompt = `Você é o Oráculo dos Sonhos (Oráculo Celestial), assistente espiritual e terapeuta de sonhos profissional de altíssimo nível.
-Analise a descrição deste sonho e gere uma interpretação mágica, profunda, altamente personalizada, rica e detalhada baseando-se e correlacionando-a rigorosamente com as energias astrológicas do mapa natal e numerologia do usuário abaixo, estabelecendo os dados do usuário como a única fonte oficial de verdade para todas as leituras personalizadas.
+Analise a descrição deste sonho do(a) usuário(a) ${userName} e gere uma interpretação mágica, profunda, altamente personalizada, rica e detalhada baseando-se e correlacionando-a rigorosamente com as energias astrológicas do mapa natal e numerologia do usuário abaixo, estabelecendo os dados do usuário como a única fonte oficial de verdade para todas as leituras personalizadas.
 
 ${chartContext}
 
 Descrição do Sonho: "${description}"
 
 REGRAS DE OURO DE PERSONALIZAÇÃO E PROFUNDIDADE:
-1. NUNCA utilize textos genéricos, respostas prontas ou interpretações padronizadas. Cada interpretação deve ser única e sob medida.
+1. Dirija-se sempre diretamente ao(à) sonhador(a) pelo seu nome real fornecido no perfil (${userName}). NUNCA utilize nomes genéricos, inventados ou de contas de teste (como Maria, João, Fulano). Apenas use o nome real do perfil (${userName}) se for mencionar o nome do sonhador.
 2. O conteúdo NUNCA poderá inventar ou citar signos, planetas, casas, aspectos, números ou características que não pertençam ao mapa natal real do usuário fornecido acima. Use estritamente e com precisão apenas os astros e posicionamentos do usuário.
 3. A interpretação combinada deve ser longa, extremamente rica, madura e detalhada, contendo aproximadamente 1500 caracteres ou mais em todos os campos de texto somados.
 4. Os campos "mainMeaning", "psychological", "spiritual" e "oracleAdvice" devem ser parágrafos longos, poéticos, densos e altamente terapêuticos. Conecte cada aspecto do sonho (como objetos, sensações, medos, animais, cores, cenários) diretamente aos posicionamentos, aos elementos e aos números do usuário.
@@ -2353,9 +2406,9 @@ app.post("/api/compatibility/evaluate", async (req, res) => {
     companionBirthTime,
     companionBirthCity,
     companionBirthCountry,
-    category,
-    lang
-  } = req.body;
+    category
+  } = req.body || {};
+  const activeLang = (req as any).lang || 'pt';
 
   if (!name || !companionName) {
     return res.status(400).json({ error: (req as any).t('api.compatibility.both_names_required') });
@@ -2406,10 +2459,10 @@ app.post("/api/compatibility/evaluate", async (req, res) => {
     coords2.longitude,
     tzOffset1,
     tzOffset2,
-    lang
+    activeLang
   );
 
-  const cacheKey = `compatibility:${name}:${birthDate}:${companionName}:${companionBirthDate}:${category || 'love'}:${lang || 'pt'}`;
+  const cacheKey = `compatibility:${name}:${birthDate}:${companionName}:${companionBirthDate}:${category || 'love'}:${activeLang}`;
   const cached = getCachedResponse(cacheKey);
   if (cached) {
     return res.json({ compatibility: cached });
@@ -2428,7 +2481,7 @@ app.post("/api/compatibility/evaluate", async (req, res) => {
       de: "Alemão (German)",
       fr: "Francês (French)"
     };
-    const targetLangName = langNames[lang] || langNames.pt;
+    const targetLangName = langNames[activeLang] || langNames.pt;
 
     // Create a copy of compResult without categories for Gemini input to save massive amounts of tokens
     // and keep Gemini focused on rewriting the main evaluation fields.
@@ -2740,7 +2793,7 @@ function getLocalizedCupidoFallback(user: any, person: any, lang: string, compRe
 
 // API: Cupido Astrológico • Radar Afetivo & Diário
 app.post("/api/cupido/radar", async (req, res) => {
-  let resolvedLang = 'pt';
+  let resolvedLang = (req as any).lang || 'pt';
   let user: any = null;
   let person: any = null;
   let compResult: any = null;
@@ -2748,10 +2801,9 @@ app.post("/api/cupido/radar", async (req, res) => {
   try {
     user = req.body.user;
     person = req.body.person;
-    const { lang = 'pt' } = req.body;
 
     if (!user || !person) {
-      return res.status(400).json({ error: "Parâmetros 'user' e 'person' são obrigatórios." });
+      return res.status(400).json({ error: (req as any).t('api.compatibility.both_names_required') });
     }
 
     // Resolve coordinates & timezone for user
@@ -2799,13 +2851,8 @@ app.post("/api/cupido/radar", async (req, res) => {
       coords2.longitude,
       tzOffset1,
       tzOffset2,
-      lang
+      resolvedLang
     );
-
-    resolvedLang = (lang || 'pt').toLowerCase().split('-')[0].trim();
-    if (!['pt', 'en', 'es', 'fr', 'de'].includes(resolvedLang)) {
-      resolvedLang = 'pt';
-    }
 
     const cupidoPromptTemplates: Record<string, any> = {
       pt: {
@@ -3238,19 +3285,19 @@ Denken Sie daran, NUR das JSON in der entsprechenden Sprache "de" zurückzugeben
       res.json({ radar: fallbackData });
     } catch (fallbackError) {
       console.error("Critical error building Cupido local fallback:", fallbackError);
-      res.status(500).json({ error: "Falha ao gerar o Radar do Dia do Cupido." });
+      res.status(500).json({ error: (req as any).t('api.astrology.internal_error') });
     }
   }
 });
 
 // API: Daily Oracle limit checking + prompt calculation
 app.post("/api/oraculo/query", async (req, res) => {
-  const { question, lang, mapData, userProfile } = req.body;
+  const { question, mapData, userProfile } = req.body || {};
   if (!question) {
     return res.status(400).json({ error: (req as any).t('api.oraculo.question_required') });
   }
 
-  const activeLang = (lang || "pt").toLowerCase();
+  const activeLang = (req as any).lang || "pt";
 
   const { userSunSign, userMoonSign, userAscSign, elementsSummary, chartContext } = extractOrCalculateUserAstroContext(mapData, userProfile, activeLang);
 
@@ -6593,14 +6640,45 @@ function generateOfflineTarotReading(type: string, cards: any[], question: strin
     ? cards.map((c: any) => c.cardName).join(", ")
     : "uma carta misteriosa";
 
-  const randomGuidanceArray = [
-    "Cultive a paciência; o universo opera em seu próprio tempo sagrado.",
-    "A verdade oculta será revelada no momento certo. Confie na sua intuição.",
-    "Abra seu coração para as mudanças necessárias, pois elas trazem evolução espiritual.",
-    "Mantenha os pés no chão e a cabeça erguida diante das provações temporárias.",
-    "O equilíbrio entre o dar e o receber é a chave para a verdadeira harmonia."
-  ];
-  const randomGuidance = randomGuidanceArray[Math.floor(Math.random() * randomGuidanceArray.length)];
+  const guidanceMap: Record<string, string[]> = {
+    pt: [
+      "Cultive a paciência; o universo opera em seu próprio tempo sagrado.",
+      "A verdade oculta será revelada no momento certo. Confie na sua intuição.",
+      "Abra seu coração para as mudanças necessárias, pois elas trazem evolução espiritual.",
+      "Mantenha os pés no chão e a cabeça erguida diante das provações temporárias.",
+      "O equilíbrio entre o dar e o receber é a chave para a verdadeira harmonia."
+    ],
+    en: [
+      "Cultivate patience; the universe operates on its own sacred timing.",
+      "The hidden truth will be revealed at the right moment. Trust your intuition.",
+      "Open your heart to necessary changes, as they bring spiritual evolution.",
+      "Keep your feet on the ground and your head held high through temporary trials.",
+      "Balance between giving and receiving is the key to true harmony."
+    ],
+    es: [
+      "Cultiva la paciencia; el universo opera en su propio tiempo sagrado.",
+      "La verdad oculta será revelada en el momento adecuado. Confía en tu intuición.",
+      "Abre tu corazón a los cambios necesarios, ya que traen evolución espiritual.",
+      "Mantén los pies en la tierra y la cabeza en alto ante las pruebas temporales.",
+      "El equilibrio entre dar y recibir es la clave de la verdadera armonía."
+    ],
+    de: [
+      "Kultivieren Sie Geduld; das Universum arbeitet in seiner eigenen heiligen Zeit.",
+      "Die verborgene Wahrheit wird im richtigen Moment enthüllt. Vertrauen Sie Ihrer Intuition.",
+      "Öffnen Sie Ihr Herz für notwendige Veränderungen, da sie spirituelle Entwicklung bringen.",
+      "Behalten Sie die Füße auf dem Boden und den Kopf hoch bei vorübergehenden Prüfungen.",
+      "Das Gleichgewicht zwischen Geben und Nehmen ist der Schlüssel zu wahrer Harmonie."
+    ],
+    fr: [
+      "Cultivez la patience ; l'univers fonctionne selon son propre tempo sacré.",
+      "La vérité cachée sera révélée au bon moment. Faites confiance à votre intuition.",
+      "Ouvrez votre cœur aux changements nécessaires, car ils apportent une évolution spirituelle.",
+      "Gardez les pieds sur terre et la tête haute face aux épreuves temporaires.",
+      "L'équilibre entre donner et recevoir est la clé de la véritable harmonie."
+    ]
+  };
+  const activeGuidanceList = guidanceMap[activeLang] || guidanceMap.pt;
+  const randomGuidance = activeGuidanceList[Math.floor(Math.random() * activeGuidanceList.length)];
 
   const templates: Record<string, any> = {
     pt: {
@@ -6618,19 +6696,19 @@ function generateOfflineTarotReading(type: string, cards: any[], question: strin
     es: {
       p1: `Consultante ${userDisplay}, tu tirada clásica de cartas tradicionales trae la profunda emanación de: ${mainCardsLine}. Cada arquetipo refleja fuerzas milenarias y nos enseña lecciones de vida indispensables para armonizar nuestra rutina.`,
       p2: `Con respecto a tu pregunta o inquietud: "${question || "Consejo general"}", el oráculo advierte que los chismes o desequilibrios temporales en el entorno laboral y familiar deben ser combatidos con prudencia y rectitud. No respondas a la discordia con la misma vibración; conserva tu silencio curativo y tu maduro autodireccionamiento.`,
-      p3: `Aprovecha las oportunidades y sintoniza tu coração con las señales que el universo envía en el silencio de tu hogar. La cosecha de tus esfuerzos será muy rica en el momento cósmico adecuado.`,
+      p3: `Aprovecha las oportunidades y sintoniza tu corazón con las señales que el universo envía en el silencio de tu hogar. La cosecha de tus esfuerzos será muy rica en el momento cósmico adecuado.`,
       g: `Consejo de los Arcanos Clásicos: ${randomGuidance}`
     },
     de: {
       p1: `Frager ${userDisplay}, Ihr klassisches Spread traditioneller Karten bringt die tiefe Ausstrahlung von: ${mainCardsLine}. Jedes Archetyp spiegelt jahrtausendealte Kräfte wider und lehrt uns unverzichtbare Lebenslektionen, um unseren Alltag zu harmonisieren.`,
-      p2: `Bezüglich Ihrer Frage oder Sorge: "${question || "Allgemeiner Rat"}" warnt das Orakel, dass Klatsch oder vorübergehende Ungleichgewichte im Arbeits- und Familienumfeld mit Vorsicht und Rechtschaffenheit bekämpft werden müssen. Antworten Sie não responda à discórdia com a mesma vibração; conserve seu silêncio curativo e seu autodirecionamento maduro.`,
-      p3: `Nutzen Sie die Gelegenheiten und sintonise Ihr Herz auf die Zeichen, die das Universum in der Stille Ihres Heims sendet. Die Ernte Ihrer Bemühungen wird zur richtigen kosmischen Zeit sehr reich sein.`,
+      p2: `Bezüglich Ihrer Frage oder Sorge: "${question || "Allgemeiner Rat"}" warnt das Orakel, dass Klatsch oder vorübergehende Ungleichgewichte im Arbeits- und Familienumfeld mit Vorsicht und Rechtschaffenheit bekämpft werden müssen. Antworten Sie nicht auf Zwietracht mit derselben Schwingung; bewahren Sie Ihre heilsame Stille und Ihre reife Selbstausrichtung.`,
+      p3: `Nutzen Sie die Gelegenheiten und stimmen Sie Ihr Herz auf die Zeichen ab, die das Universum in der Stille Ihres Heims sendet. Die Ernte Ihrer Bemühungen wird zur richtigen kosmischen Zeit sehr reich sein.`,
       g: `Rat der klassischen Arkana: ${randomGuidance}`
     },
     fr: {
-      p1: `Consultant ${userDisplay}, votre tirage classique de cartas traditionnelles apporte la profunda emanation de : ${mainCardsLine}. Chaque archétype reflète des forces millénaires et nous enseigne des leçons de vie indispensables pour harmoniser notre routine.`,
+      p1: `Consultant ${userDisplay}, votre tirage classique de cartes traditionnelles apporte la profonde émanation de : ${mainCardsLine}. Chaque archétype reflète des forces millénaires et nous enseigne des leçons de vie indispensables pour harmoniser notre routine.`,
       p2: `Concernant votre question ou doute : "${question || "Conseil général"}", l'oracle avertit que les commérages ou déséquilibres temporaires dans l'environnement de travail et familial doivent être combattus avec prudence et rectitude. Ne répondez pas à la discorde par la même vibration ; conservez votre silence réparateur et votre direction personnelle mature.`,
-      p3: `Saisissez les opportunités e accordez seu coração aos sinais que o universo envia no silêncio do seu lar. A colheita de seus esforços será muito rica no tempo certo do cosmo.`,
+      p3: `Saisissez les opportunités et accordez votre cœur aux signes que l'univers envoie dans le silence de votre foyer. La récolte de vos efforts sera très riche au bon moment cosmique.`,
       g: `Conseil des Arcanes Classiques : ${randomGuidance}`
     }
   };
@@ -6853,7 +6931,7 @@ app.delete("/api/admin/users/delete", (req, res) => {
   const initialLen = mockUsers.length;
   mockUsers = mockUsers.filter(u => u.id !== id);
   if (mockUsers.length === initialLen) {
-    return res.status(404).json({ error: "Usuário não encontrado." });
+    return res.status(404).json({ error: (req as any).t('api.admin.user_not_found') });
   }
   res.json({ success: true, message: (req as any).t('api.admin.user_deleted') });
 });
@@ -6922,7 +7000,7 @@ app.delete("/api/admin/content/delete", (req, res) => {
   const initialLen = mockContents.length;
   mockContents = mockContents.filter(c => c.id !== id);
   if (mockContents.length === initialLen) {
-    return res.status(404).json({ error: "Conteúdo não encontrado." });
+    return res.status(404).json({ error: (req as any).t('api.admin.content_not_found') });
   }
   res.json({ success: true, message: (req as any).t('api.admin.content_deleted') });
 });
@@ -6992,7 +7070,8 @@ app.post("/api/admin/notifications/read", (req, res) => {
 
 // 6. Premium Gateway & Subscription Simulator Endpoint
 app.post("/api/payments/subscribe", (req, res) => {
-  const { name, email, planId, cardNumber, cvv } = req.body;
+  const { name, email, planId, cardNumber, cvv, lang } = req.body;
+  const activeLang = ((lang || req.headers['accept-language'] || 'pt') as string).toLowerCase().split('-')[0];
   if (!name || !email || !planId) {
     return res.status(400).json({ error: (req as any).t('api.payment.details_required') });
   }
@@ -7048,7 +7127,8 @@ app.post("/api/payments/subscribe", (req, res) => {
 // NEW API: Astro-Email verification code dispatch (Simplified - SMTP decoupled)
 app.post("/api/auth/send-verification-code", async (req, res) => {
   try {
-    const { email, code } = req.body;
+    const { email, code, lang } = req.body;
+    const activeLang = ((lang || req.headers['accept-language'] || 'pt') as string).toLowerCase().split('-')[0];
     if (!email || !code) {
       return res.status(400).json({ error: (req as any).t('api.auth.email_code_required') });
     }
@@ -7610,7 +7690,8 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
 
 app.get("/api/stripe/verify-session", async (req, res) => {
   try {
-    const { session_id } = req.query;
+    const { session_id, lang } = req.query;
+    const activeLang = ((lang || req.headers['accept-language'] || 'pt') as string).toLowerCase().split('-')[0];
     if (!session_id || typeof session_id !== 'string') {
       return res.status(400).json({ error: (req as any).t('api.stripe.session_id_required') });
     }
@@ -7684,7 +7765,8 @@ app.get("/api/stripe/verify-session", async (req, res) => {
 
 app.post("/api/stripe/create-portal-session", async (req, res) => {
   try {
-    const { uid } = req.body;
+    const { uid, lang } = req.body;
+    const activeLang = ((lang || req.headers['accept-language'] || 'pt') as string).toLowerCase().split('-')[0];
     if (!uid) {
       return res.status(400).json({ error: "User UID is required" });
     }

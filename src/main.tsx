@@ -62,10 +62,7 @@ import App from './App.tsx';
 import './index.css';
 import { IdiomaProvider } from './context/IdiomaContext.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
-import { setupDomI18nObserver } from './lib/domI18n.ts';
 
-// Initialize DOM Auto-I18n Observer for dynamic modals, titles and error messages
-setupDomI18nObserver();
 
 // Handle reset query param to force purge stale service workers and caches
 if (typeof window !== 'undefined' && window.location.search.includes('reset=')) {

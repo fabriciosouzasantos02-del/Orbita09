@@ -27,8 +27,8 @@ const _PRESETS: AppPreset[] = [
     
     <!-- Header -->
     <div class="flex items-center justify-between mb-4">
-      <span class="text-xs font-mono text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded-full border border-cyan-900/30">PRECISION PRO</span>
-      <div id="hist-btn" class="text-slate-500 hover:text-slate-300 text-xs cursor-pointer transition-colors font-mono">Histórico</div>
+      <span class="text-xs font-mono text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded-full border border-cyan-900/30">PRO</span>
+      <div id="hist-btn" class="text-slate-500 hover:text-slate-300 text-xs cursor-pointer transition-colors font-mono">History</div>
     </div>
     
     <!-- Display -->
@@ -160,8 +160,8 @@ const _PRESETS: AppPreset[] = [
     <!-- Top Bar -->
     <div class="flex items-center justify-between mb-5">
       <div>
-        <h3 class="text-lg font-semibold text-zinc-100">Fazer Hoje</h3>
-        <p class="text-xs text-zinc-500 font-mono" id="task-counter">Carregando...</p>
+        <h3 class="text-lg font-semibold text-zinc-100">Tasks</h3>
+        <p class="text-xs text-zinc-500 font-mono" id="task-counter">...</p>
       </div>
       <div id="filter-btn" onclick="toggleFilter()" class="text-xs font-medium text-emerald-400 bg-emerald-950/40 px-3 py-1.5 rounded-xl border border-emerald-900/30 cursor-pointer hover:bg-emerald-950/80 transition-all">
         Filtrar: Todos
@@ -204,7 +204,7 @@ const _PRESETS: AppPreset[] = [
       listEl.innerHTML = \`
         <div class="flex flex-col items-center justify-center py-8 text-center">
           <span class="text-2xl mb-1">☘️</span>
-          <p class="text-xs text-zinc-500">Nenhuma tarefa encontrada neste filtro.</p>
+          <p class="text-xs text-zinc-500">No tasks found.</p>
         </div>
       \`;
       updateCounter();
@@ -313,7 +313,7 @@ const _PRESETS: AppPreset[] = [
     
     <!-- Mode select -->
     <div class="flex items-center justify-center gap-2 mb-6 relative z-10">
-      <span class="text-xs bg-violet-950/60 border border-violet-800/20 text-violet-300 px-3 py-1 rounded-full font-medium" id="timer-mode">POMODORO ESTUDO</span>
+      <span class="text-xs bg-violet-950/60 border border-violet-800/20 text-violet-300 px-3 py-1 rounded-full font-medium" id="timer-mode">POMODORO</span>
     </div>
 
     <!-- Timer Circle & Digital Display -->
@@ -327,14 +327,14 @@ const _PRESETS: AppPreset[] = [
       
       <div class="relative text-center">
         <div class="text-4xl font-light font-mono text-zinc-50 tracking-tight" id="time-display">25:00</div>
-        <div class="text-[10px] text-zinc-500 tracking-widest font-mono mt-1">FOCO ABSOLUTO</div>
+        <div class="text-[10px] text-zinc-500 tracking-widest font-mono mt-1">FOCUS</div>
       </div>
     </div>
 
     <!-- Actions -->
     <div class="flex justify-center gap-2.5 relative z-10">
-      <button onclick="toggleTimer()" id="play-btn" class="bg-violet-600 text-white font-medium hover:bg-violet-500 active:scale-95 transition-all text-xs px-5 py-2.5 rounded-2xl min-w-[100px]">Iniciar</button>
-      <button onclick="resetTimer()" class="bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-zinc-200 active:scale-95 transition-all text-xs px-5 py-2.5 rounded-2xl">Resetar</button>
+      <button onclick="toggleTimer()" id="play-btn" class="bg-violet-600 text-white font-medium hover:bg-violet-500 active:scale-95 transition-all text-xs px-5 py-2.5 rounded-2xl min-w-[100px]">Start</button>
+      <button onclick="resetTimer()" class="bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-zinc-200 active:scale-95 transition-all text-xs px-5 py-2.5 rounded-2xl">Reset</button>
     </div>
   </div>
 </div>
@@ -429,31 +429,31 @@ const _PRESETS: AppPreset[] = [
     </div>
     
     <!-- Profile Info -->
-    <h3 class="text-lg font-semibold tracking-tight text-white mb-0.5">Alex Santos</h3>
-    <p class="text-xs text-amber-500 font-mono mb-4">@alexsantos_dev</p>
+    <h3 class="text-lg font-semibold tracking-tight text-white mb-0.5">Alex S.</h3>
+    <p class="text-xs text-amber-500 font-mono mb-4">@alex_dev</p>
     
     <!-- Pitch -->
-    <p class="text-xs text-stone-400 max-w-xs mx-auto mb-6">Desenvolvo soluções web performáticas com design impecável e atenção extrema a detalhes.</p>
+    <p class="text-xs text-stone-400 max-w-xs mx-auto mb-6">Web Solutions & Design</p>
     
     <!-- Links Stack -->
     <div class="space-y-3">
-      <a href="#" onclick="alert('Conectado ao Portfólio')" class="block bg-stone-950 border border-stone-800/60 py-3 px-4 rounded-2xl text-xs font-medium text-stone-200 hover:bg-stone-850 hover:-translate-y-0.5 active:translate-y-0 transition-all">
-        🌐 Visite Meu Portfólio Principal
+      <a href="#" onclick="alert('Portfolio')" class="block bg-stone-950 border border-stone-800/60 py-3 px-4 rounded-2xl text-xs font-medium text-stone-200 hover:bg-stone-850 hover:-translate-y-0.5 active:translate-y-0 transition-all">
+        🌐 Portfolio
       </a>
       
-      <a href="#" onclick="alert('Iniciando contato via LinkedIn')" class="block bg-stone-950 border border-stone-800/60 py-3 px-4 rounded-2xl text-xs font-medium text-stone-200 hover:bg-stone-850 hover:-translate-y-0.5 active:translate-y-0 transition-all">
-        💼 Conecte-se comigo no LinkedIn
+      <a href="#" onclick="alert('LinkedIn')" class="block bg-stone-950 border border-stone-800/60 py-3 px-4 rounded-2xl text-xs font-medium text-stone-200 hover:bg-stone-850 hover:-translate-y-0.5 active:translate-y-0 transition-all">
+        💼 LinkedIn
       </a>
       
-      <a href="#" onclick="alert('Abrindo repositórios do GitHub')" class="block bg-stone-950 border border-stone-800/60 py-3 px-4 rounded-2xl text-xs font-medium text-stone-200 hover:bg-stone-850 hover:-translate-y-0.5 active:translate-y-0 transition-all">
-        🐙 Siga meus Projetos no GitHub
+      <a href="#" onclick="alert('GitHub')" class="block bg-stone-950 border border-stone-800/60 py-3 px-4 rounded-2xl text-xs font-medium text-stone-200 hover:bg-stone-850 hover:-translate-y-0.5 active:translate-y-0 transition-all">
+        🐙 GitHub
       </a>
     </div>
 
     <!-- Footer Counter -->
     <div class="mt-6 pt-4 border-t border-stone-800/55 flex justify-between items-center text-[10px] text-stone-500 font-mono">
-      <span>Membros</span>
-      <span class="text-stone-300 bg-stone-950 px-2 py-0.5 rounded-full border border-stone-800">1.2k+ inscritos</span>
+      <span>Members</span>
+      <span class="text-stone-300 bg-stone-950 px-2 py-0.5 rounded-full border border-stone-800">1.2k+</span>
     </div>
   </div>
 </div>
@@ -510,8 +510,108 @@ const _FAQ_LIST = [
   { q: "Posso criar e calcular o mapa de outras pessoas importantes?", a: "Perfeitamente. Na aba 'Mapa Estelar' sob a categoria 'Mapas Extras', você poderá salvar e consultar o mapa de até 2 outras pessoas queridas com facilidade sem desfigurar seus dados originais de nascimento." }
 ];
 
+const ZODIAC_MULTILINGUAL_DATA: Record<string, Record<Language, { name: string; element: string; regente: string; traits: string; horoscopo: string }>> = {
+  "Áries": {
+    pt: { name: "Áries", element: "Fogo", regente: "Marte", traits: "Iniciativa, pioneirismo, vigor, impaciência.", horoscopo: "Hoje é um dia promissor para assumir novos compromissos, porém tenha paciência com respostas burocráticas retardadas." },
+    en: { name: "Aries", element: "Fire", regente: "Mars", traits: "Initiative, pioneering spirit, vigor, impatience.", horoscopo: "Today is a promising day to take on new commitments, but be patient with delayed bureaucratic responses." },
+    es: { name: "Aries", element: "Fuego", regente: "Marte", traits: "Iniciativa, espíritu pionero, vigor, impaciencia.", horoscopo: "Hoy es un día prometedor para asumir nuevos compromisos, pero ten paciencia con respuestas burocráticas retrasadas." },
+    de: { name: "Widder", element: "Feuer", regente: "Mars", traits: "Initiative, Pioniergeist, Vitalität, Ungeduld.", horoscopo: "Heute ist ein vielversprechender Tag, um neue Verpflichtungen einzugehen, aber haben Sie Geduld bei verzögerten bürokratischen Antworten." },
+    fr: { name: "Bélier", element: "Feu", regente: "Mars", traits: "Initiative, esprit pionnier, vigueur, impatience.", horoscopo: "Aujourd'hui est un jour prometteur pour prendre de nouveaux engagements, mais soyez patient face aux réponses bureaucratiques retardées." }
+  },
+  "Touro": {
+    pt: { name: "Touro", element: "Terra", regente: "Vênus", traits: "Estabilidade, persistência, sensualidade, teimosia.", horoscopo: "A quadratura lunar sugere revisar gastos apressados. Foque em estabilizar seu solo financeiro." },
+    en: { name: "Taurus", element: "Earth", regente: "Venus", traits: "Stability, persistence, sensuality, stubbornness.", horoscopo: "The lunar square suggests reviewing hasty spending. Focus on stabilizing your financial foundation." },
+    es: { name: "Tauro", element: "Tierra", regente: "Venus", traits: "Estabilidad, persistencia, sensualidad, terquedad.", horoscopo: "La cuadratura lunar sugiere revisar los gastos apresurados. Enfócate en estabilizar tu suelo financiero." },
+    de: { name: "Stier", element: "Erde", regente: "Venus", traits: "Stabilität, Beharrlichkeit, Sinnlichkeit, Sturheit.", horoscopo: "Das Mondquadrat legt nahe, voreilige Ausgaben zu überprüfen. Konzentrieren Sie sich darauf, Ihre finanzielle Basis zu stabilisieren." },
+    fr: { name: "Taureau", element: "Terre", regente: "Vénus", traits: "Stabilité, persévérance, sensualité, entêtement.", horoscopo: "Le carré lunaire suggère de revoir les dépenses précipitées. Concentrez-vous sur la stabilisation de vos finances." }
+  },
+  "Gêmeos": {
+    pt: { name: "Gêmeos", element: "Ar", regente: "Mercúrio", traits: "Comunicação, versatilidade, curiosidade, dispersão.", horoscopo: "Trocar ideias e debater trará excelentes alianças hoje. Cuidado para não dispersar de suas obrigações primordiais." },
+    en: { name: "Gemini", element: "Air", regente: "Mercury", traits: "Communication, versatility, curiosity, restlessness.", horoscopo: "Exchanging ideas and networking will bring great alliances today. Be careful not to lose focus on primary duties." },
+    es: { name: "Géminis", element: "Aire", regente: "Mercurio", traits: "Comunicación, versatilidad, curiosidad, dispersión.", horoscopo: "Intercambiar ideas y debatir traerá excelentes alianzas hoy. Cuidado con no dispersarte de tus obligaciones primordiales." },
+    de: { name: "Zwillinge", element: "Luft", regente: "Merkur", traits: "Kommunikation, Vielseitigkeit, Neugier, Unruhe.", horoscopo: "Ideenaustausch und Netzwerken bringen heute hervorragende Allianzen. Achten Sie darauf, sich nicht von Ihren Hauptaufgaben abzulenken." },
+    fr: { name: "Gémeaux", element: "Air", regente: "Mercure", traits: "Communication, polyvalence, curiosité, dispersion.", horoscopo: "Échanger des idées et réseauter apportera d'excellentes alliances aujourd'hui. Attention à ne pas vous disperser de vos obligations." }
+  },
+  "Câncer": {
+    pt: { name: "Câncer", element: "Água", regente: "Lua", traits: "Acolhimento, sensibilidade, memória, melindre.", horoscopo: "Momento propício para resgatar sua nutrição familiar emocional e meditar e registrar seus sonhos." },
+    en: { name: "Cancer", element: "Water", regente: "Moon", traits: "Nurturing, sensitivity, deep memory, vulnerability.", horoscopo: "Favorable time to restore emotional family harmony, meditate, and record your dreams." },
+    es: { name: "Cáncer", element: "Agua", regente: "Luna", traits: "Acogida, sensibilidad, memoria, susceptibilidad.", horoscopo: "Momento propicio para rescatar tu nutrición familiar emocional, meditar y registrar tus sueños." },
+    de: { name: "Krebs", element: "Wasser", regente: "Mond", traits: "Fürsorge, Empfindsamkeit, tiefes Gedächtnis, Empfindlichkeit.", horoscopo: "Günstiger Zeitpunkt, um die emotionale familiäre Harmonie zu stärken, zu meditieren und Ihre Träume aufzuschreiben." },
+    fr: { name: "Cancer", element: "Eau", regente: "Lune", traits: "Bienveillance, sensibilité, mémoire profonde, vulnérabilité.", horoscopo: "Moment favorable pour restaurer la nourriture émotionnelle familiale, méditer et noter vos rêves." }
+  },
+  "Leão": {
+    pt: { name: "Leão", element: "Fogo", regente: "Sol", traits: "Criatividade, magnetismo, generosidade, orgulho.", horoscopo: "Seu poder pessoal de liderança brilha. Use de empatia nos círculos de negócios para somar forças." },
+    en: { name: "Leo", element: "Fire", regente: "Sun", traits: "Creativity, magnetism, generosity, pride.", horoscopo: "Your personal leadership power shines bright. Practice empathy in business circles to combine strengths." },
+    es: { name: "Leo", element: "Fuego", regente: "Sol", traits: "Creatividad, magnetismo, generosidad, orgullo.", horoscopo: "Tu poder personal de liderazgo brilla. Usa la empatía en los círculos de negocios para sumar fuerzas." },
+    de: { name: "Löwe", element: "Feuer", regente: "Sonne", traits: "Kreativität, Magnetismus, Großzügigkeit, Stolz.", horoscopo: "Ihre persönliche Führungsstärke strahlt. Nutzen Sie Empathie in Geschäftskreisen, um Kräfte zu bündeln." },
+    fr: { name: "Lion", element: "Feu", regente: "Soleil", traits: "Créativité, magnétisme, générosité, fierté.", horoscopo: "Votre pouvoir de leadership personnel brille. Utilisez l'empathie dans les affaires pour unir vos forces." }
+  },
+  "Virgem": {
+    pt: { name: "Virgem", element: "Terra", regente: "Mercúrio", traits: "Método, aperfeiçoamento, lógica, autocrítica excessiva.", horoscopo: "Organize seus arquivos e cuide de sua rotina de bem estar. Seu corpo pede repouso ativo hoje." },
+    en: { name: "Virgo", element: "Earth", regente: "Mercury", traits: "Method, refinement, logic, excessive self-criticism.", horoscopo: "Organize your tasks and care for your wellness routine. Your body asks for active rest today." },
+    es: { name: "Virgo", element: "Tierra", regente: "Mercurio", traits: "Método, perfeccionamiento, lógica, autocrítica excesiva.", horoscopo: "Organiza tus archivos y cuida tu rutina de bienestar. Tu cuerpo pide descanso activo hoy." },
+    de: { name: "Jungfrau", element: "Erde", regente: "Merkur", traits: "Methode, Verfeinerung, Logik, übertriebene Selbstkritik.", horoscopo: "Organisieren Sie Ihre Aufgaben und pflegen Sie Ihre Wohlfühlroutine. Ihr Körper verlangt heute nach aktiver Ruhe." },
+    fr: { name: "Vierge", element: "Terre", regente: "Mercure", traits: "Méthode, perfectionnement, logique, autocritique excessive.", horoscopo: "Organisez vos dossiers et prenez soin de votre routine de bien-être. Votre corps demande un repos actif aujourd'hui." }
+  },
+  "Libra": {
+    pt: { name: "Libra", element: "Ar", regente: "Vênus", traits: "Equilíbrio, conciliação, estética, indecisão.", horoscopo: "Uma decisão importante na vida afetiva demanda equilíbrio sincero e transparência de palavras." },
+    en: { name: "Libra", element: "Air", regente: "Venus", traits: "Balance, harmony, aesthetics, indecision.", horoscopo: "An important decision in relationships demands sincere balance and clear, transparent words." },
+    es: { name: "Libra", element: "Aire", regente: "Venus", traits: "Equilibrio, conciliación, estética, indecisión.", horoscopo: "Una decisión importante en la vida afectiva exige un equilibrio sincero y transparencia de palabras." },
+    de: { name: "Waage", element: "Luft", regente: "Venus", traits: "Balance, Versöhnung, Ästhetik, Unentschlossenheit.", horoscopo: "Eine wichtige Entscheidung im Liebesleben erfordert aufrichtiges Gleichgewicht und transparente Worte." },
+    fr: { name: "Balance", element: "Air", regente: "Vénus", traits: "Équilibre, conciliation, esthétique, indécision.", horoscopo: "Une décision importante dans votre vie affective exige un équilibre sincère et une transparence des mots." }
+  },
+  "Escorpião": {
+    pt: { name: "Escorpião", element: "Água", regente: "Plutão", traits: "Intensidade, transformação, intuição, desconfiança.", horoscopo: "Aprofunde sua percepção antes de agir. Uma revelação intuitiva esclarece pendências antigas." },
+    en: { name: "Scorpio", element: "Water", regente: "Pluto", traits: "Intensity, transformation, intuition, secrecy.", horoscopo: "Deepen your perception before taking action. An intuitive revelation clarifies long-standing issues." },
+    es: { name: "Escorpio", element: "Agua", regente: "Plutón", traits: "Intensidad, transformación, intuición, desconfianza.", horoscopo: "Profundiza tu percepción antes de actuar. Una revelación intuitiva aclara asuntos pendientes antiguos." },
+    de: { name: "Skorpion", element: "Wasser", regente: "Pluto", traits: "Intensität, Transformation, Intuition, Misstrauen.", horoscopo: "Vertiefen Sie Ihre Wahrnehmung, bevor Sie handeln. Eine intuitive Offenbarung klärt alte Angelegenheiten." },
+    fr: { name: "Scorpion", element: "Eau", regente: "Pluton", traits: "Intensité, transformation, intuition, méfiance.", horoscopo: "Approfondissez votre perception avant d'agir. Une révélation intuitive clarifie d'anciens différends." }
+  },
+  "Sagitário": {
+    pt: { name: "Sagitário", element: "Fogo", regente: "Júpiter", traits: "Otimismo, expansão, filosofia, exagero.", horoscopo: "Novos horizontes mentais se abrem. Planeje viagens ou estudos com entusiasmo e cautela prática." },
+    en: { name: "Sagittarius", element: "Fire", regente: "Jupiter", traits: "Optimism, expansion, philosophy, restlessness.", horoscopo: "New mental horizons unfold. Plan travels or studies with enthusiasm and practical care." },
+    es: { name: "Sagitario", element: "Fuego", regente: "Júpiter", traits: "Optimismo, expansión, filosofía, exageración.", horoscopo: "Se abren nuevos horizontes mentales. Planifica viajes o estudios con entusiasmo y cautela práctica." },
+    de: { name: "Schütze", element: "Feuer", regente: "Jupiter", traits: "Optimismus, Expansion, Philosophie, Übertreibung.", horoscopo: "Neue mentale Horizonte öffnen sich. Planen Sie Reisen oder Studien mit Begeisterung und praktischer Vorsicht." },
+    fr: { name: "Sagittaire", element: "Feu", regente: "Jupiter", traits: "Optimisme, expansion, philosophie, démesure.", horoscopo: "De nouveaux horizons mentaux s'ouvrent. Planifiez vos voyages ou études avec enthousiasme et prudence." }
+  },
+  "Capricórnio": {
+    pt: { name: "Capricórnio", element: "Terra", regente: "Saturno", traits: "Disciplina, ambição, responsabilidade, rigidez.", horoscopo: "Sua persistência colhe frutos tangíveis no trabalho. Mantenha o foco em metas de longo prazo." },
+    en: { name: "Capricorn", element: "Earth", regente: "Saturn", traits: "Discipline, ambition, responsibility, rigidity.", horoscopo: "Your persistence reaps tangible rewards at work. Stay focused on long-term goals." },
+    es: { name: "Capricornio", element: "Tierra", regente: "Saturno", traits: "Disciplina, ambición, responsabilidad, rigidez.", horoscopo: "Tu persistencia cosecha frutos tangibles en el trabajo. Mantén el enfoque en metas de largo plazo." },
+    de: { name: "Steinbock", element: "Erde", regente: "Saturn", traits: "Disziplin, Ehrgeiz, Verantwortung, Strenge.", horoscopo: "Ihre Beharrlichkeit trägt am Arbeitsplatz greifbare Früchte. Bleiben Sie auf langzeitige Ziele fokussiert." },
+    fr: { name: "Capricorne", element: "Terre", regente: "Saturne", traits: "Discipline, ambition, responsabilité, rigidité.", horoscopo: "Votre persévérance récolte des fruits tangibles au travail. Restez concentré sur vos objectifs à long terme." }
+  },
+  "Aquário": {
+    pt: { name: "Aquário", element: "Ar", regente: "Urano", traits: "Inovação, humanitarismo, independência, imprevisibilidade.", horoscopo: "Soluções originais surgem ao colaborar em grupo. Confie no seu pensamento vanguardista." },
+    en: { name: "Aquarius", element: "Air", regente: "Uranus", traits: "Innovation, humanitarianism, independence, unpredictability.", horoscopo: "Original solutions emerge through group collaboration. Trust your forward-thinking mindset." },
+    es: { name: "Acuario", element: "Aire", regente: "Urano", traits: "Innovación, humanitarismo, independencia, imprevisibilidad.", horoscopo: "Surgen soluciones originales al colaborar en grupo. Confía en tu pensamiento vanguardista." },
+    de: { name: "Wassermann", element: "Luft", regente: "Uranus", traits: "Innovation, Humanismus, Unabhängigkeit, Unvorhersehbarkeit.", horoscopo: "Originelle Lösungen entstehen bei der Zusammenarbeit in der Gruppe. Vertrauen Sie Ihrem zukunftsorientierten Denken." },
+    fr: { name: "Verseau", element: "Air", regente: "Uranus", traits: "Innovation, humanitarisme, indépendance, imprevisibilité.", horoscopo: "Des solutions originales émergent en travaillant en groupe. Faites confiance à votre pensée avant-gardiste." }
+  },
+  "Peixes": {
+    pt: { name: "Peixes", element: "Água", regente: "Netuno", traits: "Empatia, espiritualidade, imaginação, escapismo.", horoscopo: "Sua intuição artística e espiritual está elevada. Dedique tempo a práticas contemplativas e à arte." },
+    en: { name: "Pisces", element: "Water", regente: "Neptune", traits: "Empathy, spirituality, imagination, escapism.", horoscopo: "Your artistic and spiritual intuition is heightened. Dedicate time to contemplative practices and art." },
+    es: { name: "Piscis", element: "Agua", regente: "Neptuno", traits: "Empatía, espiritualidad, imaginación, escapismo.", horoscopo: "Tu intuición artística y espiritual está elevada. Dedica tiempo a prácticas contemplativas y al arte." },
+    de: { name: "Fische", element: "Wasser", regente: "Neptun", traits: "Empathie, Spiritualität, Phantasie, Fluchtverhalten.", horoscopo: "Ihre künstlerische und spirituelle Intuition ist gesteigert. Widmen Sie Zeit kontemplativen Praktiken und der Kunst." },
+    fr: { name: "Poissons", element: "Eau", regente: "Neptune", traits: "Empathie, spiritualité, imagination, escapisme.", horoscopo: "Votre intuition artistique et spirituelle est élevée. Consacrez du temps aux pratiques contemplatives et à l'art." }
+  }
+};
+
 function translateZodiacItem(item: any, lang: Language) {
   if (!item) return item;
+  const rawKey = item.name;
+  const multiData = ZODIAC_MULTILINGUAL_DATA[rawKey];
+  if (multiData && multiData[lang]) {
+    const loc = multiData[lang];
+    return {
+      ...item,
+      name: loc.name,
+      element: loc.element,
+      regente: loc.regente,
+      traits: loc.traits,
+      horoscopo: loc.horoscopo
+    };
+  }
   return {
     ...item,
     name: translateUiText(item.name, lang),

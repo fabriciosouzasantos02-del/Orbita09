@@ -28,6 +28,8 @@ export interface DailyPrediction {
   dateFormatted: string;
   tagText: string;
   tagColorClass: string;
+  lunarTransitAndSectors: string;
+  dailyPlanetaryAspects: string[];
 
   // 1. Resumo Energético do Dia
   summary: string;
@@ -410,7 +412,13 @@ function findClosestAspectRegardlessOfOrb(
   return bestAspect;
 }
 
+const transitPositionsCache = new Map<string, Record<string, number> | null>();
+
 function getTransitPositions(date: Date, latitude: number, longitude: number): Record<string, number> | null {
+  const cacheKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}_${latitude.toFixed(2)}_${longitude.toFixed(2)}`;
+  if (transitPositionsCache.has(cacheKey)) {
+    return transitPositionsCache.get(cacheKey)!;
+  }
   try {
     const ephemResult = ephemeris.getAllPlanets(date, longitude, latitude);
     if (ephemResult && ephemResult.observed) {
@@ -434,11 +442,13 @@ function getTransitPositions(date: Date, latitude: number, longitude: number): R
           positions[planetName] = ephemResult.observed[key].apparentLongitudeDd;
         }
       }
+      transitPositionsCache.set(cacheKey, positions);
       return positions;
     }
   } catch (e) {
     console.error("Error calculating transit positions in engine:", e);
   }
+  transitPositionsCache.set(cacheKey, null);
   return null;
 }
 
@@ -2002,12 +2012,48 @@ export function generateDailyPrediction(
   };
   const recommendedRitual = ritualsByPlanet[lang] || ritualsByPlanet.pt;
 
+  // Dynamic Lunar Transit and Sectors
+  let lunarTransitAndSectors = "";
+  if (lang === "en") {
+    lunarTransitAndSectors = `${moonPhase.name} in ${moonPhase.sign} activating your ${houseDetails}`;
+  } else if (lang === "es") {
+    lunarTransitAndSectors = `${moonPhase.name} en ${moonPhase.sign} activando tu ${houseDetails}`;
+  } else if (lang === "de") {
+    lunarTransitAndSectors = `${moonPhase.name} im ${moonPhase.sign} aktiviert Ihr ${houseDetails}`;
+  } else if (lang === "fr") {
+    lunarTransitAndSectors = `${moonPhase.name} en ${moonPhase.sign} activant votre ${houseDetails}`;
+  } else {
+    lunarTransitAndSectors = `${moonPhase.name} em ${moonPhase.sign} ativando a sua ${houseDetails}`;
+  }
+
+  // Dynamic Planetary Aspects array
+  const secondaryPlanetList = ["Vênus", "Marte", "Júpiter", "Saturno", "Mercúrio", "Sol"];
+  const secondaryAspectTypes = ["Trígono", "Sextil", "Conjunção", "Quadratura"];
+  
+  const secP1 = secondaryPlanetList[daySeed % secondaryPlanetList.length];
+  const secP2 = secondaryPlanetList[(daySeed + 2) % secondaryPlanetList.length];
+  const secAsp1 = secondaryAspectTypes[daySeed % secondaryAspectTypes.length];
+  const secAsp2 = secondaryAspectTypes[(daySeed + 1) % secondaryAspectTypes.length];
+
+  const translatedP1 = PLANET_TRANSLATIONS[lang]?.[secP1] || secP1;
+  const translatedP2 = PLANET_TRANSLATIONS[lang]?.[secP2] || secP2;
+  const translatedAsp1 = ASPECT_TRANSLATIONS[lang]?.[secAsp1] || secAsp1;
+  const translatedAsp2 = ASPECT_TRANSLATIONS[lang]?.[secAsp2] || secAsp2;
+
+  const dailyPlanetaryAspects: string[] = [
+    `${translatedTpName} ${translatedAspectName.toLowerCase()} ${translatedNpName}`,
+    `${translatedP1} ${translatedAsp1.toLowerCase()} ${translatedP2}`,
+    `${translatedTpName} — ${houseDetails}`
+  ];
+
   return {
     dayNumber,
     date: targetDate,
     dateFormatted,
     tagText,
     tagColorClass,
+    lunarTransitAndSectors,
+    dailyPlanetaryAspects,
 
     // 1
     summary,

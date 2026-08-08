@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getInitialLanguage, changeLanguage } from '../i18n';
 
@@ -33,7 +33,7 @@ export interface TraducaoSchema {
 interface IdiomaContextType {
   idioma: Idioma;
   mudarIdioma: (novoIdioma: Idioma) => void;
-  t: (chave: keyof TraducaoSchema) => string;
+  t: (chave: string, options?: any) => string;
 }
 
 const IdiomaContext = createContext<IdiomaContextType | undefined>(undefined);
@@ -51,35 +51,16 @@ export function IdiomaProvider({ children }: IdiomaProviderProps) {
     return ['pt', 'en', 'es', 'de', 'fr'].includes(base) ? (base as Idioma) : getInitialLanguage();
   };
 
-  const [idioma, setIdioma] = useState<Idioma>(() => getInitialLanguage());
-
-  // Ensure initial language is synchronized on mount
-  useEffect(() => {
-    const initLang = getInitialLanguage();
-    if (i18n.language !== initLang) {
-      changeLanguage(initLang);
-      setIdioma(initLang);
-    }
-  }, []);
-
-  // Keep state in sync with react-i18next
-  useEffect(() => {
-    const handleLanguageChanged = () => {
-      setIdioma(normalizeLanguage(i18n.language));
-    };
-    window.addEventListener('orbi_language_changed', handleLanguageChanged);
-    return () => {
-      window.removeEventListener('orbi_language_changed', handleLanguageChanged);
-    };
-  }, [i18n.language]);
+  // Active language derived directly from i18next - zero parallel state
+  const idioma = normalizeLanguage(i18n.language || getInitialLanguage());
 
   const mudarIdioma = (novoIdioma: Idioma) => {
     changeLanguage(novoIdioma);
-    setIdioma(novoIdioma);
   };
 
-  const t = (chave: keyof TraducaoSchema): string => {
-    return tI18n(chave) || chave;
+  const t = (chave: string, options?: any): string => {
+    const res = tI18n(chave, options);
+    return typeof res === 'string' ? res : String(res || chave);
   };
 
   return (

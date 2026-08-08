@@ -345,7 +345,6 @@ export default function TransitMap({ mapData }: TransitMapProps) {
       console.error(`[TransitMap] Falhou ao extrair número de grau para ${matched.name}:`, matched.degree, err);
     }
 
-    console.log(`[Diagnostic] TransitMap: ${matched.name} em ${matched.sign} (${signIndex * 30}°), grau parsed: ${deg}, ângulo final: ${(signIndex * 30 + deg) % 360}°`);
     return (signIndex * 30 + deg) % 360;
   };
 

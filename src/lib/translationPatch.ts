@@ -1,6 +1,6 @@
+import { mergedTranslations } from '../i18n';
 import { autoAuditPatch } from './autoAuditPatch';
 // Highly polished manual translations to ensure 100% key consistency across all languages
-import { uiTranslations } from './translations';
 
 const patches: Record<'en' | 'es' | 'de' | 'fr', Record<string, string>> = {
   en: {
@@ -318,21 +318,42 @@ const patches: Record<'en' | 'es' | 'de' | 'fr', Record<string, string>> = {
   }
 };
 
-// Apply patches to the central uiTranslations object
-export function applyTranslationPatches() {
+// Apply patches to the central translation dictionary object
+export function applyTranslationPatches(targetDict?: Record<string, Record<string, string>>) {
+  const dictToUse = targetDict || (mergedTranslations as any);
+  if (!dictToUse) return;
   const languages: ('en' | 'es' | 'de' | 'fr')[] = ['en', 'es', 'de', 'fr'];
+  if (!dictToUse.pt) dictToUse.pt = {};
+
+  // First, ensure all keys in patches and autoAuditPatch exist in PT base dictionary
   for (const lang of languages) {
-    if (!uiTranslations[lang]) {
-      (uiTranslations as any)[lang] = {};
+    const patch = patches[lang] || {};
+    for (const key of Object.keys(patch)) {
+      if (!dictToUse.pt[key]) {
+        dictToUse.pt[key] = key;
+      }
     }
-    const dict = uiTranslations[lang];
-    const patch = patches[lang];
+    const autoPatch = autoAuditPatch[lang] || {};
+    for (const key of Object.keys(autoPatch)) {
+      if (!dictToUse.pt[key]) {
+        dictToUse.pt[key] = key;
+      }
+    }
+  }
+
+  // Next, populate translated values for each non-PT language
+  for (const lang of languages) {
+    if (!dictToUse[lang]) {
+      dictToUse[lang] = {};
+    }
+    const dict = dictToUse[lang];
+    const patch = patches[lang] || {};
     for (const key of Object.keys(patch)) {
       dict[key] = patch[key];
     }
     const autoPatch = autoAuditPatch[lang] || {};
     for (const key of Object.keys(autoPatch)) {
-      if (autoPatch[key] && autoPatch[key] !== key) {
+      if (autoPatch[key] !== undefined && autoPatch[key] !== null) {
         dict[key] = autoPatch[key];
       }
     }

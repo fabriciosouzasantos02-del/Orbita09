@@ -5,7 +5,7 @@ import {
   DollarSign, Heart, Users, Star, Moon, Home, Eye, Sliders,
   Compass, AlertCircle, TrendingUp, Sparkle, ArrowRight, Check, CheckCircle,
   Clock, Zap, Smile, Flame, Shield, HelpCircle, MessageSquare, Send, Bell, X,
-  Search, Smartphone, Download, Share2, Copy, ChevronDown, ChevronRight, ChevronLeft
+  Search, Smartphone, Download, Share2, Copy, ChevronDown, ChevronRight, ChevronLeft, RefreshCw
 } from 'lucide-react';
 import SocialCompatibility from './SocialCompatibility';
 import SocialNetworkView from './SocialNetworkView';
@@ -266,7 +266,7 @@ const localPortalTranslations: Record<string, Record<string, string>> = {
     "Recurso de compartilhamento nativo indisponível. O link do aplicativo foi copiado para a área de transferência!": "Native sharing feature unavailable. The app link has been copied to the clipboard!",
     "Enviar via WhatsApp": "Send via WhatsApp",
     "🛡️ Informações Úteis de Instalação e Distribuição Independente": "🛡️ Useful Installation and Independent Distribution Information",
-    "Sendo uma plataforma de sabedoria avançada e criptografia astro-quântica, o APK do <strong>Portal Órbita</strong> é distribuído de forma independente e segura fora das lojas oficiais corporativas. Isso garante absoluta privacidade dos seus dados e integridade de suas consultas com os arcanos do Tarot e a IA Orbia. Ao ativar o APK, lembre-se de habilitar e autorizar o parâmetro \"Instalação de Fontes Desconhecidas\" nas configurações de segurança do seu dispositivo. É totalmente seguro e livre de vírus.": "Being a platform of advanced wisdom and astro-quantum encryption, the **Portal Orbita** APK is distributed independently and securely outside official corporate stores. This guarantees absolute privacy of your data and integrity of your consultations with the Tarot arcana and Orbia AI. When activating the APK, remember to enable and authorize the \"Unknown Sources Installation\" parameter in your device's security settings. It is fully safe and virus-free.",
+    "apk_distribution_info": "Being a platform of advanced wisdom and astro-quantum encryption, the Portal Orbita APK is distributed independently and securely outside official corporate stores. This guarantees absolute privacy of your data and integrity of your consultations with the Tarot arcana and Orbia AI. When activating the APK, remember to enable and authorize the \"Unknown Sources Installation\" parameter in your device's security settings. It is fully safe and virus-free.",
     "Artigo de Saber": "Wisdom Article",
     "Por": "By",
     "Concluir Leitura": "Complete Reading",
@@ -734,7 +734,7 @@ const localPortalTranslations: Record<string, Record<string, string>> = {
     "Conselho Especial Hoje": "Conseil Spécial du Jour",
     "Foco Ativo": "Focalisation Active",
     "Coloque um guardanapo azul no bolso esquerdo ou use caneta de tinta preta para fixar as ações tomadas agora sob a influência desta vibração.": "Placez une serviette bleue dans votre poche gauche ou utilisez un stylo à encre noire pour ancrer les actions entreprises sous l'influence de cette vibration.",
-    "Sendo uma plataforma de sabedoria avançada e criptografia astro-quântica, o APK do <strong>Portal Órbita</strong> é distribuído de forma independente e segura fora das lojas oficiais corporativas. Isso garante absoluta privacidade dos seus dados e integridade de suas consultas com os arcanos do Tarot e a IA Orbia. Ao ativar o APK, lembre-se de habilitar e autorizar o parâmetro \"Instalação de Fontes Desconhecidas\" nas configurações de segurança do seu dispositivo. É totalmente seguro e livre de vírus.": "En tant que plateforme de sagesse avancée et de cryptographie astro-quantique, l'APK du <strong>Portal Órbita</strong> est distribué de manière indépendante et sécurisée en dehors des magasins officiels d'entreprises. Cela garantit une confidentialité absolue de vos données et l'intégrité de vos consultations avec les arcanes du Tarot et l'IA Orbia. Lors de l'activation de l'APK, n'oubliez pas d'activer et d'autoriser le paramètre \"Installation de sources inconnues\" dans les paramètres de sécurité de votre appareil. C'est totalement sûr et sans virus.",
+    "apk_distribution_info": "En tant que plateforme de sagesse avancée et de cryptographie astro-quantique, l'APK du Portal Órbita est distribué de manière indépendante et sécurisée en dehors des magasins officiels d'entreprises. Cela garantit une confidentialité absolue de vos données et l'intégrité de vos consultations avec les arcanes du Tarot et l'IA Orbia. Lors de l'activation de l'APK, n'oubliez pas d'activer et d'autoriser le paramètre \"Installation de sources inconnues\" dans les paramètres de sécurité de votre appareil. C'est totalement sûr et sans virus.",
     "Organização": "Organisation",
     "Bem-estar": "Bien-être",
     "Calendário Interativo de Tendências (30 Dias)": "Calendrier Interactif des Tendances (30 Jours)",
@@ -1062,7 +1062,7 @@ const localPortalTranslations: Record<string, Record<string, string>> = {
     "Conselho Especial Hoje": "Besonderer Rat des Tages",
     "Foco Ativo": "Aktiver Fokus",
     "Coloque um guardanapo azul no bolso esquerdo ou use caneta de tinta preta para fixar as ações tomadas agora sob a influência desta vibração.": "Legen Sie eine blaue Serviette in Ihre linke Tasche oder verwenden Sie einen Kugelschreiber mit schwarzer Tinte, um die jetzt unter dem Einfluss dieser Schwingung ergriffenen Maßnahmen zu verankern.",
-    "Sendo uma plataforma de sabedoria avançada e criptografia astro-quântica, o APK do <strong>Portal Órbita</strong> é distribuído de forma independente e segura fora das lojas oficiais corporativas. Isso garante absoluta privacidade dos seus dados e integridade de suas consultas com os arcanos do Tarot e a IA Orbia. Ao ativar o APK, lembre-se de habilitar e autorizar o parâmetro \"Instalação de Fontes Desconhecidas\" nas configurações de segurança do seu dispositivo. É totalmente seguro e livre de vírus.": "Als Plattform für fortgeschrittene Weisheit und astro-quanten-Verschlüsselung wird die APK von <strong>Portal Órbita</strong> unabhängig und sicher außerhalb der offiziellen Unternehmens-Stores vertrieben. Dies garantiert die absolute Privatsphäre Ihrer Daten und die Integrität Ihrer Konsultationen mit den Tarot-Arkanen und der Orbia-KI. Denken Sie bei der Aktivierung der APK daran, den Parameter \"Installation unbekannter Quellen\" in den Sicherheitseinstellungen Ihres Geräts zu aktivieren und zu autorisieren. Es ist absolut sicher und virenfrei.",
+    "apk_distribution_info": "Als Plattform für fortgeschrittene Weisheit und astro-quanten-Verschlüsselung wird die APK von Portal Órbita unabhängig und sicher außerhalb der offiziellen Unternehmens-Stores vertrieben. Dies garantiert die absolute Privatsphäre Ihrer Daten und die Integrität Ihrer Konsultationen mit den Tarot-Arkanen und der Orbia-KI. Denken Sie bei der Aktivierung der APK daran, den Parameter \"Installation unbekannter Quellen\" in den Sicherheitseinstellungen Ihres Geräts zu aktivieren und zu autorisieren. Es ist absolut sicher und virenfrei.",
     "Organização": "Organisation",
     "Bem-estar": "Wohlbefinden",
     "Calendário Interativo de Tendências (30 Dias)": "Interaktiver Trendkalender (30 Tage)",
@@ -1418,45 +1418,122 @@ export default function UserDashboardPortal({
   const [activeCalendarFilter, setActiveCalendarFilter] = useState<string>('todos');
   const [selectedOpportunityArea, setSelectedOpportunityArea] = useState<string>('dinheiro');
   const [universoSintonizado, setUniversoSintonizado] = useState<boolean>(false);
-  const [weeklyMissions, setWeeklyMissions] = useState<Array<{ id: string; title: string; description: string; isCompleted: boolean; points: number; isClaimed?: boolean }>>(() => {
-    const activeLang = (idioma || lang || 'pt').toLowerCase();
-    const isEn = activeLang === 'en';
-    const isEs = activeLang === 'es';
-    const isDe = activeLang === 'de';
-    const isFr = activeLang === 'fr';
+  const [selectedWeeklyMission, setSelectedWeeklyMission] = useState<{ id: string; title: string; description: string; isCompleted: boolean; points: number; isClaimed?: boolean; aiPrompt?: string } | null>(null);
+  const [weeklyMissionAiResponse, setWeeklyMissionAiResponse] = useState<string>("");
+  const [weeklyMissionAiLoading, setWeeklyMissionAiLoading] = useState<boolean>(false);
+
+  // Helper to build dynamic personalized weekly missions strictly using i18n
+  const getPersonalizedWeeklyMissions = (targetLang: string) => {
+    const l = (targetLang || 'pt').toLowerCase();
+    const name = user?.name ? user.name.split(" ")[0] : (l === 'de' ? "Sternensucher" : l === 'en' ? "Stellar Seeker" : l === 'es' ? "Buscador Estelar" : l === 'fr' ? "Chercheur Stellaire" : "Viajante");
+    const userSign = mapData?.astros?.find((a: any) => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Touro");
+    const translatedZodiac = t(userSign) || userSign;
+
+    const tKey = (key: string, replacements?: Record<string, string>) => {
+      let res = key;
+      if (l !== 'pt') {
+        const dict = localPortalTranslations[l];
+        if (dict?.[key]) {
+          res = dict[key];
+        } else {
+          res = i18nT(key, { lng: l });
+        }
+      } else {
+        res = i18nT(key, { lng: 'pt' });
+      }
+      if (replacements) {
+        Object.keys(replacements).forEach(r => {
+          res = res.replace(new RegExp(`{{${r}}}`, 'g'), replacements[r]);
+        });
+      }
+      return res;
+    };
+
     return [
-      { id: "w1", title: isEn ? "This week try to resolve an old pending matter" : isEs ? "Esta semana intente resolver un asunto pendiente antiguo" : isDe ? "Versuchen Sie diese Woche, eine alte Angelegenheit zu klären" : isFr ? "Cette semaine essayez de résoudre une affaire en suspens ancienne" : "Esta semana tente resolver uma pendência antiga", description: isEn ? "Identify an accumulated material or bureaucratic pending issue and take action to resolve it, releasing Saturn's flow." : isEs ? "Identifique un asunto pendiente material o burocrático acumulado y tome medidas para resolverlo, liberando el flujo de Saturno." : isDe ? "Identifizieren Sie eine aufgelaufene materieller oder bürokratische Angelegenheit und ergreifen Sie Maßnahmen zu deren Klärung, um den Fluss Saturns freizusetzen." : isFr ? "Identifiez une question en suspens matérielle ou bureaucratique accumulée et agissez pour la résoudre, libérant ainsi le flux de Saturne." : "Identifique uma pendência material ou burocrática acumulada e tome uma ação para resolvê-la, liberando fluxo de Saturno.", isCompleted: false, points: 150 },
-      { id: "w2", title: isEn ? "This week strengthen an important relationship" : isEs ? "Esta semana fortalezca una relación importante" : isDe ? "Stärken Sie diese Woche eine wichtige Beziehung" : isFr ? "Cette semaine renforcez une relation importante" : "Esta semana fortaleça um relacionamento importante", description: isEn ? "Send a genuine message of affection or make a gesture of consideration to someone in your inner circle." : isEs ? "Envíe un mensaje genuino de afecto o tenga un gesto de consideración hacia alguien de su círculo íntimo." : isDe ? "Senden Sie eine aufrichtige Botschaft der Zuneigung oder zeigen Sie jemandem aus Ihrem engsten Kreis eine Geste der Aufmerksamkeit." : isFr ? "Envoyez un message sincère d'affection ou faites un geste de considération envers quelqu'un de votre entourage proche." : "Envie uma mensagem genuína de carinho ou faça um gesto de consideração a alguém do seu círculo íntimo.", isCompleted: false, points: 120 },
-      { id: "w3", title: isEn ? "This week dedicate time to learning" : isEs ? "Esta semana dedique tiempo al aprendizaje" : isDe ? "Widmen Sie diese Woche Zeit dem Lernen" : isFr ? "Cette semaine consacrez du temps à l'apprentissage" : "Esta semana dedique tempo ao aprendizado", description: isEn ? "Invest at least 1 hour in a book, course or meditation audio focused on your personal development." : isEs ? "Invierta al menos 1 hora en un libro, curso o audio de meditación enfocado en su desarrollo personal." : isDe ? "Investieren Sie mindestens 1 Stunde in ein Buch, einen Kurs oder ein Meditationsaudio, das auf Ihre persönliche Entwicklung ausgerichtet ist." : isFr ? "Investissez au moins 1 heure dans un livre, un cours ou un enregistrement de méditation axé sur votre développement personnel." : "Invista pelo menos 1 hora em um livro, curso ou áudio de meditação voltado ao seu desenvolvimento pessoal.", isCompleted: false, points: 100 }
+      {
+        id: "w1",
+        title: tKey("Esta semana tente resolver uma pendência antiga"),
+        description: tKey("Identifique uma pendência material ou burocrática acumulada sob a força de {{zodiac}} e tome uma ação para resolvê-la, liberando fluxo de Saturno.", { zodiac: translatedZodiac }),
+        aiPrompt: l === 'en'
+          ? `As an expert astrologer for ${name} (${translatedZodiac}), generate practical, step-by-step weekly guidance to resolve a pending material or bureaucratic issue under Saturn's influence.`
+          : l === 'es'
+          ? `Como astrólogo experto para ${name} (${translatedZodiac}), genera una orientación semanal paso a paso para resolver un asunto pendiente material o burocrático bajo la influencia de Saturno.`
+          : l === 'de'
+          ? `Als bekannter Astrologe für ${name} (${translatedZodiac}), erstelle eine praktische wöchentliche Orientierung zur Klärung einer ausstehenden Angelegenheit unter Saturns Einfluss.`
+          : l === 'fr'
+          ? `En tant qu'astrologue expert pour ${name} (${translatedZodiac}), générez des conseils hebdomadaires pratiques pour résoudre les questions en suspens sous l'influence de Saturne.`
+          : `Como astrólogo especialista para ${name} (${translatedZodiac}), gere uma orientação semanal prática e personalizada para resolver pendências materiais ou burocráticas sob a influência de Saturno.`,
+        isCompleted: false,
+        points: 150
+      },
+      {
+        id: "w2",
+        title: tKey("Esta semana fortaleça um relacionamento importante"),
+        description: tKey("Envie uma mensagem genuína de carinho ou faça um gesto de consideração a alguém do seu círculo íntimo de {{zodiac}}.", { zodiac: translatedZodiac }),
+        aiPrompt: l === 'en'
+          ? `Based on the astrological chart of ${name} (${translatedZodiac}), provide practical cosmic guidance and a gesture to strengthen an important relationship this week.`
+          : l === 'es'
+          ? `Basándote en la carta astrológica de ${name} (${translatedZodiac}), proporciona una sugerencia cósmica práctica para fortalecer relaciones importantes esta semana.`
+          : l === 'de'
+          ? `Basierend auf dem Horoskop von ${name} (${translatedZodiac}), gib praktische kosmische Ratschläge zur Stärkung wichtiger Beziehungen in dieser Woche.`
+          : l === 'fr'
+          ? `Basé sur la carte astrologique de ${name} (${translatedZodiac}), fournissez un conseil cosmique pratique pour renforcer les relations importantes cette semaine.`
+          : `Com base no mapa astrológico de ${name} (${translatedZodiac}), forneça um conselho cósmico prático e exercício para fortalecer relacionamentos importantes nesta semana.`,
+        isCompleted: false,
+        points: 120
+      },
+      {
+        id: "w3",
+        title: tKey("Esta semana dedique tempo ao aprendizado"),
+        description: tKey("Invista pelo menos 1 hora em um livro, curso ou áudio de meditação voltado ao desenvolvimento pessoal de {{zodiac}}.", { zodiac: translatedZodiac }),
+        aiPrompt: l === 'en'
+          ? `What is the ideal focus for study, meditation, or personal growth for ${name} (${translatedZodiac}) to expand mental clarity and wisdom this week?`
+          : l === 'es'
+          ? `¿Cuál es el enfoque ideal de estudio, meditación o crecimiento personal para ${name} (${translatedZodiac}) para expandir la claridad mental esta semana?`
+          : l === 'de'
+          ? `Was ist der ideale Fokus für Studium, Meditation oder persönliches Wachstum für ${name} (${translatedZodiac}), um die mentale Klarheit diese Woche zu erweitern?`
+          : l === 'fr'
+          ? `Quel est l'axe d'étude, de méditation ou de développement personnel idéal pour ${name} (${translatedZodiac}) pour développer sa clarté mentale cette semaine ?`
+          : `Qual o foco ideal de estudo, meditação ou desenvolvimento pessoal para ${name} (${translatedZodiac}) expandir sua clareza mental e sabedoria nesta semana?`,
+        isCompleted: false,
+        points: 100
+      }
     ];
+  };
+
+  // Helper to merge incoming weekly missions while strictly enforcing current language localization
+  const mergeWeeklyMissionsWithLanguage = (incoming: any[], targetLang: string) => {
+    const l = (targetLang || 'pt').toLowerCase();
+    const localized = getPersonalizedWeeklyMissions(l);
+    if (!Array.isArray(incoming) || incoming.length === 0) {
+      return localized;
+    }
+    return localized.map((loc, idx) => {
+      const match = incoming.find(item => item && item.id === loc.id) ||
+                    incoming.find(item => item && item.id && loc.id && item.id.endsWith(loc.id.slice(-1))) ||
+                    incoming[idx];
+      if (match) {
+        return {
+          ...loc,
+          isCompleted: Boolean(match.isCompleted),
+          isClaimed: Boolean(match.isClaimed),
+          points: match.points || loc.points
+        };
+      }
+      return loc;
+    });
+  };
+
+  const [weeklyMissions, setWeeklyMissions] = useState<Array<{ id: string; title: string; description: string; isCompleted: boolean; points: number; isClaimed?: boolean; aiPrompt?: string }>>(() => {
+    return getPersonalizedWeeklyMissions(activeLang);
   });
 
   // Keep weeklyMissions translated when language prop changes
   useEffect(() => {
-    const activeLang = (idioma || lang || 'pt').toLowerCase();
-    const isEn = activeLang === 'en';
-    const isEs = activeLang === 'es';
-    const isDe = activeLang === 'de';
-    const isFr = activeLang === 'fr';
-    const templates = [
-      { id: "w1", title: isEn ? "This week try to resolve an old pending matter" : isEs ? "Esta semana intente resolver un asunto pendiente antiguo" : isDe ? "Versuchen Sie diese Woche, eine alte Angelegenheit zu klären" : isFr ? "Cette semaine essayez de résoudre une affaire en suspens ancienne" : "Esta semana tente resolver uma pendência antiga", description: isEn ? "Identify an accumulated material or bureaucratic pending issue and take action to resolve it, releasing Saturn's flow." : isEs ? "Identifique un asunto pendiente material o burocrático acumulado y tome medidas para resolverlo, liberando el flujo de Saturno." : isDe ? "Identifizieren Sie eine aufgelaufene materieller oder bürokratische Angelegenheit und ergreifen Sie Maßnahmen zu deren Klärung, um den Fluss Saturns freizusetzen." : isFr ? "Identifiez une question en suspens matérielle ou bureaucratique accumulée et agissez pour la résoudre, libérant ainsi le flux de Saturne." : "Identifique uma pendência material ou burocrática acumulada e tome uma ação para resolvê-la, liberando fluxo de Saturno.", isCompleted: false, points: 150 },
-      { id: "w2", title: isEn ? "This week strengthen an important relationship" : isEs ? "Esta semana fortalezca una relación importante" : isDe ? "Stärken Sie diese Woche eine wichtige Beziehung" : isFr ? "Cette semaine renforcez une relation importante" : "Esta semana fortaleça um relacionamento importante", description: isEn ? "Send a genuine message of affection or make a gesture of consideration to someone in your inner circle." : isEs ? "Envíe un mensaje genuino de afecto o tenga un gesto de consideración hacia alguien de su círculo íntimo." : isDe ? "Senden Sie eine aufrichtige Botschaft der Zuneigung oder zeigen Sie jemandem aus Ihrem engsten Kreis eine Geste der Aufmerksamkeit." : isFr ? "Envoyez un message sincère d'affection ou faites un geste de considération envers quelqu'un de votre entourage proche." : "Envie uma mensagem genuína de carinho ou faça um gesto de consideração a alguém do seu círculo íntimo.", isCompleted: false, points: 120 },
-      { id: "w3", title: isEn ? "This week dedicate time to learning" : isEs ? "Esta semana dedique tiempo al aprendizaje" : isDe ? "Widmen Sie diese Woche Zeit dem Lernen" : isFr ? "Cette semaine consacrez du temps à l'apprentissage" : "Esta semana dedique tempo ao aprendizado", description: isEn ? "Invest at least 1 hour in a book, course or meditation audio focused on your personal development." : isEs ? "Invierta al menos 1 hora en un libro, curso o audio de meditación enfocado en su desarrollo personal." : isDe ? "Investieren Sie mindestens 1 Stunde in ein Buch, einen Kurs oder ein Meditationsaudio, das auf Ihre persönliche Entwicklung ausgerichtet ist." : isFr ? "Investissez au moins 1 heure dans un livre, un cours ou un enregistrement de méditation axé sur votre desenvolvimento pessoal." : "Invista pelo menos 1 hora em um livro, curso ou áudio de meditação voltado ao seu desenvolvimento pessoal.", isCompleted: false, points: 100 }
-    ];
-    setWeeklyMissions(prev => prev.map((m, idx) => {
-      const tpl = templates.find(t => t.id === m.id || (m.id.startsWith("w") && t.id.endsWith(m.id.slice(-1)))) || templates[idx % templates.length];
-      if (tpl) {
-        return {
-          ...m,
-          title: tpl.title,
-          description: tpl.description
-        };
-      }
-      return m;
-    }));
-
-    scanAndTranslateDOM(activeLang);
-  }, [idioma, lang]);
+    const l = (idioma || lang || 'pt').toLowerCase();
+    setWeeklyMissions(prev => mergeWeeklyMissionsWithLanguage(prev, l));
+    scanAndTranslateDOM(l);
+  }, [idioma, lang, user, mapData]);
 
 
   // Osiris Intelligent AI System States
@@ -1593,7 +1670,7 @@ export default function UserDashboardPortal({
           });
         }
         if (Array.isArray(bgData.weeklyMissions)) {
-          setWeeklyMissions(bgData.weeklyMissions);
+          setWeeklyMissions(prev => mergeWeeklyMissionsWithLanguage(bgData.weeklyMissions, activeLang));
         }
       }
     };
@@ -1614,24 +1691,23 @@ export default function UserDashboardPortal({
         let savedWeekly: any[] | null = null;
         if (email) {
           savedWeekly = await loadWeeklyMissionsFromDatabase(email);
-          if (savedWeekly && Array.isArray(savedWeekly)) {
-            setWeeklyMissions(savedWeekly);
+          if (savedWeekly && Array.isArray(savedWeekly) && savedWeekly.length > 0) {
+            setWeeklyMissions(prev => mergeWeeklyMissionsWithLanguage(savedWeekly, activeLang));
           }
         }
 
         if (email) {
           const cachedData = await loadCalculationCache(email, `daily_missions_v4_${todayStr}_${activeLang}`);
           if (cachedData && Array.isArray(cachedData.missions)) {
-            const updated = cachedData.missions.map((m: any) => {
-              const matched = dailyMissions.find(curr => curr.id === m.id);
+            setDailyMissions(prev => cachedData.missions.map((m: any) => {
+              const matched = prev.find(curr => curr.id === m.id);
               return {
                 ...m,
                 isCompleted: matched ? matched.isCompleted : false
               };
-            });
-            setDailyMissions(updated);
+            }));
             if (!savedWeekly && Array.isArray(cachedData.weeklyMissions) && cachedData.weeklyMissions.length > 0) {
-              setWeeklyMissions(cachedData.weeklyMissions);
+              setWeeklyMissions(prev => mergeWeeklyMissionsWithLanguage(cachedData.weeklyMissions, activeLang));
             }
             return;
           }
@@ -1646,16 +1722,15 @@ export default function UserDashboardPortal({
           const data = await res.json();
           if (data && Array.isArray(data.missions)) {
             // Merge isCompleted from current dailyMissions if IDs match (to retain completion)
-            const updated = data.missions.map((m: any) => {
-              const matched = dailyMissions.find(curr => curr.id === m.id);
+            setDailyMissions(prev => data.missions.map((m: any) => {
+              const matched = prev.find(curr => curr.id === m.id);
               return {
                 ...m,
                 isCompleted: matched ? matched.isCompleted : false
               };
-            });
-            setDailyMissions(updated);
+            }));
             if (!savedWeekly && Array.isArray(data.weeklyMissions) && data.weeklyMissions.length > 0) {
-              setWeeklyMissions(data.weeklyMissions);
+              setWeeklyMissions(prev => mergeWeeklyMissionsWithLanguage(data.weeklyMissions, activeLang));
             }
             if (email) {
               await saveCalculationCache(email, `daily_missions_v4_${todayStr}_${activeLang}`, data);
@@ -4454,7 +4529,7 @@ export default function UserDashboardPortal({
               <div className="p-4 bg-slate-950 rounded-2xl border border-slate-850 space-y-3 font-sans">
                 <h5 className="text-[10px] font-mono text-slate-400 uppercase tracking-widest font-bold">🛡️ {t("Informações Úteis de Instalação e Distribuição Independente")}</h5>
                 <p className="text-[10.5px] text-slate-500 leading-relaxed">
-                  {t("Sendo uma plataforma de sabedoria avançada e criptografia astro-quântica, o APK do <strong>Portal Órbita</strong> é distribuído de forma independente e segura fora das lojas oficiais corporativas. Isso garante absoluta privacidade dos seus dados e integridade de suas consultas com os arcanos do Tarot e a IA Orbia. Ao ativar o APK, lembre-se de habilitar e autorizar o parâmetro \"Instalação de Fontes Desconhecidas\" nas configurações de segurança do seu dispositivo. É totalmente seguro e livre de vírus.")}
+                  {t("apk_distribution_info")}
                 </p>
               </div>
 
