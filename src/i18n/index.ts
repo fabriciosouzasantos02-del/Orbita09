@@ -17,6 +17,7 @@ import { landingTranslations } from './landing';
 import { customFeaturesTranslations } from './customFeatures';
 import { dynamicContentTranslations } from './dynamicContent';
 import { cupidoTranslations } from './cupido';
+import { uiTranslations } from './ui';
 
 // Collection of all registered translation modules
 const modules = [
@@ -37,7 +38,8 @@ const modules = [
   landingTranslations,
   customFeaturesTranslations,
   dynamicContentTranslations,
-  cupidoTranslations
+  cupidoTranslations,
+  uiTranslations
 ];
 
 // Automatically merged single official source of truth

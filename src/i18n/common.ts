@@ -136,7 +136,9 @@ export const commonTranslations: Record<Language, Record<string, string>> = {
     "Fomenta disciplina diária para finalizar pendências e obrigações.": "Fomenta disciplina diária para finalizar pendências e obrigações.",
     "Cor de Proteção": "Cor de Proteção",
     "Off-White Pérola": "Off-White Pérola",
-    "Ideal para purificar vibrações densas em conversas ou ambientes pesados.": "Ideal para purificar vibrações densas em conversas ou ambientes pesados."
+    "Ideal para purificar vibrações densas em conversas ou ambientes pesados.": "Ideal para purificar vibrações densas em conversas ou ambientes pesados.",
+    "Selecione": "Selecione",
+    "Nota:": "Nota:"
   },
   en: {
     saveMap: 'Save Chart',
@@ -273,7 +275,9 @@ export const commonTranslations: Record<Language, Record<string, string>> = {
     "Fomenta disciplina diária para finalizar pendências e obrigações.": "Fosters daily discipline to finish pending tasks and obligations.",
     "Cor de Proteção": "Protection Color",
     "Off-White Pérola": "Pearl Off-White",
-    "Ideal para purificar vibrações densas em conversas ou ambientes pesados.": "Ideal for purifying dense vibrations in conversations or heavy environments."
+    "Ideal para purificar vibrações densas em conversas ou ambientes pesados.": "Ideal for purifying dense vibrations in conversations or heavy environments.",
+    "Selecione": "Select",
+    "Nota:": "Note:"
   },
   es: {
     saveMap: 'Guardar Carta',
@@ -410,7 +414,9 @@ export const commonTranslations: Record<Language, Record<string, string>> = {
     "Fomenta disciplina diária para finalizar pendências e obrigações.": "Fomenta la disciplina diaria para finalizar asuntos pendientes y obligaciones.",
     "Cor de Proteção": "Color de Protección",
     "Off-White Pérola": "Blanco Roto Perla",
-    "Ideal para purificar vibrações densas em conversas ou ambientes pesados.": "Ideal para purificar vibraciones densas en conversaciones o ambientes pesados."
+    "Ideal para purificar vibrações densas em conversas ou ambientes pesados.": "Ideal para purificar vibraciones densas en conversaciones o ambientes pesados.",
+    "Selecione": "Seleccionar",
+    "Nota:": "Nota:"
   },
   de: {
     saveMap: 'Horoskop Speichern',
@@ -547,7 +553,9 @@ export const commonTranslations: Record<Language, Record<string, string>> = {
     "Fomenta disciplina diária para finalizar pendências e obrigações.": "Fördert die tägliche Disziplin zur Erledigung ausstehender Aufgaben und Verpflichtungen.",
     "Cor de Proteção": "Farbe des Schutzes",
     "Off-White Pérola": "Perlen-Off-White",
-    "Ideal para purificar vibrações densas em conversas ou ambientes pesados.": "Ideal zur Reinigung dichter Schwingungen in Gesprächen oder schweren Umgebungen."
+    "Ideal para purificar vibrações densas em conversas ou ambientes pesados.": "Ideal zur Reinigung dichter Schwingungen in Gesprächen oder schweren Umgebungen.",
+    "Selecione": "Wählen",
+    "Nota:": "Hinweis:"
   },
   fr: {
     saveMap: 'Sauvegarder la Carte',
@@ -684,6 +692,8 @@ export const commonTranslations: Record<Language, Record<string, string>> = {
     "Fomenta disciplina diária para finalizar pendências e obrigações.": "Encourage la discipline quotidienne pour finaliser les tâches pendantes et obligations.",
     "Cor de Proteção": "Couleur de Protection",
     "Off-White Pérola": "Blanc Cassé Perle",
-    "Ideal para purificar vibrações densas em conversas ou ambientes pesados.": "Idéal pour purifier les vibrations denses lors de conversations ou dans des environnements lourds."
+    "Ideal para purificar vibrações densas em conversas ou ambientes pesados.": "Idéal pour purifier les vibrations denses lors de conversations ou dans des environnements lourds.",
+    "Selecione": "Sélectionner",
+    "Nota:": "Remarque:"
   }
 };
