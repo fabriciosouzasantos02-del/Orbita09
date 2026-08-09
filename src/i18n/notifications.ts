@@ -1,4 +1,4 @@
-import { Language } from '../translations';
+import { Language } from './types';
 
 export const notificationsTranslations: Record<Language, Record<string, string>> = {
   pt: {

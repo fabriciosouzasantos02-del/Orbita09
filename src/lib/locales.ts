@@ -601,17 +601,25 @@ export const pwaGuideTranslations: Record<SupportedLanguage, {
   }
 };
 
+import i18next from 'i18next';
+
 export function getLocaleDict(lang: string = 'pt'): Record<string, string> {
-  const l = (lang && localLangDict[lang as SupportedLanguage]) ? (lang as SupportedLanguage) : 'pt';
+  const l = (lang && ['pt', 'en', 'es', 'de', 'fr'].includes(lang)) ? (lang as SupportedLanguage) : 'pt';
   return localLangDict[l] || localLangDict.pt;
 }
 
 /**
- * Get string translation from localLangDict with fallback to 'pt'
+ * Get string translation from unified i18n system
  */
 export function getLocalText(key: string, lang: string = 'pt', vars?: Record<string, string | number>): string {
-  const currentLang = (lang && localLangDict[lang as SupportedLanguage]) ? (lang as SupportedLanguage) : 'pt';
-  let text = localLangDict[currentLang]?.[key] || key;
+  const currentLang = (lang && ['pt', 'en', 'es', 'de', 'fr'].includes(lang)) ? (lang as SupportedLanguage) : 'pt';
+  let text = key;
+  if (i18next && i18next.isInitialized && i18next.exists(key, { lng: currentLang })) {
+    const val = i18next.t(key, { lng: currentLang });
+    if (typeof val === 'string' && val) text = val;
+  } else if (localLangDict[currentLang]?.[key]) {
+    text = localLangDict[currentLang][key];
+  }
 
   if (vars) {
     Object.entries(vars).forEach(([vKey, vVal]) => {

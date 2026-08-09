@@ -1,4 +1,4 @@
-import { Language } from '../translations';
+import { Language } from './types';
 import { commonTranslations } from './common';
 import { profileTranslations } from './profile';
 import { astrologyTranslations } from './astrology';
@@ -18,6 +18,8 @@ import { customFeaturesTranslations } from './customFeatures';
 import { dynamicContentTranslations } from './dynamicContent';
 import { cupidoTranslations } from './cupido';
 import { uiTranslations } from './ui';
+import { localLangDict } from '../lib/locales';
+import { uiTranslationsMultilang } from '../components/numerologyTranslations';
 
 // Collection of all registered translation modules
 const modules = [
@@ -39,7 +41,9 @@ const modules = [
   customFeaturesTranslations,
   dynamicContentTranslations,
   cupidoTranslations,
-  uiTranslations
+  uiTranslations,
+  localLangDict as unknown as Record<Language, Record<string, string>>,
+  uiTranslationsMultilang as Record<Language, Record<string, string>>
 ];
 
 // Automatically merged single official source of truth

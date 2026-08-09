@@ -1,20 +1,14 @@
 import * as fs from 'fs';
-import { uiTranslations } from '../lib/translations';
 import { mergedTranslations } from '../i18n';
-import { staticTranslations } from '../translations';
 
 const ptList: string[] = JSON.parse(fs.readFileSync('all-pt-strings.json', 'utf8'));
 const langs = ['en', 'es', 'de', 'fr'] as const;
 
 function getTranslation(ptText: string, lang: 'en' | 'es' | 'de' | 'fr'): string | null {
-  if (uiTranslations[lang]?.[ptText]) return uiTranslations[lang][ptText];
   if (mergedTranslations[lang]?.[ptText]) return mergedTranslations[lang][ptText];
-  if (staticTranslations[lang]?.[ptText]) return staticTranslations[lang][ptText];
 
   const clean = ptText.trim();
-  if (uiTranslations[lang]?.[clean]) return uiTranslations[lang][clean];
   if (mergedTranslations[lang]?.[clean]) return mergedTranslations[lang][clean];
-  if (staticTranslations[lang]?.[clean]) return staticTranslations[lang][clean];
 
   return null;
 }

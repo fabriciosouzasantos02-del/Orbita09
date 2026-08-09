@@ -1,4 +1,5 @@
 import React, { useState, useMemo, memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Language } from '../lib/translations';
 import { useIdioma } from '../context/IdiomaContext';
 import { NumerologyCycle } from '../types';
@@ -35,12 +36,12 @@ interface NumerologyViewProps {
 
 const NumerologyView = memo(function NumerologyView({ numerology, user, lang }: NumerologyViewProps) {
   const { idioma } = useIdioma();
-  const idiomaAtual = (idioma as Language) || 'pt';
+  const idiomaAtual: Language = (idioma || lang || 'pt') as Language;
+  const { t: i18nT } = useTranslation();
 
   const t = (text: string) => {
     if (!text) return "";
-    const translations = uiTranslationsMultilang[idiomaAtual] || uiTranslationsMultilang['pt'];
-    return translations[text] || text;
+    return i18nT(text);
   };
 
   const userName = user.name;

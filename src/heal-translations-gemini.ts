@@ -104,7 +104,7 @@ Return a JSON object where the keys are the EXACT original Portuguese strings, a
 
   // Generate the TypeScript patch file
   let patchCode = `// Auto-generated translation patches to ensure 100% key consistency across all languages
-import { uiTranslations } from './translations';
+import { mergedTranslations } from './i18n';
 
 const patches: Record<'en' | 'es' | 'de' | 'fr', Record<string, string>> = {
   en: ${JSON.stringify(translations.en, null, 2)},
@@ -113,14 +113,14 @@ const patches: Record<'en' | 'es' | 'de' | 'fr', Record<string, string>> = {
   fr: ${JSON.stringify(translations.fr, null, 2)}
 };
 
-// Apply patches to the central uiTranslations object
+// Apply patches to the central mergedTranslations object
 export function applyTranslationPatches() {
   const languages: ('en' | 'es' | 'de' | 'fr')[] = ['en', 'es', 'de', 'fr'];
   for (const lang of languages) {
-    if (!uiTranslations[lang]) {
-      (uiTranslations as any)[lang] = {};
+    if (!mergedTranslations[lang]) {
+      (mergedTranslations as any)[lang] = {};
     }
-    const dict = uiTranslations[lang];
+    const dict = mergedTranslations[lang];
     const patch = patches[lang];
     for (const key of Object.keys(patch)) {
       if (!dict[key]) {

@@ -1,69 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Language } from '../lib/translations';
 import { Moon, Sparkles, ChevronDown, ChevronUp, X, CheckCircle } from 'lucide-react';
 import { loadCalculationCache, saveCalculationCache } from '../lib/firebase';
-
-const localTranslations: Record<Language, Record<string, string>> = {
-  pt: {
-    "Abrir Dica Lunar Rápida": "Abrir Dica Lunar Rápida",
-    "Sussurro Lunar Diário": "Sussurro Lunar Diário",
-    "Minimizar dica": "Minimizar dica",
-    "Fechar": "Fechar",
-    "em": "em",
-    "Foco Conectado": "Foco Conectado",
-    "Sintonizar Freqüência": "Sintonizar Freqüência",
-    "+150 Pontos Ativados": "+150 Pontos Ativados",
-    "Venerar Lua (+150 pts)": "Venerar Lua (+150 pts)"
-  },
-  en: {
-    "Abrir Dica Lunar Rápida": "Open Quick Lunar Tip",
-    "Sussurro Lunar Diário": "Daily Lunar Whisper",
-    "Minimizar dica": "Minimize tip",
-    "Fechar": "Close",
-    "em": "in",
-    "Foco Conectado": "Focus Connected",
-    "Sintonizar Freqüência": "Tune Frequency",
-    "+150 Pontos Ativados": "+150 Points Activated",
-    "Venerar Lua (+150 pts)": "Venerate Moon (+150 pts)"
-  },
-  es: {
-    "Abrir Dica Lunar Rápida": "Abrir Consejo Lunar Rápido",
-    "Sussurro Lunar Diário": "Susurro Lunar Diario",
-    "Minimizar dica": "Minimizar consejo",
-    "Fechar": "Cerrar",
-    "em": "en",
-    "Foco Conectado": "Enfoque Conectado",
-    "Sintonizar Frecuencia": "Sintonizar Frecuencia",
-    "Sintonizar Freqüência": "Sintonizar Frecuencia",
-    "+150 Pontos Ativados": "+150 Puntos Activados",
-    "Venerar Lua (+150 pts)": "Venerar Luna (+150 pts)"
-  },
-  de: {
-    "Abrir Dica Lunar Rápida": "Schnellen Mond-Tipp öffnen",
-    "Sussurro Lunar Diário": "Täglich Mond-Flüstern",
-    "Minimizar dica": "Tipp minimieren",
-    "Fechar": "Schließen",
-    "em": "in",
-    "Foco Conectado": "Fokus verbunden",
-    "Sintonizar Frecuencia": "Frequenz abstimmen",
-    "Sintonizar Freqüência": "Frequenz abstimmen",
-    "+150 Pontos Ativados": "+150 Punkte aktiviert",
-    "Venerar Lua (+150 pts)": "Mond verehren (+150 Pkt)"
-  },
-  fr: {
-    "Abrir Dica Lunar Rápida": "Ouvrir l'astuce lunaire rapide",
-    "Sussurro Lunar Diário": "Chuchotement lunaire quotidien",
-    "Minimizar dica": "Minimiser l'astuce",
-    "Fechar": "Fermer",
-    "em": "en",
-    "Foco Conectado": "Focus Connecté",
-    "Sintonizar Frecuencia": "Sintoniser la Fréquence",
-    "Sintonizar Freqüência": "Sintoniser la Fréquence",
-    "+150 Pontos Ativados": "+150 Points Activés",
-    "Venerar Lua (+150 pts)": "Vénérer la Lune (+150 pts)"
-  }
-};
 
 interface MoonTipData {
   moonSign: string;
@@ -82,10 +20,6 @@ export default function MoonTipCard({ userName, birthDate, onRewardPoints, lang 
   const { t: i18nT } = useTranslation();
   const t = (text: string) => {
     if (!text) return "";
-    const activeLang = (lang as Language) || 'pt';
-    if (localTranslations[activeLang]?.[text]) {
-      return localTranslations[activeLang][text];
-    }
     return i18nT(text);
   };
 

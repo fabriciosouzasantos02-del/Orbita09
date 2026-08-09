@@ -3,7 +3,7 @@ import moment from 'moment-timezone';
 import { motion } from 'motion/react';
 import i18n from './lib/i18n';
 import { useTranslation } from 'react-i18next';
-import { localLangDict, pwaGuideTranslations } from './lib/locales';
+import { pwaGuideTranslations } from './lib/locales';
 import { 
   UserProfile, 
   AstrologyMap, 
@@ -2926,17 +2926,7 @@ export default function App() {
 
   // Local helper to get static translations for settings on the fly
   const tLocal = (key: string, replacement?: any): string => {
-    const activeL = currentLang || 'pt';
-    const translated = i18nT(key);
-    if (translated && translated !== key) {
-      let str = translated;
-      if (replacement !== undefined) {
-        str = str.replace('{count}', String(replacement));
-      }
-      return str;
-    }
-    const dict = localLangDict[activeL] || localLangDict['pt'];
-    let str = dict[key] || key;
+    let str = i18nT(key);
     if (replacement !== undefined) {
       str = str.replace('{count}', String(replacement));
     }

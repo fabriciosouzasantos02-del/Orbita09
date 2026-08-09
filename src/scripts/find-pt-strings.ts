@@ -1,8 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { uiTranslations } from '../lib/translations';
 import { mergedTranslations } from '../i18n';
-import { staticTranslations } from '../translations';
 
 function isPortugueseText(str: string): boolean {
   if (!str || str.length < 2) return false;
@@ -19,14 +17,10 @@ function isPortugueseText(str: string): boolean {
 const langs = ['en', 'es', 'de', 'fr'] as const;
 
 function isTranslated(ptText: string, lang: 'en' | 'es' | 'de' | 'fr'): boolean {
-  if (uiTranslations[lang]?.[ptText]) return true;
   if (mergedTranslations[lang]?.[ptText]) return true;
-  if (staticTranslations[lang]?.[ptText]) return true;
   
   const clean = ptText.trim();
-  if (uiTranslations[lang]?.[clean]) return true;
   if (mergedTranslations[lang]?.[clean]) return true;
-  if (staticTranslations[lang]?.[clean]) return true;
 
   return false;
 }

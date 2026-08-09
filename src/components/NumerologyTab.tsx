@@ -3,41 +3,17 @@ import { Layers, HelpCircle, Palette, Binary, ArrowUpRight } from "lucide-react"
 import { Language } from "../translations";
 import { NumerologyData } from "../types";
 import { useTranslation } from "react-i18next";
-import { useIdioma } from "../context/IdiomaContext";
 
 interface NumerologyTabProps {
   numerologyData: NumerologyData;
   lang: Language;
 }
 
-const localTabTranslations: Record<Language, Record<string, string>> = {
-  pt: {
-    "Leitura Detalhada de seus Números Força": "Leitura Detalhada de seus Números Força"
-  },
-  en: {
-    "Leitura Detalhada de seus Números Força": "Detailed Reading of Your Power Numbers"
-  },
-  es: {
-    "Leitura Detalhada de seus Números Força": "Lectura Detallada de sus Números de Fuerza"
-  },
-  de: {
-    "Leitura Detalhada de seus Números Força": "Detaillierte Lesung Ihrer Kraftzahlen"
-  },
-  fr: {
-    "Leitura Detalhada de seus Números Força": "Lecture Détaillée de vos Nombres de Force"
-  }
-};
-
 export default function NumerologyTab({ numerologyData, lang }: NumerologyTabProps) {
-  const { idioma } = useIdioma();
-  const activeLang = idioma || lang || 'pt';
   const { t } = useTranslation();
 
   const tI18n = (text: string) => {
     if (!text) return "";
-    if (localTabTranslations[activeLang]?.[text]) {
-      return localTabTranslations[activeLang][text];
-    }
     return t(text);
   };
 

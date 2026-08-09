@@ -1,4 +1,4 @@
-import { Language } from '../translations';
+import { Language } from './types';
 
 export const astrologyTranslations: Record<Language, Record<string, string>> = {
   pt: {
@@ -24,6 +24,24 @@ export const astrologyTranslations: Record<Language, Record<string, string>> = {
     interpreting: 'Consultando os astros e a IA...',
     deepReport: 'Relatório de Interpretação Personalizado',
     natalDescription: 'Seu design cósmico único, revelando sua essência solar, lua emocional e ascendente motivador.',
+    "Abrir Dica Lunar Rápida": "Abrir Dica Lunar Rápida",
+    "Sussurro Lunar Diário": "Sussurro Lunar Diário",
+    "Minimizar dica": "Minimizar dica",
+    "Foco Conectado": "Foco Conectado",
+    "Sintonizar Freqüência": "Sintonizar Freqüência",
+    "+150 Pontos Ativados": "+150 Pontos Ativados",
+    "Venerar Lua (+150 pts)": "Venerar Lua (+150 pts)",
+    "Monitor em Tempo Real": "Monitor em Tempo Real",
+    "Seus Trânsitos Horários e Energias do Dia": "Seus Trânsitos Horários e Energias do Dia",
+    "Análise de como os planetas flutuam sobre sua composição natal de nascimento.": "Análise de como os planetas flutuam sobre sua composição natal de nascimento.",
+    "Sincronizado: Hoje": "Sincronizado: Hoje",
+    "Planetas Transitando no Céu": "Planetas Transitando no Céu",
+    "Pontuações Celestes Planas": "Pontuações Celestes Planas",
+    "Criatividade e Alinhamento": "Criatividade e Alinhamento",
+    "Diálogo e Escrita": "Diálogo e Escrita",
+    "Vontade Física e Esporte": "Vontade Física e Esporte",
+    "Dica do Oráculo:": "Dica do Oráculo:",
+    "Hoje o fluxo solar favorece a revisão estrutural. Ótimo período para finalizar escritos e praticar interiorizações sem pressões externas deletérias.": "Hoje o fluxo solar favorece a revisão estrutural. Ótimo período para finalizar escritos e praticar interiorizações sem pressões externas deletérias.",
 
     // Signs
     Aries: 'Áries',

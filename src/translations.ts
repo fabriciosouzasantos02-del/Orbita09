@@ -1,7 +1,8 @@
 import i18next from 'i18next';
 import { mergedTranslations, getDeviceLanguage } from './i18n';
+import { Language } from './i18n/types';
 
-export type Language = 'pt' | 'en' | 'es' | 'de' | 'fr';
+export type { Language };
 
 export const translations: Record<Language, Record<string, string>> = mergedTranslations;
 export const staticTranslations = mergedTranslations;
