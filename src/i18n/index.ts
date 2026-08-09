@@ -65,12 +65,6 @@ for (const lang of languages) {
   }
 }
 
-/**
- * Registers nested localized data sources (Lunar/Medical/Nodes) in the same
- * flat dictionary consumed by i18next. Components may keep using their
- * specialized data structures; this additionally makes every Portuguese
- * source string addressable through t(sourceString) at runtime.
- */
 function mergeNestedLocalizedSource(source: unknown): void {
   const isRecord = (value: unknown): value is Record<string, any> =>
     !!value && typeof value === 'object' && !Array.isArray(value);
@@ -117,21 +111,21 @@ function mergeNestedLocalizedSource(source: unknown): void {
   visit(source);
 }
 
-// These modules already contain complete five-language data, but in nested
-// structures. Flattening their PT -> target-language pairs here is what makes
-// them usable by the official i18next runtime used by Biorhythm/Lunar/Nodal UI.
-mergeNestedLocalizedSource(LUNAR_PHASES_TRANSLATIONS);
-mergeNestedLocalizedSource(SIGN_MEDICAL_TRANSLATED);
-mergeNestedLocalizedSource(LOCAL_UI_TRANSLATIONS);
-mergeNestedLocalizedSource(NODE_SIGNS_LOCALIZED);
-mergeNestedLocalizedSource(NODE_HOUSES_LOCALIZED);
-
 import { applyTranslationPatches } from '../lib/translationPatch';
 try {
   applyTranslationPatches(mergedTranslations);
 } catch (e) {
   console.warn('Note: applyTranslationPatches deferred or already merged.');
 }
+
+// The Lunar/Medical/Node modules already contain complete five-language data,
+// but in nested structures. Register their PT -> target mappings AFTER legacy
+// patches so an old Portuguese patch cannot overwrite the selected language.
+mergeNestedLocalizedSource(LUNAR_PHASES_TRANSLATIONS);
+mergeNestedLocalizedSource(SIGN_MEDICAL_TRANSLATED);
+mergeNestedLocalizedSource(LOCAL_UI_TRANSLATIONS);
+mergeNestedLocalizedSource(NODE_SIGNS_LOCALIZED);
+mergeNestedLocalizedSource(NODE_HOUSES_LOCALIZED);
 
 // Complete Tarot UI is authoritative for Tarot keys.
 for (const lang of languages) {
