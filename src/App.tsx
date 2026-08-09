@@ -2936,11 +2936,7 @@ export default function App() {
       return str;
     }
     const dict = localLangDict[activeL] || localLangDict['pt'];
-    let str = dict[key] || '';
-    if (!str) {
-      const fallbackDict = localLangDict['pt'];
-      str = fallbackDict[key] || key;
-    }
+    let str = dict[key] || key;
     if (replacement !== undefined) {
       str = str.replace('{count}', String(replacement));
     }

@@ -30,7 +30,10 @@ export function translateUiText(key: string, lang?: Language): string {
     const val = i18next.t(key, { lng: targetLang });
     if (typeof val === 'string' && val) return val;
   }
-  const dict = mergedTranslations[targetLang] || mergedTranslations.pt;
-  return dict[key] || mergedTranslations.pt[key] || key;
+  const dict = mergedTranslations[targetLang];
+  if (dict && dict[key]) {
+    return dict[key];
+  }
+  return key;
 }
 

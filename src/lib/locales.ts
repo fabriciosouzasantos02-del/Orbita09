@@ -611,7 +611,7 @@ export function getLocaleDict(lang: string = 'pt'): Record<string, string> {
  */
 export function getLocalText(key: string, lang: string = 'pt', vars?: Record<string, string | number>): string {
   const currentLang = (lang && localLangDict[lang as SupportedLanguage]) ? (lang as SupportedLanguage) : 'pt';
-  let text = localLangDict[currentLang]?.[key] || localLangDict.pt?.[key] || key;
+  let text = localLangDict[currentLang]?.[key] || key;
 
   if (vars) {
     Object.entries(vars).forEach(([vKey, vVal]) => {
