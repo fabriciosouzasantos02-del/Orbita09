@@ -7,6 +7,7 @@ import { tarotUiTranslations } from './tarotUi';
 import { tarotUiCompleteTranslations } from './tarotUiComplete';
 import { transitsUiTranslations } from './transitsUi';
 import { lunarRuntimeUiTranslations } from './lunarRuntimeUi';
+import { lunarKeyPatch } from './lunarKeyPatch';
 import { dreamsTranslations } from './dreams';
 import { missionsTranslations } from './missions';
 import { settingsTranslations } from './settings';
@@ -35,6 +36,7 @@ const modules = [
   tarotUiTranslations,
   transitsUiTranslations,
   lunarRuntimeUiTranslations,
+  lunarKeyPatch,
   dreamsTranslations,
   missionsTranslations,
   settingsTranslations,
@@ -118,29 +120,27 @@ try {
   console.warn('Note: applyTranslationPatches deferred or already merged.');
 }
 
-// The Lunar/Medical/Node modules already contain complete five-language data,
-// but in nested structures. Register their PT -> target mappings AFTER legacy
-// patches so an old Portuguese patch cannot overwrite the selected language.
+// Register nested five-language dictionaries after legacy patches so an old
+// Portuguese fallback cannot overwrite the selected-language translation.
 mergeNestedLocalizedSource(LUNAR_PHASES_TRANSLATIONS);
 mergeNestedLocalizedSource(SIGN_MEDICAL_TRANSLATED);
 mergeNestedLocalizedSource(LOCAL_UI_TRANSLATIONS);
 mergeNestedLocalizedSource(NODE_SIGNS_LOCALIZED);
 mergeNestedLocalizedSource(NODE_HOUSES_LOCALIZED);
 
-// Complete Tarot UI is authoritative for Tarot keys.
+// Authoritative fixed-interface layers are applied last.
 for (const lang of languages) {
   if (tarotUiCompleteTranslations[lang]) {
     Object.assign(mergedTranslations[lang], tarotUiCompleteTranslations[lang]);
   }
-}
-
-// Transits/Biorhythm/Lunar fixed interface is authoritative for its UI keys.
-for (const lang of languages) {
   if (transitsUiTranslations[lang]) {
     Object.assign(mergedTranslations[lang], transitsUiTranslations[lang]);
   }
   if (lunarRuntimeUiTranslations[lang]) {
     Object.assign(mergedTranslations[lang], lunarRuntimeUiTranslations[lang]);
+  }
+  if (lunarKeyPatch[lang]) {
+    Object.assign(mergedTranslations[lang], lunarKeyPatch[lang]);
   }
 }
 
