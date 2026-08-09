@@ -4659,8 +4659,8 @@ export default function App() {
 
                 {/* Information readout overlays */}
                 <div className="absolute bottom-3 left-4 right-4 flex justify-between items-center text-[7.5px] font-mono text-slate-500 border-t border-slate-900/40 pt-2 pointer-events-none">
-                  <span>SISTEMA DE COMPUTAÇÃO: PLACIDUS 2026</span>
-                  <span className="text-amber-500 font-bold">ALGORITMO GEOCÊNTRICO ATIVO</span>
+                  <span>{t("SISTEMA DE COMPUTAÇÃO: PLACIDUS 2026")}</span>
+                  <span className="text-amber-500 font-bold">{t("ALGORITMO GEOCÊNTRICO ATIVO")}</span>
                 </div>
               </div>
 

@@ -10,21 +10,52 @@ console.log('--------------------------------------------------');
 let hasErrors = false;
 
 // 1. Validate complete consistency of translation keys across languages
-const ptKeys = Object.keys(mergedTranslations.pt);
+const allKeysByLang = languages.map(lang => ({
+  lang,
+  keys: Object.keys(mergedTranslations[lang] || {})
+}));
+
+const ptKeys = allKeysByLang.find(item => item.lang === 'pt')?.keys || [];
 console.log(`🔑 Base language (pt) contains ${ptKeys.length} keys.`);
 
+// Check completeness across all 5 languages
 for (const lang of languages) {
-  if (lang === 'pt') continue;
+  const currentKeys = Object.keys(mergedTranslations[lang] || {});
   
-  const currentKeys = Object.keys(mergedTranslations[lang]);
+  // Check missing keys compared to PT
   const missing = ptKeys.filter(k => !currentKeys.includes(k));
-  
   if (missing.length > 0) {
     console.error(`❌ Language "${lang}" has missing translation keys (Total: ${missing.length}):`);
-    missing.forEach(key => console.error(`   - "${key}"`));
+    missing.slice(0, 10).forEach(key => console.error(`   - "${key}"`));
     hasErrors = true;
-  } else {
-    console.log(`✅ Language "${lang}" is 100% consistent with base keys.`);
+  }
+  
+  // Check extra keys compared to PT
+  const extra = currentKeys.filter(k => !ptKeys.includes(k));
+  if (extra.length > 0) {
+    console.error(`❌ Language "${lang}" has keys missing from base PT (Total: ${extra.length}):`);
+    extra.slice(0, 10).forEach(key => console.error(`   - "${key}"`));
+    hasErrors = true;
+  }
+
+  // Check for empty strings or invalid values
+  let emptyCount = 0;
+  for (const key of currentKeys) {
+    const val = mergedTranslations[lang][key];
+    if (val === undefined || val === null || val.trim() === '') {
+      emptyCount++;
+      if (emptyCount <= 5) {
+        console.error(`❌ Language "${lang}" has empty/invalid value for key "${key}"`);
+      }
+    }
+  }
+  if (emptyCount > 0) {
+    console.error(`❌ Language "${lang}" contains ${emptyCount} empty or invalid translation values.`);
+    hasErrors = true;
+  }
+
+  if (missing.length === 0 && extra.length === 0 && emptyCount === 0) {
+    console.log(`✅ Language "${lang}" is 100% consistent with base keys and has no empty values.`);
   }
 }
 

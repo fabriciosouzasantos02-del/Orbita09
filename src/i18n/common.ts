@@ -142,7 +142,9 @@ export const commonTranslations: Record<Language, Record<string, string>> = {
     "Signo": "Signo",
     "Editar": "Editar",
     "Excluir": "Excluir",
-    "Dispensar": "Dispensar"
+    "Dispensar": "Dispensar",
+    "SISTEMA DE COMPUTAÇÃO: PLACIDUS 2026": "SISTEMA DE COMPUTAÇÃO: PLACIDUS 2026",
+    "ALGORITMO GEOCÊNTRICO ATIVO": "ALGORITMO GEOCÊNTRICO ATIVO"
   },
   en: {
     saveMap: 'Save Chart',
@@ -285,7 +287,9 @@ export const commonTranslations: Record<Language, Record<string, string>> = {
     "Signo": "Sign",
     "Editar": "Edit",
     "Excluir": "Delete",
-    "Dispensar": "Dismiss"
+    "Dispensar": "Dismiss",
+    "SISTEMA DE COMPUTAÇÃO: PLACIDUS 2026": "COMPUTATION SYSTEM: PLACIDUS 2026",
+    "ALGORITMO GEOCÊNTRICO ATIVO": "ACTIVE GEOCENTRIC ALGORITHM"
   },
   es: {
     saveMap: 'Guardar Carta',
@@ -428,7 +432,9 @@ export const commonTranslations: Record<Language, Record<string, string>> = {
     "Signo": "Signo",
     "Editar": "Editar",
     "Excluir": "Eliminar",
-    "Dispensar": "Descartar"
+    "Dispensar": "Descartar",
+    "SISTEMA DE COMPUTAÇÃO: PLACIDUS 2026": "SISTEMA DE CÓMPUTO: PLACIDUS 2026",
+    "ALGORITMO GEOCÊNTRICO ATIVO": "ALGORITMO GEOCÉNTRICO ACTIVO"
   },
   de: {
     saveMap: 'Horoskop Speichern',
@@ -571,7 +577,9 @@ export const commonTranslations: Record<Language, Record<string, string>> = {
     "Signo": "Sternzeichen",
     "Editar": "Bearbeiten",
     "Excluir": "Löschen",
-    "Dispensar": "Schließen"
+    "Dispensar": "Schließen",
+    "SISTEMA DE COMPUTAÇÃO: PLACIDUS 2026": "BERECHNUNGSSYSTEM: PLACIDUS 2026",
+    "ALGORITMO GEOCÊNTRICO ATIVO": "AKTIVER GEOZENTRISCHER ALGORITHMUS"
   },
   fr: {
     saveMap: 'Sauvegarder la Carte',
@@ -714,6 +722,8 @@ export const commonTranslations: Record<Language, Record<string, string>> = {
     "Signo": "Signe",
     "Editar": "Modifier",
     "Excluir": "Supprimer",
-    "Dispensar": "Fermer"
+    "Dispensar": "Fermer",
+    "SISTEMA DE COMPUTAÇÃO: PLACIDUS 2026": "SYSTÈME DE CALCUL : PLACIDUS 2026",
+    "ALGORITMO GEOCÊNTRICO ATIVO": "ALGORITHME GÉOCENTRIQUE ACTIF"
   }
 };
