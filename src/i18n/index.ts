@@ -29,7 +29,6 @@ const modules = [
   astrologyTranslations,
   tarotTranslations,
   tarotUiTranslations,
-  tarotUiCompleteTranslations,
   dreamsTranslations,
   missionsTranslations,
   settingsTranslations,
@@ -65,6 +64,15 @@ try {
   applyTranslationPatches(mergedTranslations);
 } catch (e) {
   console.warn('Note: applyTranslationPatches deferred or already merged.');
+}
+
+// IMPORTANT: Tarot UI is applied last. Legacy patch layers may contain older
+// partial translations for the same Portuguese source keys. The complete Tarot
+// layer must be authoritative so changing language cannot expose Portuguese UI.
+for (const lang of languages) {
+  if (tarotUiCompleteTranslations[lang]) {
+    Object.assign(mergedTranslations[lang], tarotUiCompleteTranslations[lang]);
+  }
 }
 
 import i18next from 'i18next';
