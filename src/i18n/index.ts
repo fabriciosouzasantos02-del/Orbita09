@@ -6,6 +6,7 @@ import { tarotTranslations } from './tarot';
 import { tarotUiTranslations } from './tarotUi';
 import { tarotUiCompleteTranslations } from './tarotUiComplete';
 import { transitsUiTranslations } from './transitsUi';
+import { lunarRuntimeUiTranslations } from './lunarRuntimeUi';
 import { dreamsTranslations } from './dreams';
 import { missionsTranslations } from './missions';
 import { settingsTranslations } from './settings';
@@ -23,6 +24,8 @@ import { cupidoTranslations } from './cupido';
 import { uiTranslations } from './ui';
 import { localLangDict } from '../lib/locales';
 import { uiTranslationsMultilang } from '../components/numerologyTranslations';
+import { LUNAR_PHASES_TRANSLATIONS, SIGN_MEDICAL_TRANSLATED, LOCAL_UI_TRANSLATIONS } from '../lib/lunarTranslations';
+import { NODE_SIGNS_LOCALIZED, NODE_HOUSES_LOCALIZED } from '../lib/nodeTranslations';
 
 const modules = [
   commonTranslations,
@@ -31,6 +34,7 @@ const modules = [
   tarotTranslations,
   tarotUiTranslations,
   transitsUiTranslations,
+  lunarRuntimeUiTranslations,
   dreamsTranslations,
   missionsTranslations,
   settingsTranslations,
@@ -61,6 +65,67 @@ for (const lang of languages) {
   }
 }
 
+/**
+ * Registers nested localized data sources (Lunar/Medical/Nodes) in the same
+ * flat dictionary consumed by i18next. Components may keep using their
+ * specialized data structures; this additionally makes every Portuguese
+ * source string addressable through t(sourceString) at runtime.
+ */
+function mergeNestedLocalizedSource(source: unknown): void {
+  const isRecord = (value: unknown): value is Record<string, any> =>
+    !!value && typeof value === 'object' && !Array.isArray(value);
+
+  const visit = (node: unknown): void => {
+    if (!isRecord(node)) return;
+
+    const hasAllLanguages = languages.every((lang) => Object.prototype.hasOwnProperty.call(node, lang));
+    if (hasAllLanguages) {
+      const localized = node as Record<Language, unknown>;
+      const ptNode = localized.pt;
+
+      const pairWalk = (ptValue: unknown, targetValues: Record<Language, unknown>): void => {
+        if (typeof ptValue === 'string') {
+          for (const lang of languages) {
+            const translated = targetValues[lang];
+            if (typeof translated === 'string' && translated.trim()) {
+              mergedTranslations[lang][ptValue] = translated;
+            }
+          }
+          return;
+        }
+
+        if (!isRecord(ptValue)) return;
+        for (const key of Object.keys(ptValue)) {
+          const nextTargets: Record<Language, unknown> = {
+            pt: isRecord(targetValues.pt) ? targetValues.pt[key] : undefined,
+            en: isRecord(targetValues.en) ? targetValues.en[key] : undefined,
+            es: isRecord(targetValues.es) ? targetValues.es[key] : undefined,
+            de: isRecord(targetValues.de) ? targetValues.de[key] : undefined,
+            fr: isRecord(targetValues.fr) ? targetValues.fr[key] : undefined
+          };
+          pairWalk(ptValue[key], nextTargets);
+        }
+      };
+
+      pairWalk(ptNode, localized);
+      return;
+    }
+
+    for (const value of Object.values(node)) visit(value);
+  };
+
+  visit(source);
+}
+
+// These modules already contain complete five-language data, but in nested
+// structures. Flattening their PT -> target-language pairs here is what makes
+// them usable by the official i18next runtime used by Biorhythm/Lunar/Nodal UI.
+mergeNestedLocalizedSource(LUNAR_PHASES_TRANSLATIONS);
+mergeNestedLocalizedSource(SIGN_MEDICAL_TRANSLATED);
+mergeNestedLocalizedSource(LOCAL_UI_TRANSLATIONS);
+mergeNestedLocalizedSource(NODE_SIGNS_LOCALIZED);
+mergeNestedLocalizedSource(NODE_HOUSES_LOCALIZED);
+
 import { applyTranslationPatches } from '../lib/translationPatch';
 try {
   applyTranslationPatches(mergedTranslations);
@@ -75,12 +140,13 @@ for (const lang of languages) {
   }
 }
 
-// Transits/Biorhythm UI is authoritative for its fixed interface keys.
-// It is applied after legacy patch layers so an older Portuguese fallback
-// cannot overwrite a selected-language translation.
+// Transits/Biorhythm/Lunar fixed interface is authoritative for its UI keys.
 for (const lang of languages) {
   if (transitsUiTranslations[lang]) {
     Object.assign(mergedTranslations[lang], transitsUiTranslations[lang]);
+  }
+  if (lunarRuntimeUiTranslations[lang]) {
+    Object.assign(mergedTranslations[lang], lunarRuntimeUiTranslations[lang]);
   }
 }
 
