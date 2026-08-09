@@ -10,21 +10,11 @@
     const createInMemoryStorage = () => {
       let store: Record<string, string> = {};
       return {
-        getItem: (key: string): string | null => {
-          return key in store ? store[key] : null;
-        },
-        setItem: (key: string, value: string): void => {
-          store[key] = String(value);
-        },
-        removeItem: (key: string): void => {
-          delete store[key];
-        },
-        clear: (): void => {
-          store = {};
-        },
-        get length(): number {
-          return Object.keys(store).length;
-        },
+        getItem: (key: string): string | null => key in store ? store[key] : null,
+        setItem: (key: string, value: string): void => { store[key] = String(value); },
+        removeItem: (key: string): void => { delete store[key]; },
+        clear: (): void => { store = {}; },
+        get length(): number { return Object.keys(store).length; },
         key: (index: number): string | null => {
           const keys = Object.keys(store);
           return index >= 0 && index < keys.length ? keys[index] : null;
@@ -62,21 +52,17 @@ import App from './App.tsx';
 import './index.css';
 import { IdiomaProvider } from './context/IdiomaContext.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
-
+import LanguageRuntimeSync from './components/LanguageRuntimeSync.tsx';
 
 // Handle reset query param to force purge stale service workers and caches
 if (typeof window !== 'undefined' && window.location.search.includes('reset=')) {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations().then((registrations) => {
-      for (const reg of registrations) {
-        reg.unregister();
-      }
+      for (const reg of registrations) reg.unregister();
     });
   }
   if ('caches' in window) {
-    caches.keys().then((keys) => {
-      keys.forEach((key) => caches.delete(key));
-    });
+    caches.keys().then((keys) => keys.forEach((key) => caches.delete(key)));
   }
 }
 
@@ -104,10 +90,10 @@ createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
       <I18nextProvider i18n={i18n}>
         <IdiomaProvider>
+          <LanguageRuntimeSync />
           <App />
         </IdiomaProvider>
       </I18nextProvider>
     </ErrorBoundary>
   </StrictMode>,
 );
-
