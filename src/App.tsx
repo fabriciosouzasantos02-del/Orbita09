@@ -4667,7 +4667,7 @@ export default function App() {
                 </div>
                 <div>
                   <div className="text-base font-mono font-black text-amber-400">+21.608.314</div>
-                  <div className="text-[9px] font-mono text-slate-400 uppercase tracking-widest leading-none mt-1">Mapas astronômicos sincronizados</div>
+                  <div className="text-[9px] font-mono text-slate-400 uppercase tracking-widest leading-none mt-1">{t("Mapas astronômicos sincronizados")}</div>
                 </div>
               </div>
             </div>

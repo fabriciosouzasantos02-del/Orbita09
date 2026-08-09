@@ -144,7 +144,8 @@ export const commonTranslations: Record<Language, Record<string, string>> = {
     "Excluir": "Excluir",
     "Dispensar": "Dispensar",
     "SISTEMA DE COMPUTAÇÃO: PLACIDUS 2026": "SISTEMA DE COMPUTAÇÃO: PLACIDUS 2026",
-    "ALGORITMO GEOCÊNTRICO ATIVO": "ALGORITMO GEOCÊNTRICO ATIVO"
+    "ALGORITMO GEOCÊNTRICO ATIVO": "ALGORITMO GEOCÊNTRICO ATIVO",
+    "Mapas astronômicos sincronizados": "Mapas astronômicos sincronizados"
   },
   en: {
     saveMap: 'Save Chart',
@@ -289,7 +290,8 @@ export const commonTranslations: Record<Language, Record<string, string>> = {
     "Excluir": "Delete",
     "Dispensar": "Dismiss",
     "SISTEMA DE COMPUTAÇÃO: PLACIDUS 2026": "COMPUTATION SYSTEM: PLACIDUS 2026",
-    "ALGORITMO GEOCÊNTRICO ATIVO": "ACTIVE GEOCENTRIC ALGORITHM"
+    "ALGORITMO GEOCÊNTRICO ATIVO": "ACTIVE GEOCENTRIC ALGORITHM",
+    "Mapas astronômicos sincronizados": "Synchronized astronomical charts"
   },
   es: {
     saveMap: 'Guardar Carta',
@@ -434,7 +436,8 @@ export const commonTranslations: Record<Language, Record<string, string>> = {
     "Excluir": "Eliminar",
     "Dispensar": "Descartar",
     "SISTEMA DE COMPUTAÇÃO: PLACIDUS 2026": "SISTEMA DE CÓMPUTO: PLACIDUS 2026",
-    "ALGORITMO GEOCÊNTRICO ATIVO": "ALGORITMO GEOCÉNTRICO ACTIVO"
+    "ALGORITMO GEOCÊNTRICO ATIVO": "ALGORITMO GEOCÉNTRICO ACTIVO",
+    "Mapas astronômicos sincronizados": "Mapas astronómicos sincronizados"
   },
   de: {
     saveMap: 'Horoskop Speichern',
@@ -579,7 +582,8 @@ export const commonTranslations: Record<Language, Record<string, string>> = {
     "Excluir": "Löschen",
     "Dispensar": "Schließen",
     "SISTEMA DE COMPUTAÇÃO: PLACIDUS 2026": "BERECHNUNGSSYSTEM: PLACIDUS 2026",
-    "ALGORITMO GEOCÊNTRICO ATIVO": "AKTIVER GEOZENTRISCHER ALGORITHMUS"
+    "ALGORITMO GEOCÊNTRICO ATIVO": "AKTIVER GEOZENTRISCHER ALGORITHMUS",
+    "Mapas astronômicos sincronizados": "Synchronisierte astronomische Karten"
   },
   fr: {
     saveMap: 'Sauvegarder la Carte',
@@ -724,6 +728,7 @@ export const commonTranslations: Record<Language, Record<string, string>> = {
     "Excluir": "Supprimer",
     "Dispensar": "Fermer",
     "SISTEMA DE COMPUTAÇÃO: PLACIDUS 2026": "SYSTÈME DE CALCUL : PLACIDUS 2026",
-    "ALGORITMO GEOCÊNTRICO ATIVO": "ALGORITHME GÉOCENTRIQUE ACTIF"
+    "ALGORITMO GEOCÊNTRICO ATIVO": "ALGORITHME GÉOCENTRIQUE ACTIF",
+    "Mapas astronômicos sincronizados": "Cartes astronomiques synchronisées"
   }
 };
