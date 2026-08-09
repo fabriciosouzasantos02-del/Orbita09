@@ -5,6 +5,7 @@ import { astrologyTranslations } from './astrology';
 import { tarotTranslations } from './tarot';
 import { tarotUiTranslations } from './tarotUi';
 import { tarotUiCompleteTranslations } from './tarotUiComplete';
+import { transitsUiTranslations } from './transitsUi';
 import { dreamsTranslations } from './dreams';
 import { missionsTranslations } from './missions';
 import { settingsTranslations } from './settings';
@@ -29,6 +30,7 @@ const modules = [
   astrologyTranslations,
   tarotTranslations,
   tarotUiTranslations,
+  transitsUiTranslations,
   dreamsTranslations,
   missionsTranslations,
   settingsTranslations,
@@ -66,12 +68,19 @@ try {
   console.warn('Note: applyTranslationPatches deferred or already merged.');
 }
 
-// IMPORTANT: Tarot UI is applied last. Legacy patch layers may contain older
-// partial translations for the same Portuguese source keys. The complete Tarot
-// layer must be authoritative so changing language cannot expose Portuguese UI.
+// Complete Tarot UI is authoritative for Tarot keys.
 for (const lang of languages) {
   if (tarotUiCompleteTranslations[lang]) {
     Object.assign(mergedTranslations[lang], tarotUiCompleteTranslations[lang]);
+  }
+}
+
+// Transits/Biorhythm UI is authoritative for its fixed interface keys.
+// It is applied after legacy patch layers so an older Portuguese fallback
+// cannot overwrite a selected-language translation.
+for (const lang of languages) {
+  if (transitsUiTranslations[lang]) {
+    Object.assign(mergedTranslations[lang], transitsUiTranslations[lang]);
   }
 }
 
