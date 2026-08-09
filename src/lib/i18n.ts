@@ -25,7 +25,7 @@ i18n
   .init({
     resources,
     lng: getInitialLanguage(),
-    fallbackLng: 'en',
+    fallbackLng: ['pt', 'en'],
     interpolation: {
       escapeValue: false,
     },

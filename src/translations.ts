@@ -26,6 +26,10 @@ export function getCurrentLang(): Language {
 
 export function translateUiText(key: string, lang?: Language): string {
   const targetLang = lang || getCurrentLang();
+  if (i18next && i18next.isInitialized && i18next.exists(key, { lng: targetLang })) {
+    const val = i18next.t(key, { lng: targetLang });
+    if (typeof val === 'string' && val) return val;
+  }
   const dict = mergedTranslations[targetLang] || mergedTranslations.pt;
   return dict[key] || mergedTranslations.pt[key] || key;
 }
