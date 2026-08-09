@@ -6,6 +6,7 @@ import { tarotTranslations } from './tarot';
 import { tarotUiTranslations } from './tarotUi';
 import { tarotUiCompleteTranslations } from './tarotUiComplete';
 import { transitsUiTranslations } from './transitsUi';
+import { biorhythmUiCompleteTranslations } from './biorhythmUiComplete';
 import { lunarRuntimeUiTranslations } from './lunarRuntimeUi';
 import { lunarKeyPatch } from './lunarKeyPatch';
 import { dreamsTranslations } from './dreams';
@@ -35,6 +36,7 @@ const modules = [
   tarotTranslations,
   tarotUiTranslations,
   transitsUiTranslations,
+  biorhythmUiCompleteTranslations,
   lunarRuntimeUiTranslations,
   lunarKeyPatch,
   dreamsTranslations,
@@ -135,6 +137,9 @@ for (const lang of languages) {
   }
   if (transitsUiTranslations[lang]) {
     Object.assign(mergedTranslations[lang], transitsUiTranslations[lang]);
+  }
+  if (biorhythmUiCompleteTranslations[lang]) {
+    Object.assign(mergedTranslations[lang], biorhythmUiCompleteTranslations[lang]);
   }
   if (lunarRuntimeUiTranslations[lang]) {
     Object.assign(mergedTranslations[lang], lunarRuntimeUiTranslations[lang]);
