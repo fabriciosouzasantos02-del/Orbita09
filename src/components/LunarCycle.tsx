@@ -995,7 +995,7 @@ export default function LunarCycle({
                       className="p-3.5 bg-slate-950 rounded-xl border border-slate-850 hover:border-indigo-500/30 transition flex justify-between items-center cursor-pointer group"
                     >
                       <div className="flex items-center gap-3">
-                        <span className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 flex items-center justify-center font-mono font-bold text-lg select-none shrink-0" title="Ver sintonização desta data">
+                        <span className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 flex items-center justify-center font-mono font-bold text-lg select-none shrink-0" title={t("Ver sintonização desta data")}>
                           {phase.icon}
                         </span>
                         <div className="space-y-0.5">

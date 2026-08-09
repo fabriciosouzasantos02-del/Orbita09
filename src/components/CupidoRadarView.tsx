@@ -450,14 +450,14 @@ export function CupidoRadarView({ user, lang = 'pt' }: CupidoRadarViewProps) {
                         <button
                           onClick={(e) => { e.stopPropagation(); handleOpenEditForm(p); }}
                           className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-200 transition"
-                          title="Editar"
+                          title={t("Editar")}
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); handleDeletePerson(p.id, p.name); }}
                           className="p-1.5 hover:bg-rose-950/50 rounded-lg text-rose-500/80 hover:text-rose-400 transition"
-                          title="Excluir"
+                          title={t("Excluir")}
                         >
                           <Trash className="w-3.5 h-3.5" />
                         </button>

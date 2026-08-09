@@ -902,7 +902,7 @@ export default function OraculoDosSonhosCard({
                 type="button"
                 onClick={() => handleDeviceDownloadDreamPDF(selectedDreamDisplay)}
                 className="px-3 py-1.5 bg-rose-600/15 hover:bg-rose-600/30 border border-rose-500/30 text-rose-400 hover:text-rose-350 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer shrink-0"
-                title="Download PDF"
+                title={ui.downloadPDF}
               >
                 {ui.downloadPDF}
               </button>

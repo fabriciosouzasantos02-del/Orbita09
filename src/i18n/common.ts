@@ -138,7 +138,11 @@ export const commonTranslations: Record<Language, Record<string, string>> = {
     "Off-White Pérola": "Off-White Pérola",
     "Ideal para purificar vibrações densas em conversas ou ambientes pesados.": "Ideal para purificar vibrações densas em conversas ou ambientes pesados.",
     "Selecione": "Selecione",
-    "Nota:": "Nota:"
+    "Nota:": "Nota:",
+    "Signo": "Signo",
+    "Editar": "Editar",
+    "Excluir": "Excluir",
+    "Dispensar": "Dispensar"
   },
   en: {
     saveMap: 'Save Chart',
@@ -277,7 +281,11 @@ export const commonTranslations: Record<Language, Record<string, string>> = {
     "Off-White Pérola": "Pearl Off-White",
     "Ideal para purificar vibrações densas em conversas ou ambientes pesados.": "Ideal for purifying dense vibrations in conversations or heavy environments.",
     "Selecione": "Select",
-    "Nota:": "Note:"
+    "Nota:": "Note:",
+    "Signo": "Sign",
+    "Editar": "Edit",
+    "Excluir": "Delete",
+    "Dispensar": "Dismiss"
   },
   es: {
     saveMap: 'Guardar Carta',
@@ -416,7 +424,11 @@ export const commonTranslations: Record<Language, Record<string, string>> = {
     "Off-White Pérola": "Blanco Roto Perla",
     "Ideal para purificar vibrações densas em conversas ou ambientes pesados.": "Ideal para purificar vibraciones densas en conversaciones o ambientes pesados.",
     "Selecione": "Seleccionar",
-    "Nota:": "Nota:"
+    "Nota:": "Nota:",
+    "Signo": "Signo",
+    "Editar": "Editar",
+    "Excluir": "Eliminar",
+    "Dispensar": "Descartar"
   },
   de: {
     saveMap: 'Horoskop Speichern',
@@ -555,7 +567,11 @@ export const commonTranslations: Record<Language, Record<string, string>> = {
     "Off-White Pérola": "Perlen-Off-White",
     "Ideal para purificar vibrações densas em conversas ou ambientes pesados.": "Ideal zur Reinigung dichter Schwingungen in Gesprächen oder schweren Umgebungen.",
     "Selecione": "Wählen",
-    "Nota:": "Hinweis:"
+    "Nota:": "Hinweis:",
+    "Signo": "Sternzeichen",
+    "Editar": "Bearbeiten",
+    "Excluir": "Löschen",
+    "Dispensar": "Schließen"
   },
   fr: {
     saveMap: 'Sauvegarder la Carte',
@@ -694,6 +710,10 @@ export const commonTranslations: Record<Language, Record<string, string>> = {
     "Off-White Pérola": "Blanc Cassé Perle",
     "Ideal para purificar vibrações densas em conversas ou ambientes pesados.": "Idéal pour purifier les vibrations denses lors de conversations ou dans des environnements lourds.",
     "Selecione": "Sélectionner",
-    "Nota:": "Remarque:"
+    "Nota:": "Remarque:",
+    "Signo": "Signe",
+    "Editar": "Modifier",
+    "Excluir": "Supprimer",
+    "Dispensar": "Fermer"
   }
 };

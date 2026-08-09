@@ -666,7 +666,7 @@ export default function AdminPanel({
                         type="text" 
                         value={createUserForm.name}
                         onChange={(e) => setCreateUserForm({...createUserForm, name: e.target.value})}
-                        placeholder="e.g. Maria Oliveira"
+                        placeholder={t("e.g. Maria Oliveira")}
                         required
                         className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl focus:outline-hidden text-slate-200"
                       />
@@ -678,7 +678,7 @@ export default function AdminPanel({
                         type="email" 
                         value={createUserForm.email}
                         onChange={(e) => setCreateUserForm({...createUserForm, email: e.target.value})}
-                        placeholder="e.g. maria@example.com"
+                        placeholder={t("e.g. maria@example.com")}
                         required
                         className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl focus:outline-hidden text-slate-200"
                       />
@@ -935,7 +935,7 @@ export default function AdminPanel({
                         type="text"
                         value={createContentForm.title}
                         onChange={(e) => setCreateContentForm({...createContentForm, title: e.target.value})}
-                        placeholder="e.g. Alinhamento de Quirão com Urano"
+                        placeholder={t("e.g. Alinhamento de Quirão com Urano")}
                         required
                         className="w-full px-2.5 py-1.5 bg-slate-955 border border-slate-800 rounded-xl text-slate-200"
                       />
@@ -962,7 +962,7 @@ export default function AdminPanel({
                           type="text"
                           value={createContentForm.author}
                           onChange={(e) => setCreateContentForm({...createContentForm, author: e.target.value})}
-                          placeholder="e.g. Regina Tarot"
+                          placeholder={t("e.g. Regina Tarot")}
                           className="w-full px-2.5 py-1.5 bg-slate-955 border border-slate-800 rounded-xl text-slate-200"
                         />
                       </div>

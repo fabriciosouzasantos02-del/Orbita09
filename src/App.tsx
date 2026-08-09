@@ -4686,18 +4686,18 @@ export default function App() {
                   <div className="flex items-start gap-2 text-rose-300">
                     <AlertCircle className="w-5 h-5 shrink-0 text-rose-400 mt-0.5" />
                     <div className="space-y-1">
-                      <h4 className="text-xs font-bold uppercase tracking-wide">Domínio Não Autorizado no Firebase Auth</h4>
+                      <h4 className="text-xs font-bold uppercase tracking-wide">{t("Domínio Não Autorizado no Firebase Auth")}</h4>
                       <p className="text-[11px] text-slate-300 leading-normal">
-                        O Firebase bloqueou o login social porque o domínio atual não está registrado como domínio autorizado nas configurações do seu projeto Firebase.
+                        {t("O Firebase bloqueou o login social porque o domínio atual não está registrado como domínio autorizado nas configurações do seu projeto Firebase.")}
                       </p>
                     </div>
                   </div>
                   <div className="bg-slate-950/60 p-3 rounded-xl border border-rose-955/20 text-[10.5px] space-y-1.5 leading-snug">
                     <p className="text-slate-400 font-mono text-[9px] break-all select-all">
-                      Domínio atual: <strong className="text-amber-400 text-[10px]">{typeof window !== 'undefined' ? window.location.hostname : 'localhost'}</strong>
+                      {t("Domínio atual:")} <strong className="text-amber-400 text-[10px]">{typeof window !== 'undefined' ? window.location.hostname : 'localhost'}</strong>
                     </p>
                     <p className="text-slate-400 font-mono text-[9px]">
-                      👉 Para corrigir isso, acesse o Console do Firebase, vá em <strong>Build &gt; Authentication &gt; Settings &gt; Authorized domains</strong> e adicione o domínio exibido acima.
+                      👉 {t("Para corrigir isso, acesse o Console do Firebase, vá em Build > Authentication > Settings > Authorized domains e adicione o domínio exibido acima.")}
                     </p>
                   </div>
                   <div className="flex gap-2.5 pt-1">
@@ -4706,7 +4706,7 @@ export default function App() {
                       onClick={() => setUnauthorizedDomainError(false)}
                       className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-750 text-[10px] font-bold text-slate-100 rounded-lg cursor-pointer transition"
                     >
-                      Dispensar
+                      {t("Dispensar")}
                     </button>
                     <button 
                       type="button" 
@@ -4716,7 +4716,7 @@ export default function App() {
                       }}
                       className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-955 text-[10px] font-black uppercase tracking-wider rounded-lg cursor-pointer transition"
                     >
-                      Criar via E-mail
+                      {t("Criar via E-mail")}
                     </button>
                   </div>
                 </div>
@@ -4728,15 +4728,15 @@ export default function App() {
                   <div className="flex items-start gap-2 text-amber-300">
                     <AlertCircle className="w-5 h-5 shrink-0 text-amber-400 mt-0.5" />
                     <div className="space-y-1">
-                      <h4 className="text-xs font-bold uppercase tracking-wide">Login Social Bloqueado/Cancelado</h4>
+                      <h4 className="text-xs font-bold uppercase tracking-wide">{t("Login Social Bloqueado/Cancelado")}</h4>
                       <p className="text-[11px] text-slate-300 leading-normal">
-                        Você está no ambiente de visualização do AI Studio. Navegadores costumam bloquear ou fechar popups de login de terceiros (Google/Facebook) automaticamente dentro de iframes por segurança.
+                        {t("Você está no ambiente de visualização do AI Studio. Navegadores costumam bloquear ou fechar popups de login de terceiros (Google/Facebook) automaticamente dentro de iframes por segurança.")}
                       </p>
                     </div>
                   </div>
                   <div className="bg-slate-950/60 p-3 rounded-xl border border-amber-900/20 text-[10.5px] space-y-1.5 leading-snug">
                     <p className="text-slate-400 font-mono text-[9px]">
-                      💡 <strong>Solução ideal:</strong> Clique no botão abaixo para abrir o aplicativo diretamente em uma aba cheia fora do iframe, onde o login do Google funcionará perfeitamente e sem restrições.
+                      💡 <strong>{t("Solução ideal:")}</strong> {t("Clique no botão abaixo para abrir o aplicativo diretamente em uma aba cheia fora do iframe, onde o login do Google funcionará perfeitamente e sem restrições.")}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2.5 pt-1">
@@ -4747,7 +4747,7 @@ export default function App() {
                       className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-955 text-[10px] font-black uppercase tracking-wider rounded-lg hover:from-amber-400 hover:to-amber-500 transition cursor-pointer"
                     >
                       <ExternalLink className="w-3" />
-                      Abrir em Nova Aba
+                      {t("Abrir em Nova Aba")}
                     </a>
                     <button 
                       type="button" 
@@ -4757,14 +4757,14 @@ export default function App() {
                       }}
                       className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-755 text-[10px] font-bold text-slate-100 rounded-lg cursor-pointer transition"
                     >
-                      Usar E-mail e Senha
+                      {t("Usar E-mail e Senha")}
                     </button>
                     <button 
                       type="button"
                       onClick={() => setPopupClosedError(false)}
                       className="px-3 py-1.5 bg-transparent hover:bg-slate-900 text-[10px] text-slate-400 hover:text-slate-200 transition cursor-pointer"
                     >
-                      Dispensar
+                      {t("Dispensar")}
                     </button>
                   </div>
                 </div>
@@ -4776,7 +4776,7 @@ export default function App() {
                   <div className="flex items-start gap-2 text-amber-300">
                     <AlertCircle className="w-5 h-5 shrink-0 text-amber-450 mt-0.5" />
                     <div className="space-y-1">
-                      <h4 className="text-xs font-bold uppercase tracking-wide">Método de E-mail/Senha desativado</h4>
+                      <h4 className="text-xs font-bold uppercase tracking-wide">{t("Método de E-mail/Senha desativado")}</h4>
                       <p className="text-[11px] text-slate-300 leading-normal">
                         {t("O Firebase retornou o erro")} <strong className="font-mono text-[9px] text-rose-300">auth/operation-not-allowed</strong>. {t("O provedor de login com Email e Senha não foi habilitado nas configurações de autenticação do seu projeto.")}
                       </p>
@@ -7923,7 +7923,7 @@ export default function App() {
                       <button 
                         onClick={() => setShowSubPortalModal(false)}
                         className="absolute top-4 right-4 text-slate-500 hover:text-slate-350 transition cursor-pointer"
-                        aria-label="Close"
+                        aria-label={t("Fechar")}
                       >
                         ✕
                       </button>

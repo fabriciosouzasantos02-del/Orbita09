@@ -1372,7 +1372,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                             ) : (
                               <span className="text-sm">?</span>
                             )}
-                            <div className="absolute -bottom-1.5 -right-1 bg-slate-950 text-pink-400 font-mono text-[9px] w-5 h-5 rounded-full border border-slate-850 flex items-center justify-center" title="Signo">
+                            <div className="absolute -bottom-1.5 -right-1 bg-slate-950 text-pink-400 font-mono text-[9px] w-5 h-5 rounded-full border border-slate-850 flex items-center justify-center" title={t("Signo")}>
                               {profile.symbol}
                             </div>
                           </div>
@@ -1589,7 +1589,7 @@ export default function CompatibilityView({ user, lang }: CompatibilityViewProps
                             <span className="text-sm font-sans tracking-tighter">
                               {visitor.name.split(' ').map(n => n[0]).join('')}
                             </span>
-                            <div className="absolute -bottom-1.5 -right-1 bg-slate-950 text-cyan-400 font-mono text-[9px] w-5 h-5 rounded-full border border-slate-850 flex items-center justify-center" title="Signo">
+                            <div className="absolute -bottom-1.5 -right-1 bg-slate-950 text-cyan-400 font-mono text-[9px] w-5 h-5 rounded-full border border-slate-850 flex items-center justify-center" title={t("Signo")}>
                               {visitor.symbol}
                             </div>
                           </div>

@@ -895,7 +895,7 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
                   value={overwriteTime} 
                   onChange={(e) => setOverwriteTime(e.target.value)} 
                   className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200"
-                  placeholder="e.g. 15:30"
+                  placeholder={t("e.g. 15:30")}
                 />
               </div>
               <div>
