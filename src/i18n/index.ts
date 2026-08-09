@@ -4,6 +4,7 @@ import { profileTranslations } from './profile';
 import { astrologyTranslations } from './astrology';
 import { tarotTranslations } from './tarot';
 import { tarotUiTranslations } from './tarotUi';
+import { tarotUiCompleteTranslations } from './tarotUiComplete';
 import { dreamsTranslations } from './dreams';
 import { missionsTranslations } from './missions';
 import { settingsTranslations } from './settings';
@@ -28,6 +29,7 @@ const modules = [
   astrologyTranslations,
   tarotTranslations,
   tarotUiTranslations,
+  tarotUiCompleteTranslations,
   dreamsTranslations,
   missionsTranslations,
   settingsTranslations,
