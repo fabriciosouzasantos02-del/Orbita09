@@ -41,6 +41,7 @@ import BiorhythmView from './components/BiorhythmView';
 import UserDashboardPortal from './components/UserDashboardPortal';
 import { PremiumConversionScreen } from './components/PremiumConversionScreen';
 import AdminPanel from './components/AdminPanel';
+import ErrorBoundary from './components/ErrorBoundary';
 import OrbiaAIAndOracle from './components/OrbiaAIAndOracle';
 import OraculoDosSonhosCard from './components/OraculoDosSonhosCard';
 import { CityAutocomplete } from './components/CityAutocomplete';
@@ -573,6 +574,12 @@ export default function App() {
   const currentLang = idioma as Language;
   // 'mapa' | 'constelacoes' | 'planetas' | 'tarot' | 'configuracoes' as specified by the bottom-bar prompt!
   const [activeTab, setActiveTab] = useState<'mapa' | 'constelacoes' | 'planetas' | 'tarot' | 'configuracoes'>('mapa');
+  const userNavigatedTabRef = useRef<'mapa' | 'constelacoes' | 'planetas' | 'tarot' | 'configuracoes' | null>(null);
+
+  const handleUserSelectTab = (tab: 'mapa' | 'constelacoes' | 'planetas' | 'tarot' | 'configuracoes') => {
+    userNavigatedTabRef.current = tab;
+    setActiveTab(tab);
+  };
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState<boolean>(false);
 
@@ -2349,12 +2356,14 @@ export default function App() {
         saveRegisteredAccounts(accounts);
       }
       
-      // Navigate to correct tab
+      // Navigate to correct tab only if user hasn't explicitly navigated elsewhere
       if (updatedUser.hasCreatedMap || (updatedUser.birthDate && updatedUser.birthCity)) {
         setMapSubTab('meu_mapa');
-        setActiveTab('mapa');
       } else {
         setMapSubTab('criar_meu_mapa');
+      }
+      
+      if (!userNavigatedTabRef.current) {
         setActiveTab('mapa');
       }
       
@@ -2375,11 +2384,15 @@ export default function App() {
             setLoggedEmail(parsed.email || firebaseUser.email || "");
             if (parsed.hasCreatedMap) {
               setMapSubTab('meu_mapa');
-              setActiveTab('mapa');
+              if (!userNavigatedTabRef.current) {
+                setActiveTab('mapa');
+              }
               triggerGenerateMainMap(parsed);
             } else {
               setMapSubTab('criar_meu_mapa');
-              setActiveTab('mapa');
+              if (!userNavigatedTabRef.current) {
+                setActiveTab('mapa');
+              }
             }
           }
         } catch {}
@@ -7510,8 +7523,9 @@ export default function App() {
                       <span>{t("Exibindo alinhamentos celestes e trânsitos em tempo real. Crie seu mapa natal no menu 'Meu Mapa' para personalizar seus aspectos exatos.")}</span>
                     </div>
                     <button
+                      type="button"
                       onClick={() => {
-                        setActiveTab('mapa');
+                        handleUserSelectTab('mapa');
                         setMapSubTab('criar_meu_mapa');
                       }}
                       className="px-3 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-bold hover:bg-amber-400 transition-colors whitespace-nowrap cursor-pointer text-xs"
@@ -7522,76 +7536,84 @@ export default function App() {
                 )}
 
                 {/* D3 Real-time Transit Map Alignment */}
-                <React.Suspense fallback={
-                  <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 text-xs text-slate-500 animate-pulse space-y-3">
-                    <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mx-auto" />
-                    <div>{t("Injetando efemérides astronômicas em tempo real...")}</div>
-                  </div>
-                }>
-                  <TransitMap mapData={effectiveMapData} />
-                </React.Suspense>
+                <ErrorBoundary>
+                  <React.Suspense fallback={
+                    <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 text-xs text-slate-500 animate-pulse space-y-3">
+                      <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mx-auto" />
+                      <div>{t("Injetando efemérides astronômicas em tempo real...")}</div>
+                    </div>
+                  }>
+                    <TransitMap mapData={effectiveMapData} />
+                  </React.Suspense>
+                </ErrorBoundary>
 
                 {/* Monthly Celestial Transits History Panel */}
                 <div key={`transit_history_planetas_${user?.name}_${user?.birthDate}_${systemDate.toDateString()}`}>
-                  <React.Suspense fallback={
-                    <div className="h-64 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
-                      <span className="text-xs text-slate-405 font-mono">{t("ui.loading.transits", "Calculando trânsitos astrológicos mensais...")}</span>
-                    </div>
-                  }>
-                    <TransitHistory
-                      userName={user?.name}
-                      birthDate={user?.birthDate}
-                      birthTime={user?.birthTime}
-                      latitude={user?.latitude}
-                      longitude={user?.longitude}
-                      lang={currentLang}
-                    />
-                  </React.Suspense>
+                  <ErrorBoundary>
+                    <React.Suspense fallback={
+                      <div className="h-64 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
+                        <span className="text-xs text-slate-405 font-mono">{t("ui.loading.transits", "Calculando trânsitos astrológicos mensais...")}</span>
+                      </div>
+                    }>
+                      <TransitHistory
+                        userName={user?.name}
+                        birthDate={user?.birthDate}
+                        birthTime={user?.birthTime}
+                        latitude={user?.latitude}
+                        longitude={user?.longitude}
+                        lang={currentLang}
+                      />
+                    </React.Suspense>
+                  </ErrorBoundary>
                 </div>
 
                 {/* Orbia AI Chat and Oracle Component */}
                 <div key={`orbia_oracle_chat_${user?.name}_${user?.birthDate}_${user?.birthTime || ''}_${systemDate.toDateString()}`}>
-                  <React.Suspense fallback={
-                    <div className="h-96 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
-                      <span className="text-xs text-slate-405 font-mono">{t("ui.loading.orbia", "Iniciando inteligência conselheira Orbia...")}</span>
-                    </div>
-                  }>
-                    <OrbiaAIAndOracle
-                      chatMessages={chatMessages}
-                      currentChatInput={currentChatInput}
-                      setCurrentChatInput={setCurrentChatInput}
-                      isSendingChat={isSendingChat}
-                      handleSendChatMessage={handleSendChatMessage}
-                      hasQueriedOracleToday={hasQueriedOracleToday}
-                      oracleQuestion={oracleQuestion}
-                      setOracleQuestion={setOracleQuestion}
-                      oracleResponse={oracleResponse}
-                      setOracleResponse={setOracleResponse}
-                      isQueryingOracle={isQueryingOracle}
-                      handleAskOracle={handleAskOracle}
-                      lang={currentLang}
-                    />
-                  </React.Suspense>
+                  <ErrorBoundary>
+                    <React.Suspense fallback={
+                      <div className="h-96 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
+                        <span className="text-xs text-slate-405 font-mono">{t("ui.loading.orbia", "Iniciando inteligência conselheira Orbia...")}</span>
+                      </div>
+                    }>
+                      <OrbiaAIAndOracle
+                        chatMessages={chatMessages}
+                        currentChatInput={currentChatInput}
+                        setCurrentChatInput={setCurrentChatInput}
+                        isSendingChat={isSendingChat}
+                        handleSendChatMessage={handleSendChatMessage}
+                        hasQueriedOracleToday={hasQueriedOracleToday}
+                        oracleQuestion={oracleQuestion}
+                        setOracleQuestion={setOracleQuestion}
+                        oracleResponse={oracleResponse}
+                        setOracleResponse={setOracleResponse}
+                        isQueryingOracle={isQueryingOracle}
+                        handleAskOracle={handleAskOracle}
+                        lang={currentLang}
+                      />
+                    </React.Suspense>
+                  </ErrorBoundary>
                 </div>
 
                 {/* Oráculo dos Sonhos Component */}
                 <div key={`oraculo_sonhos_card_${user?.name}_${user?.birthDate}`}>
-                  <React.Suspense fallback={
-                    <div className="h-64 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
-                      <span className="text-xs text-slate-405 font-mono">{t("ui.loading.dreams", "Abrindo Cofre Celestial dos Sonhos...")}</span>
-                    </div>
-                  }>
-                    <OraculoDosSonhosCard
-                      newDreamDesc={newDreamDesc}
-                      setNewDreamDesc={setNewDreamDesc}
-                      isInterpretingDream={isInterpretingDream}
-                      handleRecordAndInterpretDream={handleRecordAndInterpretDream}
-                      dreamsHistory={dreamsHistory}
-                      selectedDreamDisplay={selectedDreamDisplay}
-                      setSelectedDreamDisplay={setSelectedDreamDisplay}
-                      preferredLanguage={currentLang}
-                    />
-                  </React.Suspense>
+                  <ErrorBoundary>
+                    <React.Suspense fallback={
+                      <div className="h-64 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
+                        <span className="text-xs text-slate-405 font-mono">{t("ui.loading.dreams", "Abrindo Cofre Celestial dos Sonhos...")}</span>
+                      </div>
+                    }>
+                      <OraculoDosSonhosCard
+                        newDreamDesc={newDreamDesc}
+                        setNewDreamDesc={setNewDreamDesc}
+                        isInterpretingDream={isInterpretingDream}
+                        handleRecordAndInterpretDream={handleRecordAndInterpretDream}
+                        dreamsHistory={dreamsHistory}
+                        selectedDreamDisplay={selectedDreamDisplay}
+                        setSelectedDreamDisplay={setSelectedDreamDisplay}
+                        preferredLanguage={currentLang}
+                      />
+                    </React.Suspense>
+                  </ErrorBoundary>
                 </div>
 
               </div>
@@ -8198,8 +8220,9 @@ export default function App() {
             
             {/* Mapa Estelar Tab activator */}
             <button
+              type="button"
               onClick={() => {
-                setActiveTab('mapa');
+                handleUserSelectTab('mapa');
                 if (!isPremiumActive && mapSubTab !== 'meu_mapa' && mapSubTab !== 'criar_meu_mapa') {
                   setMapSubTab('meu_mapa');
                 }
@@ -8216,7 +8239,8 @@ export default function App() {
 
             {/* Constelações Tab activator */}
             <button
-              onClick={() => setActiveTab('constelacoes')}
+              type="button"
+              onClick={() => handleUserSelectTab('constelacoes')}
               className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
                 activeTab === 'constelacoes' 
                   ? 'text-emerald-400 bg-emerald-500/10' 
@@ -8229,7 +8253,8 @@ export default function App() {
 
             {/* Planetas Tab activator */}
             <button
-              onClick={() => setActiveTab('planetas')}
+              type="button"
+              onClick={() => handleUserSelectTab('planetas')}
               className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
                 activeTab === 'planetas' 
                   ? 'text-rose-450 bg-rose-500/10' 
@@ -8242,7 +8267,8 @@ export default function App() {
 
             {/* Tarot Tab activator */}
             <button
-              onClick={() => setActiveTab('tarot')}
+              type="button"
+              onClick={() => handleUserSelectTab('tarot')}
               className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
                 activeTab === 'tarot' 
                   ? 'text-amber-500 bg-amber-500/10' 
@@ -8255,7 +8281,8 @@ export default function App() {
 
             {/* Configurações Tab activator */}
             <button
-              onClick={() => setActiveTab('configuracoes')}
+              type="button"
+              onClick={() => handleUserSelectTab('configuracoes')}
               className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
                 activeTab === 'configuracoes' 
                   ? 'text-[#F59E0B] bg-[#F59E0B]/10' 

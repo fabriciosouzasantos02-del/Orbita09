@@ -2,6 +2,7 @@ import * as React from 'react';
 
 interface Props {
   children: React.ReactNode;
+  fallback?: React.ReactNode;
 }
 
 interface State {
@@ -25,7 +26,13 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   public override render() {
-    // Render children directly so no error modal or error screen ever interrupts the application
+    if (this.state.hasError) {
+      return this.props.fallback || (
+        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 text-slate-400 text-xs text-center my-2">
+          Módulo carregado com fallback seguro.
+        </div>
+      );
+    }
     return this.props.children;
   }
 }
