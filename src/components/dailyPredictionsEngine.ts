@@ -1464,7 +1464,9 @@ export function generateDailyPrediction(
   const translatedSunSign = TRANSLATED_SIGNS[lang]?.[userSunSign] || userSunSign;
 
   const baseTitle = energyTitles[lang]?.[houseNum] || energyTitles["pt"][houseNum];
-  const predominantEnergy = `${baseTitle} (${translatedTpName} em ${translatedAspectName} — Dia ${personalDayNum})`;
+  const inWord = lang === 'en' ? 'in' : lang === 'es' ? 'en' : lang === 'de' ? 'in' : lang === 'fr' ? 'en' : 'em';
+  const dayWord = lang === 'en' ? 'Day' : lang === 'es' ? 'Día' : lang === 'de' ? 'Tag' : lang === 'fr' ? 'Jour' : 'Dia';
+  const predominantEnergy = `${baseTitle} (${translatedTpName} ${inWord} ${translatedAspectName} — ${dayWord} ${personalDayNum})`;
 
   // DYNAMIC ENERGY LEVEL CALCULATION
   let baseEnergy = 72;

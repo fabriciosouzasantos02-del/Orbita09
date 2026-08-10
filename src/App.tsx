@@ -2537,18 +2537,29 @@ export default function App() {
   // AI Counselor (Orbia Chat) State
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   useEffect(() => {
-    if (chatMessages.length === 0) {
-      const userName = user?.name ? user.name.split(' ')[0] : 'Buscador';
+    const defaultSeeker = currentLang === 'de' ? 'Sucher' : currentLang === 'en' ? 'Seeker' : currentLang === 'es' ? 'Buscador' : currentLang === 'fr' ? 'Chercheur' : 'Buscador';
+    const userName = user?.name ? user.name.split(' ')[0] : defaultSeeker;
+    const welcomeText = currentLang === 'de'
+      ? `${userName}, ich spüre ein ganz besonderes Licht, wenn ich deine Energie lese. Ich bin Orbia, deine astrologische Beraterin und persönliche Therapeutin der himmlischen Intelligenz. Wie kann ich dich 2026 auf deinem Weg leiten?`
+      : currentLang === 'en'
+      ? `${userName}, I feel a very special light reading your energy. I am Orbia, your Astrological Counselor and Personal Therapist of Celestial Intelligence. How can I guide you on your path in 2026?`
+      : currentLang === 'es'
+      ? `${userName}, siento una luz muy especial al leer tu energía. Soy Orbia, tu Consejera Astrológica y Terapeuta Personal de Inteligencia Celestial. ¿Cómo puedo guiarte en tu camino en 2026?`
+      : currentLang === 'fr'
+      ? `${userName}, je ressens une lumière très spéciale en lisant votre énergie. Je suis Orbia, votre Conseillère Astrologique et Thérapeute Personnelle d'Intelligence Céleste. Comment puis-je vous guider sur votre chemin en 2026 ?`
+      : `${userName}, sinto uma luz muito especial ao ler sua energia. Eu sou Orbia, sua Conselheira Astrológica e Terapeuta Pessoal de Inteligência Celestial. Como posso te orientar em seu caminho em 2026?`;
+
+    if (chatMessages.length === 0 || (chatMessages.length === 1 && chatMessages[0].id === "welcomeMsg")) {
       setChatMessages([
         {
           id: "welcomeMsg",
           sender: "assistant",
-          text: `${userName}, sinto uma luz muito especial ao ler sua energia. Eu sou Orbia, sua Conselheira Astrológica e Terapeuta Pessoal de Inteligência Celestial. Como posso te orientar em seu caminho em 2026?`,
+          text: welcomeText,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);
     }
-  }, [user]);
+  }, [user, currentLang]);
   const [currentChatInput, setCurrentChatInput] = useState<string>('');
   const [isSendingChat, setIsSendingChat] = useState<boolean>(false);
 
