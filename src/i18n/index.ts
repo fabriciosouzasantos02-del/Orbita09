@@ -3,6 +3,7 @@ import { commonTranslations } from './common';
 import { profileTranslations } from './profile';
 import { astrologyTranslations } from './astrology';
 import { tarotTranslations } from './tarot';
+import { tarotCompletenessPatch } from './tarotCompletenessPatch';
 import { dreamsTranslations } from './dreams';
 import { missionsTranslations } from './missions';
 import { settingsTranslations } from './settings';
@@ -27,6 +28,7 @@ const modules = [
   profileTranslations,
   astrologyTranslations,
   tarotTranslations,
+  tarotCompletenessPatch,
   dreamsTranslations,
   missionsTranslations,
   settingsTranslations,
