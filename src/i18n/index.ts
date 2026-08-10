@@ -15,6 +15,7 @@ import { missionsTranslations } from './missions';
 import { settingsTranslations } from './settings';
 import { notificationsTranslations } from './notifications';
 import { compatibilityTranslations } from './compatibility';
+import { compatibilityUiPatch } from './compatibilityUiPatch';
 import { chartsTranslations } from './charts';
 import { onboardingTranslations } from './onboarding';
 import { numerologyTranslations } from './numerology';
@@ -46,6 +47,7 @@ const modules = [
   settingsTranslations,
   notificationsTranslations,
   compatibilityTranslations,
+  compatibilityUiPatch,
   chartsTranslations,
   onboardingTranslations,
   numerologyTranslations,
@@ -140,6 +142,7 @@ for (const lang of languages) {
   if (lunarRuntimeUiTranslations[lang]) Object.assign(mergedTranslations[lang], lunarRuntimeUiTranslations[lang]);
   if (lunarKeyPatch[lang]) Object.assign(mergedTranslations[lang], lunarKeyPatch[lang]);
   if (vercelBuildFixTranslations[lang]) Object.assign(mergedTranslations[lang], vercelBuildFixTranslations[lang]);
+  if (compatibilityUiPatch[lang]) Object.assign(mergedTranslations[lang], compatibilityUiPatch[lang]);
 }
 
 import i18next from 'i18next';
