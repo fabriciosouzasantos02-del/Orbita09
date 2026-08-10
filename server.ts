@@ -4110,7 +4110,16 @@ app.post("/api/astrology/transits-month", async (req, res) => {
     const translatedSign = translateSign(signInfo.sign, activeLang);
     const translatedAspect = translateAspect(trans.aspect, activeLang);
 
-    const eventName = `${translatedAspect} entre ${translatedActivePlanet} e ${translatedSecondaryPlanet} em ${translatedSign}`;
+    let eventName = `${translatedAspect} entre ${translatedActivePlanet} e ${translatedSecondaryPlanet} em ${translatedSign}`;
+    if (activeLang === 'en') {
+      eventName = `${translatedAspect} between ${translatedActivePlanet} and ${translatedSecondaryPlanet} in ${translatedSign}`;
+    } else if (activeLang === 'es') {
+      eventName = `${translatedAspect} entre ${translatedActivePlanet} y ${translatedSecondaryPlanet} en ${translatedSign}`;
+    } else if (activeLang === 'de') {
+      eventName = `${translatedAspect} zwischen ${translatedActivePlanet} und ${translatedSecondaryPlanet} in ${translatedSign}`;
+    } else if (activeLang === 'fr') {
+      eventName = `${translatedAspect} entre ${translatedActivePlanet} et ${translatedSecondaryPlanet} en ${translatedSign}`;
+    }
 
     const degreeStr = `${signInfo.degree}° ${signInfo.minute.toString().padStart(2, '0')}' de ${translatedSign}`;
     const houseLabel = getHouseLabel(transitHouse, activeLang);
@@ -4126,7 +4135,7 @@ app.post("/api/astrology/transits-month", async (req, res) => {
       influence = ["Plutão", "Saturno", "Marte"].includes(activePlanetName) ? "Transformative" : "Positive";
     }
 
-    // Default Fallbacks
+    // Default Fallbacks for all supported languages
     const fallbackDescriptions: Record<string, Record<string, { description: string, safetyTip: string }>> = {
       pt: {
         "Trígono": {
@@ -4149,10 +4158,98 @@ app.post("/api/astrology/transits-month", async (req, res) => {
           description: `A oposição de ${translatedActivePlanet} e ${translatedSecondaryPlanet} exige equilíbrio e mediação na sua ${houseLabel}. Tensões entre o eu e os outros podem emergir para serem harmonizadas.`,
           safetyTip: "Evite polarizações estéreis ou discussões de controle. Busque o caminho do meio e aprenda a ouvir visões opostas à sua."
         }
+      },
+      en: {
+        "Trígono": {
+          description: `The harmonious trine between ${translatedActivePlanet} and ${translatedSecondaryPlanet} brings ease and fluid blessings to your ${houseLabel}. An excellent flow of cosmic synchronicity is available to you.`,
+          safetyTip: "Proactively take advantage of this favorable tide. Do not let comfort prevent you from acting and materializing your dreams."
+        },
+        "Sextil": {
+          description: `The cooperative sextile between ${translatedActivePlanet} and ${translatedSecondaryPlanet} opens doors and growth opportunities in your ${houseLabel}. Great period to align ideas and exchange useful experiences.`,
+          safetyTip: "Embrace social invitations and productive partnerships. Practical collaboration today will pave tomorrow's success."
+        },
+        "Conjunção": {
+          description: `The powerful conjunction of ${translatedActivePlanet} and ${translatedSecondaryPlanet} concentrates an intense energy of new beginnings in your ${houseLabel}. A renewed cycle begins with full focus.`,
+          safetyTip: "Direct this explosive energy wisely. Set clear intentions and start projects that require courage and absolute dedication."
+        },
+        "Quadratura": {
+          description: `The tense square between ${translatedActivePlanet} and ${translatedSecondaryPlanet} causes constructive challenges and minor adjustment crises in your ${houseLabel}. It is a test of cosmic maturity.`,
+          safetyTip: "Take a deep breath when facing obstacles. Today's tension is the fuel for your internal strengthening. Be patient."
+        },
+        "Oposição": {
+          description: `The opposition of ${translatedActivePlanet} and ${translatedSecondaryPlanet} demands balance and mediation in your ${houseLabel}. Tensions between self and others may surface to be harmonized.`,
+          safetyTip: "Avoid futile polarizations or control arguments. Seek the middle path and learn to listen to opposing viewpoints."
+        }
+      },
+      es: {
+        "Trígono": {
+          description: `El trígono armonioso entre ${translatedActivePlanet} y ${translatedSecondaryPlanet} trae facilidades y bendiciones fluidas a tu ${houseLabel}. Un excelente flujo de sincronicidad cósmica está disponible para ti.`,
+          safetyTip: "Aprovecha esta marea favorable de manera proactiva. No dejes que el confort te impida actuar y materializar tus sueños."
+        },
+        "Sextil": {
+          description: `El sextil cooperativo entre ${translatedActivePlanet} y ${translatedSecondaryPlanet} abre puertas y oportunidades de crecimiento en tu ${houseLabel}. Excelente período para alinear ideas y compartir experiencias útiles.`,
+          safetyTip: "Acepta invitaciones sociales y alianzas productivas. La colaboración práctica de hoy pavimentará el éxito del mañana."
+        },
+        "Conjunção": {
+          description: `La poderosa conjunción de ${translatedActivePlanet} y ${translatedSecondaryPlanet} concentra una energía intensa de nuevos comienzos en tu ${houseLabel}. Se inicia un ciclo renovado con enfoque total.`,
+          safetyTip: "Dirige esta energía explosiva con sabiduría. Define intenciones claras e inicia proyectos que requieran valentía y dedicación absoluta."
+        },
+        "Quadratura": {
+          description: `La cuadratura tensa entre ${translatedActivePlanet} y ${translatedSecondaryPlanet} provoca desafíos constructivos y pequeñas crisis de reajuste en tu ${houseLabel}. Es una prueba de madurez cósmica.`,
+          safetyTip: "Respira hondo ante los obstáculos. La tensión de hoy es el combustible para tu fortalecimiento interno. Sé paciente."
+        },
+        "Oposição": {
+          description: `La oposición de ${translatedActivePlanet} y ${translatedSecondaryPlanet} exige equilibrio y mediación en tu ${houseLabel}. Las tensiones entre el yo y los demás pueden emerger para ser armonizadas.`,
+          safetyTip: "Evita polarizaciones estériles o discusiones de control. Busca el camino intermedio y aprende a escuchar visiones opuestas."
+        }
+      },
+      de: {
+        "Trígono": {
+          description: `Das harmonische Trigon zwischen ${translatedActivePlanet} und ${translatedSecondaryPlanet} bringt Leichtigkeit und segenreiche Einflüsse in Ihr ${houseLabel}. Ein hervorragender Fluss kosmischer Synchronizität steht Ihnen zur Verfügung.`,
+          safetyTip: "Nutzen Sie diese günstige Welle proaktiv. Lassen Sie sich vom Komfort nicht davon abhalten, Ihre Träume zu verwirklichen."
+        },
+        "Sextil": {
+          description: `Das kooperative Sextil zwischen ${translatedActivePlanet} und ${translatedSecondaryPlanet} öffnet Türen und Wachstumschancen in Ihrem ${houseLabel}. Gute Zeit, um Ideen abzustimmen und nützliche Erfahrungen auszutauschen.`,
+          safetyTip: "Nehmen Sie soziale Einladungen und produktive Partnerschaften an. Praktische Zusammenarbeit legt den Grundstein für den morgigen Erfolg."
+        },
+        "Conjunção": {
+          description: `Die kraftvolle Konjunktion von ${translatedActivePlanet} und ${translatedSecondaryPlanet} bündelt eine intensive Energie von Neuanfängen in Ihrem ${houseLabel}. Ein neuer Zyklus beginnt mit voller Konzentration.`,
+          safetyTip: "Lenken Sie diese explosive Energie mit Weisheit. Setzen Sie klare Absichten und starten Sie mutige Projekte."
+        },
+        "Quadratura": {
+          description: `Das spannungsreiche Quadrat zwischen ${translatedActivePlanet} und ${translatedSecondaryPlanet} bringt konstruktive Herausforderungen und Reifung in Ihr ${houseLabel}. Ein Test kosmischer Reife.`,
+          safetyTip: "Atmen Sie bei Hindernissen tief durch. Die heutige Spannung ist Treibstoff für Ihre innere Stärke. Seien Sie geduldig."
+        },
+        "Oposição": {
+          description: `Die Opposition von ${translatedActivePlanet} und ${translatedSecondaryPlanet} fordert Balance und Vermittlung in Ihrem ${houseLabel}. Spannungen zwischen Selbst und Anderen wollen harmonisiert werden.`,
+          safetyTip: "Vermeiden Sie sterile Polarisoerungen oder Machtkämpfe. Suchen Sie den mittleren Weg und hören Sie gegensätzlichen Ansichten zu."
+        }
+      },
+      fr: {
+        "Trígono": {
+          description: `Le trigone harmonieux entre ${translatedActivePlanet} et ${translatedSecondaryPlanet} apporte fluidité et bénédictions dans votre ${houseLabel}. Un excellent flux de synchronicité cosmique vous entoure.`,
+          safetyTip: "Profitez de cette marée favorable de manière proactive. Ne laissez pas le confort vous empêcher d'agir et de concrétiser vos rêves."
+        },
+        "Sextil": {
+          description: `Le sextile coopératif entre ${translatedActivePlanet} et ${translatedSecondaryPlanet} ouvre des portes d'opportunités de croissance dans votre ${houseLabel}. Excellente période pour échanger des idées et des expériences utiles.`,
+          safetyTip: "Acceptez les invitations sociales et les partenariats productifs. La collaboration pratique d'aujourd'hui préparera le succès de demain."
+        },
+        "Conjunção": {
+          description: `La puissante conjonction de ${translatedActivePlanet} et ${translatedSecondaryPlanet} concentre une énergie intense de nouveaux départs dans votre ${houseLabel}. Un cycle renouvelé commence.`,
+          safetyTip: "Orientez cette énergie explosive avec sagesse. Définissez des intentions claires et lancez des projets ambitieux."
+        },
+        "Quadratura": {
+          description: `Le carré tendu entre ${translatedActivePlanet} et ${translatedSecondaryPlanet} provoque des défis constructifs dans votre ${houseLabel}. C'est un test de maturité cosmique.`,
+          safetyTip: "Respirez profondément face aux obstacles. La tension d'aujourd'hui est le carburant de votre renforcement intérieur. Soyez patient."
+        },
+        "Oposição": {
+          description: `L'opposition de ${translatedActivePlanet} et ${translatedSecondaryPlanet} exige équilibre et médiation dans votre ${houseLabel}. Des tensions entre soi et autrui peuvent émerger pour être harmonisées.`,
+          safetyTip: "Évitez les polarisations stériles. Cherchez le juste milieu et apprenez à écouter les points de vue opposés."
+        }
       }
     };
 
-    const fMap = fallbackDescriptions.pt;
+    const fMap = fallbackDescriptions[activeLang] || fallbackDescriptions.pt;
     const fItem = fMap[trans.aspect] || fMap["Trígono"];
 
     return {
@@ -4189,30 +4286,30 @@ app.post("/api/astrology/transits-month", async (req, res) => {
 
     const prompt = `Você é um astrólogo profissional místico, refinado e poético.
 Recebemos uma lista de trânsitos celestes REAIS ocorrendo no mês atual, calculados com coordenadas astronômicas exatas por efemérides.
-Sua tarefa é ler os dados técnicos de cada evento e gerar descrições místicas, poéticas, ricas em insights, bem como conselhos/dicas de sintonia ("safetyTip") para cada um deles.
+Sua tarefa é ler os dados técnicos de cada evento e gerar descrições místicas, poéticas, ricas em insights, bem como conselhos/dicas de sintonia ("safetyTip") no idioma ${targetLanguage}.
 
 O usuário se chama "${name || 'Buscador'}" e nasceu em ${bDate} às ${bTime}.
 
 Aqui está a lista de trânsitos calculados matematicamente:
 ${JSON.stringify(computedEvents, null, 2)}
 
-Importante: O retorno DEVE ser um objeto JSON estrito com exatamente o mesmo formato, mantendo intocados todos os dados técnicos (date, eventName, planet, influence, aspect, degree, house, orb, element), mas gerando interpretações maravilhosas, poéticas, sábias e profundas em ${targetLanguage} especificamente para os campos "description" e "safetyTip".
+Importante: O retorno DEVE ser um objeto JSON estrito com exatamente o mesmo formato. TODOS os textos visíveis no objeto final (incluindo "eventName", "house", "description" e "safetyTip") DEVEM estar 100% traduzidos e escritos no idioma ${targetLanguage}.
 
 Exemplo de retorno JSON esperado:
 {
   "events": [
     {
       "date": "YYYY-MM-DD",
-      "eventName": "...",
+      "eventName": "Trine between Sun and Moon in Cancer",
       "planet": "...",
-      "description": "Texto poético, sábio e místico em ${targetLanguage}, explicando os mistérios profundos desse trânsito especificamente focado na casa astrológica ativada do usuário...",
+      "description": "Texto poético, sábio e místico no idioma ${targetLanguage}, explicando os mistérios profundos desse trânsito especificamente focado na casa astrológica ativada do usuário...",
       "influence": "...",
       "aspect": "...",
       "degree": "...",
       "house": "...",
       "orb": "...",
       "element": "...",
-      "safetyTip": "Conselho prático, sutil e sábio em ${targetLanguage} de como o usuário pode se harmonizar com esta energia do cosmos..."
+      "safetyTip": "Conselho prático, sutil e sábio no idioma ${targetLanguage} de como o usuário pode se harmonizar com esta energia do cosmos..."
     }
   ]
 }

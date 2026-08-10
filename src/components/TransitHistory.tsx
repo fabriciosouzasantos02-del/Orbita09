@@ -316,18 +316,19 @@ export default function TransitHistory({ userName, birthDate, birthTime, latitud
   const [filterInfluence, setFilterInfluence] = useState<string>('todos');
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
-  const fetchTransits = async () => {
+  const fetchTransits = async (forceRefresh: boolean = false) => {
     try {
       setLoading(true);
       setError(null);
 
       const email = localStorage.getItem("orbi_logged_email") || "";
       const weekKey = getWeeklyCacheKey();
+      const currentLangKey = lang || 'pt';
 
-      if (email) {
-        const cachedTransits = await loadCalculationCache(email, `weekly_transits_${weekKey}_${lang || 'pt'}`);
-        if (cachedTransits && Array.isArray(cachedTransits)) {
-          console.log("[Intelligent Cache] Loaded weekly transits from Firestore cache.");
+      if (!forceRefresh && email) {
+        const cachedTransits = await loadCalculationCache(email, `weekly_transits_${weekKey}_${currentLangKey}`);
+        if (cachedTransits && Array.isArray(cachedTransits) && cachedTransits.length > 0) {
+          console.log("[Intelligent Cache] Loaded weekly transits from Firestore cache for lang:", currentLangKey);
           setEvents(cachedTransits);
           setLoading(false);
           return;
@@ -343,7 +344,7 @@ export default function TransitHistory({ userName, birthDate, birthTime, latitud
           birthTime: birthTime,
           latitude: latitude,
           longitude: longitude,
-          lang: lang || 'pt'
+          lang: currentLangKey
         }),
       });
       if (!res.ok) {
@@ -353,7 +354,7 @@ export default function TransitHistory({ userName, birthDate, birthTime, latitud
       if (data && Array.isArray(data.events)) {
         setEvents(data.events);
         if (email) {
-          await saveCalculationCache(email, `weekly_transits_${weekKey}_${lang || 'pt'}`, data.events);
+          await saveCalculationCache(email, `weekly_transits_${weekKey}_${currentLangKey}`, data.events);
         }
       } else {
         throw new Error('Formato de dados inesperado recebido do servidor.');
@@ -475,7 +476,7 @@ export default function TransitHistory({ userName, birthDate, birthTime, latitud
 
         {/* Refresh tool */}
         <button
-          onClick={fetchTransits}
+          onClick={() => fetchTransits(true)}
           disabled={loading}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-850 border border-slate-850 text-[10px] font-semibold font-mono text-slate-440 transition hover:text-slate-200 cursor-pointer disabled:opacity-50"
         >
@@ -493,7 +494,7 @@ export default function TransitHistory({ userName, birthDate, birthTime, latitud
         <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-center space-y-2">
           <p className="text-xs text-rose-400">{t(error)}</p>
           <button
-            onClick={fetchTransits}
+            onClick={() => fetchTransits(true)}
             className="px-3 py-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-mono text-[10px] rounded transition cursor-pointer"
           >
             {t("Tentar Novamente")}
