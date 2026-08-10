@@ -9,6 +9,7 @@ import { transitsUiTranslations } from './transitsUi';
 import { biorhythmUiCompleteTranslations } from './biorhythmUiComplete';
 import { lunarRuntimeUiTranslations } from './lunarRuntimeUi';
 import { lunarKeyPatch } from './lunarKeyPatch';
+import { vercelBuildFixTranslations } from './vercelBuildFix';
 import { dreamsTranslations } from './dreams';
 import { missionsTranslations } from './missions';
 import { settingsTranslations } from './settings';
@@ -39,6 +40,7 @@ const modules = [
   biorhythmUiCompleteTranslations,
   lunarRuntimeUiTranslations,
   lunarKeyPatch,
+  vercelBuildFixTranslations,
   dreamsTranslations,
   missionsTranslations,
   settingsTranslations,
@@ -132,21 +134,12 @@ mergeNestedLocalizedSource(NODE_HOUSES_LOCALIZED);
 
 // Authoritative fixed-interface layers are applied last.
 for (const lang of languages) {
-  if (tarotUiCompleteTranslations[lang]) {
-    Object.assign(mergedTranslations[lang], tarotUiCompleteTranslations[lang]);
-  }
-  if (transitsUiTranslations[lang]) {
-    Object.assign(mergedTranslations[lang], transitsUiTranslations[lang]);
-  }
-  if (biorhythmUiCompleteTranslations[lang]) {
-    Object.assign(mergedTranslations[lang], biorhythmUiCompleteTranslations[lang]);
-  }
-  if (lunarRuntimeUiTranslations[lang]) {
-    Object.assign(mergedTranslations[lang], lunarRuntimeUiTranslations[lang]);
-  }
-  if (lunarKeyPatch[lang]) {
-    Object.assign(mergedTranslations[lang], lunarKeyPatch[lang]);
-  }
+  if (tarotUiCompleteTranslations[lang]) Object.assign(mergedTranslations[lang], tarotUiCompleteTranslations[lang]);
+  if (transitsUiTranslations[lang]) Object.assign(mergedTranslations[lang], transitsUiTranslations[lang]);
+  if (biorhythmUiCompleteTranslations[lang]) Object.assign(mergedTranslations[lang], biorhythmUiCompleteTranslations[lang]);
+  if (lunarRuntimeUiTranslations[lang]) Object.assign(mergedTranslations[lang], lunarRuntimeUiTranslations[lang]);
+  if (lunarKeyPatch[lang]) Object.assign(mergedTranslations[lang], lunarKeyPatch[lang]);
+  if (vercelBuildFixTranslations[lang]) Object.assign(mergedTranslations[lang], vercelBuildFixTranslations[lang]);
 }
 
 import i18next from 'i18next';
