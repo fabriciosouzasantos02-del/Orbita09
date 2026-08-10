@@ -48,6 +48,42 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
     if (!text) return "";
     return i18nT(text);
   };
+
+  const getCycleExplanation = (key: string, value: number) => {
+    if (key === 'emocional') {
+      return value >= 0
+        ? t("Com o ciclo emocional em alta, há um aumento do potencial para se sentir mais de bem com a vida, consigo mesmo e com os outros, algo que afeta positivamente sua sensibilidade, seu lado sentimental, carismático e empático. Por isso, é importante aproveitar para fortalecer seus relacionamentos e demais vínculos sadios de alma.")
+        : t("Com o ciclo emocional em fase de depuração, é recomendável manter a serenidade, evitar impulsividades reativas em diálogos afetivos e praticar o autocuidado e o acolhimento interno.");
+    }
+    if (key === 'fisico') {
+      return value >= 0
+        ? t("Seu ciclo físico está com alta energia e vigor vital. Aproveite este momento de grande força muscular e fôlego para realizar tarefas exigentes e atividades físicas.")
+        : t("Seu ciclo físico está em recuperação energética. Evite sobrecargas exaustivas musculares, mas aproveite para caminhadas leves contemplativas e x alongamentos regulares ao alvorecer.");
+    }
+    if (key === 'intelectual') {
+      return value >= 0
+        ? t("O discernimento racional e a agilidade de aprendizados gozam de excelente fertilidade. Dobre o foco nos estudos técnicos, leituras complexas e na organização estratégica financeira.")
+        : t("Seu ciclo intelectual se encontra em fase de assimilação e desaceleração. Evite tomar decisões técnicas impulsivas sob pressão e revise seus cálculos com atenção.");
+    }
+    if (key === 'espiritual') {
+      return value >= 0
+        ? t("Seu ciclo espiritual encontra-se em elevada harmonia transcendental. Sinta a presença sutil da sabedoria cósmica, fortaleça suas intenções de alma e medite sobre seu propósito.")
+        : t("Seu lado espiritual está passando por um momento de transição de frequências, sendo este um período curto, mas propício a choques de realidade, questionamentos existenciais ou testes em sua confiança interna. Mantenha-se alinhada à sua fé e confie na ordem universal, escutando sempre seu coração ao tomar decisões sadios.");
+    }
+    if (key === 'perceptivo') {
+      return value >= 0
+        ? t("Sintonias sensoriais estão calibradas. Excelente momento para contemplar a natureza selvagem, perceber detalhes estéticos ocultos no trabalho ou exercitar o corpo físico de carne.")
+        : t("Sua percepção sensorial externa está em ritmo mais calmo e introspectivo. Evite lugares com excesso de ruído ou estímulos visuais intensos para preservar seu foco mental.");
+    }
+    if (key === 'intuitivo') {
+      return value >= 0
+        ? t("Intuição em altíssima fluência de luz. Confie em seus palpites viscerais repentinos e evite se sobrecarregar de lógicas burocráticas pesadas.")
+        : t("A intuição sutil encontra-se em repouso. Valide percepções com dados práticos e fatos concretos antes de tomar conclusões precipitadas.");
+    }
+    return value >= 0
+      ? t("Estética refinada e criatividade pujante. Ideal para decorar cômodos do lar, desenhar novas frentes, comprar peças de vestuário e apreciar boa música.")
+      : t("Fase de contemplação passiva da beleza. Excelente para descansar os olhos, desfrutar do silêncio e absorver referências visuais sem a pressão de criar algo imediatamente.");
+  };
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const d = new Date();
     const year = d.getFullYear();
@@ -564,14 +600,12 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
                               {data.value > 80 ? t('✦ Alto Potencial') : data.value < -80 ? t('⚡ Período de Depuração') : t('★ Frequência Intermediária')}
                             </span>
                             
-                            <p className="leading-relaxed font-sans">
-                              {key === 'emocional' ? (
-                                t("Com o ciclo emocional em alta (+100%), há um aumento do potencial para se sentir mais de bem com a vida, consigo mesmo e com os outros, algo que afeta positivamente sua sensibilidade, seu lado sentimental, carismático e empático. Por isso, é importante aproveitar para fortalecer seus relacionamentos e demais vínculos sadios de alma.")
-                              ) : key === 'fisico' ? (
-                                t("Seu ciclo físico está em recuperação energética. Evite sobrecargas exaustivas musculares, mas aproveite para caminhadas leves contemplativas e alongamentos regulares ao alvorecer.")
-                              ) : (
-                                t("O discernimento racional e a agilidade de aprendizados gozam de excelente fertilidade. Dobre o foco nos estudos técnicos, leituras complexas e na organização estratégica financeira.")
-                              )}
+                            <p className="text-[10px] text-indigo-300/80 font-mono italic">
+                              {t(details.desc)}
+                            </p>
+
+                            <p className="leading-relaxed font-sans text-slate-200">
+                              {getCycleExplanation(key, data.value)}
                             </p>
                           </motion.div>
                         )}
@@ -645,16 +679,12 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
                               {data.isUp ? t('Tendência de alta!') : t('Tendência de baixa')} {data.isCritical && t('• Ponto Crítico')}
                             </span>
                             
-                            <p className="leading-relaxed font-sans">
-                              {key === 'espiritual' ? (
-                                t("Seu lado espiritual está passando por um momento de transição de frequências, sendo este um período curto, mas propício a choques de realidade, questionamentos existenciais ou testes em sua confiança interna. Mantenha-se alinhada à sua fé e confie na ordem universal, escutando sempre seu coração ao tomar decisões sadios.")
-                              ) : key === 'perceptivo' ? (
-                                t("Sintonias sensoriais estão calibradas. Excelente momento para contemplar a natureza selvagem, perceber detalhes estéticos ocultos no trabalho ou exercitar o corpo físico de carne.")
-                              ) : key === 'intuitivo' ? (
-                                t("Intuição em altíssima fluência de luz. Confie em seus palpites viscerais repentinos e evite se sobrecarregar de lógicas burocráticas pesadas.")
-                              ) : (
-                                t("Estética refinada e criatividade pujante. Ideal para decorar cômodos do lar, desenhar novas frentes, comprar peças de vestuário e apreciar boa música.")
-                              )}
+                            <p className="text-[10px] text-indigo-300/80 font-mono italic">
+                              {t(details.desc)}
+                            </p>
+
+                            <p className="leading-relaxed font-sans text-slate-200">
+                              {getCycleExplanation(key, data.value)}
                             </p>
                           </motion.div>
                         )}
