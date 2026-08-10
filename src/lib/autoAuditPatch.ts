@@ -607,7 +607,7 @@ export const autoAuditPatch: Record<'en' | 'es' | 'de' | 'fr', Record<string, st
     "Mercúrio:": "Mercúrio:",
     "Metodologia de Efemérides": "Metodologia de Efemérides",
     "Meu Biorritmo": "Meu Biorritmo",
-    "Meu Mapa Astral Completo": "Meu Natal Chart Completo",
+    "Meu Mapa Astral Completo": "My Complete Birth Chart",
     "Migrando seu mapa local para a nuvem...": "Migrando seu mapa local para a nuvem...",
     "Minimizar dica": "Minimizar dica",
     "Missões Diárias Cósmicas": "Missões Diárias Cósmicas",
