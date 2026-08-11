@@ -4567,11 +4567,11 @@ export default function App() {
                 onChange={(e) => setLang(e.target.value as any)}
                 className="px-2 py-1.5 rounded-xl bg-slate-950 border border-slate-900 text-[10px] sm:text-xs text-slate-400 focus:outline-hidden cursor-pointer hover:border-amber-500/30 transition font-sans bg-slate-950"
               >
-                <option value="pt">🇧🇷 PT</option>
-                <option value="en">🇺🇸 EN</option>
-                <option value="es">🇪🇸 ES</option>
-                <option value="de">🇩🇪 DE</option>
-                <option value="fr">🇫🇷 FR</option>
+                <option value="pt">{t("🇧🇷 PT")}</option>
+                <option value="en">{t("🇺🇸 EN")}</option>
+                <option value="es">{t("🇪🇸 ES")}</option>
+                <option value="de">{t("🇩🇪 DE")}</option>
+                <option value="fr">{t("🇫🇷 FR")}</option>
               </select>
 
               {isInstalled ? (
@@ -4658,13 +4658,13 @@ export default function App() {
                   
                   {/* Subtle orbiting planet nodes */}
                   <circle cx="138" cy="80" r="2.5" className="fill-slate-100" />
-                  <text x="144" y="82" className="fill-slate-500 text-[6px] font-mono">SOL</text>
+                  <text x="144" y="82" className="fill-slate-500 text-[6px] font-mono">{t("SOL")}</text>
 
                   <circle cx="68" cy="120" r="2" className="fill-indigo-400" />
-                  <text x="54" y="126" className="fill-slate-500 text-[6px] font-mono">LUA</text>
+                  <text x="54" y="126" className="fill-slate-500 text-[6px] font-mono">{t("LUA")}</text>
 
-                  <text x="100" y="24" textAnchor="middle" className="fill-amber-400 text-[6px] font-mono font-black tracking-widest">PLACIDUS HOUSE MC</text>
-                  <text x="100" y="180" textAnchor="middle" className="fill-slate-500 text-[6px] font-mono tracking-widest">NADI FLOOR IC</text>
+                  <text x="100" y="24" textAnchor="middle" className="fill-amber-400 text-[6px] font-mono font-black tracking-widest">{t("PLACIDUS HOUSE MC")}</text>
+                  <text x="100" y="180" textAnchor="middle" className="fill-slate-500 text-[6px] font-mono tracking-widest">{t("NADI FLOOR IC")}</text>
                 </svg>
 
                 {/* Information readout overlays */}
@@ -5990,8 +5990,8 @@ export default function App() {
 
                 {/* Return button */}
                 <div className="border-t border-slate-800 pt-4 flex justify-between items-center text-[9px] font-mono text-slate-500">
-                  <span>SSL SECURE TRACE</span>
-                  <span>© CONSÓRCIO ÓRBITA</span>
+                  <span>{t("SSL SECURE TRACE")}</span>
+                  <span>{t("© CONSÓRCIO ÓRBITA")}</span>
                 </div>
 
               </div>

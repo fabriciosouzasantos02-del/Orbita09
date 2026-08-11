@@ -132,14 +132,16 @@ const corrections: Partial<Record<Language, Record<string, string>>> = {
     activeRealTarot: 'Aktiv • Echtes Orbia-Tarot',
     cardsDrawn: 'gezogene Karten',
     channelingAI: 'Orbías echte KI-Interpretation wird kanalisiert...',
-    viewNewReading: 'Neue Legung anzeigen'
+    viewNewReading: 'Neue Legung anzeigen',
+    tarotSoulMirror: 'Wisse, dass das Tarot ein Spiegel unserer Seele ist und das gesamte Spektrum der menschlichen Erfahrung durch Archetypen widerspiegelt. Es ist eine der ältesten Verbindungen zwischen Menschen und Gottheiten, die uns einem höheren Wesen näher bringen soll. Seine Untersuchung stellt eine Reise der inneren Entdeckung dar, bei der wir uns selbst und den gegenwärtigen Moment, in dem wir uns befinden, besser kennenlernen. Es ist ein Orakel, das Hand in Hand mit Astrologie und Alchemie geht, wobei auf seinen Karten für jeden Archetypen eine alchemistische Entsprechung, ein astrologisches Zeichen und eine Zahl angegeben sind. Die Karten können als eine Reise betrachtet werden, die uns hilft, die Vergangenheit, Gegenwart und Zukunft besser zu verstehen.'
   },
   fr: {
     tarotDescription: "Le Tarot est un miroir de notre âme et reflète tout le spectre de l'expérience humaine à travers des archétypes. Utilisez-le pour mieux comprendre le passé, le présent et le futur.",
     livingCounselDescription: "Conseils vivants et canalisations profondes sur votre vie amoureuse, votre travail et vos relations, ainsi qu'une protection contre le mauvais œil et la jalousie. Une expérience intuitive réaliste inspirée de consultations en personne.",
     dynamicMirrorReminder: 'Rappelez-vous que le Tarot est un miroir dynamique. Cette consultation a été consacrée à restructurer votre journée/semaine. Vos décisions libres et vos prières de protection façonnent la ligne temporelle de votre lendemain avec souveraineté.',
     consultationGuidance: "Une consultation apportera des révélations susceptibles d'influencer la ligne temporelle de votre vie. Réfléchissez donc à ce qui vous a été transmis de manière intuitive et consciente. La carte choisie est celle qui a le plus d'affinité avec votre moment ou votre question et apporte l'orientation la plus appropriée. Même si vous ne recevez pas la réponse souhaitée, il n'est pas recommandé de répéter le tirage immédiatement. Relisez le contenu de la carte et réfléchissez au message transmis, car il apporte le meilleur conseil pour vous en ce moment.",
-    lunarAdvice: "Ne précipitez pas les événements sacrés de demain. L’énergie de la Lune rappelle que les illusions et la jalousie de tiers se dissipent dans le brouillard lorsque nous nous réfugions dans la prière et prenons un bain de sauge ou de rue."
+    lunarAdvice: "Ne précipitez pas les événements sacrés de demain. L’énergie de la Lune rappelle que les illusions et la jalousie de tiers se dissipent dans le brouillard lorsque nous nous réfugions dans la prière et prenons un bain de sauge ou de rue.",
+    tarotSoulMirror: "Sachez que le Tarot est un miroir de notre âme et reflète tout le spectre de l'expérience humaine à travers des archétypes. C'est l'une des connexions les plus anciennes entre les êtres humains et les divinités, ayant pour rôle de nous rapprocher de quelque chose de supérieur. Son étude représente un voyage de découverte intérieure, où nous apprenons à mieux nous connaître nous-mêmes et le moment actuel dans lequel nous sommes insérés. C'est un oracle qui marche main dans la main avec l'astrologie et l'alchimie, où dans ses cartes il y a une correspondance alchimique, un signe astrologique et un nombre pour chaque archétype. Les cartes peuvent être considérées comme un voyage qui nous aide à obtenir une meilleure compréhension du passé, du présent et du futur."
   }
 };
 
