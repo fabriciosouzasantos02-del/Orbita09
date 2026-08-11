@@ -18,6 +18,7 @@ import { customFeaturesTranslations } from './customFeatures';
 import { dynamicContentTranslations } from './dynamicContent';
 import { cupidoTranslations } from './cupido';
 import { uiTranslations } from './ui';
+import { interfaceSemanticTranslations } from './interfaceSemantic';
 import { localLangDict } from '../lib/locales';
 import { uiTranslationsMultilang } from '../components/numerologyTranslations';
 
@@ -41,6 +42,7 @@ const modules = [
   dynamicContentTranslations,
   cupidoTranslations,
   uiTranslations,
+  interfaceSemanticTranslations,
   localLangDict as unknown as Record<Language, Record<string, string>>,
   uiTranslationsMultilang as Record<Language, Record<string, string>>
 ];
