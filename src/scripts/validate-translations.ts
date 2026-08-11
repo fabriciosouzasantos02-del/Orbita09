@@ -1,4 +1,5 @@
 import { mergedTranslations } from '../i18n';
+import { isLegacyTranslationKey } from '../i18n/keyPolicy';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -22,27 +23,23 @@ const allKeysByLang = languages.map(lang => ({
 const ptKeys = allKeysByLang.find(item => item.lang === 'pt')?.keys || [];
 console.log(`🔑 Base language (pt) contains ${ptKeys.length} keys.`);
 
-// Verify 100% key parity across all 5 languages
 for (const lang of languages) {
   const currentKeys = Object.keys(mergedTranslations[lang] || {});
-  
-  // Check missing keys compared to PT
   const missing = ptKeys.filter(k => !currentKeys.includes(k));
+  const extra = currentKeys.filter(k => !ptKeys.includes(k));
+
   if (missing.length > 0) {
     console.error(`❌ Language "${lang}" has missing translation keys (Total: ${missing.length}):`);
     missing.slice(0, 10).forEach(key => console.error(`   - "${key}"`));
     hasErrors = true;
   }
-  
-  // Check extra keys compared to PT
-  const extra = currentKeys.filter(k => !ptKeys.includes(k));
+
   if (extra.length > 0) {
     console.error(`❌ Language "${lang}" has keys missing from base PT (Total: ${extra.length}):`);
     extra.slice(0, 10).forEach(key => console.error(`   - "${key}"`));
     hasErrors = true;
   }
 
-  // Check for undefined, null, or empty string values
   let invalidCount = 0;
   for (const key of currentKeys) {
     const val = mergedTranslations[lang][key];
@@ -64,13 +61,23 @@ for (const lang of languages) {
 }
 
 // ==========================================
-// 2. Architectural Check: No Silent Fallbacks
+// 2. Semantic-Key Migration Gate
 // ==========================================
-console.log('\n🛡️ STEP 2: Checking Architectural Rule: No Silent Fallback to Portuguese...');
+console.log('\n🧭 STEP 2: Auditing translation keys for the semantic-ID migration...');
+
+const legacyKeys = ptKeys.filter(isLegacyTranslationKey);
+console.log(`⚠️ Legacy/non-semantic keys still present: ${legacyKeys.length}`);
+if (legacyKeys.length > 0) {
+  console.log('   These keys are temporarily allowed during migration, but MUST NOT be used for new translations.');
+  legacyKeys.slice(0, 20).forEach(key => console.log(`   - ${JSON.stringify(key)}`));
+}
+
+// ==========================================
+// 3. Architectural Check: No Silent Fallbacks
+// ==========================================
+console.log('\n🛡️ STEP 3: Checking Architectural Rule: No Silent Fallback to Portuguese...');
 
 const srcDir = path.resolve(process.cwd(), 'src');
-
-// Check i18n configuration for fallbackLng: false
 const i18nConfigPath = path.join(srcDir, 'lib', 'i18n.ts');
 if (fs.existsSync(i18nConfigPath)) {
   const i18nConfigContent = fs.readFileSync(i18nConfigPath, 'utf8');
@@ -82,7 +89,6 @@ if (fs.existsSync(i18nConfigPath)) {
   }
 }
 
-// Check translations helper for silent PT fallbacks
 const translationsHelperPath = path.join(srcDir, 'translations.ts');
 if (fs.existsSync(translationsHelperPath)) {
   const helperContent = fs.readFileSync(translationsHelperPath, 'utf8');
@@ -95,13 +101,12 @@ if (fs.existsSync(translationsHelperPath)) {
 }
 
 // ==========================================
-// 3. Reactivity & Persistence Infrastructure Check
+// 4. Reactivity & Persistence Infrastructure Check
 // ==========================================
-console.log('\n🔄 STEP 3: Checking Idioma Context & Reactivity Infrastructure...');
+console.log('\n🔄 STEP 4: Checking Idioma Context & Reactivity Infrastructure...');
 
 const i18nIndexPath = path.join(srcDir, 'i18n', 'index.ts');
 const contextPath = path.join(srcDir, 'context', 'IdiomaContext.tsx');
-
 let persistenceValid = false;
 let reactivityValid = false;
 
@@ -128,55 +133,47 @@ if (!persistenceValid || !reactivityValid) {
 }
 
 // ==========================================
-// 4. Code Base Scanner (JSX, TSX, Arrays, Objects, Hooks, Constants)
+// 5. Code Base Scanner
 // ==========================================
-console.log('\n🔍 STEP 4: Scanning codebase for hardcoded literals & non-i18n UI strings...');
+console.log('\n🔍 STEP 5: Scanning codebase for hardcoded literals & non-i18n UI strings...');
 
 function scanDirectory(dir: string) {
   if (!fs.existsSync(dir)) return;
-  
   const files = fs.readdirSync(dir);
   for (const file of files) {
     const fullPath = path.join(dir, file);
     const stat = fs.statSync(fullPath);
-    
+
     if (stat.isDirectory()) {
       if (['i18n', 'scripts', 'node_modules'].includes(file)) continue;
       scanDirectory(fullPath);
     } else if ((file.endsWith('.tsx') || file.endsWith('.ts')) && !file.endsWith('.d.ts')) {
       if (['translations.ts', 'check-translations.ts', 'check-numerology-translations.ts', 'validate-translations.ts', 'audit-i18n.ts'].includes(file)) continue;
       const content = fs.readFileSync(fullPath, 'utf8');
-      
       const lines = content.split('\n');
+
       lines.forEach((line, index) => {
         const trimmed = line.trim();
         if (
-          trimmed.startsWith('import') ||
-          trimmed.startsWith('//') ||
-          trimmed.startsWith('*') ||
-          trimmed.startsWith('/*') ||
-          trimmed.startsWith('interface ') ||
-          trimmed.startsWith('type ') ||
-          line.includes('console.log') ||
-          line.includes('console.error') ||
-          line.includes('useTranslation') ||
-          line.includes('translateUiText') ||
-          line.includes('t(') ||
-          line.includes('tI18n') ||
-          line.includes(': Record<')
-        ) {
-          return;
-        }
+          trimmed.startsWith('import') || trimmed.startsWith('//') || trimmed.startsWith('*') ||
+          trimmed.startsWith('/*') || trimmed.startsWith('interface ') || trimmed.startsWith('type ') ||
+          line.includes('console.log') || line.includes('console.error') || line.includes('useTranslation') ||
+          line.includes('translateUiText') || line.includes('tI18n') || line.includes(': Record<')
+        ) return;
 
-        // Check JSX literal text in elements
-        const rawTextMatch = line.match(/>([^<>{}\s\d\r\n\t]+(?: [^<>{}\s\d\r\n\t]+)*)</);
-        if (rawTextMatch && rawTextMatch[1]) {
-          const matchedText = rawTextMatch[1].trim();
-          if (matchedText.length > 2 && !['&times;', '...', '||', '•', '→', '←', '↑', '↓', '★', '⚡'].includes(matchedText)) {
-            console.warn(`⚠️  Hardcoded text warning in ${path.relative(process.cwd(), fullPath)}:${index + 1}:`);
-            console.warn(`   Line: "${line.trim()}"`);
-            console.warn(`   Found raw text: "${matchedText}". Please register a translation key instead!`);
-          }
+        // Do not skip t(...) lines here: legacy phrase keys are themselves part
+        // of the migration inventory and must remain visible to the audit.
+        const rawTextMatches = [
+          ...line.matchAll(/>([^<>{}\s\d\r\n\t][^<>{}\r\n\t]*)</g),
+          ...line.matchAll(/(?:placeholder|title|aria-label|aria-description|alt)=['"]([^'"]{3,})['"]/g),
+          ...line.matchAll(/\bt\(\s*['"]([^'"]{3,})['"]/g)
+        ];
+
+        for (const match of rawTextMatches) {
+          const matchedText = match[1]?.trim();
+          if (!matchedText || matchedText.length <= 2) continue;
+          if (['&times;', '...', '||', '•', '→', '←', '↑', '↓', '★', '⚡'].includes(matchedText)) continue;
+          console.warn(`⚠️  Potential non-semantic/hardcoded text in ${path.relative(process.cwd(), fullPath)}:${index + 1}: "${matchedText}"`);
         }
       });
     }
@@ -193,4 +190,3 @@ if (hasErrors) {
   console.log('✨ All i18n automated architectural checks passed successfully!');
   process.exit(0);
 }
-
