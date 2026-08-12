@@ -880,8 +880,24 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
 
       if (res.ok) {
         const data = await res.json();
-        setInterpretation(data.reading);
-        setGuidance(data.guidance);
+        const reading = (data && typeof data.reading === 'string' && data.reading.trim().length > 0)
+          ? data.reading
+          : (lang === 'en' ? `Dear ${userName || 'Seeker'}, the cards indicate a moment of transition and deep spiritual reflection.` :
+             lang === 'es' ? `Querido(a) ${userName || 'Buscador'}, las cartas indican un momento de transición y profunda reflexión espiritual.` :
+             lang === 'de' ? `Liebe(r) ${userName || 'Suchender'}, die Karten weisen auf einen Moment des Übergangs hin.` :
+             lang === 'fr' ? `Cher/Chère ${userName || 'Chercheur'}, les cartes indiquent un moment de transition.` :
+             `Querido(a) ${userName || 'Buscador'}, as cartas indicam um momento de transição e profundo crescimento espiritual.`);
+
+        const guidance = (data && typeof data.guidance === 'string' && data.guidance.trim().length > 0)
+          ? data.guidance
+          : (lang === 'en' ? 'Trust in your inner wisdom and protect your energy.' :
+             lang === 'es' ? 'Confía en tu sabiduría interior y protege tu energía.' :
+             lang === 'de' ? 'Vertraue auf deine innere Weisheit und schütze deine Energie.' :
+             lang === 'fr' ? 'Faites confiance à votre sagesse intérieure et protégez votre énergie.' :
+             'Confie em sua sabedoria interior e proteja seu campo energético.');
+
+        setInterpretation(reading);
+        setGuidance(guidance);
 
         // PERSIST the reading so user cannot draw again of that mode today
         const nowTimestamp = Date.now();
@@ -891,8 +907,8 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
         const expectedChartId = currentChartId || (birthDate ? `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}` : 'default');
         const uKey = getUserKey();
         localStorage.setItem(`tarot_last_draw_${uKey}_${activeMode}`, nowTimestamp.toString());
-        localStorage.setItem(`tarot_saved_reading_${uKey}_${activeMode}`, data.reading);
-        localStorage.setItem(`tarot_saved_guidance_${uKey}_${activeMode}`, data.guidance);
+        localStorage.setItem(`tarot_saved_reading_${uKey}_${activeMode}`, reading);
+        localStorage.setItem(`tarot_saved_guidance_${uKey}_${activeMode}`, guidance);
         localStorage.setItem(`tarot_saved_cards_${uKey}_${activeMode}`, JSON.stringify(tempDrawnCards));
         localStorage.setItem(`tarot_saved_map_${uKey}_${activeMode}`, JSON.stringify(cardMapping));
         localStorage.setItem(`tarot_saved_indices_${uKey}_${activeMode}`, JSON.stringify(revealedIndices));
@@ -920,12 +936,12 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
           cartas: tempDrawnCards,
           cards: tempDrawnCards,
           interpretação: {
-            reading: data.reading,
-            guidance: data.guidance
+            reading: reading,
+            guidance: guidance
           },
           interpretation: {
-            reading: data.reading,
-            guidance: data.guidance
+            reading: reading,
+            guidance: guidance
           }
         };
         if (userEmail) {

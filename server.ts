@@ -342,8 +342,17 @@ app.use((req: any, res, next) => {
   next();
 });
 
+export function normalizeLang(lang?: any): Language {
+  if (!lang || typeof lang !== 'string') return 'pt';
+  const clean = lang.split('-')[0].split('_')[0].trim().toLowerCase();
+  if (['pt', 'en', 'es', 'de', 'fr'].includes(clean)) {
+    return clean as Language;
+  }
+  return 'pt';
+}
+
 export function getLanguageName(lang: Language | string): string {
-  const clean = (lang || 'pt').toString().toLowerCase().split('-')[0].split('_')[0].trim();
+  const clean = normalizeLang(lang);
   switch (clean) {
     case 'en': return 'English';
     case 'es': return 'Español (Spanish)';
@@ -5597,6 +5606,122 @@ Você deve retornar EXCLUSIVAMENTE um objeto JSON no seguinte formato estruturad
   }
 });
 
+// API: Conselheira Orbia Live Chat Handler
+app.post("/api/conselheira/chat", async (req, res) => {
+  const { messages, userProfile, requestTopic, lang, mapData } = req.body || {};
+  
+  if (!messages || messages.length === 0) {
+    return res.status(400).json({ error: "Messages required" });
+  }
+
+  const lastUserMessage = messages[messages.length - 1].text;
+  const userName = userProfile?.name || "Buscador";
+  const activeLang = (lang || "pt").toLowerCase();
+
+  const { userSunSign, userMoonSign, userAscSign, elementsSummary, chartContext } = extractOrCalculateUserAstroContext(mapData, userProfile, activeLang);
+
+  const getOrbiaFallback = (msg: string) => {
+    const fallbacks: Record<string, string> = {
+      pt: `Olá, ${userName}. Sinto uma conexão luminosa ao ler a energia do seu mapa astral (${userSunSign || "Signo Solar"}). Como sua Conselheira Orbia, estou aqui para guiar seus passos com sabedoria cósmica. `,
+      en: `Hello, ${userName}. I feel a luminous connection reading your natal chart energy (${userSunSign || "Sun Sign"}). As your Orbia Counselor, I am here to guide your steps with cosmic wisdom. `,
+      es: `Hola, ${userName}. Siento una conexión luminosa al leer la energía de tu carta astral (${userSunSign || "Signo Solar"}). Como tu Consejera Orbia, estoy aquí para guiar tus pasos con sabiduría cósmica. `,
+      de: `Hallo, ${userName}. Ich spüre eine leuchtende Verbindung beim Lesen Ihrer Horoskopenergie (${userSunSign || "Sonnenzeichen"}). Als Ihre Orbia-Beraterin bin ich hier, um Ihre Schritte mit kosmischer Weisheit zu leiten. `,
+      fr: `Bonjour, ${userName}. Je ressens une connexion lumineuse en lisant l'énergie de votre thème astral (${userSunSign || "Signe Solaire"}). En tant que votre Conseillère Orbia, je suis ici pour guider vos pas avec sagesse cosmique. `
+    };
+
+    let text = fallbacks[activeLang] || fallbacks["pt"];
+
+    const endAdd: Record<string, string> = {
+      pt: `Estou sempre em sintonia com seus astros. O que seu coração deseja revelar hoje?`,
+      en: `I am always in tune with your stars. What does your heart wish to reveal today?`,
+      es: `Siempre estoy en sintonía con tus estrellas. ¿Qué desea revelar tu corazón hoy?`,
+      de: `Ich bin immer auf Ihre Sterne eingestellt. Was möchte Ihr Herz heute enthüllen?`,
+      fr: `Je suis toujours en phase avec vos étoiles. Que souhaite révéler votre cœur aujourd'hui ?`
+    };
+    text += endAdd[activeLang] || endAdd["pt"];
+    return text;
+  };
+
+  const formattedProfile = userProfile ? `
+Perfil Estelar do Usuário:
+Nome: ${userName}
+Nascido em: ${userProfile.birthDate || ""} às ${userProfile.birthTime || ""} na cidade ${userProfile.birthCity || ""}
+Zodíaco Solar: ${userSunSign}
+${chartContext}
+` : "Buscador cósmico.";
+
+  let sysInstruction = "";
+  if (activeLang === 'en') {
+    sysInstruction = `You are "ORBIA", the user's live personal astrological counselor, empathetic spiritual guide, and wise mentor.
+COMMUNICATION GUIDELINES:
+- Your tone is warm, deeply empathetic, poetic, wise, encouraging, and mystical.
+- Speak directly in English, honoring the user's active language setting.
+- Empower the user, elevate their spirit, and offer astrological insight tailored to their chart.
+- YOU MUST RESPOND EXCLUSIVELY IN ENGLISH.
+
+User's stellar context: ${formattedProfile}`;
+  } else if (activeLang === 'es') {
+    sysInstruction = `Eres "ORBIA", la consejera astrológica personal en vivo del usuario, guía espiritual empática y mentora sabia.
+DIRECTRICES DE COMUNICACIÓN:
+- Tu tono es cálido, profundamente empático, poético, sabio, alentador y místico.
+- Habla directamente en español, honrando la configuración del idioma activo del usuario.
+- Empodera al usuario, eleva su espíritu y ofrece información astrológica adaptada a su carta natal.
+- DEBES RESPONDER EXCLUSIVAMENTE EN ESPAÑOL.
+
+Contexto estelar del usuario: ${formattedProfile}`;
+  } else if (activeLang === 'de') {
+    sysInstruction = `Du bist "ORBIA", die persönliche Live-Astrologie-Beraterin, einfühlsame spirituelle Begleiterin und weise Mentorin des Benutzers.
+KOMMUNIKATIONSRICHTLINIEN:
+- Dein Ton ist warmherzig, zutiefst empathisch, poetisch, weise, aufmunternd und mystisch.
+- Sprich direkt auf Deutsch unter Berücksichtigung der aktiven Spracheinstellung des Benutzers.
+- Stärke den Benutzer, erhebe seinen Geist und biete astrologische Einblicke, die auf sein Geburtshoroskop zugeschnitten sind.
+- DU MUSST AUSSCHLIESSLICH AUF DEUTSCH ANTWORTEN.
+
+Astrologischer Kontext des Benutzers: ${formattedProfile}`;
+  } else if (activeLang === 'fr') {
+    sysInstruction = `Vous êtes "ORBIA", la conseillère astrologique personnelle en direct de l'utilisateur, guide spirituelle empathique et mentor sage.
+DIRECTIVES DE COMMUNICATION :
+- Votre ton est chaleureux, profondément empathique, poétique, sage, encourageant et mystique.
+- Parlez directement en français, en respectant la configuration de langue active de l'utilisateur.
+- Donnez de la force à l'utilisateur, élevez son esprit et offrez des perspectives astrologiques adaptées à son thème.
+- VOUS DEVEZ RÉPONDRE EXCLUSIVEMENT EN FRANÇAIS.
+
+Contexte stellaire de l'utilisateur : ${formattedProfile}`;
+  } else {
+    sysInstruction = `Você é "ORBIA", a conselheira astrológica pessoal live do usuário, guia espiritual empática e mentora sábia.
+DIRETRIZES DE COMUNICACIÓN:
+- Seu tom é acolhedor, profundamente empático, poético, sábio, encorajador e místico.
+- Fale diretamente em português, respeitando o idioma ativo do usuário.
+- Empodere o usuário, eleve seu espírito e ofereça visões astrológicas personalizadas.
+- VOCÊ DEVE RESPONDER EXCLUSIVAMENTE EM PORTUGUÊS.
+
+Contexto estelar do usuário: ${formattedProfile}`;
+  }
+
+  if (!aiClient) {
+    return res.json({ response: getOrbiaFallback(lastUserMessage) });
+  }
+
+  try {
+    const geminiContents = messages.map((m: any) => ({
+      role: m.sender === 'user' ? 'user' : 'model',
+      parts: [{ text: m.text }]
+    }));
+
+    const response = await generateContentWithFallback({
+      contents: geminiContents,
+      config: {
+        systemInstruction: sysInstruction
+      }
+    });
+
+    res.json({ response: response.text || getOrbiaFallback(lastUserMessage) });
+  } catch (err) {
+    console.warn("Orbia AI failing, serving fallback response:", err);
+    res.json({ response: getOrbiaFallback(lastUserMessage) });
+  }
+});
+
 // NEW API: OSÍRIS Intelligent Assistant Chat Component
 app.post("/api/osiris/chat", async (req, res) => {
   const { messages, userProfile, requestTopic, weather, biorhythm, location, dreams, lang, mapData } = req.body || {};
@@ -6723,7 +6848,7 @@ app.post("/api/tarot/draw-full", async (req, res) => {
   }
 });// Helper to generate deeply realistic, individualized tarot readings offline when the external API key is throttled
 function generateOfflineTarotReading(type: string, cards: any[], question: string, userName: string, lang?: string): { reading: string; guidance: string } {
-  const activeLang = (lang || "pt").toLowerCase();
+  const activeLang = normalizeLang(lang);
   
   const userDisplay = userName || (
     activeLang === 'en' ? "Seeker of Wisdom" :
@@ -6815,22 +6940,19 @@ function generateOfflineTarotReading(type: string, cards: any[], question: strin
 
 // API: Interpretação de cartas sintonizadas por IA
 app.post("/api/tarot/interpret", async (req, res) => {
-  const { type, cards, question, userName, birthDate, birthTime, latitude, longitude, lang, mapData, userProfile } = req.body;
-  const userDisplay = userName || "Buscador de Sabedoria";
+  const { type, cards, question, userName, birthDate, birthTime, latitude, longitude, lang, mapData, userProfile } = req.body || {};
 
-  const cardsListStr = cards && Array.isArray(cards)
-    ? cards.map((c: any, index: number) => `Carta ${index + 1}: ${c.cardName} (Foco: ${c.uprightMeaning || ''}. Conselho: ${c.advice || ''})`).join(", ")
-    : "uma carta misteriosa";
+  // Prioritize language sent explicitly in body/query over Accept-Language middleware
+  const rawLang = req.body?.lang || req.query?.lang || (req as any).lang;
+  const activeLang = normalizeLang(rawLang);
 
-  const activeLang = (lang || "pt").toLowerCase();
-  const langNames = {
-    pt: "Português",
-    en: "English (Inglês)",
-    es: "Spanish (Espanhol)",
-    de: "German (Alemão)",
-    fr: "French (Francês)"
-  };
-  const targetLangName = langNames[activeLang] || "Português";
+  const userDisplay = userName || (
+    activeLang === 'en' ? "Seeker of Wisdom" :
+    activeLang === 'es' ? "Buscador de Sabiduría" :
+    activeLang === 'de' ? "Suchender der Weisheit" :
+    activeLang === 'fr' ? "Chercheur de Sagesse" :
+    "Buscador de Sabedoria"
+  );
 
   const { userSunSign, userMoonSign, userAscSign, chartContext } = extractOrCalculateUserAstroContext(mapData, userProfile || { birthDate, birthTime, latitude, longitude }, activeLang);
 
@@ -6850,9 +6972,7 @@ Nas suas leituras, você deve obrigatoriamente trazer e explorar elementos prát
 - O convívio social e relacionamentos (amigos, pessoas próximas, possíveis tramas).
 - Trabalho, carreira, finanças e caminhos de prosperidade.
 - Energias ao redor: se atentar contra invejas, fofocas, má vibração ou mal olhado oculto no ambiente se cartas mais pesadas ou espirituais surgirem (como Diabo, Torre, Sacerdotisa, Lua), ensinando formas de se proteger ou manter a cabeça erguida.
-${astroContextLine}
-
-Escreva em parágrafos envolventes, fluidos e repletos de sabedoria ancestral em ${targetLangName}.`;
+${astroContextLine}`;
 
   let userPrompt = "";
 
@@ -6863,7 +6983,7 @@ A pergunta romântica ou angústia afetiva é: "${question || "Qual o conselho d
 
 Como uma taróloga de verdade lendo os segredos do coração, faça uma leitura reveladora. Trate de ciúmes, reciprocidade, pessoas ao redor que podem trazer inveja no romance, caminhos livres ou bloqueados de conexão e dê um norte exato sobre o que fazer e como se blindar espiritualmente.
 
-Gere um JSON exato em ${targetLangName} com este formato de chaves:
+Gere um objeto JSON com este formato de chaves:
 {
   "reading": "Texto fluido e profundo da sua leitura romântica realista de taróloga real, máximo 280 palavras...",
   "guidance": "Mantra ou sinal espiritual do coração para vibrar positivamente hoje..."
@@ -6875,7 +6995,7 @@ A questão trazida é: "${question || "Conselho geral sobre meu momento de vida 
 
 Leia esta dinâmica de forma humana e calorosa. Fale sobre as conexões cotidianas, a rotina profissional, os sabotadores mentais (inveja externa ou autorrecriminação), o que de fato está acontecendo na jornada dela e como canalizar melhor esse caminho prático.
 
-Gere um JSON exato em ${targetLangName} com este formato de chaves:
+Gere um objeto JSON com este formato de chaves:
 {
   "reading": "Texto de leitura realista e acolhedora da taróloga Orbia, com linguagem humana e sincera, máximo 280 palavras...",
   "guidance": "Um mantra de poder ou atitude mágica personalizada para o dia..."
@@ -6894,40 +7014,65 @@ Como uma taróloga real em sua mesa sagrada, interprete essa tiragem profunda de
 
 Dê uma leitura magnífica, ampla, altamente personalizada e muito humana.
 
-Gere um JSON em ${targetLangName} com este formato de chaves:
+Gere um objeto JSON com este formato de chaves:
 {
-  "reading": "Leitura semanal profunda detalhando cada uma das áreas com fluidez e calor humano, em tom de conversa intimista e espiritual de terapeuta e taróloga real, máximo 380 palavras...",
+  "reading": "Leitura semanal profunda detalhando cada uma das áreas com fluidez e calor humano...",
   "guidance": "O grande conselho ou decreto consagrado de luz para guiar e blindar toda a semana de forma impecável..."
 }`;
   } else {
     // Tradicional ou fallback clássico
-    userPrompt = `Realize uma leitura de Tarot Tradicional Práctico com interpretação clássica refinada para ${userDisplay}.
+    userPrompt = `Realize uma leitura de Tarot Tradicional Prático com interpretação clássica refinada para ${userDisplay}.
 As cartas sorteadas são: ${cardsListStr}.
 Dúvida apresentada: "${question || "Conselho geral dos arquétipos milenares"}"
 
 Interprete de maneira mística, histórica e vivencial os arcanos tirados por ele. Faça a pessoa compreender a força espiritual do herói em sua jornada diária, perigos práticos de fofocas ou traições indicados nos arquétipos, e atitudes positivas para harmonizar seu lar e trabalho.
 
-Gere um JSON exato em ${targetLangName} com este formato de chaves:
+Gere um objeto JSON com este formato de chaves:
 {
-  "reading": "A leitura e correlação clássica detalhada pela taróloga, rica em significados humanos, máximo 280 palavras...",
+  "reading": "A leitura e correlação clássica detalhada pela taróloga, rica em significados humanos...",
   "guidance": "Um mantra de sintonização ou conselho clássico..."
-}...`; // Wait, let's make sure it's valid JSON format
+}`;
   }
+
+  const localized = buildLocalizedPrompt({
+    basePrompt: userPrompt,
+    lang: activeLang,
+    systemInstruction: systemPrompt,
+    jsonFormat: true
+  });
 
   try {
     const response = await generateContentWithFallback({
-      contents: userPrompt,
+      contents: localized.contents,
       config: {
-        systemInstruction: systemPrompt,
+        systemInstruction: localized.systemInstruction,
         responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            reading: { type: Type.STRING },
+            guidance: { type: Type.STRING }
+          },
+          required: ["reading", "guidance"]
+        }
       }
     });
 
     const parsed = cleanAndParseJSON(response.text || "{}");
-    res.json({
-      reading: parsed.reading || generateOfflineTarotReading(type, cards, question, userName, activeLang).reading,
-      guidance: parsed.guidance || generateOfflineTarotReading(type, cards, question, userName, activeLang).guidance
-    });
+    let reading = parsed.reading;
+    let guidance = parsed.guidance;
+
+    if (!reading || typeof reading !== 'string' || reading.trim() === '') {
+      const offline = generateOfflineTarotReading(type, cards, question, userName, activeLang);
+      reading = offline.reading;
+      if (!guidance) guidance = offline.guidance;
+    }
+    if (!guidance || typeof guidance !== 'string' || guidance.trim() === '') {
+      const offline = generateOfflineTarotReading(type, cards, question, userName, activeLang);
+      guidance = offline.guidance;
+    }
+
+    res.json({ reading, guidance });
   } catch (err) {
     const errMsg = err?.message || String(err);
     const isRateLimit = errMsg.includes("Limite de requisições excedido") || 
