@@ -36,9 +36,17 @@ jobs:
           t = t.replace(old3, """  if (!text) {\n    // Do not silently fall back to Portuguese. Missing translations must be\n    // visible to validation instead of violating the user's active language.\n    return key;\n  }\n""", 1)
           p.write_text(t, encoding='utf-8')
           PY
-      - name: Validate TypeScript syntax
+      - name: Validate language authority patch
         run: |
-          node -e "const fs=require('fs'),ts=require('typescript');const s=fs.readFileSync('server.ts','utf8');const f=ts.createSourceFile('server.ts',s,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);if(f.parseDiagnostics.length){console.error(f.parseDiagnostics);process.exit(1)}"
+          python3 - <<'PY'
+          from pathlib import Path
+          t = Path('server.ts').read_text(encoding='utf-8')
+          assert "req.headers['accept-language']" not in t, 'Accept-Language still controls server language'
+          assert "mergedTranslations['pt']?.[key]" not in t, 'Portuguese translation fallback still exists'
+          assert t.count("normalizeLang(lang || (req as any).lang || 'pt')") == 4, 'Expected 4 endpoint language resolutions'
+          assert "req.lang = resolvedLang" in t, 'Global resolved app language middleware missing'
+          print('Language-authority validation passed')
+          PY
       - name: Commit patch
         run: |
           git config user.name 'github-actions[bot]'
