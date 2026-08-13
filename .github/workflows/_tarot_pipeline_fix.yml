@@ -18,56 +18,58 @@ jobs:
           ref: fix/global-user-language-authority
           fetch-depth: 0
 
-      - name: Patch Tarot frontend and backend
+      - name: Verify and complete Tarot locale transport
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
-          server = Path('server.ts')
-          text = server.read_text(encoding='utf-8')
-
-          old = '''  const rawLang = req.body?.lang || req.query?.lang || (req as any).lang;\n  const activeLang = normalizeLang(rawLang);\n\n  const userDisplay = userName || ('''
-          new = '''  const rawLang = req.body?.lang || req.query?.lang || (req as any).lang;\n  const activeLang = normalizeLang(rawLang);\n  const cardsListStr = Array.isArray(cards)\n    ? cards\n        .map((card: any) => card?.cardName || card?.nome || card?.name)\n        .filter((name: any): name is string => typeof name === "string" && name.trim().length > 0)\n        .join(", ")\n    : "";\n\n  const userDisplay = userName || ('''
-          if old not in text:
-              raise SystemExit('server.ts anchor not found; aborting')
-          text = text.replace(old, new, 1)
-          server.write_text(text, encoding='utf-8')
-
           tarot = Path('src/TarotSystem.tsx')
           text = tarot.read_text(encoding='utf-8')
 
-          old_headers = '''        headers: { 'Content-Type': 'application/json' },'''
-          new_headers = '''        headers: {\n          'Content-Type': 'application/json',\n          'X-App-Lang': lang || 'pt'\n        },'''
-          if old_headers not in text:
-              raise SystemExit('TarotSystem fetch headers anchor not found; aborting')
-          text = text.replace(old_headers, new_headers, 1)
+          endpoint = "fetch('/api/tarot/interpret', {"
+          start = text.index(endpoint)
+          body_start = text.index("        body: JSON.stringify({", start)
+          header_segment = text[start:body_start]
+          if "X-App-Lang" not in header_segment:
+              old = "        headers: { 'Content-Type': 'application/json' },\n"
+              pos = text.index(old, start, body_start)
+              new = "        headers: {\n          'Content-Type': 'application/json',\n          'X-App-Lang': lang || 'pt'\n        },\n"
+              text = text[:pos] + new + text[pos + len(old):]
 
-          old_fallback = '''      const fallbackReading = `Querido(a) ${userName}, as cartas indicam que você passa por um momento de grande peso emocional. Atente-se contra fofocas ou sentimentos invejosos no ambiente laboral e convívio cotidiano. Faça uma oração sincera de blindagem e limpe velhos apegos.`;\n      const fallbackGuidance = "Sinto que o amor cósmico cura suas dores. Consagre seu dia e confie no mistério.";'''
-          new_fallback = '''      const fallbackByLanguage: Record<string, { reading: string; guidance: string }> = {\n        pt: {\n          reading: `Querido(a) ${userName || 'Buscador'}, as cartas indicam um momento de grande peso emocional. Atente-se contra fofocas ou sentimentos invejosos no ambiente laboral e convívio cotidiano. Faça uma oração sincera de blindagem e limpe velhos apegos.`,\n          guidance: 'Sinto que o amor cósmico cura suas dores. Consagre seu dia e confie no mistério.'\n        },\n        en: {\n          reading: `Dear ${userName || 'Seeker'}, the cards indicate a moment of deep emotional weight. Be mindful of gossip or envious feelings around work and daily life. Offer a sincere prayer for protection and release old attachments.`,\n          guidance: 'Trust that cosmic love can heal your pain. Consecrate your day and trust the mystery.'\n        },\n        es: {\n          reading: `Querido(a) ${userName || 'Buscador'}, las cartas indican un momento de gran peso emocional. Presta atención a los chismes o sentimientos de envidia en el entorno laboral y cotidiano. Haz una oración sincera de protección y libera viejos apegos.`,\n          guidance: 'Confía en que el amor cósmico puede sanar tus dolores. Consagra tu día y confía en el misterio.'\n        },\n        de: {\n          reading: `Liebe(r) ${userName || 'Suchende(r)'}, die Karten weisen auf eine Zeit großer emotionaler Belastung hin. Achten Sie auf Klatsch oder neidische Gefühle im beruflichen und täglichen Umfeld. Sprechen Sie ein aufrichtiges Schutzgebet und lösen Sie alte Bindungen.`,\n          guidance: 'Vertraue darauf, dass kosmische Liebe deine Schmerzen heilen kann. Widme deinen Tag und vertraue dem Mysterium.'\n        },\n        fr: {\n          reading: `Cher/Chère ${userName || 'Chercheur'}, les cartes indiquent une période de forte charge émotionnelle. Soyez attentif aux commérages ou aux sentiments envieux dans votre environnement professionnel et quotidien. Faites une prière sincère de protection et libérez les anciens attachements.`,\n          guidance: 'Faites confiance à l’amour cosmique pour guérir vos douleurs. Consacrez votre journée et faites confiance au mystère.'\n        }\n      };\n      const normalizedLang = (lang || 'pt').toLowerCase().split('-')[0];\n      const fallback = fallbackByLanguage[normalizedLang] || fallbackByLanguage.pt;\n      const fallbackReading = fallback.reading;\n      const fallbackGuidance = fallback.guidance;'''
-          if old_fallback not in text:
-              raise SystemExit('TarotSystem fallback anchor not found; aborting')
-          text = text.replace(old_fallback, new_fallback, 1)
           tarot.write_text(text, encoding='utf-8')
           PY
 
-      - name: Verify exact repair
+      - name: Static verification
         shell: bash
         run: |
           grep -n "const cardsListStr" server.ts
-          grep -n "X-App-Lang" src/TarotSystem.tsx
+          grep -n "X-App-Lang.*lang" src/TarotSystem.tsx
           grep -n "fallbackByLanguage" src/TarotSystem.tsx
-          if grep -n "const acceptLang = req.headers\['accept-language'\]" server.ts; then
-            echo 'Unexpected Accept-Language authority remains'
+          if grep -n "req.headers\['accept-language'\]" server.ts; then
+            echo 'Unexpected Accept-Language authority remains in server.ts'
             exit 1
           fi
+          git diff --check
 
-      - name: Commit repair
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate i18n
+        run: npm run validate-i18n
+
+      - name: Build application
+        run: npm run build
+
+      - name: Commit Tarot repair
         shell: bash
         run: |
           git config user.name 'orbita-i18n-bot'
           git config user.email 'orbita-i18n-bot@users.noreply.github.com'
           git add server.ts src/TarotSystem.tsx
-          git diff --cached --check
-          git commit -m 'fix: repair tarot interpretation pipeline and locale fallbacks'
-          git push origin HEAD:fix/global-user-language-authority
+          if git diff --cached --quiet; then
+            echo 'No additional Tarot changes were necessary.'
+          else
+            git commit -m 'fix: complete tarot interpretation locale transport'
+            git push origin HEAD:fix/global-user-language-authority
+          fi
