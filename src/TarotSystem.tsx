@@ -867,7 +867,10 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
       setIsInterpreting(true);
       const res = await fetch('/api/tarot/interpret', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-App-Lang': lang || 'pt'
+        },
         body: JSON.stringify({
           type: activeMode,
           cards: tempDrawnCards,
