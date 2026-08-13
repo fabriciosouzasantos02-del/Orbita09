@@ -293,9 +293,8 @@ function translateServerMessage(key: string, lang: Language, replacements?: Reco
     text = (translations[lang] as any)?.[key];
   }
   if (!text) {
-    text = mergedTranslations['pt']?.[key] || (translations['pt'] as any)?.[key];
-  }
-  if (!text) {
+    // Do not silently fall back to Portuguese. Missing translations must be
+    // visible to validation instead of violating the user's active language.
     return key;
   }
   if (replacements) {
@@ -319,12 +318,9 @@ app.use((req: any, res, next) => {
               req.body?.profile?.lang || req.body?.profile?.language || req.body?.profile?.idioma;
   }
   
-  if (!rawLang) {
-    const acceptLang = req.headers['accept-language'];
-    if (typeof acceptLang === 'string') {
-      rawLang = acceptLang.split(',')[0].split(';')[0].trim();
-    }
-  }
+  // The application language is controlled exclusively by the user's explicit
+  // selection in the app (or an app-provided language value). Never infer
+  // application content language from the browser/OS Accept-Language header.
   
   let resolvedLang: Language = 'pt';
   if (rawLang && typeof rawLang === 'string') {
@@ -7313,7 +7309,7 @@ app.post("/api/admin/notifications/read", (req, res) => {
 // 6. Premium Gateway & Subscription Simulator Endpoint
 app.post("/api/payments/subscribe", (req, res) => {
   const { name, email, planId, cardNumber, cvv, lang } = req.body;
-  const activeLang = ((lang || req.headers['accept-language'] || 'pt') as string).toLowerCase().split('-')[0];
+  const activeLang = normalizeLang(lang || (req as any).lang || 'pt');
   if (!name || !email || !planId) {
     return res.status(400).json({ error: (req as any).t('api.payment.details_required') });
   }
@@ -7370,7 +7366,7 @@ app.post("/api/payments/subscribe", (req, res) => {
 app.post("/api/auth/send-verification-code", async (req, res) => {
   try {
     const { email, code, lang } = req.body;
-    const activeLang = ((lang || req.headers['accept-language'] || 'pt') as string).toLowerCase().split('-')[0];
+    const activeLang = normalizeLang(lang || (req as any).lang || 'pt');
     if (!email || !code) {
       return res.status(400).json({ error: (req as any).t('api.auth.email_code_required') });
     }
@@ -7933,7 +7929,7 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
 app.get("/api/stripe/verify-session", async (req, res) => {
   try {
     const { session_id, lang } = req.query;
-    const activeLang = ((lang || req.headers['accept-language'] || 'pt') as string).toLowerCase().split('-')[0];
+    const activeLang = normalizeLang(lang || (req as any).lang || 'pt');
     if (!session_id || typeof session_id !== 'string') {
       return res.status(400).json({ error: (req as any).t('api.stripe.session_id_required') });
     }
@@ -8008,7 +8004,7 @@ app.get("/api/stripe/verify-session", async (req, res) => {
 app.post("/api/stripe/create-portal-session", async (req, res) => {
   try {
     const { uid, lang } = req.body;
-    const activeLang = ((lang || req.headers['accept-language'] || 'pt') as string).toLowerCase().split('-')[0];
+    const activeLang = normalizeLang(lang || (req as any).lang || 'pt');
     if (!uid) {
       return res.status(400).json({ error: "User UID is required" });
     }
