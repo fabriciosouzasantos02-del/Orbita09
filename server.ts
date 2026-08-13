@@ -6941,6 +6941,12 @@ app.post("/api/tarot/interpret", async (req, res) => {
   // Prioritize language sent explicitly in body/query over Accept-Language middleware
   const rawLang = req.body?.lang || req.query?.lang || (req as any).lang;
   const activeLang = normalizeLang(rawLang);
+  const cardsListStr = Array.isArray(cards)
+    ? cards
+        .map((card: any) => card?.cardName || card?.nome || card?.name)
+        .filter((name: any): name is string => typeof name === "string" && name.trim().length > 0)
+        .join(", ")
+    : "";
 
   const userDisplay = userName || (
     activeLang === 'en' ? "Seeker of Wisdom" :

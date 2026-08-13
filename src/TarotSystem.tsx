@@ -805,7 +805,10 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
       setIsDrawing(true);
       const res = await fetch('/api/tarot/draw-full', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-App-Lang': lang || 'pt'
+        },
         body: JSON.stringify({ count, lang }),
       });
 
@@ -952,8 +955,32 @@ export default function TarotSystem({ userName, birthDate, birthTime, birthCity,
       }
     } catch (err) {
       console.error(err);
-      const fallbackReading = `Querido(a) ${userName}, as cartas indicam que você passa por um momento de grande peso emocional. Atente-se contra fofocas ou sentimentos invejosos no ambiente laboral e convívio cotidiano. Faça uma oração sincera de blindagem e limpe velhos apegos.`;
-      const fallbackGuidance = "Sinto que o amor cósmico cura suas dores. Consagre seu dia e confie no mistério.";
+      const fallbackByLanguage: Record<string, { reading: string; guidance: string }> = {
+        pt: {
+          reading: `Querido(a) ${userName || 'Buscador'}, as cartas indicam um momento de grande peso emocional. Atente-se contra fofocas ou sentimentos invejosos no ambiente laboral e convívio cotidiano. Faça uma oração sincera de blindagem e limpe velhos apegos.`,
+          guidance: 'Sinto que o amor cósmico cura suas dores. Consagre seu dia e confie no mistério.'
+        },
+        en: {
+          reading: `Dear ${userName || 'Seeker'}, the cards indicate a moment of deep emotional weight. Be mindful of gossip or envious feelings around work and daily life. Offer a sincere prayer for protection and release old attachments.`,
+          guidance: 'Trust that cosmic love can heal your pain. Consecrate your day and trust the mystery.'
+        },
+        es: {
+          reading: `Querido(a) ${userName || 'Buscador'}, las cartas indican un momento de gran peso emocional. Presta atención a los chismes o sentimientos de envidia en el entorno laboral y cotidiano. Haz una oración sincera de protección y libera viejos apegos.`,
+          guidance: 'Confía en que el amor cósmico puede sanar tus dolores. Consagra tu día y confía en el misterio.'
+        },
+        de: {
+          reading: `Liebe(r) ${userName || 'Suchende(r)'}, die Karten weisen auf eine Zeit großer emotionaler Belastung hin. Achten Sie auf Klatsch oder neidische Gefühle im beruflichen und täglichen Umfeld. Sprechen Sie ein aufrichtiges Schutzgebet und lösen Sie alte Bindungen.`,
+          guidance: 'Vertraue darauf, dass kosmische Liebe deine Schmerzen heilen kann. Widme deinen Tag und vertraue dem Mysterium.'
+        },
+        fr: {
+          reading: `Cher/Chère ${userName || 'Chercheur'}, les cartes indiquent une période de forte charge émotionnelle. Soyez attentif aux commérages ou aux sentiments envieux dans votre environnement professionnel et quotidien. Faites une prière sincère de protection et libérez les anciens attachements.`,
+          guidance: 'Faites confiance à l’amour cosmique pour guérir vos douleurs. Consacrez votre journée et faites confiance au mystère.'
+        }
+      };
+      const normalizedLang = (lang || 'pt').toLowerCase().split('-')[0];
+      const fallback = fallbackByLanguage[normalizedLang] || fallbackByLanguage.pt;
+      const fallbackReading = fallback.reading;
+      const fallbackGuidance = fallback.guidance;
       
       setInterpretation(fallbackReading);
       setGuidance(fallbackGuidance);
