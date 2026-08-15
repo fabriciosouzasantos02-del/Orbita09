@@ -2,7 +2,7 @@ import { Language } from './types';
 import { commonTranslations } from './common';
 import { profileTranslations } from './profile';
 import { astrologyTranslations } from './astrology';
-import { tarotSemanticTranslations, tarotSemanticKeyMap } from './tarotSemantic';
+import { tarotTranslations } from './tarot';
 import { dreamsTranslations } from './dreams';
 import { missionsTranslations } from './missions';
 import { settingsTranslations } from './settings';
@@ -22,11 +22,12 @@ import { interfaceSemanticTranslations } from './interfaceSemantic';
 import { localLangDict } from '../lib/locales';
 import { uiTranslationsMultilang } from '../components/numerologyTranslations';
 
+// Collection of all registered translation modules
 const modules = [
   commonTranslations,
   profileTranslations,
   astrologyTranslations,
-  tarotSemanticTranslations,
+  tarotTranslations,
   dreamsTranslations,
   missionsTranslations,
   settingsTranslations,
@@ -47,14 +48,22 @@ const modules = [
   uiTranslationsMultilang as Record<Language, Record<string, string>>
 ];
 
+// Automatically merged single official source of truth
 export const mergedTranslations: Record<Language, Record<string, string>> = {
-  pt: {}, en: {}, es: {}, de: {}, fr: {}
+  pt: {},
+  en: {},
+  es: {},
+  de: {},
+  fr: {}
 };
 
+// Merge all module objects cleanly at runtime
 const languages: Language[] = ['pt', 'en', 'es', 'de', 'fr'];
 for (const lang of languages) {
   for (const mod of modules) {
-    if (mod && mod[lang]) Object.assign(mergedTranslations[lang], mod[lang]);
+    if (mod && mod[lang]) {
+      Object.assign(mergedTranslations[lang], mod[lang]);
+    }
   }
 }
 
@@ -65,79 +74,65 @@ try {
   console.warn('Note: applyTranslationPatches deferred or already merged.');
 }
 
-// Compatibility bridge: legacy Tarot consumers can still pass a Portuguese
-// sentence to t(), while all canonical Tarot entries are semantic IDs.
-for (const lang of languages) {
-  for (const [semanticId, legacyKey] of Object.entries(tarotSemanticKeyMap)) {
-    const value = mergedTranslations[lang][semanticId];
-    if (value) mergedTranslations[lang][legacyKey] = value;
-  }
-}
-
 import i18next from 'i18next';
 
+/**
+ * Legacy-compatible function name. It no longer detects the browser/device
+ * language. It returns the language explicitly selected in the application,
+ * or Portuguese as the initial application default.
+ */
 export function getDeviceLanguage(): Language {
   if (typeof window === 'undefined') return 'pt';
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const urlLang = (params.get('lang') || params.get('hl') || params.get('locale') || '').toLowerCase();
-    if (urlLang) {
-      if (urlLang.startsWith('es')) return 'es';
-      if (urlLang.startsWith('en')) return 'en';
-      if (urlLang.startsWith('de')) return 'de';
-      if (urlLang.startsWith('fr')) return 'fr';
-      if (urlLang.startsWith('pt')) return 'pt';
-    }
-  } catch (e) {
-    // Ignore URL parse errors
+
+  const explicit = localStorage.getItem('orbi_user_explicit_lang');
+  if (explicit && languages.includes(explicit as Language)) {
+    return explicit as Language;
   }
 
-  const candidates: string[] = [];
-  if (typeof navigator !== 'undefined' && navigator) {
-    if (Array.isArray(navigator.languages) && navigator.languages.length > 0) candidates.push(...navigator.languages);
-    if (navigator.language) candidates.push(navigator.language);
-    if ((navigator as any).userLanguage) candidates.push((navigator as any).userLanguage);
-    if ((navigator as any).browserLanguage) candidates.push((navigator as any).browserLanguage);
-    if ((navigator as any).systemLanguage) candidates.push((navigator as any).systemLanguage);
-  }
-  if (typeof document !== 'undefined' && document.documentElement?.lang) candidates.push(document.documentElement.lang);
-
-  for (const item of candidates) {
-    if (!item || typeof item !== 'string') continue;
-    const clean = item.trim().toLowerCase();
-    if (clean.startsWith('es')) return 'es';
-    if (clean.startsWith('en')) return 'en';
-    if (clean.startsWith('de')) return 'de';
-    if (clean.startsWith('fr')) return 'fr';
-    if (clean.startsWith('pt')) return 'pt';
-  }
   return 'pt';
 }
 
+/**
+ * The application language is authoritative. Browser, OS, navigator and URL
+ * locale settings are intentionally ignored.
+ */
 export function getInitialLanguage(): Language {
   if (typeof window === 'undefined') return 'pt';
+
   const explicitSaved = localStorage.getItem('orbi_user_explicit_lang');
-  if (explicitSaved && ['pt', 'en', 'es', 'de', 'fr'].includes(explicitSaved)) return explicitSaved as Language;
-  const detected = getDeviceLanguage();
-  localStorage.setItem('orbi_preferred_language', detected);
-  return detected;
+  if (explicitSaved && languages.includes(explicitSaved as Language)) {
+    return explicitSaved as Language;
+  }
+
+  return 'pt';
 }
 
 export function changeLanguage(novoIdioma: Language): void {
+  if (!languages.includes(novoIdioma)) return;
+
   if (typeof window !== 'undefined') {
     localStorage.setItem('orbi_user_explicit_lang', novoIdioma);
     localStorage.setItem('orbi_preferred_language', novoIdioma);
-    try { window.dispatchEvent(new Event('orbi_language_changed')); } catch (e) { console.error('Error dispatching language change event:', e); }
+    try {
+      // Dispatch global change event for UI re-rendering
+      window.dispatchEvent(new Event('orbi_language_changed'));
+    } catch (e) {
+      console.error('Error dispatching language change event:', e);
+    }
   }
   i18next.changeLanguage(novoIdioma);
 }
 
+// Verification function to ensure a key exists across all languages (enforces translation completeness)
 export function verifyTranslationKeys(): string[] {
   const ptKeys = Object.keys(mergedTranslations.pt);
   const errors: string[] = [];
+  
   for (const key of ptKeys) {
     for (const lang of languages) {
-      if (!mergedTranslations[lang][key]) errors.push(`Missing translation key: "${key}" in language "${lang}"`);
+      if (!mergedTranslations[lang][key]) {
+        errors.push(`Missing translation key: "${key}" in language "${lang}"`);
+      }
     }
   }
   return errors;

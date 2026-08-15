@@ -27,8 +27,8 @@ const _PRESETS: AppPreset[] = [
     
     <!-- Header -->
     <div class="flex items-center justify-between mb-4">
-      <span class="text-xs font-mono text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded-full border border-cyan-900/30">PRO</span>
-      <div id="hist-btn" class="text-slate-500 hover:text-slate-300 text-xs cursor-pointer transition-colors font-mono">History</div>
+      <span class="text-xs font-mono text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded-full border border-cyan-900/30"><!-- t("PRO") -->PRO</span>
+      <div id="hist-btn" class="text-slate-500 hover:text-slate-300 text-xs cursor-pointer transition-colors font-mono"><!-- t("History") -->History</div>
     </div>
     
     <!-- Display -->
@@ -160,7 +160,7 @@ const _PRESETS: AppPreset[] = [
     <!-- Top Bar -->
     <div class="flex items-center justify-between mb-5">
       <div>
-        <h3 class="text-lg font-semibold text-zinc-100">Tasks</h3>
+        <h3 class="text-lg font-semibold text-zinc-100"><!-- t("Tasks") -->Tasks</h3>
         <p class="text-xs text-zinc-500 font-mono" id="task-counter">...</p>
       </div>
       <div id="filter-btn" onclick="toggleFilter()" class="text-xs font-medium text-emerald-400 bg-emerald-950/40 px-3 py-1.5 rounded-xl border border-emerald-900/30 cursor-pointer hover:bg-emerald-950/80 transition-all">
@@ -204,7 +204,7 @@ const _PRESETS: AppPreset[] = [
       listEl.innerHTML = \`
         <div class="flex flex-col items-center justify-center py-8 text-center">
           <span class="text-2xl mb-1">☘️</span>
-          <p class="text-xs text-zinc-500">No tasks found.</p>
+          <p class="text-xs text-zinc-500"><!-- t("No tasks found.") -->No tasks found.</p>
         </div>
       \`;
       updateCounter();
@@ -313,7 +313,7 @@ const _PRESETS: AppPreset[] = [
     
     <!-- Mode select -->
     <div class="flex items-center justify-center gap-2 mb-6 relative z-10">
-      <span class="text-xs bg-violet-950/60 border border-violet-800/20 text-violet-300 px-3 py-1 rounded-full font-medium" id="timer-mode">POMODORO</span>
+      <span class="text-xs bg-violet-950/60 border border-violet-800/20 text-violet-300 px-3 py-1 rounded-full font-medium" id="timer-mode"><!-- t("POMODORO") -->POMODORO</span>
     </div>
 
     <!-- Timer Circle & Digital Display -->
@@ -327,14 +327,14 @@ const _PRESETS: AppPreset[] = [
       
       <div class="relative text-center">
         <div class="text-4xl font-light font-mono text-zinc-50 tracking-tight" id="time-display">25:00</div>
-        <div class="text-[10px] text-zinc-500 tracking-widest font-mono mt-1">FOCUS</div>
+        <div class="text-[10px] text-zinc-500 tracking-widest font-mono mt-1"><!-- t("FOCUS") -->FOCUS</div>
       </div>
     </div>
 
     <!-- Actions -->
     <div class="flex justify-center gap-2.5 relative z-10">
-      <button onclick="toggleTimer()" id="play-btn" class="bg-violet-600 text-white font-medium hover:bg-violet-500 active:scale-95 transition-all text-xs px-5 py-2.5 rounded-2xl min-w-[100px]">Start</button>
-      <button onclick="resetTimer()" class="bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-zinc-200 active:scale-95 transition-all text-xs px-5 py-2.5 rounded-2xl">Reset</button>
+      <button onclick="toggleTimer()" id="play-btn" class="bg-violet-600 text-white font-medium hover:bg-violet-500 active:scale-95 transition-all text-xs px-5 py-2.5 rounded-2xl min-w-[100px]"><!-- t("Start") -->Start</button>
+      <button onclick="resetTimer()" class="bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-zinc-200 active:scale-95 transition-all text-xs px-5 py-2.5 rounded-2xl"><!-- t("Reset") -->Reset</button>
     </div>
   </div>
 </div>
@@ -429,11 +429,11 @@ const _PRESETS: AppPreset[] = [
     </div>
     
     <!-- Profile Info -->
-    <h3 class="text-lg font-semibold tracking-tight text-white mb-0.5">Alex S.</h3>
-    <p class="text-xs text-amber-500 font-mono mb-4">@alex_dev</p>
+    <h3 class="text-lg font-semibold tracking-tight text-white mb-0.5"><!-- t("Alex S.") -->Alex S.</h3>
+    <p class="text-xs text-amber-500 font-mono mb-4"><!-- t("@alex_dev") -->@alex_dev</p>
     
     <!-- Pitch -->
-    <p class="text-xs text-stone-400 max-w-xs mx-auto mb-6">Web Solutions & Design</p>
+    <p class="text-xs text-stone-400 max-w-xs mx-auto mb-6"><!-- t("Web Solutions & Design") -->Web Solutions & Design</p>
     
     <!-- Links Stack -->
     <div class="space-y-3">
@@ -452,7 +452,7 @@ const _PRESETS: AppPreset[] = [
 
     <!-- Footer Counter -->
     <div class="mt-6 pt-4 border-t border-stone-800/55 flex justify-between items-center text-[10px] text-stone-500 font-mono">
-      <span>Members</span>
+      <span><!-- t("Members") -->Members</span>
       <span class="text-stone-300 bg-stone-950 px-2 py-0.5 rounded-full border border-stone-800">1.2k+</span>
     </div>
   </div>
