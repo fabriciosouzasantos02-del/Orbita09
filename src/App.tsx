@@ -1,6 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import moment from 'moment-timezone';
 import { motion } from 'motion/react';
 import i18n from './lib/i18n';
+import { useTranslation } from 'react-i18next';
+import { pwaGuideTranslations } from './lib/locales';
 import { 
   UserProfile, 
   AstrologyMap, 
@@ -21,13 +24,13 @@ import {
   AstroHouse,
   AstroAspect
 } from './types';
-import CompatibilityView from './components/CompatibilityView';
-import { calculateNatalChart } from './astrology';
+import { performAstroCalculation } from './components/astroMath';
 import { calculateNumerology } from './numerology';
-// Lazy load heavy computational views for faster initial loading
-const AstrologyView = React.lazy(() => import('./components/AstrologyView'));
-const NumerologyView = React.lazy(() => import('./components/NumerologyView'));
-const TransitMap = React.lazy(() => import('./components/TransitMap'));
+import AstrologyView from './components/AstrologyView';
+import AstrologyCalendarModule from './components/AstrologyCalendarModule';
+import NumerologyView from './components/NumerologyView';
+import TransitMap from './components/TransitMap';
+import CompatibilityView from './components/CompatibilityView';
 import TransitHistory from './components/TransitHistory';
 import MoonTipCard from './components/MoonTipCard';
 import AstroNotifications from './components/AstroNotifications';
@@ -36,7 +39,9 @@ import LunarNodes from './components/LunarNodes';
 import LunarCycle from './components/LunarCycle';
 import BiorhythmView from './components/BiorhythmView';
 import UserDashboardPortal from './components/UserDashboardPortal';
+import { PremiumConversionScreen } from './components/PremiumConversionScreen';
 import AdminPanel from './components/AdminPanel';
+import ErrorBoundary from './components/ErrorBoundary';
 import OrbiaAIAndOracle from './components/OrbiaAIAndOracle';
 import OraculoDosSonhosCard from './components/OraculoDosSonhosCard';
 import { CityAutocomplete } from './components/CityAutocomplete';
@@ -53,6 +58,9 @@ import {
   subscribeToUserProfile,
   subscribeToExtraMaps,
   subscribeToDreams,
+  subscribeToNatalCharts,
+  subscribeToTransits,
+  subscribeToNumerology,
   registerWithEmailFirebase,
   loginWithEmailFirebase,
   loginWithGoogleFirebase,
@@ -70,48 +78,18 @@ import {
   saveNatalChartToDatabase,
   loadNatalChartFromDatabase,
   loadAllNatalCharts,
-  saveTransitToDatabase,
-  saveDailyInsightToDatabase,
-  saveWeeklyInsightToDatabase,
   saveMissionToDatabase,
   loadMissionsFromDatabase,
   saveTarotReadingToDatabase,
   saveNumerologyToDatabase,
   saveProsperityMapToDatabase,
   saveBiorhythmToDatabase,
-  saveLunarNodesToDatabase,
-  saveNotificationToDatabase,
-  saveSubscriptionToDatabase
+  loadPremiumSubscription
 } from './lib/firebase';
-import { generatePersonalizedProsperityMap } from './components/prosperityEngine';
+import { generatePersonalizedProsperityMap } from './prosperityEngine';
 import { generateDailyPrediction } from './components/dailyPredictionsEngine';
-import { PremiumConversionScreen } from './components/PremiumConversionScreen';
-import { getTranslation, getInitialLanguage, translateUiText, Language } from './lib/translations';
+import { Language } from './lib/translations';
 import { useIdioma } from './context/IdiomaContext';
-
-// High-end Elite Celestial Logo Component
-export const OrbitaLogo = ({ className = "w-8 h-8" }: { className?: string }) => {
-  return (
-    <div className={`relative flex items-center justify-center shrink-0 ${className}`}>
-      {/* Outer subtle rotating constellation circle */}
-      <svg className="absolute inset-0 w-full h-full animate-spin text-amber-500/20" style={{ animationDuration: '40s' }} viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="45" stroke="currentColor" strokeWidth="1" strokeDasharray="4 8" fill="none" />
-      </svg>
-      {/* Inner precise cosmic ring */}
-      <svg className="absolute w-[80%] h-[80%] text-amber-500/40" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="35" stroke="currentColor" strokeWidth="1.2" fill="none" />
-        <line x1="50" y1="0" x2="50" y2="100" stroke="currentColor" strokeWidth="0.5" strokeDasharray="2 2" />
-        <line x1="0" y1="50" x2="100" y2="50" stroke="currentColor" strokeWidth="0.5" strokeDasharray="2 2" />
-      </svg>
-      {/* Central gleaming geometric diamond representing cosmic precision */}
-      <div className="absolute w-[45%] h-[45%] bg-gradient-to-tr from-amber-400 via-amber-500 to-rose-500 rounded-sm rotate-45 border border-amber-300/30 flex items-center justify-center shadow-[0_0_12px_rgba(245,158,11,0.35)]">
-        <Sparkles className="w-3 text-slate-950 rotate-[-45deg] stroke-[2.5]" />
-      </div>
-      {/* Ambient orbit node */}
-      <div className="absolute w-2 h-2 bg-rose-500 rounded-full top-[10%] right-[10%] border border-slate-950 shadow-md animate-pulse" />
-    </div>
-  );
-};
 import { 
   Compass, 
   Orbit, 
@@ -151,11 +129,35 @@ import {
   Hash,
   Users,
   Home,
-  Eye,
   Sliders,
   Camera,
-  ExternalLink
+  ExternalLink,
+  Copy
 } from 'lucide-react';
+
+export function cleanStringForChartId(val: string): string {
+  if (!val) return "";
+  return val
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]/g, "_");
+}
+
+// Official PORTAL ORBIT Brand Logo Component
+export const OrbitaLogo = ({ className = "w-8 h-8" }: { className?: string }) => {
+  return (
+    <div className={`relative flex items-center justify-center shrink-0 ${className}`}>
+      <img 
+        src="/icon.svg" 
+        alt="PORTAL ORBIT" 
+        className="w-full h-full object-contain rounded-lg drop-shadow-[0_0_10px_rgba(56,189,248,0.3)]"
+        referrerPolicy="no-referrer"
+      />
+    </div>
+  );
+};
 
 export function isPostTrialLocked(user: UserProfile): boolean {
   return false;
@@ -181,33 +183,19 @@ function getZodiacSign(dateStr: string): string {
   return "Capricórnio";
 }
 
-function getRisingSign(dateStr: string, timeStr: string): string {
-  if (!dateStr) return "Sagitário";
-  const date = new Date(dateStr + "T00:00:00");
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  
-  let hour = 12;
-  let minute = 0;
-  if (timeStr && timeStr.includes(':')) {
-    const parts = timeStr.split(':');
-    hour = parseInt(parts[0], 10) || 12;
-    minute = parseInt(parts[1], 10) || 0;
+function getRisingSign(dateStr: string, timeStr: string, latitude?: number, longitude?: number): string {
+  if (!dateStr) return "";
+  const lat = latitude !== undefined ? latitude : -23.5505;
+  const lng = longitude !== undefined ? longitude : -46.6333;
+
+  try {
+    const chart = performAstroCalculation(dateStr, timeStr || "12:00", lat, lng);
+    const asc = chart.astros.find(a => a.name === "Ascendente");
+    return asc ? asc.sign : "";
+  } catch (err) {
+    console.error("Error calculating rising sign:", err);
+    return "";
   }
-  
-  const daysSinceMarch21 = (month * 30 + day - 80 + 360) % 360;
-  const raSun = (daysSinceMarch21 / 360) * 24;
-  
-  const timeSinceNoon = hour + (minute / 60) - 12;
-  const lst = (raSun + timeSinceNoon + 24) % 24;
-  
-  const signs = [
-    "Áries", "Touro", "Gêmeos", "Câncer", "Leão", "Virgem", 
-    "Libra", "Escorpião", "Sagitário", "Capricórnio", "Aquário", "Peixes"
-  ];
-  
-  const index = Math.floor((lst + 16.5) % 24 / 2) % 12;
-  return signs[index];
 }
 
 function getLifePathNumber(dateStr: string): number {
@@ -330,12 +318,51 @@ function getZodiacSignForMissions(dateString: string): string {
   return "Peixes";
 }
 
-function generateDailyMissions(user: any): DailyMission[] {
+function generateDailyRadar(user: any, activeLang?: Language, dateParam?: Date): DailyRadar {
+  const currentL = activeLang || 'pt';
+  const name = user?.name || "Viajante";
+  const birthDate = user?.birthDate || "1997-02-11";
+  
+  const today = dateParam || new Date();
+  const day = today.getDate();
+  const month = today.getMonth() + 1;
+  const year = today.getFullYear();
+  
+  const sunSign = user?.birthDate ? getZodiacSign(user.birthDate) : "Touro";
+  const prediction = generateDailyPrediction(
+    birthDate,
+    sunSign,
+    name,
+    day - 1,
+    today,
+    currentL,
+    user?.mapData
+  );
+
+  return {
+    date: `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`,
+    energyOfDay: prediction.predominantEnergy,
+    dispositionLevel: prediction.energyLevel,
+    bestTimeProductivity: prediction.bestPeriod,
+    bestTimeRelationships: prediction.attentionPeriod,
+    bestTimeStudies: `${String((day % 5) + 13).padStart(2, '0')}:00 - ${String((day % 5) + 15).padStart(2, '0')}:30`,
+    bestTimeOrganization: `${String((day % 4) + 7).padStart(2, '0')}:30 - ${String((day % 4) + 9).padStart(2, '0')}:30`
+  };
+}
+
+function generateDailyMissions(user: any, activeLang?: Language, dateParam?: Date): DailyMission[] {
+  const currentL = activeLang || 'pt';
   const name = user?.name ? user.name.split(" ")[0] : "Viajante";
   const birthDate = user?.birthDate || "2000-01-01";
-  const zodiac = getZodiacSignForMissions(birthDate);
+  const zodiacPT = getZodiacSignForMissions(birthDate);
+  
+  const tM = (text: string): string => {
+    return i18n.t(text, { lng: currentL }) as string;
+  };
 
-  const today = new Date();
+  const zodiac = tM(zodiacPT);
+
+  const today = dateParam || new Date();
   const day = today.getDate();
   const month = today.getMonth() + 1;
   const year = today.getFullYear();
@@ -346,22 +373,22 @@ function generateDailyMissions(user: any): DailyMission[] {
     [
       {
         id: "dm1",
-        title: `Consagração de ${zodiac} para ${name}`,
-        description: `Dedique 3 minutos respirando conscientemente para ativar o equilíbrio cósmico para sua essência de ${zodiac}.`,
+        title: tM("Consagração de {zodiac} para {name}").replace("{zodiac}", zodiac).replace("{name}", name),
+        description: tM("Dedique 3 minutos respirando conscientemente para ativar o equilíbrio cósmico para sua essência de {zodiac}.").replace("{zodiac}", zodiac),
         isCompleted: false,
         points: 40
       },
       {
         id: "dm2",
-        title: "Harmonização de Mercúrio",
-        description: "Escreva algo que te aflige e depois risque no papel, transmutando restrições mentais.",
+        title: tM("Harmonização de Mercúrio"),
+        description: tM("Escreva algo que te aflige e depois risque no papel, transmutando restrições mentais."),
         isCompleted: false,
         points: 50
       },
       {
         id: "dm3",
-        title: "Toque de Gratidão Vital",
-        description: "Fortaleça conexões e envie uma mensagem curta com um elogio sincero para alguém importante em sua jornada.",
+        title: tM("Toque de Gratidão Vital"),
+        description: tM("Fortaleça conexões e envie uma mensagem curta com um elogio sincero para alguém importante em sua jornada."),
         isCompleted: false,
         points: 30
       }
@@ -369,22 +396,22 @@ function generateDailyMissions(user: any): DailyMission[] {
     [
       {
         id: "dm1",
-        title: `Alinhamento de ${zodiac} para ${name}`,
-        description: `Escreva no Oráculo dos Sonhos tudo que se lembrar da noite anterior, decifrando avisos do seu guia onírico.`,
+        title: tM("Alinhamento de {zodiac} para {name}").replace("{zodiac}", zodiac).replace("{name}", name),
+        description: tM("Escreva no Oráculo dos Sonhos tudo que se lembrar da noite anterior, decifrando avisos do seu guia onírico."),
         isCompleted: false,
         points: 50
       },
       {
         id: "dm2",
-        title: "Selo de Desapego de Saturno",
-        description: "Organize sua área de estudos ou e-mails importantes hoje para desbloquear estagnações kármicas.",
+        title: tM("Selo de Desapego de Saturno"),
+        description: tM("Organize sua área de estudos ou e-mails importantes hoje para desbloquear estagnações kármicas."),
         isCompleted: false,
         points: 30
       },
       {
         id: "dm3",
-        title: "Cura Líquida Purificadora",
-        description: "Mentalize paz e tome um copo cheio de água fresca, promovendo purificação de cansaço acumulado.",
+        title: tM("Cura Líquida Purificadora"),
+        description: tM("Mentalize paz e tome um copo cheio de água fresca, promovendo purificação de cansaço acumulado."),
         isCompleted: false,
         points: 40
       }
@@ -392,22 +419,22 @@ function generateDailyMissions(user: any): DailyMission[] {
     [
       {
         id: "dm1",
-        title: `Foco de Vênus para ${name}`,
-        description: `Olhe-se no espelho por 1 minuto sintonizando a resiliência e auto-aceitação para seu signo solar de ${zodiac}.`,
+        title: tM("Foco de Vênus para {name}").replace("{name}", name),
+        description: tM("Olhe-se no espelho por 1 minuto sintonizando a resiliência e auto-aceitação para seu signo solar de {zodiac}.").replace("{zodiac}", zodiac),
         isCompleted: false,
         points: 45
       },
       {
         id: "dm2",
-        title: "Doação Elemental Prática",
-        description: "Considere doar ou arrumar duas coisas materiais sem uso em seu ambiente para fluxo cósmico.",
+        title: tM("Doação Elemental Prática"),
+        description: tM("Considere doar ou arrumar duas coisas materiais sem uso em seu ambiente para fluxo cósmico."),
         isCompleted: false,
         points: 50
       },
       {
         id: "dm3",
-        title: "Oração Vibracional Cósmica",
-        description: "Mentalize e envie ondas silenciosas de pura compaixão por três pessoas que cruzarem sua mente hoje.",
+        title: tM("Oração Vibracional Cósmica"),
+        description: tM("Mentalize e envie ondas silenciosas de pura compaixão por três pessoas que cruzarem sua mente hoje."),
         isCompleted: false,
         points: 30
       }
@@ -415,22 +442,22 @@ function generateDailyMissions(user: any): DailyMission[] {
     [
       {
         id: "dm1",
-        title: `Vigor de Marte para ${name}`,
-        description: `Alongue os membros do corpo por 5 minutos respirando profundamente, liberando bloqueios articulares.`,
+        title: tM("Vigor de Marte para {name}").replace("{name}", name),
+        description: tM("Alongue os membros do corpo por 5 minutos respirando profundamente, liberando bloqueios articulares."),
         isCompleted: false,
         points: 40
       },
       {
         id: "dm2",
-        title: "Ritual Solar da Gratidão",
-        description: "Agradeça mentalmente por três bênçãos invisíveis que estão florescendo na sua jornada diária.",
+        title: tM("Ritual Solar da Gratidão"),
+        description: tM("Agradeça mentalmente por três bênçãos invisíveis que estão florescendo na sua jornada diária."),
         isCompleted: false,
         points: 40
       },
       {
         id: "dm3",
-        title: `Clareza Onírica de ${zodiac}`,
-        description: "Abandone o celular por 1 hora antes de deitar ou repousar para equilibrar sua frequência teta.",
+        title: tM("Clareza Onírica de {zodiac}").replace("{zodiac}", zodiac),
+        description: tM("Abandone o celular por 1 hora antes de deitar ou repousar para equilibrar sua frequência teta."),
         isCompleted: false,
         points: 50
       }
@@ -440,236 +467,9 @@ function generateDailyMissions(user: any): DailyMission[] {
   return missionTemplates[seedVal % missionTemplates.length];
 }
 
-const localLangDict: Record<string, Record<string, string>> = {
-  pt: {
-    general_settings: "Configurações Gerais",
-    settings_desc: "Gerencie suas coordenadas, sintonizações premium e preferências.",
-    control_panel: "Painel de Controle",
-    edit_coords: "Editar Coordenadas Celestes",
-    birth_date: "DATA DE NASCIMENTO",
-    birth_time: "HORA COMPLETA",
-    birth_city: "CIDADE CODIFICADA",
-    changes_count: "Alterações do Mapa Principal:",
-    limit_reached: "⚠️ Limite vitalício atingido. Não é mais possível alterar as coordenadas celestes do seu Mapa Principal.",
-    changes_remaining: "Você possui {count} alterações restantes para o Mapa Principal.",
-    lang_sovereignty: "Soberania de Idiomas",
-    preferred_lang: "Idioma Predileto",
-    lang_desc: "Traduções automáticas aplicadas em relatórios avançados de IA.",
-    accessibility: "Acessibilidade",
-    high_contrast: "Modo de Alto Contraste",
-    contrast_desc: "Aumenta o contraste de textos, botões e bordas para garantir melhor visibilidade.",
-    delete_account_title: "Exclusão Definitiva",
-    delete_account_btn: "Apagar Conta do Portal",
-    delete_account_desc: "A remoção de registros apaga permanentemente todos os relatórios, mapas e históricos criptografados no banco de dados.",
-    logout_btn: "Sair do Portal",
-    points_label: "Pontos",
-    trial_badge: "Acesso Premium Ativo",
-    calculating_placidus: "Calculando Placidus em tempo real...",
-    area_usuario: "Área do Usuário",
-    meu_mapa: "Meu Mapa",
-    criar_meu_mapa: "Criar Meu Mapa",
-    mapas_extras: "Mapas Extras",
-    alerts_and_notifs: "Alertas e Notificações",
-    daily_notifs: "Notificações Diárias Push",
-    daily_notifs_desc: "Receber alertas de trânsitos e biorritmo de manhã no celular.",
-    sms_reminders: "SMS Astro-Reminders",
-    sms_reminders_desc: "Alertas urgentes de trânsitos tensos (Mercúrio Retrógrado).",
-    performance_storage: "Desempenho e Armazenamento",
-    clear_cache: "Limpar Cache do Sistema",
-    clear_cache_desc: "Apaga os arquivos temporários e caches de desempenho de relatórios. Não afeta seus mapas nem sua conta de acesso.",
-    clear_cache_btn: "Limpar Cache",
-    support_team: "Em caso de dúvidas, faça contato com a equipe de suporte pelo canal de integridade celestial do portal.",
-    logout_app_btn: "Sair do Aplicativo",
-    delete_acc_btn: "Excluir Minha Conta",
-    delete_confirm_title: "Excluir sua conta?",
-    delete_confirm_desc: "Você deseja excluir sua conta? Ao excluir sua conta todos os seus dados mapas registros estatísticas serão excluídos da plataforma.",
-    delete_confirm_yes: "Sim, quero excluir",
-    delete_confirm_cancel: "Cancelar",
-  },
-  en: {
-    general_settings: "General Settings",
-    settings_desc: "Manage your coordinates, premium subscription and preferences.",
-    control_panel: "Control Panel",
-    edit_coords: "Edit Celestial Coordinates",
-    birth_date: "DATE OF BIRTH",
-    birth_time: "FULL TIME",
-    birth_city: "ENCODED CITY",
-    changes_count: "Main Chart Changes:",
-    limit_reached: "⚠️ Lifetime limit reached. It is no longer possible to change the celestial coordinates of your Main Chart.",
-    changes_remaining: "You have {count} changes remaining for the Main Chart.",
-    lang_sovereignty: "Language Sovereignty",
-    preferred_lang: "Preferred Language",
-    lang_desc: "Automatic translations applied in advanced AI reports.",
-    accessibility: "Accessibility",
-    high_contrast: "High Contrast Mode",
-    contrast_desc: "Increases text, button, and border contrast for better visibility.",
-    delete_account_title: "Definitive Deletion",
-    delete_account_btn: "Delete Portal Account",
-    delete_account_desc: "Removing your record permanently deletes all encrypted reports, charts, and histories from the database.",
-    logout_btn: "Log Out of Portal",
-    points_label: "Points",
-    trial_badge: "Premium Access Active",
-    calculating_placidus: "Calculating Placidus in real time...",
-    area_usuario: "User Dashboard",
-    meu_mapa: "My Chart",
-    criar_meu_mapa: "Create Chart",
-    mapas_extras: "Extra Charts",
-    alerts_and_notifs: "Alerts & Notifications",
-    daily_notifs: "Daily Push Notifications",
-    daily_notifs_desc: "Receive transit and biorhythm alerts in the morning.",
-    sms_reminders: "Interactive Astro-Reminders",
-    sms_reminders_desc: "Urgent alerts for challenging transits (Mercury Retrograde).",
-    performance_storage: "Performance & Storage",
-    clear_cache: "Clear System Cache",
-    clear_cache_desc: "Deletes temporary files and cached report metrics. Does not affect your charts or account integrity.",
-    clear_cache_btn: "Clear Cache",
-    support_team: "In case of structural questions, contact the support team via the portal integrations line.",
-    logout_app_btn: "Sign Out of App",
-    delete_acc_btn: "Delete My Account",
-    delete_confirm_title: "Delete your account?",
-    delete_confirm_desc: "Are you sure you want to delete your account? All your charts, reports, and historic portal logs will be permanently erased.",
-    delete_confirm_yes: "Yes, delete account",
-    delete_confirm_cancel: "Cancel",
-  },
-  es: {
-    general_settings: "Configuración General",
-    settings_desc: "Administre sus coordenadas, suscripciones premium y preferencias.",
-    control_panel: "Panel de Control",
-    edit_coords: "Editar Coordenadas Celestes",
-    birth_date: "FECHA DE NASCIMIENTO",
-    birth_time: "HORA COMPLETA",
-    birth_city: "CIUDAD CODIFICADA",
-    changes_count: "Cambios en la Carta Principal:",
-    limit_reached: "⚠️ Se alcanzó el límite de por vida. Ya no es posible cambiar las coordenadas celestes de su Carta Principal.",
-    changes_remaining: "Tiene {count} cambios restantes para la Carta Principal.",
-    lang_sovereignty: "Soberanía de Idiomas",
-    preferred_lang: "Idioma Predileto",
-    lang_desc: "Traducciones automáticas aplicadas en informes avanzados de IA.",
-    accessibility: "Accesibilidad",
-    high_contrast: "Modo de Alto Contraste",
-    contrast_desc: "Aumenta el contraste de textos, botones y bordes para garantizar una mejor visibilidad.",
-    delete_account_title: "Remoción Definitiva",
-    delete_account_btn: "Eliminar Cuenta del Portal",
-    delete_account_desc: "La eliminación de registros borra permanentemente todos los informes, cartas e historiales encriptados en la base de datos.",
-    logout_btn: "Cerrar Sesión",
-    points_label: "Puntos",
-    trial_badge: "Acceso Premium Activo",
-    calculating_placidus: "Calculando Plácidus en tempo real...",
-    area_usuario: "Área de Usuario",
-    meu_mapa: "Mi Carta",
-    criar_meu_mapa: "Calcular Carta",
-    mapas_extras: "Cartas Extras",
-    alerts_and_notifs: "Alertas y Notificaciones",
-    daily_notifs: "Notificaciones Diarias Push",
-    daily_notifs_desc: "Recibir alertas de tránsitos y biorritmo por la mañana.",
-    sms_reminders: "SMS Astro-Reminders",
-    sms_reminders_desc: "Alertas urgentes de tránsitos tensos (Mercurio Retrógrado).",
-    performance_storage: "Rendimiento y Almacenamiento",
-    clear_cache: "Limpar Caché del Sistema",
-    clear_cache_desc: "Borra archivos temporales y caché de rendimiento. No afecta sus mapas ni su cuenta.",
-    clear_cache_btn: "Limpiar Caché",
-    support_team: "En caso de dudas, contacte al soporte a través de la línea de integridad del portal.",
-    logout_app_btn: "Cerrar Sesión del App",
-    delete_acc_btn: "Excluir Mi Cuenta",
-    delete_confirm_title: "¿Eliminar su cuenta?",
-    delete_confirm_desc: "¿Desea eliminar su cuenta? Al hacerlo, todos sus datos, mapas e historiales serán borrados para siempre.",
-    delete_confirm_yes: "Sí, quiero eliminar",
-    delete_confirm_cancel: "Cancelar",
-  },
-  de: {
-    general_settings: "Allgemeine Einstellungen",
-    settings_desc: "Verwalten Sie Ihre Koordinaten, Premium-Abonnements und Einstellungen.",
-    control_panel: "Systemsteuerung",
-    edit_coords: "Himmelskoordinaten bearbeiten",
-    birth_date: "GEBURTSDATUM",
-    birth_time: "UHRZEIT",
-    birth_city: "GEBURTSORT",
-    changes_count: "Änderungen am Hauptdiagramm:",
-    limit_reached: "⚠️ Lebenslanges Limit erreicht. Es ist nicht mehr möglich, die Himmelskoordinaten Ihres Hauptdiagramms zu ändern.",
-    changes_remaining: "Sie haben noch {count} Änderungen für das Hauptdiagramm übrig.",
-    lang_sovereignty: "Souveränität der Sprachen",
-    preferred_lang: "Bevorzugte Sprache",
-    lang_desc: "Automatische Übersetzungen in fortgeschrittenen KI-Berichten.",
-    accessibility: "Barrierefreiheit",
-    high_contrast: "Hoher Kontrastmodus",
-    contrast_desc: "Erhöht den Kontrast von Texten, Schaltflächen und Rändern für eine bessere Sichtbarkeit.",
-    delete_account_title: "Endgültige Löschung",
-    delete_account_btn: "Portal-Konto löschen",
-    delete_account_desc: "Das Entfernen von Datensätzen löscht dauerhaft alle verschlüsselten Berichte, Diagramme und Verläufe in der Datenbank.",
-    logout_btn: "Vom Portal abmelden",
-    points_label: "Punkte",
-    trial_badge: "Premium-Zugang Aktiv",
-    calculating_placidus: "Berechnung von Placidus in Echtzeit...",
-    area_usuario: "Benutzerkonto",
-    meu_mapa: "Mein Horoskop",
-    criar_meu_mapa: "Horoskop Erstellen",
-    mapas_extras: "Zusatzhoroskope",
-    alerts_and_notifs: "Benachrichtigungen & Alarme",
-    daily_notifs: "Tägliche Push-Benachrichtigungen",
-    daily_notifs_desc: "Erhalten Sie Himmels- und Biorhythmus-Meldungen am Morgen.",
-    sms_reminders: "Dringende Kosmische Alarme",
-    sms_reminders_desc: "Dringende Benachrichtigungen bei rückläufigem Merkur.",
-    performance_storage: "Systemleistung & Speicher",
-    clear_cache: "Systemcache löschen",
-    clear_cache_desc: "Löscht temporäre Daten und Berichtscaches. Keine Auswirkung auf Ihre Horoskope.",
-    clear_cache_btn: "Cache löschen",
-    support_team: "Bei Fragen kontaktieren Sie den Support über den offiziellen Portal-Kanal.",
-    logout_app_btn: "App abmelden",
-    delete_acc_btn: "Konto löschen",
-    delete_confirm_title: "Konto unwiderruflich löschen?",
-    delete_confirm_desc: "Möchten Sie Ihr Konto wirklich löschen? Alle Berichte und gespeicherten Horoskope werden dauerhaft entfernt.",
-    delete_confirm_yes: "Ja, jetzt löschen",
-    delete_confirm_cancel: "Abbrechen",
-  },
-  fr: {
-    general_settings: "Paramètres Généraux",
-    settings_desc: "Gérez vos coordonnées, abonnements premium et préférences.",
-    control_panel: "Panneau de Contrôle",
-    edit_coords: "Modifier les Coordonnées Célestes",
-    birth_date: "DATE DE NAISSANCE",
-    birth_time: "HEURE DE NAISSANCE",
-    birth_city: "VILLE CODIFIÉE",
-    changes_count: "Changements de Carte Principale :",
-    limit_reached: "⚠️ Limite à vie atteinte. Il n'est plus possible de modifier les coordonnées célestes de votre Carte Principale.",
-    changes_remaining: "Il vous reste {count} modifications possibles pour la Carte Principale.",
-    lang_sovereignty: "Souveraineté Linguistique",
-    preferred_lang: "Langue Préférée",
-    lang_desc: "Traductions automatiques appliquées aux rapports d'IA avancés.",
-    accessibility: "Accessibilité",
-    high_contrast: "Mode Contraste Élevé",
-    contrast_desc: "Augmente le contraste des textes, boutons et bordures pour assurer une meilleure visibilité.",
-    delete_account_title: "Suppression Définitive",
-    delete_account_btn: "Supprimer le Compte",
-    delete_account_desc: "La suppression de votre enregistrement efface définitivement tous les rapports de calcul, cartes et historiques de la base de données.",
-    logout_btn: "Déconnexion du Portal",
-    points_label: "Points",
-    trial_badge: "Accès Premium Actif",
-    calculating_placidus: "Calcul de Placidus en temps réel...",
-    area_usuario: "Espace Utilisateur",
-    meu_mapa: "Mon Thème",
-    criar_meu_mapa: "Créer Ma Carte",
-    mapas_extras: "Thèmes Additionnels",
-    alerts_and_notifs: "Alertes et Notifications",
-    daily_notifs: "Notifications Flash Quotidiennes",
-    daily_notifs_desc: "Recevoir des alertes de transits et de biorythme le matin.",
-    sms_reminders: "Alerte Astro-Reminders",
-    sms_reminders_desc: "Alertes urgentes concernant les transits difficiles (Mercure Rétrograde).",
-    performance_storage: "Performance et Stockage",
-    clear_cache: "Effacer le Cache Système",
-    clear_cache_desc: "Efface les fichiers temporaires et les caches de performance des rapports. N'affecte pas vos thèmes.",
-    clear_cache_btn: "Vider le Cache",
-    support_team: "Pour toute question, contactez le support via le canal céleste officiel.",
-    logout_app_btn: "Se Déconnecter de l'App",
-    delete_acc_btn: "Supprimer Mon Compte",
-    delete_confirm_title: "Supprimer votre compte ?",
-    delete_confirm_desc: "Voulez-vous supprimer votre compte ? Toutes vos données, cartes et historiques seront définitivement effacés.",
-    delete_confirm_yes: "Oui, supprimer",
-    delete_confirm_cancel: "Annuler",
-  }
-};
-
 export default function App() {
   const { idioma, mudarIdioma, t: tContext } = useIdioma();
+  const { t: i18nT } = useTranslation();
 
   // Session / Authentication state
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
@@ -686,8 +486,8 @@ export default function App() {
   const [firebaseUid, setFirebaseUid] = useState<string>("");
 
   // Central Page Translation Helper
-  const t = (text: string): string => {
-    return translateUiText(text, currentLang || 'pt');
+  const t = (text: string, defaultValue?: string): string => {
+    return i18nT(text, { defaultValue });
   };
 
   const [user, _setUser] = useState<UserProfile>(() => {
@@ -698,7 +498,7 @@ export default function App() {
       birthTime: "",
       birthCity: "",
       isUnknownTime: false,
-      isPremium: true,
+      isPremium: false,
       hasCreatedMap: false
     };
 
@@ -743,6 +543,15 @@ export default function App() {
 
   const [scorePoints, setScorePoints] = useState<number>(() => {
     if (typeof window !== 'undefined') {
+      const cachedProfile = localStorage.getItem("orbi_user_profile");
+      if (cachedProfile) {
+        try {
+          const parsed = JSON.parse(cachedProfile);
+          if (parsed && parsed.scorePoints !== undefined) {
+            return parsed.scorePoints;
+          }
+        } catch (e) {}
+      }
       const activeEmail = localStorage.getItem("orbi_logged_email");
       if (activeEmail) {
         const accounts = getRegisteredAccounts();
@@ -757,28 +566,75 @@ export default function App() {
 
   const [showWelcome, setShowWelcome] = useState<boolean>(false);
 
-
   const hasUserCreatedMap = (u: any): boolean => {
     return !!u && (u.hasCreatedMap || (!!u.birthDate && !!u.birthCity));
   };
 
-
   // UI Navigation states
-  const [currentLang, setCurrentLang] = useState<Language>(() => {
-    return getInitialLanguage();
-  });
+  const currentLang = idioma as Language;
   // 'mapa' | 'constelacoes' | 'planetas' | 'tarot' | 'configuracoes' as specified by the bottom-bar prompt!
   const [activeTab, setActiveTab] = useState<'mapa' | 'constelacoes' | 'planetas' | 'tarot' | 'configuracoes'>('mapa');
+  const userNavigatedTabRef = useRef<'mapa' | 'constelacoes' | 'planetas' | 'tarot' | 'configuracoes' | null>(null);
+
+  const handleUserSelectTab = (tab: 'mapa' | 'constelacoes' | 'planetas' | 'tarot' | 'configuracoes') => {
+    userNavigatedTabRef.current = tab;
+    setActiveTab(tab);
+  };
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState<boolean>(false);
 
   // User navigation journey sub-tabs under the Map tab:
-  // 'area_usuario' | 'meu_mapa' | 'criar_meu_mapa' | 'mapas_extras'
-  const [mapSubTab, setMapSubTab] = useState<'area_usuario' | 'meu_mapa' | 'criar_meu_mapa' | 'mapas_extras'>('area_usuario');
+  // 'area_usuario' | 'meu_mapa' | 'criar_meu_mapa'
+  const [mapSubTab, setMapSubTab] = useState<'area_usuario' | 'meu_mapa' | 'criar_meu_mapa'>('area_usuario');
 
   // Sub-tab selection inside the "Área do Usuário" itself:
-  // 'radar' | 'missao' | 'calendario' | 'cores' | 'amuletos' | 'mensagem' | 'painel_mes' | 'prosperidade' | 'amor' | 'relacionamentos' | 'desenvolvimento' | 'sonhos' | 'oportunidades_hoje' | 'energia_casa' | 'universo_mostrando'
-  const [areaSubTab, setAreaSubTab] = useState<'radar' | 'missao' | 'calendario' | 'cores' | 'amuletos' | 'mensagem' | 'painel_mes' | 'prosperidade' | 'amor' | 'relacionamentos' | 'desenvolvimento' | 'sonhos' | 'oportunidades_hoje' | 'energia_casa' | 'universo_mostrando'>('universo_mostrando'); // Start with the premium "O que o universo quer te mostrar" tab active!
+  // 'cupido' | 'radar' | 'missao' | 'calendario' | 'cores' | 'amuletos' | 'mensagem' | 'painel_mes' | 'prosperidade' | 'amor' | 'relacionamentos' | 'desenvolvimento' | 'sonhos' | 'oportunidades_hoje' | 'energia_casa' | 'universo_mostrando'
+  const [areaSubTab, setAreaSubTab] = useState<'cupido' | 'radar' | 'missao' | 'calendario' | 'cores' | 'amuletos' | 'mensagem' | 'painel_mes' | 'prosperidade' | 'amor' | 'relacionamentos' | 'desenvolvimento' | 'sonhos' | 'oportunidades_hoje' | 'energia_casa' | 'universo_mostrando'>('universo_mostrando'); // Start with the premium "O que o universo quer te mostrar" tab active!
+
+  // PREMIUM SYSTEM ARCHITECTURE STATES
+  const [isSyncingSession, setIsSyncingSession] = useState<boolean>(false);
+  const [syncMessage, setSyncMessage] = useState<string>("");
+  const [showPremiumModal, setShowPremiumModal] = useState<boolean>(false);
+  const [trialTimeRemaining, setTrialTimeRemaining] = useState<number>(0);
+
+  const isPremiumActive = 
+    user?.isPremium === true ||
+    user?.isSubscribed === true ||
+    user?.subscriptionStatus === 'active' || 
+    (!!user?.trialEnds && new Date(user.trialEnds).getTime() > Date.now());
+
+  // Auto-close the premium checkout modal if user is detected as premium
+  useEffect(() => {
+    if (isPremiumActive) {
+      setShowPremiumModal(false);
+    }
+  }, [isPremiumActive]);
+
+  useEffect(() => {
+    if (!user?.trialEnds) return;
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, new Date(user.trialEnds).getTime() - Date.now());
+      setTrialTimeRemaining(remaining);
+      if (remaining === 0) {
+        clearInterval(interval);
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [user?.trialEnds]);
+
+  useEffect(() => {
+    // Only redirect or trigger premium conversion screens if the user is definitely NOT premium
+    // and we are NOT in the middle of a database synchronization.
+    if (!isPremiumActive && isAuthInitialized && !isSyncingSession) {
+      const isRestrictedSubTab = activeTab === 'mapa' && (mapSubTab === 'area_usuario');
+      
+      if (isRestrictedSubTab) {
+        setActiveTab('mapa');
+        setMapSubTab('meu_mapa');
+        setShowPremiumModal(true);
+      }
+    }
+  }, [isPremiumActive, activeTab, mapSubTab, isAuthInitialized, isSyncingSession]);
 
   // Active day selection for the smart 30-day calendar map
   const [selectedCalendarDay, setSelectedCalendarDay] = useState<number>(new Date().getDate()); // Defaults to current day dynamically!
@@ -807,6 +663,13 @@ export default function App() {
   const [verifyingStripe, setVerifyingStripe] = useState<boolean>(false);
   const [firebaseErrors, setFirebaseErrors] = useState<any[]>([]);
 
+  // Stripe Customer Portal subscription states
+  const [showSubPortalModal, setShowSubPortalModal] = useState<boolean>(false);
+  const [isFetchingPortal, setIsFetchingPortal] = useState<boolean>(false);
+  const [isFetchingSubData, setIsFetchingSubData] = useState<boolean>(false);
+  const [subPortalError, setSubPortalError] = useState<string>("");
+  const [portalSubscriptionData, setPortalSubscriptionData] = useState<any | null>(null);
+
   // Authentication states
   const [authTab, setAuthTab] = useState<'birth_info' | 'register_credentials' | 'login' | 'forgot_password'>('birth_info');
   const [forgotEmail, setForgotEmail] = useState('');
@@ -833,15 +696,39 @@ export default function App() {
 
   // Millionaire footer interactive modal states
   const [landingFooterModal, setLandingFooterModal] = useState<'privacy' | 'terms' | 'security' | 'about' | 'support' | null>(null);
-  const [supportCategory, setSupportCategory] = useState<string>('technical');
-  const [supportMessage, setSupportMessage] = useState<string>('');
+  const [supportName, setSupportName] = useState<string>('');
+  const [supportEmail, setSupportEmail] = useState<string>('');
+  const [supportReason, setSupportReason] = useState<string>('');
   const [supportSending, setSupportSending] = useState<boolean>(false);
   const [supportSuccessMessage, setSupportSuccessMessage] = useState<string>('');
+  const [supportTicketId, setSupportTicketId] = useState<string>('');
+  const [supportError, setSupportError] = useState<string>('');
 
   // High contrast visual accessibility states
   const [highContrast, setHighContrast] = useState<boolean>(() => {
     return localStorage.getItem("orbi_high_contrast") === "true";
   });
+
+  // System calendar timer state to trigger auto invalidation of all dynamic contents
+  const [systemDate, setSystemDate] = useState<Date>(new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      // Check if day/hour/minute/year/month has changed since last systemDate
+      if (
+        now.getDate() !== systemDate.getDate() ||
+        now.getMonth() !== systemDate.getMonth() ||
+        now.getFullYear() !== systemDate.getFullYear() ||
+        now.getHours() !== systemDate.getHours()
+      ) {
+        console.log("[Live Engine] Time tick update detected. Recalculating calendar dependent resources...");
+        setSystemDate(now);
+      }
+    }, 10000); // Check every 10 seconds for real-time responsiveness
+
+    return () => clearInterval(interval);
+  }, [systemDate]);
 
   useEffect(() => {
     if (highContrast) {
@@ -860,14 +747,47 @@ export default function App() {
 
   // Social login and password reset handler integrations
   const handleGoogleLogin = async () => {
+    if (authTab === 'birth_info') {
+      if (!termsConsent) {
+        triggerGlobalNotification(t("Ativação Obrigatória"), t("Você precisa concordar em conformidade com os Termos e a Política de privacidade para continuar."), "alert");
+        return;
+      }
+      if (!createMainName.trim()) {
+        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, digite o seu nome completo."), "alert");
+        return;
+      }
+      if (!createMainCity) {
+        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, digite em qual cidade você nasceu."), "alert");
+        return;
+      }
+      if (!createMainDate) {
+        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, selecione sua data de nascimento."), "alert");
+        return;
+      }
+      if (!timeIsUnknown && !createMainTime) {
+        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, preencha o seu horário de nascimento ou marque que não sabe o horário."), "alert");
+        return;
+      }
+    }
     manualAuthActionRef.current = true;
     try {
       const firebaseUser = await loginWithGoogleFirebase();
       if (firebaseUser && firebaseUser.email) {
         const emailLower = firebaseUser.email.toLowerCase().trim();
         const checkStatus = await checkDeviceTrial(emailLower);
-        const existingProfile = await loadProfileFromDatabase(emailLower);
+        const existingProfile = await loadProfileFromDatabase(emailLower, firebaseUser.uid);
         let targetUser: UserProfile;
+
+        if (authTab === 'login' && !existingProfile) {
+          await logoutWithFirebase();
+          manualAuthActionRef.current = false;
+          triggerGlobalNotification(
+            t("Cadastro Não Encontrado"),
+            t("Esta conta Google não possui um mapa astral registrado no Portal Órbita. Por favor, registre-se primeiro."),
+            "alert"
+          );
+          return;
+        }
 
         if (existingProfile) {
           const birthDateToUse = existingProfile.birthDate || createMainDate || "";
@@ -878,7 +798,7 @@ export default function App() {
 
           const forceTrialUsed = (!checkStatus.isAllowed && !existingProfile.isSubscribed);
 
-          const rawName = createMainName.trim() || existingProfile.displayName || existingProfile.profileName || existingProfile.birthName || existingProfile.name || firebaseUser.displayName || "Viajante Estelar";
+          const rawName = createMainName.trim() || existingProfile.name || existingProfile.displayName || existingProfile.profileName || existingProfile.birthName || firebaseUser.displayName || "Viajante Estelar";
           const finalName = (rawName === "Viajante Estelar") ? "Buscador" : rawName;
 
           targetUser = {
@@ -886,9 +806,9 @@ export default function App() {
             userId: firebaseUser.uid,
             uid: firebaseUser.uid,
             name: finalName,
-            displayName: existingProfile.displayName || finalName,
-            birthName: existingProfile.birthName || finalName,
-            profileName: existingProfile.profileName || finalName,
+            displayName: (existingProfile.displayName && existingProfile.displayName !== "Viajante Estelar" && existingProfile.displayName !== "Buscador") ? existingProfile.displayName : finalName,
+            birthName: (existingProfile.birthName && existingProfile.birthName !== "Viajante Estelar" && existingProfile.birthName !== "Buscador") ? existingProfile.birthName : finalName,
+            profileName: (existingProfile.profileName && existingProfile.profileName !== "Viajante Estelar" && existingProfile.profileName !== "Buscador") ? existingProfile.profileName : finalName,
             avatarId: existingProfile.avatarId || existingProfile.profilePhoto || "",
             profilePhoto: existingProfile.avatarId || existingProfile.profilePhoto || firebaseUser.photoURL || "",
             preferredLanguage: existingProfile.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
@@ -896,7 +816,7 @@ export default function App() {
             birthTime: birthTimeToUse,
             birthCity: birthCityToUse,
             isUnknownTime: isUnknownTimeToUse,
-            isPremium: existingProfile.isPremium ?? true,
+            isPremium: existingProfile.isPremium ?? false,
             hasCreatedMap: hasProvidedData,
             email: emailLower,
             scorePoints: existingProfile.scorePoints ?? 0,
@@ -906,7 +826,14 @@ export default function App() {
             provider: 'google',
             trialUsed: forceTrialUsed ? true : (existingProfile.trialUsed ?? false),
             trialStartDate: existingProfile.trialStartDate || new Date().toISOString(),
-            trialEndDate: existingProfile.trialEndDate || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+            trialEndDate: existingProfile.trialEndDate || new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+            trialStart: existingProfile.trialStart || existingProfile.trialStartDate || new Date().toISOString(),
+            trialEnds: existingProfile.trialEnds || existingProfile.trialEndDate || new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+            plan: existingProfile.plan || "none",
+            subscriptionStatus: existingProfile.subscriptionStatus || (forceTrialUsed ? "ended" : "trialing"),
+            stripeCustomerId: existingProfile.stripeCustomerId || "",
+            stripeSubscriptionId: existingProfile.stripeSubscriptionId || "",
+            subscriptionUpdatedAt: existingProfile.subscriptionUpdatedAt || new Date().toISOString(),
             deviceId: checkStatus.deviceId,
             deviceFingerprint: checkStatus.fingerprint,
             lastLoginAt: new Date().toISOString(),
@@ -918,14 +845,14 @@ export default function App() {
 
           await saveProfileToDatabase(emailLower, targetUser as any);
           if (forceTrialUsed) {
-            triggerGlobalNotification("Período de Teste Concluído", "Este dispositivo já utilizou o período gratuito. Ative uma assinatura para continuar.", "alert");
+            triggerGlobalNotification(t("Período de Teste Concluído"), t("Este dispositivo já utilizou o período gratuito. Ative uma assinatura para continuar."), "alert");
           } else {
-            triggerGlobalNotification("Bem-vindo de Volta", `Olá, ${targetUser.name || "Buscador"}! Conexão cósmica restaurada.`, "success");
+            triggerGlobalNotification(t("Bem-vindo de Volta"), `${t("Olá")}, ${targetUser.name || t("Buscador")}! ${t("Conexão cósmica restaurada.")}`, "success");
           }
         } else {
           // New Google account flow
           const blockTrial = !checkStatus.isAllowed;
-          const rawNameToUse = createMainName.trim() || user.displayName || user.profileName || user.birthName || user.name || firebaseUser.displayName || "Viajante Estelar";
+          const rawNameToUse = createMainName.trim() || user.name || user.displayName || user.profileName || user.birthName || firebaseUser.displayName || "Viajante Estelar";
           const finalNameToUse = (rawNameToUse === "Viajante Estelar") ? "Buscador" : rawNameToUse;
           const birthDateToUse = createMainDate || "";
           const birthTimeToUse = timeIsUnknown ? "12:00" : (createMainTime || "12:00");
@@ -937,9 +864,9 @@ export default function App() {
             userId: firebaseUser.uid,
             uid: firebaseUser.uid,
             name: finalNameToUse,
-            displayName: user.displayName || finalNameToUse,
-            birthName: user.birthName || finalNameToUse,
-            profileName: user.profileName || finalNameToUse,
+            displayName: (user.displayName && user.displayName !== "Viajante Estelar" && user.displayName !== "Buscador") ? user.displayName : finalNameToUse,
+            birthName: (user.birthName && user.birthName !== "Viajante Estelar" && user.birthName !== "Buscador") ? user.birthName : finalNameToUse,
+            profileName: (user.profileName && user.profileName !== "Viajante Estelar" && user.profileName !== "Buscador") ? user.profileName : finalNameToUse,
             avatarId: user.avatarId || user.profilePhoto || "",
             profilePhoto: user.avatarId || user.profilePhoto || firebaseUser.photoURL || "",
             preferredLanguage: user.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
@@ -947,7 +874,7 @@ export default function App() {
             birthTime: birthTimeToUse,
             birthCity: birthCityToUse,
             isUnknownTime: isUnknownTimeToUse,
-            isPremium: true,
+            isPremium: false,
             hasCreatedMap: hasProvidedData,
             email: emailLower,
             scorePoints: user.scorePoints || 0,
@@ -957,11 +884,20 @@ export default function App() {
             isEmailVerified: true,
             photoURL: firebaseUser.photoURL || "",
             provider: 'google',
-            trialUsed: blockTrial ? true : (user.trialUsed || false),
-            trialStartDate: user.trialStartDate || new Date().toISOString(),
+            trialUsed: blockTrial ? true : false,
+            trialStartDate: new Date().toISOString(),
             trialEndDate: blockTrial 
               ? new Date(Date.now() - 1000).toISOString()
-              : (user.trialEndDate || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString()),
+              : new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+            trialStart: new Date().toISOString(),
+            trialEnds: blockTrial
+              ? new Date(Date.now() - 1000).toISOString()
+              : new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+            plan: user.plan || "none",
+            subscriptionStatus: user.subscriptionStatus || (blockTrial ? "ended" : "trialing"),
+            stripeCustomerId: user.stripeCustomerId || "",
+            stripeSubscriptionId: user.stripeSubscriptionId || "",
+            subscriptionUpdatedAt: user.subscriptionUpdatedAt || new Date().toISOString(),
             deviceId: checkStatus.deviceId || user.deviceId,
             deviceFingerprint: checkStatus.fingerprint || user.deviceFingerprint,
             lastLoginAt: new Date().toISOString(),
@@ -970,21 +906,71 @@ export default function App() {
             subscriptionEndDate: user.subscriptionEndDate || ""
           };
 
-          await saveProfileToDatabase(emailLower, targetUser as any);
-          if (blockTrial) {
-            triggerGlobalNotification("Aviso de Período de Teste", "Este dispositivo já utilizou o período gratuito anteriormente.", "alert");
-          } else {
-            triggerGlobalNotification("Portal Órbita", "Sua Conta Google foi conectada e seu mapa astral foi criado com sucesso!", "success");
+          let chartId = "";
+          let clientMap: any = null;
+          let clientNum: any = null;
+
+          if (hasProvidedData) {
+            const birthDateClean = cleanStringForChartId(birthDateToUse);
+            const birthTimeClean = cleanStringForChartId(birthTimeToUse);
+            const birthCityClean = cleanStringForChartId(birthCityToUse);
+            chartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
+
+            clientMap = mapLocalChartToAstrologyMap(
+              finalNameToUse,
+              birthDateToUse,
+              birthTimeToUse,
+              birthCityToUse,
+              targetUser.preferredLanguage as any,
+              targetUser.latitude,
+              targetUser.longitude
+            );
+            clientNum = calculateNumerology(
+              finalNameToUse,
+              birthDateToUse
+            );
           }
+
+          try {
+            if (hasProvidedData) {
+              await saveNatalChartToDatabase(emailLower, chartId, {
+                name: finalNameToUse,
+                birthDate: birthDateToUse,
+                birthTime: birthTimeToUse,
+                birthCity: birthCityToUse,
+                isUnknownTime: isUnknownTimeToUse,
+                mapData: clientMap,
+                numerology: clientNum,
+                lang: targetUser.preferredLanguage || "pt"
+              });
+              targetUser.currentChartId = chartId;
+              targetUser.hasCreatedMap = true;
+            }
+
+            await saveProfileToDatabase(emailLower, targetUser as any);
+          } catch (saveErr: any) {
+            console.error("[Google Auth] Failed to save Google registration data to Firestore:", saveErr);
+            try {
+              await firebaseUser.delete();
+            } catch (delErr) {
+              console.warn("[Google Auth Cleanup] Failed to delete orphan Google auth user:", delErr);
+            }
+            triggerGlobalNotification(
+              t("Erro de Conexão"), 
+              t("Falha ao salvar seus dados astronômicos na nuvem. O login foi cancelado para garantir a integridade da sua conta."), 
+              "alert"
+            );
+            return;
+          }
+
+          if (blockTrial) {
+            triggerGlobalNotification(t("Aviso de Período de Teste"), t("Este dispositivo já utilizou o período gratuito anteriormente."), "alert");
+          } else {
+            triggerGlobalNotification(t("Portal Órbita"), t("Sua Conta Google foi conectada e seu mapa astral foi criado com sucesso!"), "success");
+          }
+
         }
-
-        localStorage.setItem("orbi_logged_email", emailLower);
-        localStorage.setItem("orbi_user_profile", JSON.stringify(targetUser));
-        setLoggedEmail(emailLower);
-        setUser(targetUser);
-        setIsLoggedIn(true);
-
-        await migrateLocalDataToCloud(emailLower, firebaseUser.uid, targetUser);
+        await syncUserSession(firebaseUser);
       }
     } catch (err: any) {
       console.error(err);
@@ -994,7 +980,7 @@ export default function App() {
                  err.message?.includes('cancelled-popup-request') || err.code?.includes('cancelled-popup-request') || String(err).includes('cancelled-popup-request')) {
         setPopupClosedError(true);
       } else {
-        triggerGlobalNotification("Erro de Autenticação", err.message || "Não foi possível conectar com o Google.", "alert");
+        triggerGlobalNotification(t("Erro de Autenticação"), err.message || t("Não foi possível conectar com o Google."), "alert");
       }
     } finally {
       setTimeout(() => {
@@ -1004,19 +990,51 @@ export default function App() {
   };
 
   const handleFacebookLogin = async () => {
+    if (authTab === 'birth_info') {
+      if (!termsConsent) {
+        triggerGlobalNotification(t("Ativação Obrigatória"), t("Você precisa concordar em conformidade com os Termos e a Política de privacidade para continuar."), "alert");
+        return;
+      }
+      if (!createMainName.trim()) {
+        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, digite o seu nome completo."), "alert");
+        return;
+      }
+      if (!createMainCity) {
+        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, digite em qual cidade você nasceu."), "alert");
+        return;
+      }
+      if (!createMainDate) {
+        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, selecione sua data de nascimento."), "alert");
+        return;
+      }
+      if (!timeIsUnknown && !createMainTime) {
+        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, preencha o seu horário de nascimento ou marque que não sabe o horário."), "alert");
+        return;
+      }
+    }
     try {
       const firebaseUser = await loginWithFacebookFirebase();
       if (firebaseUser && firebaseUser.email) {
         const emailLower = firebaseUser.email.toLowerCase().trim();
         const checkStatus = await checkDeviceTrial(emailLower);
-        const existingProfile = await loadProfileFromDatabase(emailLower);
+        const existingProfile = await loadProfileFromDatabase(emailLower, firebaseUser.uid);
         let targetUser: UserProfile;
+
+        if (authTab === 'login' && !existingProfile) {
+          await logoutWithFirebase();
+          triggerGlobalNotification(
+            t("Cadastro Não Encontrado"),
+            t("Esta conta do Facebook não possui um mapa astral registrado no Portal Órbita. Por favor, registre-se primeiro."),
+            "alert"
+          );
+          return;
+        }
 
         if (existingProfile) {
           const finalBirthCity = loginBirthCity.trim() || existingProfile.birthCity || "";
           const forceTrialUsed = (!checkStatus.isAllowed && !existingProfile.isSubscribed);
 
-          const rawName = existingProfile.displayName || existingProfile.profileName || existingProfile.birthName || existingProfile.name || firebaseUser.displayName || "Viajante Estelar";
+          const rawName = existingProfile.name || existingProfile.displayName || existingProfile.profileName || existingProfile.birthName || firebaseUser.displayName || "Viajante Estelar";
           const finalName = (rawName === "Viajante Estelar") ? "Buscador" : rawName;
 
           targetUser = {
@@ -1024,9 +1042,9 @@ export default function App() {
             userId: firebaseUser.uid,
             uid: firebaseUser.uid,
             name: finalName,
-            displayName: existingProfile.displayName || finalName,
-            birthName: existingProfile.birthName || finalName,
-            profileName: existingProfile.profileName || finalName,
+            displayName: (existingProfile.displayName && existingProfile.displayName !== "Viajante Estelar" && existingProfile.displayName !== "Buscador") ? existingProfile.displayName : finalName,
+            birthName: (existingProfile.birthName && existingProfile.birthName !== "Viajante Estelar" && existingProfile.birthName !== "Buscador") ? existingProfile.birthName : finalName,
+            profileName: (existingProfile.profileName && existingProfile.profileName !== "Viajante Estelar" && existingProfile.profileName !== "Buscador") ? existingProfile.profileName : finalName,
             avatarId: existingProfile.avatarId || existingProfile.profilePhoto || "",
             profilePhoto: existingProfile.avatarId || existingProfile.profilePhoto || firebaseUser.photoURL || "",
             preferredLanguage: existingProfile.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
@@ -1034,7 +1052,7 @@ export default function App() {
             birthTime: existingProfile.birthTime || "",
             birthCity: finalBirthCity,
             isUnknownTime: existingProfile.isUnknownTime ?? false,
-            isPremium: existingProfile.isPremium ?? true,
+            isPremium: existingProfile.isPremium ?? false,
             hasCreatedMap: existingProfile.hasCreatedMap ?? (existingProfile.birthDate ? true : false),
             email: emailLower,
             scorePoints: existingProfile.scorePoints ?? 0,
@@ -1044,7 +1062,14 @@ export default function App() {
             provider: 'facebook',
             trialUsed: forceTrialUsed ? true : (existingProfile.trialUsed ?? false),
             trialStartDate: existingProfile.trialStartDate || new Date().toISOString(),
-            trialEndDate: existingProfile.trialEndDate || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+            trialEndDate: existingProfile.trialEndDate || new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+            trialStart: existingProfile.trialStart || existingProfile.trialStartDate || new Date().toISOString(),
+            trialEnds: existingProfile.trialEnds || existingProfile.trialEndDate || new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+            plan: existingProfile.plan || "none",
+            subscriptionStatus: existingProfile.subscriptionStatus || (forceTrialUsed ? "ended" : "trialing"),
+            stripeCustomerId: existingProfile.stripeCustomerId || "",
+            stripeSubscriptionId: existingProfile.stripeSubscriptionId || "",
+            subscriptionUpdatedAt: existingProfile.subscriptionUpdatedAt || new Date().toISOString(),
             deviceId: checkStatus.deviceId,
             deviceFingerprint: checkStatus.fingerprint,
             lastLoginAt: new Date().toISOString(),
@@ -1054,22 +1079,22 @@ export default function App() {
 
           await saveProfileToDatabase(emailLower, targetUser as any);
           if (forceTrialUsed) {
-            triggerGlobalNotification("Período de Teste Concluído", "Este dispositivo já utilizou o período gratuito. Ative uma assinatura para continuar.", "alert");
+            triggerGlobalNotification(t("Período de Teste Concluído"), t("Este dispositivo já utilizou o período gratuito. Ative uma assinatura para continuar."), "alert");
           } else {
-            triggerGlobalNotification("Bem-vindo de Volta", `Olá, ${existingProfile.name || "Buscador"}! Conexão via Facebook ativa.`, "success");
+            triggerGlobalNotification(t("Bem-vindo de Volta"), `${t("Olá")}, ${existingProfile.name || t("Buscador")}! ${t("Conexão via Facebook ativa.")}`, "success");
           }
         } else {
           const blockTrial = !checkStatus.isAllowed;
-          const rawNameToUse = firebaseUser.displayName || user.displayName || user.profileName || user.birthName || user.name || "Viajante Estelar";
+          const rawNameToUse = user.name || firebaseUser.displayName || user.displayName || user.profileName || user.birthName || "Viajante Estelar";
           const finalNameToUse = (rawNameToUse === "Viajante Estelar") ? "Buscador" : rawNameToUse;
 
           targetUser = {
             userId: firebaseUser.uid,
             uid: firebaseUser.uid,
             name: finalNameToUse,
-            displayName: user.displayName || finalNameToUse,
-            birthName: user.birthName || finalNameToUse,
-            profileName: user.profileName || finalNameToUse,
+            displayName: (user.displayName && user.displayName !== "Viajante Estelar" && user.displayName !== "Buscador") ? user.displayName : finalNameToUse,
+            birthName: (user.birthName && user.birthName !== "Viajante Estelar" && user.birthName !== "Buscador") ? user.birthName : finalNameToUse,
+            profileName: (user.profileName && user.profileName !== "Viajante Estelar" && user.profileName !== "Buscador") ? user.profileName : finalNameToUse,
             avatarId: user.avatarId || user.profilePhoto || "",
             profilePhoto: user.avatarId || user.profilePhoto || firebaseUser.photoURL || "",
             preferredLanguage: user.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
@@ -1077,7 +1102,7 @@ export default function App() {
             birthTime: "",
             birthCity: loginBirthCity.trim() || "",
             isUnknownTime: false,
-            isPremium: true,
+            isPremium: false,
             hasCreatedMap: false,
             email: emailLower,
             scorePoints: 0,
@@ -1089,7 +1114,16 @@ export default function App() {
             trialStartDate: new Date().toISOString(),
             trialEndDate: blockTrial 
               ? new Date(Date.now() - 1000).toISOString()
-              : new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+              : new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+            trialStart: new Date().toISOString(),
+            trialEnds: blockTrial
+              ? new Date(Date.now() - 1000).toISOString()
+              : new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+            plan: "none",
+            subscriptionStatus: blockTrial ? "ended" : "trialing",
+            stripeCustomerId: "",
+            stripeSubscriptionId: "",
+            subscriptionUpdatedAt: new Date().toISOString(),
             deviceId: checkStatus.deviceId,
             deviceFingerprint: checkStatus.fingerprint,
             lastLoginAt: new Date().toISOString(),
@@ -1100,14 +1134,18 @@ export default function App() {
 
           await saveProfileToDatabase(emailLower, targetUser as any);
           if (blockTrial) {
-            triggerGlobalNotification("Aviso de Período de Teste", "Este dispositivo já utilizou o período gratuito anteriormente.", "alert");
+            triggerGlobalNotification(t("Aviso de Período de Teste"), t("Este dispositivo já utilizou o período gratuito anteriormente."), "alert");
           } else {
-            triggerGlobalNotification("Portal Órbita", "Sintonizado via Facebook! Complete seus dados celestes para gerar seu mapa.", "success");
+            triggerGlobalNotification(t("Portal Órbita"), t("Sintonizado via Facebook! Complete seus dados celestes para gerar seu mapa."), "success");
           }
         }
 
         localStorage.setItem("orbi_logged_email", emailLower);
         localStorage.setItem("orbi_user_profile", JSON.stringify(targetUser));
+        if (targetUser.preferredLanguage) {
+          mudarIdioma(targetUser.preferredLanguage as any);
+          localStorage.setItem('orbi_preferred_language', targetUser.preferredLanguage);
+        }
         setLoggedEmail(emailLower);
         setUser(targetUser);
         setIsLoggedIn(true);
@@ -1129,7 +1167,7 @@ export default function App() {
           birthTime: "",
           birthCity: "",
           isUnknownTime: false,
-          isPremium: true,
+          isPremium: false,
           hasCreatedMap: false,
           email: emailLower,
           scorePoints: 0,
@@ -1141,7 +1179,7 @@ export default function App() {
         setLoggedEmail(emailLower);
         setUser(targetUser);
         setIsLoggedIn(true);
-        triggerGlobalNotification("Portal Órbita", "Conexão estabelecida via Facebook!", "success");
+        triggerGlobalNotification(t("Portal Órbita"), t("Conexão estabelecida via Facebook!"), "success");
       }
     } catch (err: any) {
       console.error(err);
@@ -1151,7 +1189,7 @@ export default function App() {
                  err.message?.includes('cancelled-popup-request') || err.code?.includes('cancelled-popup-request') || String(err).includes('cancelled-popup-request')) {
         setPopupClosedError(true);
       } else {
-        triggerGlobalNotification("Erro de Autenticação", err.message || "Não foi possível fazer login com Facebook.", "alert");
+        triggerGlobalNotification(t("Erro de Autenticação"), err.message || t("Não foi possível fazer login com Facebook."), "alert");
       }
     }
   };
@@ -1159,17 +1197,17 @@ export default function App() {
   const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!forgotEmail) {
-      triggerGlobalNotification("Erro de Solicitação", "Por favor, digite seu e-mail.", "alert");
+      triggerGlobalNotification(t("Erro de Solicitação"), t("Por favor, digite seu e-mail."), "alert");
       return;
     }
     setIsSendingReset(true);
     try {
       await sendPasswordResetFirebase(forgotEmail);
-      triggerGlobalNotification("E-mail Enviado", "Instruções de recuperação de senha enviadas para seu e-mail.", "success");
+      triggerGlobalNotification(t("E-mail Enviado"), t("Instruções de recuperação de senha enviadas para seu e-mail."), "success");
       setAuthTab('login');
     } catch (err: any) {
       console.error(err);
-      triggerGlobalNotification("Falha no Envio", err.message || "Erro ao solicitar recuperação de senha.", "alert");
+      triggerGlobalNotification(t("Falha no Envio"), err.message || t("Erro ao solicitar recuperação de senha."), "alert");
     } finally {
       setIsSendingReset(false);
     }
@@ -1181,7 +1219,7 @@ export default function App() {
     manualAuthActionRef.current = true;
     try {
       if (!authEmail || !authPassword) {
-        triggerGlobalNotification("Erro de Cadastro", "Por favor, preencha o E-mail e a Senha de acesso.", "alert");
+        triggerGlobalNotification(t("Erro de Cadastro"), t("Por favor, preencha o E-mail e a Senha de acesso."), "alert");
         return;
       }
       const mailLower = authEmail.trim().toLowerCase();
@@ -1200,16 +1238,16 @@ export default function App() {
 
         if (isEmailInUse) {
           triggerGlobalNotification(
-            "Conta Existente", 
-            "Este e-mail já possui uma conta cadastrada. Redirecionando para a tela de login...", 
+            t("Conta Existente"), 
+            t("Este e-mail já possui uma conta cadastrada. Redirecionando para a tela de login..."), 
             "info"
           );
           setAuthTab('login');
           return;
         }
 
-        const errorMsg = fbErr.message || "Erro no cadastro. Verifique a senha (mínimo 6 caracteres).";
-        triggerGlobalNotification("Erro de Cadastro", errorMsg, "alert");
+        const errorMsg = fbErr.message || t("Erro no cadastro. Verifique a senha (mínimo 6 caracteres).");
+        triggerGlobalNotification(t("Erro de Cadastro"), errorMsg, "alert");
         if (fbErr.message?.includes('operation-not-allowed') || fbErr.code?.includes('operation-not-allowed') || String(fbErr).includes('operation-not-allowed')) {
           setOperationNotAllowedError(true);
         }
@@ -1248,7 +1286,7 @@ export default function App() {
         birthTime: birthTimeToUse,
         birthCity: birthCityToUse,
         isUnknownTime: isUnknownTimeToUse,
-        isPremium: true,
+        isPremium: false,
         hasCreatedMap: hasProvidedData,
         email: mailLower,
         scorePoints: user.scorePoints || 0,
@@ -1260,29 +1298,79 @@ export default function App() {
         isEmailVerified: true,
         emailVerified: true,
         provider: 'password',
-        trialUsed: blockTrial ? true : (user.trialUsed || false),
-        trialStartDate: user.trialStartDate || new Date().toISOString(),
+        trialUsed: blockTrial ? true : false,
+        trialStartDate: new Date().toISOString(),
         trialEndDate: blockTrial 
           ? new Date(Date.now() - 1000).toISOString()
-          : (user.trialEndDate || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString()),
+          : new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+        trialStart: new Date().toISOString(),
+        trialEnds: blockTrial
+          ? new Date(Date.now() - 1000).toISOString()
+          : new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+        plan: user.plan || "none",
+        subscriptionStatus: user.subscriptionStatus || (blockTrial ? "ended" : "trialing"),
+        stripeCustomerId: user.stripeCustomerId || "",
+        stripeSubscriptionId: user.stripeSubscriptionId || "",
+        subscriptionUpdatedAt: user.subscriptionUpdatedAt || new Date().toISOString(),
         deviceId: checkStatus.deviceId || user.deviceId,
         deviceFingerprint: checkStatus.fingerprint || user.deviceFingerprint,
         lastLoginAt: new Date().toISOString()
       };
 
-      // 4. Send official verification link natively
+      // 4. Generate the map & numerology since we have a valid UID now
+      let chartId = "";
+      let clientMap: any = null;
+      let clientNum: any = null;
+
+      if (hasProvidedData) {
+        const birthDateClean = cleanStringForChartId(birthDateToUse);
+        const birthTimeClean = cleanStringForChartId(birthTimeToUse);
+        const birthCityClean = cleanStringForChartId(birthCityToUse);
+        chartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
+
+        clientMap = mapLocalChartToAstrologyMap(
+          finalNameToUse,
+          birthDateToUse,
+          birthTimeToUse,
+          birthCityToUse,
+          newUserProfile.preferredLanguage as any,
+          newUserProfile.latitude,
+          newUserProfile.longitude
+        );
+        clientNum = calculateNumerology(
+          finalNameToUse,
+          birthDateToUse
+        );
+      }
+
+      // 5. Store in Firestore DB (Natal Chart first, then Profile)
+      try {
+        if (hasProvidedData) {
+          await saveNatalChartToDatabase(firebaseUser.uid, chartId, {
+            name: finalNameToUse,
+            birthDate: birthDateToUse,
+            birthTime: birthTimeToUse,
+            birthCity: birthCityToUse,
+            isUnknownTime: isUnknownTimeToUse,
+            mapData: clientMap,
+            numerology: clientNum,
+            lang: newUserProfile.preferredLanguage || "pt"
+          });
+          newUserProfile.currentChartId = chartId;
+          newUserProfile.hasCreatedMap = true;
+        }
+
+        await saveProfileToDatabase(firebaseUser.uid, newUserProfile as any);
+      } catch (saveErr: any) {
+        console.warn("[Auth] Cloud save deferred, local copy stored:", saveErr);
+      }
+
+      // 6. Send official verification link natively in the background
       try {
         await sendNativeEmailVerification();
         console.log("[Auth] Native email verification link dispatched.");
       } catch (err: any) {
         console.warn("[Auth] Failed to dispatch native verification link on signup:", err);
-      }
-
-      // 5. Store in Firestore DB
-      try {
-        await saveProfileToDatabase(mailLower, newUserProfile as any);
-      } catch (saveErr) {
-        console.error("[Auth] Saved profile to database failed on registration:", saveErr);
       }
 
       // Modern local accounts cache sync
@@ -1292,8 +1380,8 @@ export default function App() {
         email: mailLower,
         password: authPassword,
         user: newUserProfile,
-        mapData: null,
-        numerology: null,
+        mapData: clientMap,
+        numerology: clientNum,
         extraMaps: []
       };
       if (existingIdx !== -1) {
@@ -1303,17 +1391,8 @@ export default function App() {
       }
       saveRegisteredAccounts(accounts);
 
-      localStorage.setItem("orbi_logged_email", mailLower);
-      localStorage.setItem("orbi_user_profile", JSON.stringify(newUserProfile));
-      
-      setLoggedEmail(mailLower);
-      setUser(newUserProfile);
-      setExtraMaps([]);
-      setIsLoggedIn(true);
-
-      triggerGlobalNotification("Portal Órbita", "Conta criada com sucesso! Enviamos um link de confirmação para o seu e-mail.", "success");
-
-      await migrateLocalDataToCloud(mailLower, firebaseUser?.uid || "", newUserProfile);
+      await syncUserSession(firebaseUser);
+      triggerGlobalNotification(t("Portal Órbita"), t("Conta criada com sucesso! Enviamos um link de confirmação para o seu e-mail."), "success");
     } finally {
       setTimeout(() => {
         manualAuthActionRef.current = false;
@@ -1326,7 +1405,7 @@ export default function App() {
     manualAuthActionRef.current = true;
     try {
       if (!authEmail || !authPassword) {
-        triggerGlobalNotification("Erro de Login", "Por favor, digite seu E-mail e Senha de acesso.", "alert");
+        triggerGlobalNotification(t("Erro de Login"), t("Por favor, digite seu E-mail e Senha de acesso."), "alert");
         return;
       }
       const mailLower = authEmail.trim().toLowerCase();
@@ -1338,167 +1417,55 @@ export default function App() {
         console.log("[Auth] Firebase native login transacted successfully.", firebaseUser?.uid);
       } catch (fbErr: any) {
         console.error("[Auth] Firebase authentication failed:", fbErr);
-        const errorMsg = fbErr.message || "E-mail ou senha incorretos. Tente novamente ou cadastre-se.";
-        triggerGlobalNotification("Erro de Login", errorMsg, "alert");
+        const errorMsg = fbErr.message || t("E-mail ou senha incorretos. Tente novamente ou cadastre-se.");
+        triggerGlobalNotification(t("Erro de Login"), errorMsg, "alert");
         if (fbErr.message?.includes('operation-not-allowed') || fbErr.code?.includes('operation-not-allowed') || String(fbErr).includes('operation-not-allowed')) {
           setOperationNotAllowedError(true);
         }
         return; // Stop flow immediately!
       }
 
-      // 2. Load latest profile from Firestore DB
-      let cloudUser: any = null;
-      try {
-        cloudUser = await loadProfileFromDatabase(mailLower);
-      } catch (err) {
-        console.warn("[Auth] Failed to retrieve cloud profile on login:", err);
+      // Check if profile exists in database
+      const existingProfile = await loadProfileFromDatabase(mailLower, firebaseUser.uid);
+      if (!existingProfile) {
+        await logoutWithFirebase();
+        triggerGlobalNotification(
+          t("Cadastro Não Encontrado"),
+          t("Esta conta não possui um mapa astral registrado no Portal Órbita. Por favor, registre-se primeiro."),
+          "alert"
+        );
+        return;
       }
 
-      // Get current verification states natively
-      const authInstance = getFirebaseAuth();
-      const nativeVerified = authInstance?.currentUser?.emailVerified || false;
+      // 2. Perform the fully blocking sync of profile and subcollections using UID
+      await syncUserSession(firebaseUser);
 
-      // Check device trial anti-fraud rules
-      let checkStatus = { isAllowed: true, fingerprint: '', deviceId: '' };
-      try {
-        checkStatus = await checkDeviceTrial(mailLower);
-      } catch (err) {
-        console.warn("[Anti Fraud] Check trial status failed:", err);
-      }
-
-      let targetUser: UserProfile;
-
-      if (cloudUser) {
-        const finalBirthCity = loginBirthCity.trim() || cloudUser.birthCity || "";
-        const isVerified = nativeVerified || cloudUser.isEmailVerified || cloudUser.emailVerified || false;
-        const forceTrialUsed = (!checkStatus.isAllowed && !cloudUser.isSubscribed);
-
-        const rawName = cloudUser.displayName || cloudUser.profileName || cloudUser.birthName || cloudUser.name || "Viajante Estelar";
-        const finalName = (rawName === "Viajante Estelar") ? "Buscador" : rawName;
-
-        targetUser = {
-          ...cloudUser,
-          userId: firebaseUser ? firebaseUser.uid : (cloudUser.userId || cloudUser.uid || ""),
-          uid: firebaseUser ? firebaseUser.uid : (cloudUser.userId || cloudUser.uid || ""),
-          name: finalName,
-          displayName: cloudUser.displayName || finalName,
-          birthName: cloudUser.birthName || finalName,
-          profileName: cloudUser.profileName || finalName,
-          avatarId: cloudUser.avatarId || cloudUser.profilePhoto || "",
-          profilePhoto: cloudUser.avatarId || cloudUser.profilePhoto || "",
-          preferredLanguage: cloudUser.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
-          birthDate: cloudUser.birthDate || "",
-          birthTime: cloudUser.birthTime || "",
-          birthCity: finalBirthCity,
-          isUnknownTime: cloudUser.isUnknownTime ?? false,
-          isPremium: cloudUser.isPremium ?? true,
-          hasCreatedMap: cloudUser.hasCreatedMap ?? (cloudUser.birthDate ? true : false),
-          email: mailLower,
-          scorePoints: cloudUser.scorePoints ?? 0,
-          emailVerified: isVerified,
-          isEmailVerified: isVerified,
-          provider: 'password',
-          trialUsed: forceTrialUsed ? true : (cloudUser.trialUsed ?? false),
-          trialStartDate: cloudUser.trialStartDate || new Date().toISOString(),
-          trialEndDate: cloudUser.trialEndDate || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-          deviceId: checkStatus.deviceId,
-          deviceFingerprint: checkStatus.fingerprint,
-          lastLoginAt: new Date().toISOString(),
-          isSubscribed: cloudUser.isSubscribed ?? false,
-          subscriptionEndDate: cloudUser.subscriptionEndDate || "",
-          currentChartId: cloudUser.currentChartId || "",
-          mainMapChangesCount: cloudUser.mainMapChangesCount ?? 0,
-          latitude: cloudUser.latitude,
-          longitude: cloudUser.longitude,
-          createdAt: cloudUser.createdAt || ""
-        };
-
-        if (loginBirthCity.trim() && loginBirthCity.trim() !== cloudUser.birthCity) {
-          try {
-            await saveProfileToDatabase(mailLower, targetUser as any);
-          } catch (err) { console.warn(err); }
-        }
-      } else {
-        // Fallback create profile if missing in Firestore but logged in
-        const forceTrialUsed = !checkStatus.isAllowed;
-        
-        const rawName = user.displayName || user.profileName || user.birthName || user.name || "Viajante Estelar";
-        const finalName = (rawName === "Viajante Estelar") ? "Buscador" : rawName;
-
-        targetUser = {
-          userId: firebaseUser ? firebaseUser.uid : "",
-          uid: firebaseUser ? firebaseUser.uid : "",
-          name: finalName,
-          displayName: user.displayName || finalName,
-          birthName: user.birthName || finalName,
-          profileName: user.profileName || finalName,
-          avatarId: user.avatarId || user.profilePhoto || "",
-          profilePhoto: user.avatarId || user.profilePhoto || "",
-          preferredLanguage: user.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
-          birthDate: "",
-          birthTime: "",
-          birthCity: loginBirthCity.trim() || "",
-          isUnknownTime: false,
-          isPremium: true,
-          hasCreatedMap: false,
-          email: mailLower,
-          scorePoints: 0,
-          emailVerified: nativeVerified,
-          isEmailVerified: nativeVerified,
-          provider: 'password',
-          trialUsed: forceTrialUsed ? true : false,
-          trialStartDate: new Date().toISOString(),
-          trialEndDate: forceTrialUsed 
-            ? new Date(Date.now() - 1000).toISOString()
-            : new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-          deviceId: checkStatus.deviceId,
-          deviceFingerprint: checkStatus.fingerprint,
-          lastLoginAt: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          isSubscribed: false,
-          subscriptionEndDate: ""
-        };
-        try {
-          await saveProfileToDatabase(mailLower, targetUser as any);
-        } catch (err) { console.warn(err); }
-      }
-
-      // Update local list for seamless offline recovery or caches
+      // 3. Update registered accounts password cache for convenient auto-fill offline
       const accounts = getRegisteredAccounts();
       const existingIdx = accounts.findIndex((a: any) => a.email.toLowerCase() === mailLower);
-      const existingAccount = existingIdx !== -1 ? accounts[existingIdx] : null;
-      const newAccount = {
-        email: mailLower,
-        password: authPassword,
-        user: targetUser,
-        mapData: existingAccount?.mapData || null,
-        numerology: existingAccount?.numerology || null,
-        extraMaps: existingAccount?.extraMaps || []
-      };
-      if (existingIdx !== -1) {
-        accounts[existingIdx] = newAccount;
-      } else {
-        accounts.push(newAccount);
-      }
-      saveRegisteredAccounts(accounts);
-
-      localStorage.setItem("orbi_logged_email", mailLower);
-      localStorage.setItem("orbi_user_profile", JSON.stringify(targetUser));
-      
-      setLoggedEmail(mailLower);
-      setUser(targetUser);
-      setIsLoggedIn(true);
-
-      if (!targetUser.isEmailVerified) {
-        // Prompt user to verify using Firebase native email verifier overlay
-        triggerGlobalNotification("Portal Órbita", "Sessão iniciada, mas o link de e-mail ainda não foi confirmado.", "alert");
+      const updatedUserStr = localStorage.getItem("orbi_user_profile");
+      const updatedUser = updatedUserStr ? JSON.parse(updatedUserStr) : null;
+      if (updatedUser) {
+        const newAccount = {
+          email: mailLower,
+          password: authPassword,
+          user: updatedUser,
+          mapData: null,
+          numerology: null,
+          extraMaps: []
+        };
+        if (existingIdx !== -1) {
+          accounts[existingIdx] = newAccount;
+        } else {
+          accounts.push(newAccount);
+        }
+        saveRegisteredAccounts(accounts);
       }
 
-      await migrateLocalDataToCloud(mailLower, firebaseUser?.uid || targetUser.userId || "", targetUser);
     } finally {
       setTimeout(() => {
         manualAuthActionRef.current = false;
-      }, 2000);
+      }, 500);
     }
   };
 
@@ -1522,6 +1489,23 @@ export default function App() {
   const [extraTime, setExtraTime] = useState('');
   const [extraCity, setExtraCity] = useState('');
 
+  // Local state for profile settings birth details
+  const [settingsBirthDate, setSettingsBirthDate] = useState(user?.birthDate || "");
+  const [settingsBirthTime, setSettingsBirthTime] = useState(user?.birthTime || "");
+  const [settingsBirthCity, setSettingsBirthCity] = useState(user?.birthCity || "");
+  const [settingsLatitude, setSettingsLatitude] = useState<number | undefined>(user?.latitude);
+  const [settingsLongitude, setSettingsLongitude] = useState<number | undefined>(user?.longitude);
+
+  useEffect(() => {
+    if (user) {
+      setSettingsBirthDate(user.birthDate || "");
+      setSettingsBirthTime(user.birthTime || "");
+      setSettingsBirthCity(user.birthCity || "");
+      setSettingsLatitude(user.latitude);
+      setSettingsLongitude(user.longitude);
+    }
+  }, [user?.email, user?.birthDate, user?.birthTime, user?.birthCity, user?.latitude, user?.longitude]);
+
   // Handle viewing an extra map by fetching its report
   const triggerGenerateExtraMap = async (extraDetails: any) => {
     setIsLoadingExtraMap(true);
@@ -1537,7 +1521,7 @@ export default function App() {
           isUnknownTime: false,
           latitude: extraDetails.latitude,
           longitude: extraDetails.longitude,
-          lang: lang || 'pt'
+          lang: currentLang || 'pt'
         })
       });
       const data = await response.json();
@@ -1559,7 +1543,9 @@ export default function App() {
   // Interactive Content states
   const [mapData, setMapData] = useState<AstrologyMap | null>(() => {
     try {
-      const saved = localStorage.getItem("orbi_map_data");
+      const email = localStorage.getItem("orbi_logged_email");
+      const keySuffix = email ? email.toLowerCase().trim() : "guest";
+      const saved = localStorage.getItem(`orbi_map_data_${keySuffix}`) || localStorage.getItem("orbi_map_data");
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
@@ -1567,28 +1553,170 @@ export default function App() {
   });
   const [numerology, setNumerology] = useState<NumerologyCycle | null>(() => {
     try {
-      const saved = localStorage.getItem("orbi_numerology_data");
+      const email = localStorage.getItem("orbi_logged_email");
+      const keySuffix = email ? email.toLowerCase().trim() : "guest";
+      const saved = localStorage.getItem(`orbi_numerology_data_${keySuffix}`) || localStorage.getItem("orbi_numerology_data");
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
     }
   });
 
+  // Synchronize map and numerology data based on current user / guest session
+  useEffect(() => {
+    const keySuffix = (isLoggedIn && loggedEmail) ? loggedEmail.toLowerCase().trim() : "guest";
+    const savedMap = localStorage.getItem(`orbi_map_data_${keySuffix}`);
+    const savedNum = localStorage.getItem(`orbi_numerology_data_${keySuffix}`);
+    
+    if (savedMap) {
+      setMapData(JSON.parse(savedMap));
+    } else {
+      if (isLoggedIn && loggedEmail) {
+        const accounts = getRegisteredAccounts();
+        const acc = accounts.find((a: any) => a.email.toLowerCase() === loggedEmail.toLowerCase());
+        if (acc && acc.mapData) {
+          setMapData(acc.mapData);
+        } else {
+          setMapData(null);
+        }
+      } else {
+        setMapData(null);
+      }
+    }
+    
+    if (savedNum) {
+      setNumerology(JSON.parse(savedNum));
+    } else {
+      if (isLoggedIn && loggedEmail) {
+        const accounts = getRegisteredAccounts();
+        const acc = accounts.find((a: any) => a.email.toLowerCase() === loggedEmail.toLowerCase());
+        if (acc && acc.numerology) {
+          setNumerology(acc.numerology);
+        } else {
+          setNumerology(null);
+        }
+      } else {
+        setNumerology(null);
+      }
+    }
+  }, [loggedEmail, isLoggedIn]);
+
   useEffect(() => {
     if (mapData) {
+      const keySuffix = (isLoggedIn && loggedEmail) ? loggedEmail.toLowerCase().trim() : "guest";
+      localStorage.setItem(`orbi_map_data_${keySuffix}`, JSON.stringify(mapData));
       localStorage.setItem("orbi_map_data", JSON.stringify(mapData));
+    } else if (user?.birthDate) {
+      try {
+        const chart = performAstroCalculation(user.birthDate, user.birthTime || "12:00", user.latitude || -23.5505, user.longitude || -46.6333);
+        const mapObj: AstrologyMap = {
+          chartId: `map_${user.name}_${user.birthDate}`,
+          distribution: chart.distribution,
+          astros: chart.astros.map(p => ({
+            name: p.name,
+            sign: p.sign,
+            degree: `${p.degree}°${p.minute.toString().padStart(2, "0")}'`,
+            extraInfo: p.extraInfo,
+            description: p.description
+          })),
+          houses: chart.houses.map(h => ({
+            number: h.number,
+            sign: h.sign,
+            interpretation: h.interpretation,
+            planet: h.planets.join(", ") || undefined
+          })),
+          aspects: chart.aspects.map(a => ({
+            planet1: a.planet1,
+            planet2: a.planet2,
+            aspectType: a.aspectType as any,
+            orb: a.orb.replace('°', ''),
+            interpretation: a.interpretation
+          })),
+          welcomeMessage: `Olá ${user.name || 'Buscador'}, seu mapa astral foi sincronizado!`,
+          personalityTraits: {
+            harmonious: ["Intuitivo", "Consciente", "Independente"],
+            disharmonious: ["Inquieto", "Disperso"]
+          }
+        };
+        setMapData(mapObj);
+      } catch (err) {
+        console.error("Error generating mapData fallback:", err);
+      }
     }
-  }, [mapData]);
+  }, [mapData, user?.birthDate, user?.birthTime, user?.latitude, user?.longitude, loggedEmail, isLoggedIn]);
+
+  const effectiveMapData = useMemo(() => {
+    if (mapData && mapData.astros && mapData.astros.length > 0) {
+      return mapData;
+    }
+    try {
+      const birthDateClean = user?.birthDate || "1995-05-15";
+      const birthTimeClean = user?.birthTime || "12:00";
+      const latClean = user?.latitude ?? -23.5505;
+      const lngClean = user?.longitude ?? -46.6333;
+      const chart = performAstroCalculation(birthDateClean, birthTimeClean, latClean, lngClean, -3, currentLang);
+      return {
+        chartId: `map_effective_${user?.name || 'guest'}_${birthDateClean}`,
+        distribution: chart.distribution,
+        astros: chart.astros.map(p => ({
+          name: p.name,
+          sign: p.sign,
+          degree: `${p.degree}°${p.minute.toString().padStart(2, "0")}'`,
+          extraInfo: p.extraInfo,
+          description: p.description
+        })),
+        houses: chart.houses.map(h => ({
+          number: h.number,
+          sign: h.sign,
+          interpretation: h.interpretation,
+          planet: h.planets.join(", ") || undefined
+        })),
+        aspects: chart.aspects.map(a => ({
+          planet1: a.planet1,
+          planet2: a.planet2,
+          aspectType: a.aspectType as any,
+          orb: a.orb.replace('°', ''),
+          interpretation: a.interpretation
+        })),
+        welcomeMessage: `Olá ${user?.name || 'Buscador'}, seu mapa astral está pronto!`,
+        personalityTraits: {
+          harmonious: ["Intuitivo", "Consciente", "Independente"],
+          disharmonious: ["Inquieto", "Disperso"]
+        }
+      };
+    } catch (err) {
+      console.error("Error generating effectiveMapData:", err);
+      return mapData || {
+        chartId: "map_fallback_empty",
+        distribution: {
+          elements: { fire: 25, earth: 25, air: 25, water: 25 },
+          qualities: { cardinal: 34, fixed: 33, mutable: 33 },
+          polarization: { yang: 50, yin: 50 }
+        },
+        personalityTraits: {
+          harmonious: ["Intuitivo", "Consciente"],
+          disharmonious: ["Inquieto"]
+        },
+        astros: [],
+        houses: [],
+        aspects: [],
+        welcomeMessage: "Bem-vindo!"
+      };
+    }
+  }, [mapData, user?.name, user?.birthDate, user?.birthTime, user?.latitude, user?.longitude, currentLang]);
 
   useEffect(() => {
     if (numerology) {
+      const keySuffix = (isLoggedIn && loggedEmail) ? loggedEmail.toLowerCase().trim() : "guest";
+      localStorage.setItem(`orbi_numerology_data_${keySuffix}`, JSON.stringify(numerology));
       localStorage.setItem("orbi_numerology_data", JSON.stringify(numerology));
     }
-  }, [numerology]);
+  }, [numerology, loggedEmail, isLoggedIn]);
+
 
   useEffect(() => {
+    localStorage.setItem("orbi_user_profile", JSON.stringify(user));
     if (isLoggedIn && loggedEmail) {
-      localStorage.setItem("orbi_user_profile", JSON.stringify(user));
       const accounts = getRegisteredAccounts();
       const index = accounts.findIndex((a: any) => a.email.toLowerCase() === loggedEmail.toLowerCase());
       if (index !== -1) {
@@ -1604,9 +1732,18 @@ export default function App() {
   // Keep scorePoints reactively synced with user.scorePoints and database in real-time
   useEffect(() => {
     if (isLoggedIn && loggedEmail) {
-      const currentPts = user.stellarPoints !== undefined ? user.stellarPoints : (user.scorePoints ?? 0);
-      if (currentPts !== scorePoints) {
-        const nextUser = { ...user, scorePoints, stellarPoints: scorePoints };
+      const latestUser = userRef.current;
+      const currentPts = latestUser?.stellarPoints !== undefined ? latestUser.stellarPoints : (latestUser?.scorePoints ?? 0);
+      
+      // Ensure points only grow to prevent regression!
+      const finalPoints = Math.max(currentPts, scorePoints);
+      
+      if (currentPts !== finalPoints || scorePoints !== finalPoints) {
+        if (scorePoints !== finalPoints) {
+          setScorePoints(finalPoints);
+        }
+        
+        const nextUser = { ...latestUser, scorePoints: finalPoints, stellarPoints: finalPoints };
         setUser(nextUser);
         saveProfileToDatabase(loggedEmail, nextUser).catch(console.error);
       }
@@ -1616,11 +1753,20 @@ export default function App() {
   useEffect(() => {
     if (user) {
       const userPts = user.stellarPoints !== undefined ? user.stellarPoints : user.scorePoints;
-      if (userPts !== undefined && userPts !== scorePoints) {
-        setScorePoints(userPts);
+      if (userPts !== undefined) {
+        // Ensure points only grow to prevent regression!
+        const finalPts = Math.max(scorePoints, userPts);
+        if (finalPts !== scorePoints) {
+          setScorePoints(finalPts);
+        }
       }
     }
   }, [user?.scorePoints, user?.stellarPoints]);
+
+  const userRef = useRef<UserProfile>(user);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   // Firebase Real-time listeners hook
   useEffect(() => {
@@ -1632,15 +1778,16 @@ export default function App() {
       if (updatedProfile) {
         setUser(prev => {
           const rawName = updatedProfile.name || updatedProfile.displayName || updatedProfile.profileName || updatedProfile.birthName || prev.name;
-          const finalName = (rawName === "Viajante Estelar") ? "Buscador" : rawName;
+          const finalName = (rawName === "Viajante Estelar" || rawName === "Buscador") ? (prev.name && prev.name !== "Buscador" && prev.name !== "Viajante Estelar" ? prev.name : "Buscador") : rawName;
           
           if (updatedProfile.preferredLanguage && updatedProfile.preferredLanguage !== lang) {
-            setLangState(updatedProfile.preferredLanguage as any);
+            mudarIdioma(updatedProfile.preferredLanguage as any);
             localStorage.setItem('orbi_preferred_language', updatedProfile.preferredLanguage);
           }
 
           return {
             ...prev,
+            ...updatedProfile, // Merge all remote fields to preserve latitude, longitude, and currentChartId
             name: finalName,
             displayName: updatedProfile.displayName || finalName,
             birthName: updatedProfile.birthName || finalName,
@@ -1656,8 +1803,15 @@ export default function App() {
             createdAt: updatedProfile.createdAt || prev.createdAt,
             isSubscribed: updatedProfile.isSubscribed ?? prev.isSubscribed,
             subscriptionEndDate: updatedProfile.subscriptionEndDate || prev.subscriptionEndDate,
-            scorePoints: updatedProfile.stellarPoints !== undefined ? updatedProfile.stellarPoints : (updatedProfile.scorePoints !== undefined ? updatedProfile.scorePoints : prev.scorePoints),
-            stellarPoints: updatedProfile.stellarPoints !== undefined ? updatedProfile.stellarPoints : (updatedProfile.scorePoints !== undefined ? updatedProfile.scorePoints : prev.stellarPoints)
+            subscriptionStatus: updatedProfile.subscriptionStatus || prev.subscriptionStatus || "none",
+            plan: updatedProfile.plan || prev.plan || "none",
+            trialStart: updatedProfile.trialStart || updatedProfile.trialStartDate || prev.trialStart || "",
+            trialEnds: updatedProfile.trialEnds || updatedProfile.trialEndDate || prev.trialEnds || "",
+            stripeCustomerId: updatedProfile.stripeCustomerId || prev.stripeCustomerId || "",
+            stripeSubscriptionId: updatedProfile.stripeSubscriptionId || prev.stripeSubscriptionId || "",
+            subscriptionUpdatedAt: updatedProfile.subscriptionUpdatedAt || prev.subscriptionUpdatedAt || "",
+            scorePoints: Math.max(prev.scorePoints || 0, updatedProfile.stellarPoints !== undefined ? updatedProfile.stellarPoints : (updatedProfile.scorePoints !== undefined ? updatedProfile.scorePoints : 0)),
+            stellarPoints: Math.max(prev.stellarPoints || 0, updatedProfile.stellarPoints !== undefined ? updatedProfile.stellarPoints : (updatedProfile.scorePoints !== undefined ? updatedProfile.scorePoints : 0))
           };
         });
       }
@@ -1728,10 +1882,77 @@ export default function App() {
       ].slice(0, 10));
     });
 
+    // 4. Natal Charts Real-time Sync
+    const unsubNatalCharts = subscribeToNatalCharts(loggedEmail, (updatedCharts) => {
+      const currentUser = userRef.current;
+      if (updatedCharts && updatedCharts.length > 0) {
+        const activeLang = idioma || lang || 'pt';
+        const cleanUserChartId = cleanStringForChartId(currentUser?.currentChartId || "");
+        const targetChart = (cleanUserChartId ? updatedCharts.find(c => cleanStringForChartId(c.id || "") === cleanUserChartId) : null) || 
+                            (currentUser?.birthDate ? updatedCharts.find(c => c.birthDate === currentUser.birthDate && (c.lang === activeLang || c.mapData?.lang === activeLang)) : null) ||
+                            updatedCharts[0];
+        if (targetChart && targetChart.mapData) {
+          const chartIdToInject = targetChart.id || targetChart.chartId || "";
+          setMapData({
+            ...targetChart.mapData,
+            chartId: chartIdToInject
+          });
+          if (targetChart.numerology) {
+            const numObj = targetChart.numerology;
+            setNumerology({
+              ...numObj,
+              caminhoDeVida: numObj.caminhoDeVida ?? numObj.lifePathNumber ?? numObj.lifePath ?? 7,
+              expressao: numObj.expressao ?? numObj.expressionNumber ?? numObj.expression ?? 3,
+              motivacao: numObj.motivacao ?? numObj.soulUrgeNumber ?? numObj.soulUrge ?? 5,
+              personalidade: numObj.personalidade ?? numObj.personalityNumber ?? numObj.personality ?? 7,
+              ciclos: numObj.ciclos ?? numObj.derivedCycles ?? [],
+              chartId: chartIdToInject
+            });
+          }
+        }
+      } else if (currentUser?.hasCreatedMap && !mapDataRef.current) {
+        console.log("[SnapSync] No natal charts found in DB. Triggering automatic background generation...");
+        triggerGenerateMainMap(currentUser);
+      }
+    }, (error) => {
+      console.warn("Falha de sincronização real-time de natalCharts:", error);
+    });
+
+    // 5. Numerology Real-time Sync
+    const unsubNumerology = subscribeToNumerology(loggedEmail, (updatedNumerology) => {
+      // If we already have loaded mapData and rich numerology from the primary natalCharts subscription,
+      // we must NOT allow the separate, thin numerology collection to overwrite it and cause flickering or state corruption.
+      if (mapDataRef.current && numerologyRef.current && numerologyRef.current.chartId) {
+        console.log("[SnapSync] Skipping separate thin numerology sync because rich natalChart is already active.");
+        return;
+      }
+      if (updatedNumerology && updatedNumerology.length > 0) {
+        const activeLang = idioma || lang || 'pt';
+        const targetNum = updatedNumerology.find(n => n.lang === activeLang) || updatedNumerology[0];
+        if (targetNum) {
+          const mappedNum = {
+            ...targetNum,
+            caminhoDeVida: targetNum.caminhoDeVida ?? targetNum.lifePathNumber ?? targetNum.lifePath ?? 7,
+            expressao: targetNum.expressao ?? targetNum.expressionNumber ?? targetNum.expression ?? 3,
+            motivacao: targetNum.motivacao ?? targetNum.soulUrgeNumber ?? targetNum.soulUrge ?? 5,
+            personalidade: targetNum.personalidade ?? targetNum.personalityNumber ?? targetNum.personality ?? 7,
+            ciclos: targetNum.ciclos ?? targetNum.derivedCycles ?? [],
+            chartId: targetNum.chartId ?? userRef.current?.currentChartId ?? "",
+            lang: targetNum.lang ?? activeLang
+          };
+          setNumerology(mappedNum);
+        }
+      }
+    }, (error) => {
+      console.warn("Falha de sincronização real-time de numerology:", error);
+    });
+
     return () => {
       unsubProfile();
       unsubExtraMaps();
       unsubDreams();
+      unsubNatalCharts();
+      unsubNumerology();
     };
   }, [isLoggedIn, loggedEmail, isAuthInitialized, firebaseUid]);
 
@@ -1741,6 +1962,19 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     const stripeSuccess = params.get('stripe_success');
     const sessionId = params.get('session_id');
+    const stripePortalSimulated = params.get('stripe_portal_simulated');
+
+    if (stripePortalSimulated === 'true') {
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+      triggerGlobalNotification(
+        t("Portal Órbita"),
+        currentLang === 'pt' 
+          ? "Você retornou do Portal de Gerenciamento da Stripe com sucesso."
+          : "You have successfully returned from the Stripe Management Portal.",
+        "success"
+      );
+    }
 
     if (stripeSuccess === 'true' && sessionId) {
       setVerifyingStripe(true);
@@ -1765,7 +1999,7 @@ export default function App() {
               try {
                 const parsed = JSON.parse(cachedUserProfile);
                 if (parsed && parsed.email) {
-                  baseUser = { ...parsed, ...baseUser };
+                  baseUser = { ...baseUser, ...parsed };
                 }
               } catch {}
             }
@@ -1774,7 +2008,11 @@ export default function App() {
               ...baseUser,
               isSubscribed: true,
               isPremium: true,
-              subscriptionEndDate: futureDate
+              subscriptionEndDate: futureDate,
+              subscriptionStatus: 'active',
+              plan: planId || 'premium',
+              trialUsed: true,
+              subscriptionUpdatedAt: new Date().toISOString()
             };
 
             setUser(nextUser);
@@ -1820,176 +2058,420 @@ export default function App() {
     }
   }, [isLoggedIn, loggedEmail, user]);
 
+  const handleManageSubscription = async () => {
+    if (!isLoggedIn || !firebaseUid) {
+      triggerGlobalNotification(
+        "Acesso Negado",
+        currentLang === 'pt' ? "Por favor, faça login para gerenciar sua assinatura." : "Please log in to manage your subscription.",
+        "error"
+      );
+      return;
+    }
+
+    setIsFetchingSubData(true);
+    setSubPortalError("");
+    setShowSubPortalModal(true);
+
+    try {
+      const remoteSub = await loadPremiumSubscription(firebaseUid);
+      const directPremium = user?.isPremium;
+      const mergedPremium = remoteSub || directPremium || null;
+      const isUserPremium = user?.isPremium || user?.isSubscribed || mergedPremium?.isPremium || false;
+
+      if (!isUserPremium) {
+        setPortalSubscriptionData(null);
+      } else {
+        const formattedData = {
+          isPremium: true,
+          status: mergedPremium?.status || user?.subscriptionStatus || "active",
+          planType: mergedPremium?.planType || user?.plan || "monthly",
+          currentPeriodEnd: mergedPremium?.currentPeriodEnd || user?.subscriptionEndDate || "",
+          lastPaymentDate: mergedPremium?.lastPaymentDate || mergedPremium?.currentPeriodStart || "",
+          amount: mergedPremium?.amount || (mergedPremium?.planType === 'annual' ? 79.99 : 9.99),
+          currency: mergedPremium?.currency || "eur",
+          customerId: mergedPremium?.customerId || user?.stripeCustomerId || ""
+        };
+        setPortalSubscriptionData(formattedData);
+      }
+    } catch (err: any) {
+      console.error("Error loading subscription data:", err);
+      setSubPortalError(err.message || "Failed to load subscription details.");
+    } finally {
+      setIsFetchingSubData(false);
+    }
+  };
+
+  const triggerOpenStripePortal = async () => {
+    if (!firebaseUid) return;
+    setIsFetchingPortal(true);
+    setSubPortalError("");
+    try {
+      const response = await fetch('/api/stripe/create-portal-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ uid: firebaseUid })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create customer portal session");
+      }
+
+      const { url } = await response.json();
+      if (url) {
+        window.location.href = url;
+      } else {
+        throw new Error("No URL returned from backend portal session");
+      }
+    } catch (err: any) {
+      console.error("Error launching Stripe Portal:", err);
+      setSubPortalError(err.message || "Could not launch Stripe Portal. Please try again later.");
+    } finally {
+      setIsFetchingPortal(false);
+    }
+  };
+
   const profileLoadedRef = useRef(false);
   const manualAuthActionRef = useRef(false);
+  const lastSavedNumerologyRef = useRef<string>("");
+
+  const mapDataRef = useRef<any>(null);
+  const numerologyRef = useRef<any>(null);
+
+  useEffect(() => {
+    mapDataRef.current = mapData;
+  }, [mapData]);
+
+  useEffect(() => {
+    numerologyRef.current = numerology;
+  }, [numerology]);
+
+  const loggedEmailRef = useRef(loggedEmail);
+  useEffect(() => {
+    loggedEmailRef.current = loggedEmail;
+  }, [loggedEmail]);
+
+  const createMainNameRef = useRef(createMainName);
+  useEffect(() => {
+    createMainNameRef.current = createMainName;
+  }, [createMainName]);
+
+  // Unified real-time sequential session synchronizer
+  const syncUserSession = async (firebaseUser: any) => {
+    if (!firebaseUser || !firebaseUser.email) return;
+    
+    setIsSyncingSession(true);
+    setSyncMessage(t("Sincronizando sua conta..."));
+    
+    try {
+      const emailLower = firebaseUser.email.toLowerCase().trim();
+      const uid = firebaseUser.uid;
+      
+      // Save UID and email in local storage for instant offline resolution
+      localStorage.setItem("orbi_logged_uid", uid);
+      localStorage.setItem("orbi_logged_email", emailLower);
+      
+      setSyncMessage(t("Sincronizando seu perfil estelar..."));
+      
+      // 1. Fetch profile users/{uid}
+      const cloudProfile = await loadProfileFromDatabase(emailLower, uid);
+      let finalProfile = cloudProfile;
+      
+      // Handle guest migration if there was guest data
+      const localProfileStr = localStorage.getItem("orbi_user_profile");
+      let localProfile: any = null;
+      try {
+        if (localProfileStr) {
+          const parsed = JSON.parse(localProfileStr);
+          const isSameAccount = (!parsed.email && !parsed.uid) ||
+            (parsed.email && parsed.email.toLowerCase().trim() === emailLower) ||
+            (parsed.uid && parsed.uid === uid);
+          if (isSameAccount) {
+            localProfile = parsed;
+          } else {
+            console.log("[Account Isolation] Purging local profile from different account:", parsed.email);
+            localStorage.removeItem("orbi_user_profile");
+            localStorage.removeItem("orbi_map_data");
+            localStorage.removeItem("orbi_numerology_data");
+          }
+        }
+      } catch {}
+      
+      const hasLocalMap = localProfile && localProfile.birthDate && localProfile.birthCity;
+      const hasCloudMap = cloudProfile && cloudProfile.birthDate && cloudProfile.birthCity;
+      
+      if (hasLocalMap && !hasCloudMap) {
+        setSyncMessage(t("Migrando seu mapa local para a nuvem..."));
+        const baseProfile = cloudProfile || {
+          userId: uid,
+          email: emailLower,
+          name: localProfile.name || firebaseUser.displayName || "Viajante Estelar",
+          createdAt: new Date().toISOString()
+        };
+        await migrateLocalDataToCloud(emailLower, uid, baseProfile);
+        finalProfile = await loadProfileFromDatabase(emailLower, uid);
+      }
+      
+      if (!finalProfile) {
+        // Create default profile incorporating form inputs and local state
+        const fallbackName = createMainNameRef.current.trim() || localProfile?.name || firebaseUser.displayName || "";
+        const fallbackDate = createMainDate || localProfile?.birthDate || "";
+        const fallbackTime = timeIsUnknown ? "12:00" : (createMainTime || localProfile?.birthTime || "12:00");
+        const fallbackCity = createMainCity || localProfile?.birthCity || "";
+        const fallbackHasMap = !!fallbackDate && !!fallbackCity;
+
+        finalProfile = {
+          userId: uid,
+          uid: uid,
+          email: emailLower,
+          name: fallbackName || "Buscador",
+          birthDate: fallbackDate,
+          birthTime: fallbackTime,
+          birthCity: fallbackCity,
+          isUnknownTime: timeIsUnknown || localProfile?.isUnknownTime || false,
+          isPremium: localProfile?.isPremium || false,
+          hasCreatedMap: fallbackHasMap,
+          createdAt: new Date().toISOString()
+        };
+        await saveProfileToDatabase(emailLower, finalProfile as any);
+      }
+      
+      const birthDateToUse = finalProfile.birthDate || createMainDate || localProfile?.birthDate || "";
+      const birthTimeToUse = finalProfile.birthTime || (timeIsUnknown ? "12:00" : createMainTime) || localProfile?.birthTime || "12:00";
+      const birthCityToUse = finalProfile.birthCity || createMainCity || localProfile?.birthCity || "";
+
+      let rawName = finalProfile.name || finalProfile.displayName || finalProfile.profileName || finalProfile.birthName || createMainNameRef.current.trim() || localProfile?.name || firebaseUser.displayName || "";
+      if (!rawName.trim() || rawName === "Viajante Estelar" || rawName === "Buscador") {
+        const emailPrefix = emailLower.split("@")[0];
+        rawName = emailPrefix
+          .replace(/[\._\-]/g, " ")
+          .replace(/\b\w/g, l => l.toUpperCase());
+      }
+      
+      const updatedUser: UserProfile = {
+        userId: finalProfile.userId || uid || "",
+        uid: finalProfile.uid || uid || "",
+        name: rawName || "Buscador",
+        displayName: (finalProfile.displayName && finalProfile.displayName !== "Viajante Estelar" && finalProfile.displayName !== "Buscador") ? finalProfile.displayName : rawName,
+        birthName: (finalProfile.birthName && finalProfile.birthName !== "Viajante Estelar" && finalProfile.birthName !== "Buscador") ? finalProfile.birthName : rawName,
+        profileName: (finalProfile.profileName && finalProfile.profileName !== "Viajante Estelar" && finalProfile.profileName !== "Buscador") ? finalProfile.profileName : rawName,
+        avatarId: finalProfile.avatarId || finalProfile.profilePhoto || localProfile?.avatarId || localProfile?.profilePhoto || "",
+        preferredLanguage: finalProfile.preferredLanguage || localProfile?.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
+        birthDate: birthDateToUse,
+        birthTime: birthTimeToUse,
+        birthCity: birthCityToUse,
+        isUnknownTime: finalProfile.isUnknownTime ?? timeIsUnknown ?? localProfile?.isUnknownTime ?? false,
+        isPremium: finalProfile.isPremium ?? localProfile?.isPremium ?? false,
+        hasCreatedMap: finalProfile.hasCreatedMap ?? (!!birthDateToUse && !!birthCityToUse),
+        email: emailLower,
+        scorePoints: Math.max(finalProfile.stellarPoints ?? 0, finalProfile.scorePoints ?? 0, localProfile?.scorePoints ?? 0, localProfile?.stellarPoints ?? 0),
+        stellarPoints: Math.max(finalProfile.stellarPoints ?? 0, finalProfile.scorePoints ?? 0, localProfile?.scorePoints ?? 0, localProfile?.stellarPoints ?? 0),
+        profilePhoto: finalProfile.avatarId || finalProfile.profilePhoto || localProfile?.avatarId || localProfile?.profilePhoto || firebaseUser.photoURL || "",
+        isSubscribed: finalProfile.isSubscribed ?? localProfile?.isSubscribed ?? false,
+        subscriptionEndDate: finalProfile.subscriptionEndDate || localProfile?.subscriptionEndDate || "",
+        emailVerified: finalProfile.emailVerified ?? finalProfile.isEmailVerified ?? firebaseUser.emailVerified,
+        isEmailVerified: finalProfile.emailVerified ?? finalProfile.isEmailVerified ?? firebaseUser.emailVerified,
+        currentChartId: finalProfile.currentChartId || localProfile?.currentChartId || "",
+        mainMapChangesCount: finalProfile.mainMapChangesCount ?? 0,
+        trialUsed: finalProfile.trialUsed ?? false,
+        trialStartDate: finalProfile.trialStartDate || "",
+        trialEndDate: finalProfile.trialEndDate || "",
+        trialStart: finalProfile.trialStart || finalProfile.trialStartDate || "",
+        trialEnds: finalProfile.trialEnds || finalProfile.trialEndDate || "",
+        plan: finalProfile.plan || "none",
+        subscriptionStatus: finalProfile.subscriptionStatus || "none",
+        stripeCustomerId: finalProfile.stripeCustomerId || "",
+        stripeSubscriptionId: finalProfile.stripeSubscriptionId || "",
+        subscriptionUpdatedAt: finalProfile.subscriptionUpdatedAt || "",
+        deviceId: finalProfile.deviceId || "",
+        deviceFingerprint: finalProfile.deviceFingerprint || "",
+        latitude: finalProfile.latitude,
+        longitude: finalProfile.longitude,
+        createdAt: finalProfile.createdAt || ""
+      };
+      
+      setSyncMessage(t("Carregando seus dados personalizados..."));
+
+      // 2. Load subcollections safely without blocking main login flow on transient errors
+      let extra: any[] = [];
+      try {
+        extra = await loadExtraMapsFromDatabase(uid);
+        if (extra) setExtraMaps(extra);
+      } catch (e) {
+        console.warn("[Sync] Non-blocking loadExtraMapsFromDatabase error:", e);
+      }
+
+      try {
+        const userDreams = await loadDreamsFromDatabase(uid);
+        if (userDreams && Array.isArray(userDreams)) setDreamsHistory(userDreams as any);
+      } catch (e) {
+        console.warn("[Sync] Non-blocking loadDreamsFromDatabase error:", e);
+      }
+
+      try {
+        const sub = await loadPremiumSubscription(uid);
+        if (sub) {
+          updatedUser.isSubscribed = sub.isSubscribed || sub.status === 'active' || false;
+          updatedUser.isPremium = updatedUser.isSubscribed;
+        }
+      } catch (e) {
+        console.warn("[Sync] Non-blocking loadPremiumSubscription error:", e);
+      }
+
+      // Load Natal Chart and Numerology into memory synchronously before unblocking UI
+      if (updatedUser.birthDate && updatedUser.birthCity) {
+        try {
+          await triggerGenerateMainMap(updatedUser);
+          updatedUser.hasCreatedMap = true;
+        } catch (e) {
+          console.warn("[Sync] Non-blocking triggerGenerateMainMap error:", e);
+        }
+      }
+
+      // 3. Set global states in memory
+      setUser(updatedUser);
+      localStorage.setItem("orbi_user_profile", JSON.stringify(updatedUser));
+      
+      if (updatedUser.preferredLanguage) {
+        mudarIdioma(updatedUser.preferredLanguage as any);
+        localStorage.setItem('orbi_preferred_language', updatedUser.preferredLanguage);
+      }
+      
+      if (emailLower) {
+        const accounts = getRegisteredAccounts();
+        const existingIdx = accounts.findIndex((a: any) => a.email.toLowerCase() === emailLower);
+        if (existingIdx !== -1) {
+          accounts[existingIdx].user = updatedUser;
+        } else {
+          accounts.push({
+            email: emailLower,
+            user: updatedUser,
+            mapData: null,
+            numerology: null,
+            extraMaps: extra || []
+          });
+        }
+        saveRegisteredAccounts(accounts);
+      }
+      
+      // Navigate to correct tab only if user hasn't explicitly navigated elsewhere
+      if (updatedUser.hasCreatedMap || (updatedUser.birthDate && updatedUser.birthCity)) {
+        setMapSubTab('meu_mapa');
+      } else {
+        setMapSubTab('criar_meu_mapa');
+      }
+      
+      if (!userNavigatedTabRef.current) {
+        setActiveTab('mapa');
+      }
+      
+      setLoggedEmail(emailLower);
+      setIsLoggedIn(true);
+      
+    } catch (error: any) {
+      console.warn("[Sync] Firestore cloud sync deferral, loading local session:", error);
+      
+      // Fallback load local map if we have local user profile
+      const activeProfile = localStorage.getItem("orbi_user_profile");
+      if (activeProfile) {
+        try {
+          const parsed = JSON.parse(activeProfile);
+          if (parsed) {
+            setUser(parsed);
+            setIsLoggedIn(true);
+            setLoggedEmail(parsed.email || firebaseUser.email || "");
+            if (parsed.hasCreatedMap) {
+              setMapSubTab('meu_mapa');
+              if (!userNavigatedTabRef.current) {
+                setActiveTab('mapa');
+              }
+              triggerGenerateMainMap(parsed);
+            } else {
+              setMapSubTab('criar_meu_mapa');
+              if (!userNavigatedTabRef.current) {
+                setActiveTab('mapa');
+              }
+            }
+          }
+        } catch {}
+      } else {
+        // Construct minimum local user to allow instant entry
+        const emailLower = (firebaseUser.email || "").toLowerCase().trim();
+        const fallbackUser: UserProfile = {
+          userId: firebaseUser.uid,
+          uid: firebaseUser.uid,
+          name: firebaseUser.displayName || "Buscador",
+          displayName: firebaseUser.displayName || "Buscador",
+          email: emailLower,
+          birthDate: createMainDate || "",
+          birthTime: timeIsUnknown ? "12:00" : (createMainTime || "12:00"),
+          birthCity: createMainCity || "",
+          hasCreatedMap: !!createMainDate && !!createMainCity,
+          isPremium: false,
+          isEmailVerified: true,
+          emailVerified: true
+        };
+        setUser(fallbackUser);
+        setIsLoggedIn(true);
+        setLoggedEmail(emailLower);
+        localStorage.setItem("orbi_user_profile", JSON.stringify(fallbackUser));
+      }
+    } finally {
+      setIsSyncingSession(false);
+    }
+  };
 
   // Firebase Auth session observer hook
   useEffect(() => {
     const unsubAuth = subscribeToAuthChanges((firebaseUser) => {
       setIsAuthInitialized(true);
-      if (firebaseUser && firebaseUser.email) {
-        setFirebaseUid(firebaseUser.uid);
-        const emailLower = firebaseUser.email.toLowerCase().trim();
-        console.log("[Auth Observer] Usuário do Firebase autenticado:", emailLower);
-        
-        const isEmailDifferent = emailLower !== loggedEmail.toLowerCase().trim();
-        if (isEmailDifferent) {
-          setLoggedEmail(emailLower);
-          setIsLoggedIn(true);
+      if (firebaseUser) {
+        const uid = firebaseUser.uid;
+        const emailLower = (firebaseUser.email || "").toLowerCase().trim();
+
+        setFirebaseUid(uid);
+        localStorage.setItem("orbi_logged_uid", uid);
+        if (emailLower) {
           localStorage.setItem("orbi_logged_email", emailLower);
         }
 
-        if (manualAuthActionRef.current) {
-          console.log("[Auth Observer] Skipping automatic profile loading due to active manual auth action.");
-          return;
-        }
-
-        // Always load on first detection or email change
+        const isEmailDifferent = emailLower && emailLower !== loggedEmailRef.current.toLowerCase().trim();
         if (isEmailDifferent || !profileLoadedRef.current) {
           profileLoadedRef.current = true;
-          loadProfileFromDatabase(emailLower).then(async (cloudProfile) => {
-            const localProfileStr = localStorage.getItem("orbi_user_profile");
-            let localProfile: any = null;
-            try {
-              if (localProfileStr) localProfile = JSON.parse(localProfileStr);
-            } catch {}
-
-            const hasLocalMap = localProfile && localProfile.birthDate && localProfile.birthCity;
-            const hasCloudMap = cloudProfile && cloudProfile.birthDate && cloudProfile.birthCity;
-
-            if (hasLocalMap && !hasCloudMap) {
-              console.log("[Auth Observer] Guest map found, but Cloud is empty. Migrating...");
-              const baseProfile = cloudProfile || {
-                userId: firebaseUser.uid,
-                email: emailLower,
-                name: localProfile.name || firebaseUser.displayName || "Viajante Estelar",
-                createdAt: new Date().toISOString()
-              };
-              await migrateLocalDataToCloud(emailLower, firebaseUser.uid, baseProfile);
-            } else if (cloudProfile) {
-              let rawName = cloudProfile.displayName || cloudProfile.profileName || cloudProfile.birthName || cloudProfile.name || firebaseUser.displayName || "";
-              if (!rawName.trim() || rawName === "Viajante Estelar") {
-                const emailPrefix = emailLower.split("@")[0];
-                rawName = emailPrefix
-                  .replace(/[\._\-]/g, " ")
-                  .replace(/\b\w/g, l => l.toUpperCase());
-              }
-              const updatedUser: UserProfile = {
-                userId: cloudProfile.userId || firebaseUser.uid || "",
-                uid: cloudProfile.uid || firebaseUser.uid || "",
-                name: rawName || "Buscador",
-                displayName: cloudProfile.displayName || rawName || "Buscador",
-                birthName: cloudProfile.birthName || rawName || "Buscador",
-                profileName: cloudProfile.profileName || rawName || "Buscador",
-                avatarId: cloudProfile.avatarId || cloudProfile.profilePhoto || "",
-                preferredLanguage: cloudProfile.preferredLanguage || localStorage.getItem('orbi_preferred_language') || "pt",
-                birthDate: cloudProfile.birthDate || "",
-                birthTime: cloudProfile.birthTime || "",
-                birthCity: cloudProfile.birthCity || "",
-                isUnknownTime: cloudProfile.isUnknownTime ?? false,
-                isPremium: cloudProfile.isPremium ?? true,
-                hasCreatedMap: cloudProfile.hasCreatedMap ?? (cloudProfile.birthDate ? true : false),
-                email: emailLower,
-                scorePoints: cloudProfile.scorePoints ?? 0,
-                profilePhoto: cloudProfile.avatarId || cloudProfile.profilePhoto || firebaseUser.photoURL || "",
-                isSubscribed: cloudProfile.isSubscribed ?? false,
-                subscriptionEndDate: cloudProfile.subscriptionEndDate || "",
-                emailVerified: cloudProfile.emailVerified ?? cloudProfile.isEmailVerified ?? firebaseUser.emailVerified,
-                isEmailVerified: cloudProfile.emailVerified ?? cloudProfile.isEmailVerified ?? firebaseUser.emailVerified,
-                currentChartId: cloudProfile.currentChartId || "",
-                mainMapChangesCount: cloudProfile.mainMapChangesCount ?? 0,
-                trialUsed: cloudProfile.trialUsed ?? false,
-                trialStartDate: cloudProfile.trialStartDate || "",
-                trialEndDate: cloudProfile.trialEndDate || "",
-                deviceId: cloudProfile.deviceId || "",
-                deviceFingerprint: cloudProfile.deviceFingerprint || "",
-                latitude: cloudProfile.latitude,
-                longitude: cloudProfile.longitude,
-                createdAt: cloudProfile.createdAt || ""
-              };
-              
-              if (updatedUser.preferredLanguage && updatedUser.preferredLanguage !== lang) {
-                setLangState(updatedUser.preferredLanguage as any);
-                localStorage.setItem('orbi_preferred_language', updatedUser.preferredLanguage);
-              }
-
-              setUser(updatedUser);
-              localStorage.setItem("orbi_user_profile", JSON.stringify(updatedUser));
-
-              // Sync loaded user to registered accounts local storage
-              const accounts = getRegisteredAccounts();
-              const existingIdx = accounts.findIndex((a: any) => a.email.toLowerCase() === emailLower);
-              if (existingIdx !== -1) {
-                accounts[existingIdx].user = updatedUser;
-              } else {
-                accounts.push({
-                  email: emailLower,
-                  user: updatedUser,
-                  mapData: null,
-                  numerology: null,
-                  extraMaps: []
-                });
-              }
-              saveRegisteredAccounts(accounts);
-
-              if (updatedUser.hasCreatedMap) {
-                setMapSubTab('meu_mapa');
-                setActiveTab('mapa');
-                triggerGenerateMainMap(updatedUser);
-              } else {
-                setMapSubTab('criar_meu_mapa');
-                setActiveTab('mapa');
-              }
-            } else {
-              const defaultProfile: UserProfile = {
-                userId: firebaseUser.uid,
-                email: emailLower,
-                name: firebaseUser.displayName || "Viajante Estelar",
-                birthDate: "",
-                birthTime: "",
-                birthCity: "",
-                isUnknownTime: false,
-                isPremium: true,
-                hasCreatedMap: false,
-                createdAt: new Date().toISOString()
-              };
-              setUser(defaultProfile);
-              localStorage.setItem("orbi_user_profile", JSON.stringify(defaultProfile));
-              setMapSubTab('criar_meu_mapa');
-              setActiveTab('mapa');
-            }
-          }).catch((err) => {
-            console.warn("[Auth Observer] Failed to load cloud profile:", err);
-            // Fallback load local map if we have local user profile
-            const activeProfile = localStorage.getItem("orbi_user_profile");
-            if (activeProfile) {
-              try {
-                const parsed = JSON.parse(activeProfile);
-                if (parsed && parsed.hasCreatedMap) {
-                  setMapSubTab('meu_mapa');
-                  setActiveTab('mapa');
-                  triggerGenerateMainMap(parsed);
-                } else {
-                  setMapSubTab('criar_meu_mapa');
-                  setActiveTab('mapa');
-                }
-              } catch {
-                setMapSubTab('criar_meu_mapa');
-                setActiveTab('mapa');
-              }
-            } else {
-              setMapSubTab('criar_meu_mapa');
-              setActiveTab('mapa');
-            }
-          });
+          syncUserSession(firebaseUser);
         }
       } else {
         setFirebaseUid("");
+        setIsLoggedIn(false);
+        setLoggedEmail("");
+        setUser({
+          name: "",
+          email: "",
+          birthDate: "",
+          birthTime: "",
+          birthCity: "",
+          isUnknownTime: false,
+          isPremium: false,
+          hasCreatedMap: false
+        });
+        setMapData(null);
+        setNumerology(null);
+        setExtraMaps([]);
+        localStorage.removeItem("orbi_logged_uid");
+        localStorage.removeItem("orbi_logged_email");
+        localStorage.removeItem("orbi_user_profile");
+        localStorage.removeItem("orbi_map_data");
+        localStorage.removeItem("orbi_numerology_data");
+        profileLoadedRef.current = false;
+        lastGeneratedParamsRef.current = "";
+        setAuthTab('birth_info');
       }
     });
 
     return unsubAuth;
-  }, [loggedEmail]);
+  }, []);
 
   const [isLoadingMain, setIsLoadingMain] = useState<boolean>(false);
 
@@ -2053,14 +2535,31 @@ export default function App() {
   };
 
   // AI Counselor (Orbia Chat) State
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    {
-      id: "welcomeMsg",
-      sender: "assistant",
-      text: "Saudações, Fabricio. Eu sou Orbia, sua Conselheira Astrológica e Terapeuta Pessoal de Inteligência Celestial. Nascido com o Sol em Aquário e Ascendente em Sagitário, você traz em sua essência um idealismo ardente e uma reverência inata pela liberdade. Como posso te orientar em seu caminho em 2026?",
-      timestamp: "02:37"
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  useEffect(() => {
+    const defaultSeeker = currentLang === 'de' ? 'Sucher' : currentLang === 'en' ? 'Seeker' : currentLang === 'es' ? 'Buscador' : currentLang === 'fr' ? 'Chercheur' : 'Buscador';
+    const userName = user?.name ? user.name.split(' ')[0] : defaultSeeker;
+    const welcomeText = currentLang === 'de'
+      ? `${userName}, ich spüre ein ganz besonderes Licht, wenn ich deine Energie lese. Ich bin Orbia, deine astrologische Beraterin und persönliche Therapeutin der himmlischen Intelligenz. Wie kann ich dich 2026 auf deinem Weg leiten?`
+      : currentLang === 'en'
+      ? `${userName}, I feel a very special light reading your energy. I am Orbia, your Astrological Counselor and Personal Therapist of Celestial Intelligence. How can I guide you on your path in 2026?`
+      : currentLang === 'es'
+      ? `${userName}, siento una luz muy especial al leer tu energía. Soy Orbia, tu Consejera Astrológica y Terapeuta Personal de Inteligencia Celestial. ¿Cómo puedo guiarte en tu camino en 2026?`
+      : currentLang === 'fr'
+      ? `${userName}, je ressens une lumière très spéciale en lisant votre énergie. Je suis Orbia, votre Conseillère Astrologique et Thérapeute Personnelle d'Intelligence Céleste. Comment puis-je vous guider sur votre chemin en 2026 ?`
+      : `${userName}, sinto uma luz muito especial ao ler sua energia. Eu sou Orbia, sua Conselheira Astrológica e Terapeuta Pessoal de Inteligência Celestial. Como posso te orientar em seu caminho em 2026?`;
+
+    if (chatMessages.length === 0 || (chatMessages.length === 1 && chatMessages[0].id === "welcomeMsg")) {
+      setChatMessages([
+        {
+          id: "welcomeMsg",
+          sender: "assistant",
+          text: welcomeText,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]);
     }
-  ]);
+  }, [user, currentLang]);
   const [currentChatInput, setCurrentChatInput] = useState<string>('');
   const [isSendingChat, setIsSendingChat] = useState<boolean>(false);
 
@@ -2069,16 +2568,10 @@ export default function App() {
   const [isDrawingTarot, setIsDrawingTarot] = useState<boolean>(false);
   const [tarotDrawnToday, setTarotDrawnToday] = useState<boolean>(false);
 
-  // Daily Radar and missions (gamified) state
-  const [dailyRadar, setDailyRadar] = useState<DailyRadar>({
-    date: new Date().toISOString().split('T')[0],
-    energyOfDay: "Intuição Harmoniosa & Foco Singular",
-    dispositionLevel: 88,
-    bestTimeProductivity: "10:00 - 12:30",
-    bestTimeRelationships: "18:00 - 20:30",
-    bestTimeStudies: "14:15 - 16:45",
-    bestTimeOrganization: "08:30 - 09:45"
-  });
+  // Daily Radar (gamified and fully computed in real-time)
+  const dailyRadar = React.useMemo(() => {
+    return generateDailyRadar(user, currentLang, systemDate);
+  }, [user, currentLang, systemDate]);
 
   const [dailyMissions, setDailyMissions] = useState<DailyMission[]>(() => {
     try {
@@ -2093,7 +2586,7 @@ export default function App() {
   // Sync / Load Daily Missions with cached fallback or live Firestore retrieval
   useEffect(() => {
     let active = true;
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = systemDate.toISOString().split('T')[0];
     const email = user?.email || loggedEmail;
     const cacheKey = `orbi_missions_${email || "default"}_${todayStr}`;
     
@@ -2126,7 +2619,7 @@ export default function App() {
 
       // 3. Fallback to generating new ones if not found anywhere else
       if (!savedLocal) {
-        const generated = generateDailyMissions(user);
+        const generated = generateDailyMissions(user, currentLang, systemDate);
         if (active) {
           setDailyMissions(generated);
           localStorage.setItem(cacheKey, JSON.stringify(generated));
@@ -2142,13 +2635,13 @@ export default function App() {
     return () => {
       active = false;
     };
-  }, [user?.email, isLoggedIn, loggedEmail]);
+  }, [user?.email, isLoggedIn, loggedEmail, systemDate, currentLang]);
 
   // Keep Firestore dailyMissions list updated on change only (with comparison to reduce unnecessary setDoc triggers)
   const prevMissionsRef = useRef("");
   useEffect(() => {
     if (dailyMissions && dailyMissions.length > 0) {
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = systemDate.toISOString().split('T')[0];
       const email = user?.email || loggedEmail;
       const cacheKey = `orbi_missions_${email || "default"}_${todayStr}`;
       const serialized = JSON.stringify(dailyMissions);
@@ -2157,20 +2650,263 @@ export default function App() {
       if (prevMissionsRef.current !== serialized) {
         prevMissionsRef.current = serialized;
         localStorage.setItem(cacheKey, serialized);
-
+        
         // Re-route dynamically to Cloud Firestore if logged in
         if (isLoggedIn && email) {
           saveMissionToDatabase(email, todayStr, dailyMissions).catch(console.warn);
         }
       }
     }
-  }, [dailyMissions, isLoggedIn, loggedEmail, user?.email]);
+  }, [dailyMissions, isLoggedIn, loggedEmail, user?.email, systemDate]);
 
-  const [weeklyMissions, setWeeklyMissions] = useState<DailyMission[]>([
-    { id: "w1", title: "Esta semana tente resolver uma pendência antiga", description: "Identifique um compromisso pendente há muito tempo e dê o primeiro passo para resolvê-lo, liberando fluxo de Saturno.", isCompleted: false, points: 120 },
-    { id: "w2", title: "Esta semana fortaleça um relacionamento importante", description: "Envie uma mensagem sincera de gratidão ou faça um convite de conversa leve a quem você quer bem.", isCompleted: false, points: 150 },
-    { id: "w3", title: "Esta semana dedique tempo ao aprendizado", description: "Reserve um tempo concentrado para estudar símbolos astrológicos ou técnicas de clareza mental e meditação.", isCompleted: false, points: 100 }
+  // Translate existing dailyMissions immediately when language changes
+  useEffect(() => {
+    if (dailyMissions && dailyMissions.length > 0) {
+      const regenerated = generateDailyMissions(user, currentLang);
+      setDailyMissions(prev => {
+        return regenerated.map(reg => {
+          const matched = prev.find(p => p.id === reg.id);
+          return {
+            ...reg,
+            isCompleted: matched ? matched.isCompleted : reg.isCompleted
+          };
+        });
+      });
+    }
+  }, [currentLang]);
+
+  // CENTRALIZED CELESTIAL DATA VALIDATION UTILITY
+  // Verifies if the rendered/cached data in all modules (Dreams, Oracle, Tarot, Numerology, My Map)
+  // matches the user's active map ID saved in Firestore. Forces recalculation if a discrepancy is found.
+  useEffect(() => {
+    if (!user || !user.birthDate) return;
+    if (isLoadingMain || isLoadingExtraMap || isInterpretingDream || isQueryingOracle || isSendingChat || isDrawingTarot) {
+      console.log("[Validation Utility] Validation suspended during active main calculation or background generation.");
+      return;
+    }
+
+    const birthDateClean = cleanStringForChartId(user.birthDate || "1997-02-11");
+    const birthTimeClean = cleanStringForChartId(user.birthTime || "12:00");
+    const birthCityClean = cleanStringForChartId(user.birthCity || "Sao_Paulo");
+    const expectedChartId = user.currentChartId || `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
+    const cleanExpectedChartId = cleanStringForChartId(expectedChartId);
+
+    let needsRecalculateMap = false;
+    let needsRecalculateNum = false;
+
+    // 1. Verify Meu Mapa (My Map)
+    if (mapData) {
+      const cleanMapChartId = cleanStringForChartId(mapData.chartId || "");
+      if (!cleanMapChartId || cleanMapChartId !== cleanExpectedChartId) {
+        console.log(`[Validation Utility] My Map discrepancy detected (Expected: ${cleanExpectedChartId}, got: ${cleanMapChartId}). Forcing recalculation using the official astro engine...`);
+        needsRecalculateMap = true;
+      }
+    }
+
+    // 2. Verify Numerologia (Numerology)
+    if (numerology) {
+      const cleanNumChartId = cleanStringForChartId(numerology.chartId || "");
+      if (!cleanNumChartId || cleanNumChartId !== cleanExpectedChartId) {
+        console.log(`[Validation Utility] Numerology discrepancy detected (Expected: ${cleanExpectedChartId}, got: ${cleanNumChartId}). Forcing recalculation using the official numerology engine...`);
+        needsRecalculateNum = true;
+      }
+    }
+
+    if (needsRecalculateMap || needsRecalculateNum) {
+      console.log(`[Validation Utility] Recalculating out-of-sync modules: ${needsRecalculateMap ? "Map " : ""}${needsRecalculateNum ? "Numerology" : ""}`);
+      triggerGenerateMainMap({
+        name: user.name,
+        birthDate: user.birthDate,
+        birthTime: user.birthTime,
+        birthCity: user.birthCity,
+        isUnknownTime: user.isUnknownTime,
+        latitude: user.latitude,
+        longitude: user.longitude,
+        currentChartId: expectedChartId
+      }, currentLang).then(() => {
+        // Enforce the current chart ID on the updated states to lock alignment
+        setMapData(prev => prev ? { ...prev, chartId: expectedChartId } : null);
+        setNumerology(prev => prev ? { ...prev, chartId: expectedChartId } : null);
+      });
+    }
+
+    // 3. Verify Tarot draw session discrepancy
+    const tarotSavedChartId = localStorage.getItem("tarot_saved_chart_id_semanal");
+    if (tarotSavedChartId && cleanStringForChartId(tarotSavedChartId) !== cleanExpectedChartId) {
+      console.log(`[Validation Utility] Tarot discrepancy detected. Clearing outdated Tarot readings to force recalculation.`);
+      localStorage.removeItem("tarot_last_draw_semanal");
+      localStorage.removeItem("tarot_saved_reading_semanal");
+      localStorage.removeItem("tarot_saved_guidance_semanal");
+      localStorage.removeItem("tarot_saved_cards_semanal");
+      localStorage.removeItem("tarot_saved_map_semanal");
+      localStorage.removeItem("tarot_saved_indices_semanal");
+      localStorage.removeItem("tarot_saved_chart_id_semanal");
+    }
+
+    // 4. Verify Oráculo dos Sonhos (Dreams History)
+    if (dreamsHistory && dreamsHistory.length > 0) {
+      const mostRecentDream = dreamsHistory[0];
+      if (mostRecentDream.chartId && mostRecentDream.chartId !== expectedChartId && !isInterpretingDream) {
+        console.log(`[Validation Utility] Dreams discrepancy detected for map ${expectedChartId}. Re-interpreting most recent dream in the background using the official AI engine...`);
+        
+        const reinterpretMostRecentDream = async () => {
+          setIsInterpretingDream(true);
+          try {
+            const res = await fetch("/api/dreams/interpret", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                description: mostRecentDream.description,
+                lang: currentLang,
+                mapData: mapData || (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("orbi_map_data") || 'null') : null),
+                userProfile: user
+              })
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data.interpretation) {
+                setDreamsHistory(prev => {
+                  const updated = [...prev];
+                  updated[0] = {
+                    ...mostRecentDream,
+                    interpretation: data.interpretation,
+                    title: data.interpretation.title || mostRecentDream.title,
+                    chartId: expectedChartId
+                  };
+                  return updated;
+                });
+                pushRealNotification("Seu sonho mais recente foi recalculado e sintonizado com o seu novo Mapa Astral! 🌀");
+              }
+            }
+          } catch (err) {
+            console.error("[Validation Utility] Failed to reinterpret dream:", err);
+          } finally {
+            setIsInterpretingDream(false);
+          }
+        };
+        reinterpretMostRecentDream();
+      }
+    }
+  }, [
+    user?.birthDate, 
+    user?.birthTime, 
+    user?.birthCity, 
+    user?.currentChartId, 
+    mapData?.chartId, 
+    numerology?.chartId, 
+    dreamsHistory?.length, 
+    dreamsHistory?.[0]?.chartId, 
+    isLoadingMain, 
+    currentLang
   ]);
+
+  const [weeklyMissions, setWeeklyMissions] = useState<DailyMission[]>(() => {
+    const isEn = currentLang === 'en';
+    const isEs = currentLang === 'es';
+    const isDe = currentLang === 'de';
+    const isFr = currentLang === 'fr';
+
+    let completedIds: string[] = [];
+    try {
+      const today = new Date();
+      const startOfYear = new Date(today.getFullYear(), 0, 1);
+      const pastDaysOfYear = (today.getTime() - startOfYear.getTime()) / 86400000;
+      const weekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+      const weekStr = `${today.getFullYear()}-W${weekNumber}`;
+      const saved = localStorage.getItem(`orbi_weekly_completed_${weekStr}`);
+      if (saved) {
+        completedIds = JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error("Failed to parse weekly missions", e);
+    }
+    return [
+      { id: "w1", title: isEn ? "This week try to resolve an old pending matter" : isEs ? "Esta semana intente resolver un asunto pendiente antiguo" : isDe ? "Versuchen Sie diese Woche, eine alte Angelegenheit zu klären" : isFr ? "Cette semaine essayez de résoudre une affaire en suspens ancienne" : "Esta semana tente resolver uma pendência antiga", description: isEn ? "Identify a long-standing commitment and take the first step to resolve it, releasing Saturn's flow." : isEs ? "Identifique un compromiso pendiente desde hace mucho tempo y dé el primer paso para resolverlo, liberando el flujo de Saturno." : isDe ? "Identifizieren Sie eine seit langem ausstehende Verpflichtung und machen Sie den ersten Schritt, um sie zu lösen, um den Fluss Saturns freizusetzen." : isFr ? "Identifiez un engagement de longue date et faites le premier pas pour le résoudre, libérant ainsi le flux de Saturne." : "Identifique um compromisso pendente há muito tempo e dê o primeiro passo para resolvê-lo, liberando fluxo de Saturno.", isCompleted: false, points: 120 },
+      { id: "w2", title: isEn ? "This week strengthen an important relationship" : isEs ? "Esta semana fortalezca una relación importante" : isDe ? "Stärken Sie diese Woche eine wichtige Beziehung" : isFr ? "Cette semaine renforcez une relation importante" : "Esta semana fortaleça um relacionamento importante", description: isEn ? "Send a sincere message of gratitude or make a light conversation invitation to someone you care about." : isEs ? "Envíe un mensaje sincero de gratitud o invite a una conversación ligera a alguien que aprecia." : isDe ? "Senden Sie eine aufrichtige Botschaft der Dankbarkeit oder laden Sie jemanden, den Sie schätzen, zu einem leichten Gespräch ein." : isFr ? "Envoyez un message sincère de gratitude ou invitez quelqu'un que vous appréciez à une conversation légère." : "Envie uma mensagem sincera de gratidão ou faça um convite de conversa leve a quem você quer bem.", isCompleted: false, points: 150 },
+      { id: "w3", title: isEn ? "This week dedicate time to learning" : isEs ? "Esta semana dedique tempo ao aprendizado" : isDe ? "Widmen Sie diese Woche Zeit dem Lernen" : isFr ? "Cette semaine consacrez du temps à l'apprentissage" : "Esta semana dedique tempo ao aprendizado", description: isEn ? "Set aside a focused time to study astrological symbols or techniques for mental clarity and meditation." : isEs ? "Reserve un tempo concentrado para estudar símbolos astrológicos ou técnicas de claridad mental y meditación." : isDe ? "Nehmen Sie sich eine konzentrierte Zeit, um astrologische Symbole oder Techniken zur mentalen Klarheit und Meditation zu studieren." : isFr ? "Réservez un temps concentré pour étudier les symboles astrologiques ou des techniques de clarté mentale et de méditation." : "Reserve um tempo concentrado para estudar símbolos astrológicos ou técnicas de clareza mental e meditação.", isCompleted: false, points: 100 }
+    ];
+  });
+
+  // Keep weeklyMissions translated on language switch
+  useEffect(() => {
+    const isEn = currentLang === 'en';
+    const isEs = currentLang === 'es';
+    const isDe = currentLang === 'de';
+    const isFr = currentLang === 'fr';
+    const templates = [
+      { id: "w1", title: isEn ? "This week try to resolve an old pending matter" : isEs ? "Esta semana intente resolver un asunto pendiente antiguo" : isDe ? "Versuchen Sie diese Woche, eine alte Angelegenheit zu klären" : isFr ? "Cette semaine essayez de résoudre une affaire en suspens ancienne" : "Esta semana tente resolver uma pendência antiga", description: isEn ? "Identify a long-standing commitment and take the first step to resolve it, releasing Saturn's flow." : isEs ? "Identifique un compromisso pendente desde há muito tempo e dê o primeiro passo para resolverlo, liberando o fluxo de Saturno." : isDe ? "Identifizieren Sie eine seit langem ausstehende Verpflichtung und machen Sie den ersten Schritt, um sie zu lösen, um den Fluss Saturns freizusetzen." : isFr ? "Identifiez un engagement de longue date et faites le premier pas pour le résoudre, libérant ainsi le flux de Saturne." : "Identifique um compromisso pendente há muito tempo e dê o primeiro passo para resolvê-lo, liberando fluxo de Saturno.", isCompleted: false, points: 120 },
+      { id: "w2", title: isEn ? "This week strengthen an important relationship" : isEs ? "Esta semana fortalezca una relación importante" : isDe ? "Stärken Sie diese Woche eine wichtige Beziehung" : isFr ? "Cette semaine renforcez une relation importante" : "Esta semana fortaleça um relacionamento importante", description: isEn ? "Send a sincere message of gratitude or make a light conversation invitation to someone you care about." : isEs ? "Envíe un mensaje sincero de gratitud o invite a una conversación ligera a alguien que aprecia." : isDe ? "Senden Sie eine aufrichtige Botschaft der Dankbarkeit oder laden Sie jemanden, den Sie schätzen, zu einem leichten Gespräch ein." : isFr ? "Envoyez un message sincère de gratitude ou invitez quelqu'un que vous appréciez à une conversation légère." : "Envie uma mensagem sincera de gratidão ou faça um convite de conversa leve a quem você quer bem.", isCompleted: false, points: 150 },
+      { id: "w3", title: isEn ? "This week dedicate time to learning" : isEs ? "Esta semana dedique tempo ao aprendizado" : isDe ? "Widmen Sie diese Woche Zeit dem Lernen" : isFr ? "Cette semaine consacrez du temps à l'apprentissage" : "Esta semana dedique tempo ao aprendizado", description: isEn ? "Set aside a focused time to study astrological symbols or techniques for mental clarity and meditation." : isEs ? "Reserve um tempo concentrado para estudar símbolos astrológicos ou técnicas de clareza mental e meditação." : isDe ? "Nehmen Sie sich eine konzentrierte Zeit, um astrologische Symbole oder Techniken zur mentalen Klarheit und Meditation zu studieren." : isFr ? "Réservez un temps concentré pour étudier les symboles astrologiques ou des techniques de clarté mentale et de méditation." : "Reserve um tempo concentrado para estudar símbolos astrológicos ou técnicas de clareza mental e meditação.", isCompleted: false, points: 100 }
+    ];
+    setWeeklyMissions(prev => prev.map(m => {
+      const tpl = templates.find(t => t.id === m.id);
+      if (tpl) {
+        return {
+          ...m,
+          title: tpl.title,
+          description: tpl.description
+        };
+      }
+      return m;
+    }));
+  }, [currentLang]);
+
+  // Load weekly missions completed state from localStorage
+  useEffect(() => {
+    try {
+      const today = systemDate;
+      const startOfYear = new Date(today.getFullYear(), 0, 1);
+      const pastDaysOfYear = (today.getTime() - startOfYear.getTime()) / 86400000;
+      const weekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+      const weekStr = `${today.getFullYear()}-W${weekNumber}`;
+      const saved = localStorage.getItem(`orbi_weekly_completed_${weekStr}`);
+      if (saved) {
+        const completedIds: string[] = JSON.parse(saved);
+        setWeeklyMissions(prev => prev.map(m => ({
+          ...m,
+          isCompleted: completedIds.includes(m.id)
+        })));
+      } else {
+        setWeeklyMissions(prev => prev.map(m => ({
+          ...m,
+          isCompleted: false
+        })));
+      }
+    } catch (e) {
+      console.error("Failed to load weekly progress", e);
+    }
+  }, [systemDate]);
+
+  // Save weekly missions completed state to localStorage
+  useEffect(() => {
+    try {
+      const today = systemDate;
+      const startOfYear = new Date(today.getFullYear(), 0, 1);
+      const pastDaysOfYear = (today.getTime() - startOfYear.getTime()) / 86400000;
+      const weekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+      const weekStr = `${today.getFullYear()}-W${weekNumber}`;
+      const completedIds = weeklyMissions.filter(m => m.isCompleted).map(m => m.id);
+      localStorage.setItem(`orbi_weekly_completed_${weekStr}`, JSON.stringify(completedIds));
+    } catch (e) {
+      console.error("Failed to save weekly progress", e);
+    }
+  }, [weeklyMissions, systemDate]);
+
+  // Automatically regenerate Astrology Map if active language changes
+  useEffect(() => {
+    if (mapData && mapData.lang !== currentLang && user && user.birthDate) {
+      triggerGenerateMainMap({
+        name: user.name,
+        birthDate: user.birthDate,
+        birthTime: user.birthTime,
+        birthCity: user.birthCity,
+        isUnknownTime: user.isUnknownTime,
+        latitude: user.latitude,
+        longitude: user.longitude,
+        currentChartId: user.currentChartId
+      }, currentLang);
+    }
+  }, [currentLang, user?.birthDate, mapData?.lang]);
   
   // Blog / FAQ / Landing views helper
   const [activeLandingSection, setActiveLandingSection] = useState<'home' | 'blog' | 'tarot' | 'faq'>('home');
@@ -2180,14 +2916,10 @@ export default function App() {
   const [isMapJustSaved, setIsMapJustSaved] = useState<boolean>(false);
 
   // Language settings state
-  const [lang, setLangState] = useState<Language>(getInitialLanguage());
+  const lang = idioma as Language;
   const setLang = async (newLang: Language) => {
     // 4. Update the global context state first
     mudarIdioma(newLang as any);
-    setLangState(newLang);
-    setCurrentLang(newLang);
-    i18n.changeLanguage(newLang);
-    localStorage.setItem('orbi_preferred_language', newLang);
     if (user && user.birthDate) {
       triggerGenerateMainMap({
         name: user.name,
@@ -2216,38 +2948,9 @@ export default function App() {
     }
   };
 
-  // Sync currentLang dynamically so that any component receiving currentLang matches the settings perfectly
-  useEffect(() => {
-    setCurrentLang(lang);
-    if (i18n.language !== lang) {
-      i18n.changeLanguage(lang);
-    }
-  }, [lang]);
-
-  // Synchronize Context language change to App state
-  useEffect(() => {
-    if (idioma && idioma !== lang) {
-      setLangState(idioma as any);
-    }
-  }, [idioma]);
-
   // Local helper to get static translations for settings on the fly
   const tLocal = (key: string, replacement?: any): string => {
-    const activeL = lang || 'pt';
-    const translated = translateUiText(key, activeL);
-    if (translated && translated !== key) {
-      let str = translated;
-      if (replacement !== undefined) {
-        str = str.replace('{count}', String(replacement));
-      }
-      return str;
-    }
-    const dict = localLangDict[activeL] || localLangDict['pt'];
-    let str = dict[key] || '';
-    if (!str) {
-      const fallbackDict = localLangDict['pt'];
-      str = fallbackDict[key] || key;
-    }
+    let str = i18nT(key);
     if (replacement !== undefined) {
       str = str.replace('{count}', String(replacement));
     }
@@ -2270,6 +2973,172 @@ export default function App() {
         return current;
       });
     }, 6000);
+  };
+
+  // PWA Install states & hooks
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstalled, setIsInstalled] = useState<boolean>(false);
+  const [showPWAInstallGuide, setShowPWAInstallGuide] = useState<boolean>(false);
+
+  useEffect(() => {
+    // Check if the prompt was already captured globally
+    if ((window as any).deferredPrompt) {
+      setDeferredPrompt((window as any).deferredPrompt);
+    }
+
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      (window as any).deferredPrompt = e;
+      console.log('beforeinstallprompt event triggered and deferred!');
+    };
+
+    const handleCustomPromptAvailable = (e: any) => {
+      if (e.detail) {
+        setDeferredPrompt(e.detail);
+      }
+    };
+
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setDeferredPrompt(null);
+      (window as any).deferredPrompt = null;
+      triggerGlobalNotification(
+        t("Aplicativo Instalado"),
+        t("Portal Órbita foi instalado com sucesso em seu dispositivo!"),
+        "success"
+      );
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('pwa-prompt-available', handleCustomPromptAvailable as any);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    let mediaQuery: MediaQueryList | null = null;
+    try {
+      if (typeof window !== 'undefined' && window.matchMedia) {
+        mediaQuery = window.matchMedia('(display-mode: standalone)');
+      }
+    } catch (e) {
+      console.warn("matchMedia support is restricted in this environment:", e);
+    }
+
+    if (mediaQuery && mediaQuery.matches) {
+      setIsInstalled(true);
+    } else if (typeof navigator !== 'undefined' && (navigator as any).standalone) {
+      setIsInstalled(true);
+    }
+
+    const handleMediaChange = (e: MediaQueryListEvent) => {
+      if (e && e.matches) {
+        setIsInstalled(true);
+      }
+    };
+
+    if (mediaQuery) {
+      try {
+        mediaQuery.addEventListener('change', handleMediaChange);
+      } catch (err) {
+        try {
+          mediaQuery.addListener(handleMediaChange);
+        } catch (e) {}
+      }
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('pwa-prompt-available', handleCustomPromptAvailable as any);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+      if (mediaQuery) {
+        try {
+          mediaQuery.removeEventListener('change', handleMediaChange);
+        } catch (err) {
+          try {
+            mediaQuery.removeListener(handleMediaChange);
+          } catch (e) {}
+        }
+      }
+    };
+  }, []);
+
+  const handleInstallPWA = async () => {
+    // Detect if running inside an iframe (such as AI Studio preview iframe)
+    const isIframe = typeof window !== 'undefined' && window.self !== window.top;
+    if (isIframe) {
+      triggerGlobalNotification(
+        t("Abrindo Portal Órbita"),
+        t("Redirecionando para aba externa para permitir instalação nativa imediata!"),
+        "success"
+      );
+      window.open(window.location.href, '_blank');
+      return;
+    }
+
+    const ua = typeof navigator !== 'undefined' && navigator.userAgent ? navigator.userAgent.toLowerCase() : "";
+    const isIos = /iphone|ipad|ipod/.test(ua);
+    const isInAppBrowser = /tiktok|musically|bytedance|instagram|fbav|fban|fb_iab|messenger|line\/|twitter|snapchat|pinterest|gsa\/|wv|webview/i.test(ua);
+
+    let promptEvent = deferredPrompt || (window as any).deferredPrompt;
+
+    // If event is not ready immediately, retry for up to 800ms in case beforeinstallprompt is firing right after load
+    if (!promptEvent && !isIos && !isInAppBrowser) {
+      await new Promise<void>((resolve) => {
+        let attempts = 0;
+        const timer = setInterval(() => {
+          attempts++;
+          const captured = (window as any).deferredPrompt;
+          if (captured) {
+            promptEvent = captured;
+            clearInterval(timer);
+            resolve();
+          } else if (attempts >= 8) {
+            clearInterval(timer);
+            resolve();
+          }
+        }, 100);
+      });
+    }
+
+    if (!promptEvent || isInAppBrowser) {
+      if (isInAppBrowser) {
+        triggerGlobalNotification(
+          t("Navegador do TikTok/Rede Social"),
+          t("O TikTok impede a instalação direta de PWA. Siga o passo a passo na tela para abrir no Chrome ou Safari!"),
+          "info"
+        );
+      } else if (isInstalled) {
+        triggerGlobalNotification(
+          t("Aplicativo Já Instalado"),
+          t("Portal Órbita já está instalado e ativo em seu dispositivo!"),
+          "success"
+        );
+        return;
+      }
+      setShowPWAInstallGuide(true);
+      return;
+    }
+
+    try {
+      // Trigger the native install prompt immediately
+      await promptEvent.prompt();
+      
+      setDeferredPrompt(null);
+      (window as any).deferredPrompt = null;
+
+      const choiceResult = await promptEvent.userChoice;
+      if (choiceResult?.outcome === 'accepted') {
+        setIsInstalled(true);
+        triggerGlobalNotification(
+          t("Instalação Concluída"),
+          t("Portal Órbita foi instalado com sucesso em seu dispositivo!"),
+          "success"
+        );
+      }
+    } catch (err) {
+      console.error('Erro ao acionar prompt nativo PWA:', err);
+      setDeferredPrompt(null);
+      (window as any).deferredPrompt = null;
+    }
   };
 
   const renderLockedSection = (title: string, desc: string) => {
@@ -2295,99 +3164,133 @@ export default function App() {
     );
   };
 
-  const mapLocalChartToAstrologyMap = (name: string, date: string, time: string, city: string): AstrologyMap => {
-    const chart = calculateNatalChart(date, time, city);
+  const mapLocalChartToAstrologyMap = (
+    name: string,
+    date: string,
+    time: string,
+    city: string,
+    forcedLang?: Language,
+    customLat?: number,
+    customLng?: number
+  ): AstrologyMap => {
+    const activeLang = forcedLang || (i18n.language || 'pt').toLowerCase().split('-')[0] as 'pt' | 'en' | 'es' | 'de' | 'fr';
     
-    let fogo = 0, terra = 0, ar = 0, agua = 0;
-    let cardinal = 0, fixo = 0, mutavel = 0;
-    let ativo = 0, receptivo = 0;
+    const lat = customLat !== undefined ? customLat : (user.latitude !== undefined ? user.latitude : -23.5505);
+    const lng = customLng !== undefined ? customLng : (user.longitude !== undefined ? user.longitude : -46.6333);
     
-    const elementMapping: Record<string, "Fogo" | "Terra" | "Ar" | "Água"> = {
-      "Áries": "Fogo", "Leão": "Fogo", "Sagitário": "Fogo",
-      "Touro": "Terra", "Virgem": "Terra", "Capricórnio": "Terra",
-      "Gêmeos": "Ar", "Libra": "Ar", "Aquário": "Ar",
-      "Câncer": "Água", "Escorpião": "Água", "Peixes": "Água"
-    };
-    
-    const qualityMapping: Record<string, "Cardinal" | "Fixo" | "Mutável"> = {
-      "Áries": "Cardinal", "Câncer": "Cardinal", "Libra": "Cardinal", "Capricórnio": "Cardinal",
-      "Touro": "Fixo", "Leão": "Fixo", "Escorpião": "Fixo", "Aquário": "Fixo",
-      "Gêmeos": "Mutável", "Virgem": "Mutável", "Sagitário": "Mutável", "Peixes": "Mutável"
-    };
-    
-    const polarityMapping: Record<string, "Ativo" | "Receptivo"> = {
-      "Áries": "Ativo", "Gêmeos": "Ativo", "Leão": "Ativo", "Libra": "Ativo", "Sagitário": "Ativo", "Aquário": "Ativo",
-      "Touro": "Receptivo", "Câncer": "Receptivo", "Virgem": "Receptivo", "Escorpião": "Receptivo", "Capricórnio": "Receptivo", "Peixes": "Receptivo"
+    // Heuristic client-side timezone resolution
+    const deduceTimezone = (lLatitude: number, lLongitude: number): string => {
+      if (lLatitude < 5 && lLatitude > -35 && lLongitude < -30 && lLongitude > -75) {
+        if (lLongitude < -54) {
+          if (lLongitude < -65) {
+            return "America/Rio_Branco";
+          }
+          return "America/Manaus";
+        }
+        return "America/Sao_Paulo";
+      }
+      if (lLatitude > 24 && lLatitude < 49 && lLongitude < -66 && lLongitude > -125) {
+        if (lLongitude < -114) return "America/Los_Angeles";
+        if (lLongitude < -104) return "America/Denver";
+        if (lLongitude < -85) return "America/Chicago";
+        return "America/New_York";
+      }
+      if (lLatitude > 35 && lLatitude < 70 && lLongitude > -10 && lLongitude < 40) {
+        if (lLongitude < 2) return "Europe/London";
+        if (lLongitude < 20) return "Europe/Paris";
+        return "Europe/Athens";
+      }
+      return "America/Sao_Paulo";
     };
 
-    chart.planets.forEach(p => {
-      const el = elementMapping[p.sign] || "Fogo";
-      if (el === "Fogo") fogo++;
-      else if (el === "Terra") terra++;
-      else if (el === "Ar") ar++;
-      else if (el === "Água") agua++;
-      
-      const q = qualityMapping[p.sign] || "Cardinal";
-      if (q === "Cardinal") cardinal++;
-      else if (q === "Fixo") fixo++;
-      else if (q === "Mutável") mutavel++;
-      
-      const pol = polarityMapping[p.sign] || "Ativo";
-      if (pol === "Ativo") ativo++;
-      else receptivo++;
-    });
+    const tzName = deduceTimezone(lat, lng);
+    const mt = moment.tz(`${date} ${time || "12:00"}`, "YYYY-MM-DD HH:mm", tzName);
+    const is_dst = mt.isDST();
+    const tzOffset = mt.utcOffset() / 60;
 
-    const totalPoints = chart.planets.length || 1;
+    // Perform high-precision mathematical astrological calculations
+    const chart = performAstroCalculation(
+      date,
+      time || "12:00",
+      lat,
+      lng,
+      tzOffset,
+      activeLang
+    );
 
-    const astros: AstroAstroPosition[] = chart.planets.map(p => ({
+    const astros: AstroAstroPosition[] = chart.astros.map(p => ({
       name: p.name,
       sign: p.sign,
-      degree: `${p.degree}°`,
-      extraInfo: p.isRetrograde ? "retrógrado" : "direto",
-      description: `Exibindo posição do astro ${p.name} no signo de ${p.sign} na Casa ${p.house}.`
+      degree: `${p.degree}°${p.minute.toString().padStart(2, "0")}'`,
+      extraInfo: p.extraInfo,
+      description: p.description
     }));
 
     const houses: AstroHouse[] = chart.houses.map(h => ({
-      number: h.house,
+      number: h.number,
       sign: h.sign,
-      interpretation: `A cúspide da Casa ${h.house} inicia no signo de ${h.sign} com graus exatos de ${h.degree}° de alinhamento Placidus.`
+      interpretation: h.interpretation,
+      planet: h.planets.join(", ") || undefined
     }));
 
     const aspects: AstroAspect[] = chart.aspects.map(a => ({
       planet1: a.planet1,
       planet2: a.planet2,
-      aspectType: a.type as any,
-      orb: `${a.orb}°`,
-      interpretation: `Conexão celeste dinâmica de ${a.type} entre ${a.planet1} e ${a.planet2}.`
+      aspectType: a.aspectType as any,
+      orb: a.orb.replace('°', ''),
+      interpretation: a.interpretation
     }));
 
+    const welcomeMessages: Record<string, string> = {
+      pt: `Olá ${name}, suas efemérides científicas foram calculadas sob o sistema Placidus e sintonizadas no dispositivo local com sucesso!`,
+      en: `Hello ${name}, your scientific ephemeris have been calculated under the Placidus system and tuned on your local device successfully!`,
+      es: `¡Hola ${name}, sus efemérides científicas se han calculado bajo el sistema Placidus y se han sintonizado en su dispositivo local con éxito!`,
+      de: `Hallo ${name}, Ihre wissenschaftlichen Ephemeriden wurden unter dem Placidus-System berechnet und erfolgreich auf Ihrem lokalen Gerät abgestimmt!`,
+      fr: `Bonjour ${name}, vos éphémérides scientifiques ont été calculées sous le système Placidus et réglées avec succès sur votre appareil local !`
+    };
+    const welcomeMessage = welcomeMessages[activeLang] || welcomeMessages.pt;
+
+    const personalityTraitsByLang: Record<string, { harmonious: string[], disharmonious: string[] }> = {
+      pt: {
+        harmonious: ["Socialmente consciente", "Inventivo", "Esperançoso", "Amigável", "Independente", "Intuitivo"],
+        disharmonious: ["Temperamental", "Disperso", "Imprevisível", "Teimoso", "Inquieto"]
+      },
+      en: {
+        harmonious: ["Socially conscious", "Inventive", "Hopeful", "Friendly", "Independent", "Intuitive"],
+        disharmonious: ["Temperamental", "Scattered", "Unpredictable", "Stubborn", "Restless"]
+      },
+      es: {
+        harmonious: ["Socialmente consciente", "Inventivo", "Esperanzado", "Amigable", "Independiente", "Intuitivo"],
+        disharmonious: ["Temperamental", "Disperso", "Impredecible", "Terco", "Inquieto"]
+      },
+      de: {
+        harmonious: ["Sozial bewusst", "Erfinderisch", "Hoffnungsvoll", "Freundlich", "Unabhängig", "Intuitiv"],
+        disharmonious: ["Launisch", "Zerstreut", "Unberechenbar", "Eigensinnig", "Rastlos"]
+      },
+      fr: {
+        harmonious: ["Socialement conscient", "Inventif", "Plein d'espoir", "Amical", "Indépendant", "Intuitif"],
+        disharmonious: ["Capricieux", "Dispersé", "Imprévisible", "Têtu", "Inquiet"]
+      }
+    };
+    const traits = personalityTraitsByLang[activeLang] || personalityTraitsByLang.pt;
+
+    let adjustedTime = time || "12:00";
+    if (is_dst) {
+      const [h, m] = (time || "12:00").split(":").map(Number);
+      let newH = h - 1;
+      if (newH < 0) newH = 23;
+      adjustedTime = `${newH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+    }
+
     return {
-      welcomeMessage: `Olá ${name}, suas efemérides foram geradas e sintonizadas no dispositivo local com sucesso!`,
+      welcomeMessage,
       originalTime: time,
-      adjustedTime: time,
-      timezone: "America/Sao_Paulo",
-      is_dst: false,
-      distribution: {
-        elements: {
-          fire: Math.round((fogo / totalPoints) * 100),
-          earth: Math.round((terra / totalPoints) * 100),
-          air: Math.round((ar / totalPoints) * 100),
-          water: Math.round((agua / totalPoints) * 100)
-        },
-        qualities: {
-          cardinal: Math.round((cardinal / totalPoints) * 100),
-          fixed: Math.round((fixo / totalPoints) * 100),
-          mutable: Math.round((mutavel / totalPoints) * 100)
-        },
-        polarization: {
-          yang: Math.round((ativo / totalPoints) * 100),
-          yin: Math.round((receptivo / totalPoints) * 100)
-        }
-      },
-      personalityTraits: {
-        harmonious: ["Socialmente consciente", "Inventivo", "Esperançoso", "Amigável", "Independente"],
-        disharmonious: ["Temperamental", "Disperso", "Imprevisível", "Teimoso"]
-      },
+      adjustedTime: adjustedTime,
+      timezone: tzName,
+      is_dst,
+      lang: activeLang,
+      distribution: chart.distribution,
+      personalityTraits: traits,
       astros,
       houses,
       aspects
@@ -2415,7 +3318,8 @@ export default function App() {
         console.warn("[Migration Engine] Parse error:", e);
       }
       
-      const hasLocalMapParams = localProfile && localProfile.birthDate && localProfile.birthCity;
+      const isGuestOrSameUser = localProfile && (!localProfile.email || localProfile.email.toLowerCase().trim() === emailLower) && (!localProfile.uid || localProfile.uid === uid);
+      const hasLocalMapParams = isGuestOrSameUser && localProfile.birthDate && localProfile.birthCity;
       
       let cloudCharts: any[] = [];
       try {
@@ -2429,17 +3333,25 @@ export default function App() {
       if (hasLocalMapParams && isCloudEmpty) {
         console.log("[Migration Engine] Cloud is empty or missing map. Initiating guest-to-cloud automatic migration!");
         
-        const birthDateClean = localProfile.birthDate.replace(/[^a-zA-Z0-9]/g, "_");
-        const birthTimeClean = (localProfile.birthTime || "12:00").replace(/[^a-zA-Z0-9]/g, "_");
-        const birthCityClean = (localProfile.birthCity || "Sao_Paulo").replace(/[^a-zA-Z0-9]/g, "_");
+        const birthDateClean = cleanStringForChartId(localProfile.birthDate);
+        const birthTimeClean = cleanStringForChartId(localProfile.birthTime || "12:00");
+        const birthCityClean = cleanStringForChartId(localProfile.birthCity || "Sao_Paulo");
         const chartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
         
+        const activeLang = (i18n.language || 'pt').toLowerCase().split('-')[0] as 'pt' | 'en' | 'es' | 'de' | 'fr';
         const finalMap = localMapData || mapLocalChartToAstrologyMap(
           localProfile.name || targetUser.name || "Buscador",
           localProfile.birthDate,
           localProfile.birthTime || "12:00",
-          localProfile.birthCity
+          localProfile.birthCity,
+          undefined,
+          localProfile.latitude,
+          localProfile.longitude
         );
+        
+        if (finalMap) {
+          finalMap.lang = activeLang;
+        }
         
         const finalNum = localNumerology || calculateNumerology(
           localProfile.name || targetUser.name || "Buscador",
@@ -2453,7 +3365,8 @@ export default function App() {
           birthCity: localProfile.birthCity,
           isUnknownTime: !!localProfile.isUnknownTime,
           mapData: finalMap,
-          numerology: finalNum
+          numerology: finalNum,
+          lang: activeLang
         });
         
         const migratedUserObj: UserProfile = {
@@ -2483,8 +3396,8 @@ export default function App() {
         setActiveTab('mapa');
         
         triggerGlobalNotification(
-          "Mapa Sincronizado", 
-          "Seu mapa astral local foi arquivado com sucesso no seu perfil na nuvem!", 
+          t("Mapa Sincronizado"), 
+          t("Seu mapa astral local foi arquivado com sucesso no seu perfil na nuvem!"), 
           "success"
         );
       } else if (targetUser.birthDate || (cloudCharts && cloudCharts.length > 0)) {
@@ -2510,8 +3423,8 @@ export default function App() {
   const handleManualSaveMap = async () => {
     if (!isLoggedIn || !loggedEmail) {
       triggerGlobalNotification(
-        "Autenticação Necessária", 
-        "Crie uma conta ou faça login para salvar seu mapa com segurança na Nuvem Órbita!", 
+        t("Autenticação Necessária"), 
+        t("Crie uma conta ou faça login para salvar seu mapa com segurança na Nuvem Órbita!"), 
         "alert"
       );
       setMapSubTab('criar_meu_mapa');
@@ -2521,8 +3434,8 @@ export default function App() {
 
     if (!mapData || !numerology) {
       triggerGlobalNotification(
-        "Sem Dados do Mapa", 
-        "Por favor, insira seus dados de nascimento para gerar um mapa antes de salvar.", 
+        t("Sem Dados do Mapa"), 
+        t("Por favor, insira seus dados de nascimento para gerar um mapa antes de salvar."), 
         "alert"
       );
       return;
@@ -2530,9 +3443,9 @@ export default function App() {
 
     setIsLoadingMain(true);
     try {
-      const birthDateClean = (user.birthDate || "1997-02-11").replace(/[^a-zA-Z0-9]/g, "_");
-      const birthTimeClean = (user.birthTime || "12:00").replace(/[^a-zA-Z0-9]/g, "_");
-      const birthCityClean = (user.birthCity || "Sao_Paulo").replace(/[^a-zA-Z0-9]/g, "_");
+      const birthDateClean = cleanStringForChartId(user.birthDate || "1997-02-11");
+      const birthTimeClean = cleanStringForChartId(user.birthTime || "12:00");
+      const birthCityClean = cleanStringForChartId(user.birthCity || "Sao_Paulo");
       const chartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
 
       await saveNatalChartToDatabase(loggedEmail, chartId, {
@@ -2559,16 +3472,16 @@ export default function App() {
       localStorage.setItem("orbi_numerology_data", JSON.stringify(numerology));
 
       triggerGlobalNotification(
-        "Sincronização Completa", 
-        "Seu mapa natal e numerologia foram salvos com sucesso na nuvem do Firestore!", 
+        t("Sincronização Completa"), 
+        t("Seu mapa natal e numerologia foram salvos com sucesso na nuvem do Firestore!"), 
         "success"
       );
     } catch (saveError: any) {
       console.error("[Manual Save] Error:", saveError);
       const errMsg = saveError?.message || String(saveError);
       triggerGlobalNotification(
-        "Erro ao Salvar", 
-        `Erro Firestore: ${errMsg}`, 
+        t("Erro ao Salvar"), 
+        `${t("Erro Firestore:")} ${errMsg}`, 
         "alert"
       );
     } finally {
@@ -2589,31 +3502,50 @@ export default function App() {
       details.name || user.name || "Buscador",
       defaultBirthDate,
       defaultBirthTime,
-      defaultBirthCity
+      defaultBirthCity,
+      forcedLang,
+      details.latitude !== undefined ? details.latitude : user.latitude,
+      details.longitude !== undefined ? details.longitude : user.longitude
     );
     const clientNum = calculateNumerology(
       details.name || user.name || "Buscador",
       defaultBirthDate
     );
 
-    // Set high-precision map values instantly
-    setMapData(clientMap);
-    setNumerology(clientNum);
+    // Set high-precision map values instantly if not already loaded or matching the expected ID
+    const birthDateCleanInst = cleanStringForChartId(defaultBirthDate);
+    const birthTimeCleanInst = cleanStringForChartId(defaultBirthTime);
+    const birthCityCleanInst = cleanStringForChartId(defaultBirthCity);
+    const expectedChartIdInst = details.currentChartId || user.currentChartId || `chart_${birthDateCleanInst}_${birthTimeCleanInst}_${birthCityCleanInst}`;
+
+    const cleanCurrentMapId = cleanStringForChartId(mapData?.chartId || "");
+    const cleanCurrentNumId = cleanStringForChartId(numerology?.chartId || "");
+    const cleanExpectedInst = cleanStringForChartId(expectedChartIdInst);
+
+    if (!mapData || cleanCurrentMapId !== cleanExpectedInst) {
+      console.log(`[Astro Engine] Setting client-side fallback map for ID: ${expectedChartIdInst}`);
+      setMapData({ ...clientMap, chartId: expectedChartIdInst });
+    }
+    if (!numerology || cleanCurrentNumId !== cleanExpectedInst) {
+      setNumerology({ ...clientNum, chartId: expectedChartIdInst });
+    }
     setIsLoadingMain(false);
 
     try {
       const email = details.email || user.email || loggedEmail;
+      let dbChart: any = null;
+      let cachedMatch: any = null;
       if (email) {
         // High-Precision subcollection lookup via candidate IDs (robust and typo-tolerant)
-        const birthDateClean = (details.birthDate || user.birthDate || "1997-02-11").replace(/[^a-zA-Z0-9]/g, "_");
-        const birthTimeClean = (details.birthTime || user.birthTime || "12:00").replace(/[^a-zA-Z0-9]/g, "_");
-        const birthCityClean = (details.birthCity || user.birthCity || "Sao_Paulo").replace(/[^a-zA-Z0-9]/g, "_");
+        const birthDateClean = cleanStringForChartId(details.birthDate || user.birthDate || "1997-02-11");
+        const birthTimeClean = cleanStringForChartId(details.birthTime || user.birthTime || "12:00");
+        const birthCityClean = cleanStringForChartId(details.birthCity || user.birthCity || "Sao_Paulo");
         const dynamicChartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
         const typoChartId = `chart_${birthDateClean}_birthTimeClean_birthCityClean`;
 
         const activeChartId = details.currentChartId || user.currentChartId || dynamicChartId;
         
-        let dbChart = null;
+        dbChart = null;
         const candidateIds = Array.from(new Set([
           activeChartId,
           details.currentChartId,
@@ -2654,15 +3586,17 @@ export default function App() {
         }
 
         const activeLang = forcedLang || idioma || lang || 'pt';
+        const chartLang = dbChart?.lang || dbChart?.mapData?.lang || 'pt';
 
-        if (dbChart && dbChart.mapData && dbChart.numerology) {
+        if (dbChart && dbChart.mapData && dbChart.numerology && chartLang === activeLang) {
           console.log("[Astro DB] Natal chart successfully restored from Firestore Cloud!");
-          setMapData(dbChart.mapData);
-          setNumerology(dbChart.numerology);
+          setMapData({ ...dbChart.mapData, chartId: activeChartId });
+          setNumerology({ ...dbChart.numerology, chartId: activeChartId });
           pushRealNotification(`Você (${details.name || user.name || "Buscador"}) sintonizou seu Mapa Principal carregado da Nuvem Astrológica! 🪐`);
           return;
         }
 
+        cachedMatch = null;
         // Fallback to traditional cache with language check
         try {
           const cached = await loadCalculationCache(email, "natal_chart");
@@ -2672,14 +3606,17 @@ export default function App() {
               p.birthDate === details.birthDate &&
               p.birthTime === details.birthTime &&
               p.birthCity === details.birthCity &&
-              p.isUnknownTime === details.isUnknownTime &&
-              (!p.lang || p.lang === activeLang);
+              p.isUnknownTime === details.isUnknownTime;
+            
             if (isMatch && cached.map && cached.numerology) {
-              console.log("[Intelligent Cache] Natal chart loaded from Firestore cache.");
-              setMapData(cached.map);
-              setNumerology(cached.numerology);
-              pushRealNotification(`Você (${details.name || user.name || "Buscador"}) sintonizou seu novo Mapa Astral diretamente do Cache Celestial Inteligente! 🪐`);
-              return;
+              cachedMatch = cached;
+              if (p.lang === activeLang) {
+                console.log("[Intelligent Cache] Natal chart loaded from Firestore cache.");
+                setMapData({ ...cached.map, chartId: activeChartId });
+                setNumerology({ ...cached.numerology, chartId: activeChartId });
+                pushRealNotification(`Você (${details.name || user.name || "Buscador"}) sintonizou seu novo Mapa Astral diretamente do Cache Celestial Inteligente! 🪐`);
+                return;
+              }
             }
           }
         } catch (cacheErr) {
@@ -2704,7 +3641,9 @@ export default function App() {
             isUnknownTime: details.isUnknownTime,
             latitude: details.latitude !== undefined ? details.latitude : user.latitude,
             longitude: details.longitude !== undefined ? details.longitude : user.longitude,
-            lang: activeLang
+            lang: activeLang,
+            existingMap: dbChart?.mapData || cachedMatch?.map || (mapData && mapData.welcomeMessage ? mapData : null),
+            existingNumerology: dbChart?.numerology || cachedMatch?.numerology || numerology
           })
         });
         if (response.ok) {
@@ -2717,18 +3656,28 @@ export default function App() {
         data = { map: clientMap, numerology: clientNum };
       }
 
+      const birthDateCleanFinal = cleanStringForChartId(details.birthDate || "1997-02-11");
+      const birthTimeCleanFinal = cleanStringForChartId(details.birthTime || "12:00");
+      const birthCityCleanFinal = cleanStringForChartId(details.birthCity || "Sao_Paulo");
+      const chartIdFinal = details.currentChartId || user.currentChartId || `chart_${birthDateCleanFinal}_${birthTimeCleanFinal}_${birthCityCleanFinal}`;
+
       if (data && data.map) {
-        setMapData(data.map);
+        setMapData({ ...data.map, chartId: chartIdFinal });
       }
       if (data && data.numerology) {
-        setNumerology(data.numerology);
+        setNumerology({ ...data.numerology, chartId: chartIdFinal });
       }
 
       if (email && data && data.map && data.numerology) {
-        const birthDateClean = (details.birthDate || "1997-02-11").replace(/[^a-zA-Z0-9]/g, "_");
-        const birthTimeClean = (details.birthTime || "12:00").replace(/[^a-zA-Z0-9]/g, "_");
-        const birthCityClean = (details.birthCity || "Sao_Paulo").replace(/[^a-zA-Z0-9]/g, "_");
+        const activeLang = forcedLang || idioma || lang || 'pt';
+        const birthDateClean = cleanStringForChartId(details.birthDate || "1997-02-11");
+        const birthTimeClean = cleanStringForChartId(details.birthTime || "12:00");
+        const birthCityClean = cleanStringForChartId(details.birthCity || "Sao_Paulo");
         const chartId = `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
+
+        if (data.map) {
+          data.map.lang = activeLang;
+        }
 
         try {
           // Direct subcollection persistence in background
@@ -2739,7 +3688,8 @@ export default function App() {
             birthCity: details.birthCity,
             isUnknownTime: !!details.isUnknownTime,
             mapData: data.map,
-            numerology: data.numerology
+            numerology: data.numerology,
+            lang: activeLang
           });
 
           // Link the newly generated chart as primary
@@ -2781,10 +3731,10 @@ export default function App() {
 
   const lastGeneratedParamsRef = useRef<string>("");
 
-  // Automatically load or generate main map data whenever user profile/coordinates change (e.g. login, load, edit)
+  // Automatically load or generate main map data whenever user profile, coordinates or language change
   useEffect(() => {
     if (user.hasCreatedMap && user.birthDate && user.birthCity) {
-      const paramKey = `${user.email || "default"}_${user.birthDate}_${user.birthTime || ""}_${user.birthCity}_${user.isUnknownTime ?? false}`;
+      const paramKey = `${user.email || "default"}_${user.birthDate}_${user.birthTime || ""}_${user.birthCity}_${user.isUnknownTime ?? false}_${idioma}`;
       if (lastGeneratedParamsRef.current !== paramKey) {
         lastGeneratedParamsRef.current = paramKey;
         console.log("[Reactive Map Loader] Triggering map generation/load for:", paramKey);
@@ -2794,11 +3744,13 @@ export default function App() {
           birthTime: user.birthTime,
           birthCity: user.birthCity,
           isUnknownTime: user.isUnknownTime,
-          email: user.email
-        });
+          email: user.email,
+          latitude: user.latitude,
+          longitude: user.longitude
+        }, idioma);
       }
     }
-  }, [user?.email, user?.hasCreatedMap, user?.birthDate, user?.birthTime, user?.birthCity, user?.isUnknownTime]);
+  }, [user?.email, user?.hasCreatedMap, user?.birthDate, user?.birthTime, user?.birthCity, user?.isUnknownTime, idioma]);
 
   // Run on mount to fetch default global notification ticker
   useEffect(() => {
@@ -2881,17 +3833,20 @@ export default function App() {
     setActiveExtraMapNumerology(null);
     setActiveExtraMapBirthDate('');
     setActiveExtraMapName('');
-    setScorePoints(0);
+    // Keep user's accumulated scorePoints from regressing during profile update!
+    setScorePoints(prev => Math.max(prev, user.scorePoints || 0));
 
     // Reseta abas de navegação para a tela principal
     setAreaSubTab('universo_mostrando');
     setMapSubTab(nextUser.hasCreatedMap ? 'meu_mapa' : 'area_usuario');
 
-    // Descarrega dados velhos do mapa principal anterior para evitar persistência indevida
-    setMapData(null);
-    setNumerology(null);
-    localStorage.removeItem("orbi_map_data");
-    localStorage.removeItem("orbi_numerology_data");
+    if (isBirthCoordinatesModified) {
+      // Descarrega dados velhos do mapa principal anterior para evitar persistência indevida
+      setMapData(null);
+      setNumerology(null);
+      localStorage.removeItem("orbi_map_data");
+      localStorage.removeItem("orbi_numerology_data");
+    }
 
     // Limpa profundamente todos os caches de cálculos do mapa anterior localmente
     const cachePrefixes = [
@@ -2922,28 +3877,10 @@ export default function App() {
       }
     ]);
 
-    // Limpa o cache inteligente de cálculos no Firestore e LocalStorage para recalculo total
-    if (loggedEmail) {
-      clearCalculationCache(loggedEmail).catch(console.error);
-    }
-
-    localStorage.setItem("orbi_user_profile", JSON.stringify(nextUser));
-    
-    // Sincroniza também no cache local de contas registradas se houver email associado
-    const trackingEmail = (nextUser.email || loggedEmail || "").toLowerCase().trim();
-    if (trackingEmail) {
-      const accounts = getRegisteredAccounts();
-      const existingIdx = accounts.findIndex((a: any) => a.email.toLowerCase() === trackingEmail);
-      if (existingIdx !== -1) {
-        accounts[existingIdx].user = nextUser;
-        saveRegisteredAccounts(accounts);
-      }
-    }
-
+    // Properly update the user state and persist in Firestore
     setUser(nextUser);
-    triggerGenerateMainMap(nextUser);
-    if (loggedEmail) {
-      saveProfileToDatabase(loggedEmail, nextUser).catch(console.error);
+    if (loggedEmail && isLoggedIn) {
+      saveProfileToDatabase(loggedEmail, nextUser).catch(e => console.error("Error saving user profile:", e));
     }
   };
 
@@ -2995,7 +3932,7 @@ export default function App() {
         },
         es: {
           "Áries": "una llama de liderazgo y coraje que arde con intensidad realizadora",
-          "Touro": "una estabilidad serena y una profunda búsqueda de la armonía y belleza terrenal",
+          "Touro": "una estabilidad serena y una profunda búsqueda de la armonía y beleza terrenal",
           "Gêmeos": "una curiosidad viva y una mente ágil capaz de conectar múltiples realidades",
           "Câncer": "una sensibilidad intuitiva y protectora, íntimamente ligada a las mareas del alma",
           "Leão": "un brillo generoso y magnético que irradia confianza en sí mismo de forma cálida",
@@ -3005,13 +3942,28 @@ export default function App() {
           "Sagitário": "un idealismo ardiente y una búsqueda insaciable de expansión de sabiduría y libertad",
           "Capricórnio": "una sabiduría estructurada que construye tu legado con perseverancia y seriedad",
           "Aquário": "un idealismo visionario con una profunda reverencia por la innovación y la libertad de pensamiento",
-          "Peixes": "una empatía profunda y oceánica que navega suavemente entre los mundos de la intuición",
+          "Peixes": "una empatía profunda y oceánica que navega suavemente entre los mundos de la intuição",
+        },
+        fr: {
+          "Áries": "une flamme de leadership et de courage qui brûle avec une intensité de réalisation",
+          "Touro": "une stabilité sereine et une recherche profonde d'harmonie terrestre et de beauté",
+          "Gêmeos": "une curiosité vive et un esprit agile capable de connecter des réalités multiples",
+          "Câncer": "une sensibilité intuitive et protectrice, intimement liée aux marées de l'âme",
+          "Leão": "un éclat généreux et magnétique qui rayonne de chaleur et de confiance en soi",
+          "Virgem": "un esprit attentif et raffiné dédié à l'amélioration continue de la vie",
+          "Libra": "une recherche constante d'équilibre, de justice et d'élégance sincère dans les connexions",
+          "Escorpião": "une intensité d'investigation et de régénération capable d'alchimiser les ombres en lumière",
+          "Sagitário": "un idéalisme ardent et une quête insatiable d'expansion de sagesse et de liberté",
+          "Capricórnio": "une sagesse structurée qui construit votre héritage avec persévérance et sérieux",
+          "Aquário": "un idéalisme visionnaire avec une profonde révérence pour l'innovation et la liberté de pensée",
+          "Peixes": "une empathie profonde et océanique qui navigue doucement entre les mondes de l'intuition",
         },
       };
       const langIntros = intros[currentLang] || intros['pt'];
       return langIntros[sign] || (currentLang === 'de' ? "ein einzigartiger Magnetismus und ein Sternenfunke, der intensiv im Kosmos leuchtet"
         : currentLang === 'en' ? "a singular magnetism and a star spark shining intensely in the cosmos"
         : currentLang === 'es' ? "un magnetismo singular y una chispa estelar brillando intensamente en el cosmos"
+        : currentLang === 'fr' ? "un magnétisme singulier et une étincelle d'étoile brillant intensément dans le cosmos"
         : "um magnetismo singular e uma centelha estelar brilhando intensamente no cosmos");
     };
 
@@ -3020,6 +3972,7 @@ export default function App() {
       en: "Orbia, your Astrological Counselor and Personal Celestial Intelligence Therapist",
       de: "Orbia, deine Astrologische Beraterin und Persönliche Himmels-Intelligenz-Therapeutin",
       es: "Orbia, tu Consejera Astrológica y Terapeuta Personal de Inteligencia Celestial",
+      fr: "Orbia, votre Conseillère Astrologique et Thérapeute Personnelle en Intelligence Céleste",
     };
     const orbiaTitle = orbiaName[currentLang] || orbiaName['pt'];
 
@@ -3029,21 +3982,24 @@ export default function App() {
       ? `Greetings. I am ${orbiaTitle}. Synchronize or create your complete birth chart to unlock ultra-personalized analyses, astronomical transit readings and advice directed at your birth essence.`
       : currentLang === 'es'
       ? `Saludos. Soy ${orbiaTitle}. Sincroniza o crea tu carta natal completa para desbloquear análisis ultra-personalizados, lecturas de tránsitos astronómicos y consejos dirigidos a tu esencia natal.`
+      : currentLang === 'fr'
+      ? `Salutations. Je suis ${orbiaTitle}. Synchronisez ou créez votre carte du ciel complète pour débloquer des analyses ultra-personnalisées, des lectures de transits astronomiques et des conseils adaptés à votre essence de naissance.`
       : `Saudações. Eu sou ${orbiaTitle}. Sincronize ou crie seu mapa astral completo para desbloquear análises ultra-personalizadas, leituras de trânsitos astronômicos e conselhos direcionados à sua essência de nascimento.`;
 
     if (user.hasCreatedMap && user.name) {
       const firstName = user.name.split(' ')[0];
       const sunSign = mapData?.astros?.find(a => a.name === "Sol")?.sign || getZodiacSign(user.birthDate) || "seu Signo";
-      const ascSign = mapData?.astros?.find(a => a.name === "Ascendente")?.sign || (user.birthTime ? getRisingSign(user.birthDate, user.birthTime) : "");
-      const sunLabel = currentLang === 'de' ? "Sonne in" : currentLang === 'en' ? "Sun in" : currentLang === 'es' ? "Sol en" : "Sol em";
-      const ascLabel = currentLang === 'de' ? "und Aszendent in" : currentLang === 'en' ? "and Ascendant in" : currentLang === 'es' ? "y Ascendente en" : "e Ascendente em";
+      const ascSign = mapData?.astros?.find(a => a.name === "Ascendente")?.sign || (user.birthTime ? getRisingSign(user.birthDate, user.birthTime, user.latitude, user.longitude) : "");
+      const sunLabel = currentLang === 'de' ? "Sonne in" : currentLang === 'en' ? "Sun in" : currentLang === 'es' ? "Sol en" : currentLang === 'fr' ? "Soleil en" : "Sol em";
+      const ascLabel = currentLang === 'de' ? "und Aszendent in" : currentLang === 'en' ? "and Ascendant in" : currentLang === 'es' ? "y Ascendente en" : currentLang === 'fr' ? "et Ascendant en" : "e Ascendente em";
       const guideQ = currentLang === 'de' ? `Wie kann ich, Orbia, deine Bewusstseins- und Transformationsreise heute im Jahr 2026 leiten?`
         : currentLang === 'en' ? `How can I, Orbia, guide your journey of consciousness and transformation in 2026?`
         : currentLang === 'es' ? `¿Cómo puedo, Orbia, guiar tu viaje de conciencia y transformación hoy en 2026?`
+        : currentLang === 'fr' ? `Comment puis-je, Orbia, guider votre voyage de conscience et de transformation aujourd'hui en 2026 ?`
         : `Como eu, Orbia, posso guiar sua jornada de consciência e transformação hoje em 2026?`;
-      const bornWith = currentLang === 'de' ? "Geboren mit" : currentLang === 'en' ? "Born with" : currentLang === 'es' ? "Nacido con" : "Nascido com o";
-      const iSense = currentLang === 'de' ? "spüre ich in deinem Energiefeld" : currentLang === 'en' ? "I sense in your energy field" : currentLang === 'es' ? "siento en tu campo energético" : "sinto em seu campo energético";
-      welcomeText = `${currentLang === 'de' ? 'Grüße' : currentLang === 'en' ? 'Greetings' : currentLang === 'es' ? 'Saludos' : 'Saudações'}, ${firstName}. ${currentLang === 'de' ? 'Ich bin' : currentLang === 'en' ? 'I am' : currentLang === 'es' ? 'Soy' : 'Eu sou'} ${orbiaTitle}. ${bornWith} ${sunLabel} ${sunSign}${ascSign ? ` ${ascLabel} ${ascSign}` : ""}, ${iSense} ${getDynamicIntroOfSign(sunSign)}. ${guideQ}`;
+      const bornWith = currentLang === 'de' ? "Geboren mit" : currentLang === 'en' ? "Born with" : currentLang === 'es' ? "Nacido con" : currentLang === 'fr' ? "Né avec le" : "Nascido com o";
+      const iSense = currentLang === 'de' ? "spüre ich in deinem Energiefeld" : currentLang === 'en' ? "I sense in your energy field" : currentLang === 'es' ? "siento en tu campo energético" : currentLang === 'fr' ? "je ressens dans votre champ énergétique" : "sinto em seu campo energético";
+      welcomeText = `${currentLang === 'de' ? 'Grüße' : currentLang === 'en' ? 'Greetings' : currentLang === 'es' ? 'Saludos' : currentLang === 'fr' ? 'Salutations' : 'Saudações'}, ${firstName}. ${currentLang === 'de' ? 'Ich bin' : currentLang === 'en' ? 'I am' : currentLang === 'es' ? 'Soy' : currentLang === 'fr' ? 'Je suis' : 'Eu sou'} ${orbiaTitle}. ${bornWith} ${sunLabel} ${sunSign}${ascSign ? ` ${ascLabel} ${ascSign}` : ""}, ${iSense} ${getDynamicIntroOfSign(sunSign)}. ${guideQ}`;
     } else if (user.name) {
       const firstName = user.name.split(' ')[0];
       welcomeText = currentLang === 'de'
@@ -3052,6 +4008,8 @@ export default function App() {
         ? `Greetings, ${firstName}. I am ${orbiaTitle}. So glad to have you here! Synchronize your birth data to map your dozens of personalized astrological aspects based on real astronomical ephemeris. How can I guide you today?`
         : currentLang === 'es'
         ? `Saludos, ${firstName}. Soy ${orbiaTitle}. ¡Qué alegría tenerte aquí! Sincroniza tu nacimiento para mapear tus decenas de aspectos astrológicos personalizados basados en efemérides astronómicas reales. ¿Cómo puedo orientarte hoy?`
+        : currentLang === 'fr'
+        ? `Salutations, ${firstName}. Je suis ${orbiaTitle}. Tellement ravie de vous avoir ici ! Synchronisez vos données de naissance pour cartographier vos dizaines d'aspects astrologiques personnalisés basés sur de vraies éphémérides astronomiques. Comment puis-je vous guider aujourd'hui ?`
         : `Saudações, ${firstName}. Eu sou ${orbiaTitle}. Que alegria tê-lo conosco! Sincronize seu nascimento para mapear suas dezenas de aspectos astrológicos personalizados baseados em efemérides astronômicas reais. Como posso te orientar hoje?`;
     }
     setChatMessages(prev => {
@@ -3066,7 +4024,7 @@ export default function App() {
         ...filtered
       ];
     });
-  }, [user, mapData]);
+  }, [user, mapData, currentLang]);
 
   // Submit Dream Handler call to server (New Oráculo dos Sonhos)
   const handleRecordAndInterpretDream = async (e: React.FormEvent) => {
@@ -3079,7 +4037,10 @@ export default function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          description: newDreamDesc
+          description: newDreamDesc,
+          lang: currentLang,
+          mapData: mapData || (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("orbi_map_data") || 'null') : null),
+          userProfile: user
         })
       });
       const data = await response.json();
@@ -3089,8 +4050,14 @@ export default function App() {
       const currentFormattedDate = now.toISOString().split('T')[0];
       const dreamTitle = data.interpretation?.title || newDreamDesc.slice(0, 30) + "...";
       
+      const birthDateClean = cleanStringForChartId(user?.birthDate || "1997-02-11");
+      const birthTimeClean = cleanStringForChartId(user?.birthTime || "12:00");
+      const birthCityClean = cleanStringForChartId(user?.birthCity || "Sao_Paulo");
+      const expectedChartId = user?.currentChartId || `chart_${birthDateClean}_${birthTimeClean}_${birthCityClean}`;
+
       const newEntry: OracleDreamEntry = {
         id: nextId,
+        chartId: expectedChartId,
         date: currentFormattedDate,
         time: currentFormattedTime,
         title: dreamTitle,
@@ -3155,7 +4122,9 @@ export default function App() {
         body: JSON.stringify({
           messages: [...chatMessages, userMessage],
           userProfile: user,
-          requestTopic: "geral"
+          requestTopic: "geral",
+          lang: currentLang,
+          mapData: mapData || (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("orbi_map_data") || 'null') : null)
         })
       });
       const data = await response.json();
@@ -3185,7 +4154,12 @@ export default function App() {
       const response = await fetch("/api/oraculo/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: oracleQuestion })
+        body: JSON.stringify({
+          question: oracleQuestion,
+          lang: currentLang,
+          mapData: mapData || (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("orbi_map_data") || 'null') : null),
+          userProfile: user
+        })
       });
       const data = await response.json();
       setOracleResponse(data);
@@ -3204,7 +4178,8 @@ export default function App() {
     try {
       const response = await fetch("/api/tarot/draw", {
         method: "POST",
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lang: currentLang })
       });
       const data = await response.json();
       if (data.draw) {
@@ -3240,8 +4215,6 @@ export default function App() {
           const nextCompleted = !m.isCompleted;
           if (nextCompleted) {
             setScorePoints(sc => sc + m.points);
-          } else {
-            setScorePoints(sc => Math.max(0, sc - m.points));
           }
           return { ...m, isCompleted: nextCompleted };
         }
@@ -3258,8 +4231,6 @@ export default function App() {
           const nextCompleted = !m.isCompleted;
           if (nextCompleted) {
             setScorePoints(sc => sc + m.points);
-          } else {
-            setScorePoints(sc => Math.max(0, sc - m.points));
           }
           return { ...m, isCompleted: nextCompleted };
         }
@@ -3288,7 +4259,7 @@ export default function App() {
         birthTime: "",
         birthCity: "",
         isUnknownTime: false,
-        isPremium: true,
+        isPremium: false,
         hasCreatedMap: false
       });
       
@@ -3319,24 +4290,50 @@ export default function App() {
         }
       });
       triggerGlobalNotification(
-        "Cache Limpo",
-        "Seu cache de performance foi limpo e otimizado com segurança.",
+        t("Cache Limpo"),
+        t("Seu cache de performance foi limpo e otimizado com segurança."),
         "success"
       );
     } catch (e) {
       console.error("Cache clear error:", e);
-      triggerGlobalNotification("Erro de Limpeza", "Falha ao limpar o cache temporário.", "error");
+      triggerGlobalNotification(t("Erro de Limpeza"), t("Falha ao limpar o cache temporário."), "error");
     }
   };
 
   // Signs profiles list & dynamic horoscope data
-  const signsZodiacList = SIGNS_ZODIAC_LIST;
+  const signsZodiacList = React.useMemo(() => {
+    return SIGNS_ZODIAC_LIST.map(item => ({
+      ...item,
+      rawName: item.name,
+      rawElement: item.element,
+      name: i18nT(item.name),
+      element: i18nT(item.element),
+      regente: i18nT(item.regente),
+      traits: i18nT(item.traits),
+      horoscopo: i18nT(item.horoscopo)
+    }));
+  }, [i18nT]);
 
   // Blog articles content lists
-  const blogArticlesList = BLOG_ARTICLES_LIST;
+  const blogArticlesList = React.useMemo(() => {
+    return BLOG_ARTICLES_LIST.map(item => ({
+      ...item,
+      title: i18nT(item.title),
+      summary: i18nT(item.summary),
+      content: i18nT(item.content),
+      author: i18nT(item.author),
+      date: i18nT(item.date)
+    }));
+  }, [i18nT]);
 
   // FAQ contents
-  const faqList = FAQ_LIST;
+  const faqList = React.useMemo(() => {
+    return FAQ_LIST.map(item => ({
+      ...item,
+      q: i18nT(item.q),
+      a: i18nT(item.a)
+    }));
+  }, [i18nT]);
 
   // Biorritmo Calculations
   const calculateBiorhythm = (birthDateStr: string, targetDateStr: string) => {
@@ -3361,19 +4358,24 @@ export default function App() {
     }
   };
 
-  const biorhythmToday = calculateBiorhythm(user.birthDate, new Date().toISOString().split('T')[0]);
+  const biorhythmToday = React.useMemo(() => {
+    return calculateBiorhythm(user.birthDate, systemDate.toISOString().split('T')[0]);
+  }, [user.birthDate, systemDate]);
 
-  const personalProsperity = generatePersonalizedProsperityMap(
-    user?.hasCreatedMap ? user.birthDate : "1997-02-11",
-    mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Touro"),
-    user?.hasCreatedMap ? user.name : "Viajante",
-    new Date()
-  );
+  const personalProsperity = React.useMemo(() => {
+    return generatePersonalizedProsperityMap(
+      user?.hasCreatedMap ? user.birthDate : "1997-02-11",
+      mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Touro"),
+      user?.hasCreatedMap ? user.name : "Viajante",
+      systemDate,
+      currentLang
+    );
+  }, [user?.hasCreatedMap, user.birthDate, user.name, mapData, systemDate, currentLang]);
 
   // Automated Real-Time Biorhythm Sync Hook
   useEffect(() => {
     if (user.birthDate && user.hasCreatedMap) {
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = systemDate.toISOString().split('T')[0];
       const email = user.email || loggedEmail;
       if (isLoggedIn && email && biorhythmToday) {
         saveBiorhythmToDatabase(email, todayStr, {
@@ -3386,13 +4388,13 @@ export default function App() {
         }).catch(console.warn);
       }
     }
-  }, [biorhythmToday, user?.birthDate, user?.hasCreatedMap, isLoggedIn, loggedEmail]);
+  }, [biorhythmToday, user?.birthDate, user?.hasCreatedMap, isLoggedIn, loggedEmail, systemDate]);
 
   // Automated Real-Time Prosperity Map Sync Hook
   useEffect(() => {
     if (user.birthDate && user.hasCreatedMap && personalProsperity) {
       const email = user.email || loggedEmail;
-      const currentMonthStr = `prosperity_${new Date().getFullYear()}_${new Date().getMonth() + 1}`;
+      const currentMonthStr = `prosperity_${systemDate.getFullYear()}_${systemDate.getMonth() + 1}`;
       if (isLoggedIn && email) {
         saveProsperityMapToDatabase(email, currentMonthStr, {
           favoredColor: personalProsperity.favorableColor?.name || "",
@@ -3401,28 +4403,44 @@ export default function App() {
           keyword: personalProsperity.keyword,
           symbol: personalProsperity.amulet,
           recommendations: personalProsperity.strategicAdvice,
-          monthNumber: new Date().getMonth() + 1
+          monthNumber: systemDate.getMonth() + 1
         }).catch(console.warn);
       }
     }
-  }, [personalProsperity, user?.birthDate, user?.hasCreatedMap, isLoggedIn, loggedEmail]);
+  }, [personalProsperity, user?.birthDate, user?.hasCreatedMap, isLoggedIn, loggedEmail, systemDate]);
 
   // Automated Real-Time Numerology Matrix Sync Hook
   useEffect(() => {
     if (numerology && user.hasCreatedMap) {
       const email = user.email || loggedEmail;
       if (isLoggedIn && email) {
+        // Build a unique signature of the current values to avoid redundant database writes and infinite update loops
+        const currentSig = `${numerology.caminhoDeVida}_${numerology.expressao}_${numerology.motivacao}_${numerology.personalidade}_${numerology.chartId || ''}`;
+        if (lastSavedNumerologyRef.current === currentSig) {
+          return;
+        }
+
+        lastSavedNumerologyRef.current = currentSig;
         const numId = "current_matrix";
         saveNumerologyToDatabase(email, numId, {
           lifePathNumber: numerology.caminhoDeVida,
           expressionNumber: numerology.expressao,
           soulUrgeNumber: numerology.motivacao,
           personalityNumber: numerology.personalidade,
-          derivedCycles: numerology.ciclos || []
+          derivedCycles: numerology.ciclos || [],
+          // Keep both PT and EN schema keys so that listeners don't break
+          caminhoDeVida: numerology.caminhoDeVida,
+          expressao: numerology.expressao,
+          motivacao: numerology.motivacao,
+          personalidade: numerology.personalidade,
+          ciclos: numerology.ciclos || [],
+          description: numerology.description || "",
+          chartId: numerology.chartId || "",
+          lang: currentLang
         }).catch(console.warn);
       }
     }
-  }, [numerology, user?.hasCreatedMap, isLoggedIn, loggedEmail]);
+  }, [numerology, user?.hasCreatedMap, isLoggedIn, loggedEmail, currentLang]);
 
   return (
     <div id="star-map-application" className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-amber-500/20 antialiased relative">
@@ -3444,6 +4462,33 @@ export default function App() {
                 ? 'Conectando aos servidores seguros da Stripe para validar seu alinhamento...'
                 : 'Verifying with secure Stripe servers to synchronize your celestial alignment...'}
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Real-time Session Syncing Overlay */}
+      {isSyncingSession && (
+        <div className="fixed inset-0 bg-slate-950 z-[299] flex flex-col items-center justify-center space-y-6">
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            <div className="absolute top-[20%] left-[30%] w-[450px] h-[450px] rounded-full bg-amber-500/[0.04] blur-[120px] animate-pulse" />
+            <div className="absolute bottom-[20%] right-[30%] w-[450px] h-[450px] rounded-full bg-indigo-500/[0.03] blur-[120px]" />
+          </div>
+          
+          <div className="relative">
+            <div className="w-20 h-20 rounded-full border-2 border-amber-500/10 border-t-amber-500 border-r-amber-500 animate-spin" style={{ animationDuration: '1.5s' }} />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Compass className="w-8 h-8 text-amber-400 animate-pulse" />
+            </div>
+          </div>
+          
+          <div className="text-center space-y-3 max-w-md px-6 z-10">
+            <h3 className="text-base font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-200 uppercase font-sans">
+              {t("SINTONIZANDO ÓRBITA")}
+            </h3>
+            <p className="text-xs text-slate-300 leading-relaxed font-mono tracking-wide animate-pulse">
+              {syncMessage}
+            </p>
+            <div className="w-32 h-[1px] bg-gradient-to-r from-transparent via-amber-500/40 to-transparent mx-auto mt-4" />
           </div>
         </div>
       )}
@@ -3484,35 +4529,71 @@ export default function App() {
         <div id="landing-page" className="relative z-10 space-y-16 pb-24 text-left">
           
           {/* Header Bar */}
-          <nav className="w-full max-w-7xl mx-auto px-4 py-5 flex items-center justify-between border-b border-slate-900/80">
-            <div className="flex items-center gap-3">
-              <OrbitaLogo className="w-9 h-9" />
-              <div className="flex flex-col">
-                <span className="text-sm font-black font-sans tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500 uppercase leading-none">
-                  PORTAL ÓRBITA
+          <nav className="w-full max-w-7xl mx-auto px-4 py-5 flex items-center justify-between border-b border-slate-900/80 gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <OrbitaLogo className="w-9 h-9 shrink-0" />
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-black font-sans tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500 uppercase leading-none truncate">
+                  {t("PORTAL ÓRBITA")}
                 </span>
-                <span className="text-[7.5px] font-mono tracking-widest text-slate-500 uppercase mt-0.5 font-bold">
-                  Sistemas Astrológicos de Alta Precisão & Efemérides Plácidus
+                <span className="text-[7.5px] font-mono tracking-widest text-slate-500 uppercase mt-0.5 font-bold truncate hidden sm:block">
+                  {t("Sistemas Astrológicos de Alta Precisão & Efemérides Plácidus")}
                 </span>
               </div>
             </div>
             
-            <div className="hidden md:flex gap-6 text-xs font-semibold text-slate-400">
+            <div className="hidden lg:flex gap-6 text-xs font-semibold text-slate-400">
               <button onClick={() => {
                 document.getElementById('auth-card')?.scrollIntoView({ behavior: 'smooth' });
-              }} className="hover:text-amber-400 transition cursor-pointer">Sintonizar Mapa Astral</button>
+              }} className="hover:text-amber-400 transition cursor-pointer">{t("ui.navigation.tuneChart", "Sintonizar Mapa Astral")}</button>
               <button className="hover:text-amber-400 transition cursor-pointer" onClick={() => {
                 document.getElementById('advantages-section')?.scrollIntoView({ behavior: 'smooth' });
-              }}>Por que a Órbita?</button>
+              }}>{t("ui.navigation.whyOrbita", "Por que a Órbita?")}</button>
               <button className="hover:text-amber-400 transition cursor-pointer" onClick={() => {
                 document.getElementById('signs-selection')?.scrollIntoView({ behavior: 'smooth' });
-              }}>12 Constelações</button>
+              }}>{t("ui.navigation.constellations", "12 Constelações")}</button>
               <button className="hover:text-amber-400 transition cursor-pointer" onClick={() => {
                 document.getElementById('blog-section')?.scrollIntoView({ behavior: 'smooth' });
-              }}>Estudos Estelares</button>
+              }}>{t("ui.navigation.stellarStudies", "Estudos Estelares")}</button>
               <button className="hover:text-amber-400 transition cursor-pointer" onClick={() => {
                 document.getElementById('faq-section')?.scrollIntoView({ behavior: 'smooth' });
-              }}>Dúvidas Comuns</button>
+              }}>{t("ui.navigation.faq", "Dúvidas Comuns")}</button>
+            </div>
+
+            {/* PWA & Language Controls */}
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              <select 
+                value={lang} 
+                onChange={(e) => setLang(e.target.value as any)}
+                className="px-2 py-1.5 rounded-xl bg-slate-950 border border-slate-900 text-[10px] sm:text-xs text-slate-400 focus:outline-hidden cursor-pointer hover:border-amber-500/30 transition font-sans bg-slate-950"
+              >
+                <option value="pt">{t("🇧🇷 PT")}</option>
+                <option value="en">{t("🇺🇸 EN")}</option>
+                <option value="es">{t("🇪🇸 ES")}</option>
+                <option value="de">{t("🇩🇪 DE")}</option>
+                <option value="fr">{t("🇫🇷 FR")}</option>
+              </select>
+
+              {isInstalled ? (
+                <div className="px-2.5 py-1.5 sm:px-4 sm:py-2 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[9px] sm:text-xs font-black uppercase tracking-wider rounded-xl flex items-center gap-1 sm:gap-1.5 shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+                  <CheckCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{t("Instalado")}</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleInstallPWA}
+                  className="px-2.5 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-amber-500 via-amber-400 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 text-[9px] sm:text-xs font-black uppercase tracking-wider rounded-xl transition cursor-pointer shadow-[0_0_15px_rgba(245,158,11,0.2)] flex items-center gap-1 sm:gap-1.5 animate-pulse"
+                  style={{ animationDuration: '3s' }}
+                >
+                  <Smartphone className="w-3.5 h-3.5 shrink-0" />
+                  <span>
+                    {typeof navigator !== 'undefined' && /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase())
+                      ? t("Clique em Compartilhar e Adicionar à Tela de Início")
+                      : t("Instalar Aplicativo")}
+                  </span>
+                </button>
+              )}
             </div>
           </nav>
 
@@ -3524,16 +4605,16 @@ export default function App() {
               <div className="absolute inset-0 bg-radial from-amber-500/5 to-transparent blur-3xl pointer-events-none -z-10" />
 
               <span className="px-3.5 py-1 rounded-full text-[9px] uppercase font-mono font-bold tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/20 self-start">
-                🛡️ TECNOLOGIA DE PONTA · REAL-TIME INTERPOLATION
+                {t("🛡️ TECNOLOGIA DE PONTA · REAL-TIME INTERPOLATION")}
               </span>
               <h1 className="text-3xl md:text-5xl font-sans font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-slate-50 via-slate-200 to-slate-400 leading-tight">
-                SUA ALMA DECODIFICADA COM PRECISÃO DE ATÉ 1/1000 DE GRAU
+                {t("SUA ALMA DECODIFICADA COM PRECISÃO DE ATÉ 1/1000 DE GRAU")}
               </h1>
               <p className="text-slate-300 text-xs sm:text-sm leading-relaxed max-w-xl font-sans">
-                Esqueça os horóscopos robóticos e as aproximações rasas de internet. O <strong className="text-amber-400 font-bold">Portal Órbita</strong> calcula as efemérides planetárias exatas e as cúspides das casas de Plácidus cruzando dados reais de fuso horário histórico, correções de horário de verão e coordenadas de latitude e longitude. 
+                {t("Esqueça os horóscopos robóticos e as aproximações rasas de internet. O Portal Órbita calcula as efemérides planetárias exatas e as cúspides das casas de Plácidus cruzando dados reais de fuso horário histórico, correções de horário de verão e coordenadas de latitude e longitude.")}
               </p>
               <p className="text-slate-405 text-xs leading-relaxed max-w-xl font-sans">
-                O único sistema autárquico que integra seu <strong className="text-amber-300">Mapa Astral de Alta Resolução</strong> com sintonizador de <strong className="text-amber-300">Nodos Lunares de Evolução Pessoal</strong>, gráficos computados de <strong className="text-amber-300">Biorritmos</strong>, tiragens dinâmicas de <strong className="text-amber-300">Tarot</strong> e <strong className="text-amber-300">Oráculo Psicanalítico de Sonhos</strong>.
+                {t("O único sistema autárquico que integra seu Mapa Astral de Alta Resolução com sintonizador de Nodos Lunares de Evolução Pessoal, gráficos computados de Biorritmos, tiragens dinâmicas de Tarot e Oráculo Psicanalítico de Sonhos.")}
               </p>
 
               {/* Masterful Celestial Projection SVG Graphic */}
@@ -3577,19 +4658,19 @@ export default function App() {
                   
                   {/* Subtle orbiting planet nodes */}
                   <circle cx="138" cy="80" r="2.5" className="fill-slate-100" />
-                  <text x="144" y="82" className="fill-slate-500 text-[6px] font-mono">SOL</text>
+                  <text x="144" y="82" className="fill-slate-500 text-[6px] font-mono">{t("SOL")}</text>
 
                   <circle cx="68" cy="120" r="2" className="fill-indigo-400" />
-                  <text x="54" y="126" className="fill-slate-500 text-[6px] font-mono">LUA</text>
+                  <text x="54" y="126" className="fill-slate-500 text-[6px] font-mono">{t("LUA")}</text>
 
-                  <text x="100" y="24" textAnchor="middle" className="fill-amber-400 text-[6px] font-mono font-black tracking-widest">PLACIDUS HOUSE MC</text>
-                  <text x="100" y="180" textAnchor="middle" className="fill-slate-500 text-[6px] font-mono tracking-widest">NADI FLOOR IC</text>
+                  <text x="100" y="24" textAnchor="middle" className="fill-amber-400 text-[6px] font-mono font-black tracking-widest">{t("PLACIDUS HOUSE MC")}</text>
+                  <text x="100" y="180" textAnchor="middle" className="fill-slate-500 text-[6px] font-mono tracking-widest">{t("NADI FLOOR IC")}</text>
                 </svg>
 
                 {/* Information readout overlays */}
                 <div className="absolute bottom-3 left-4 right-4 flex justify-between items-center text-[7.5px] font-mono text-slate-500 border-t border-slate-900/40 pt-2 pointer-events-none">
-                  <span>SISTEMA DE COMPUTAÇÃO: PLACIDUS 2026</span>
-                  <span className="text-amber-500 font-bold">ALGORITMO GEOCÊNTRICO ATIVO</span>
+                  <span>{t("SISTEMA DE COMPUTAÇÃO: PLACIDUS 2026")}</span>
+                  <span className="text-amber-500 font-bold">{t("ALGORITMO GEOCÊNTRICO ATIVO")}</span>
                 </div>
               </div>
 
@@ -3600,7 +4681,7 @@ export default function App() {
                 </div>
                 <div>
                   <div className="text-base font-mono font-black text-amber-400">+21.608.314</div>
-                  <div className="text-[9px] font-mono text-slate-400 uppercase tracking-widest leading-none mt-1">Mapas astronômicos sincronizados</div>
+                  <div className="text-[9px] font-mono text-slate-400 uppercase tracking-widest leading-none mt-1">{t("Mapas astronômicos sincronizados")}</div>
                 </div>
               </div>
             </div>
@@ -3615,18 +4696,18 @@ export default function App() {
                   <div className="flex items-start gap-2 text-rose-300">
                     <AlertCircle className="w-5 h-5 shrink-0 text-rose-400 mt-0.5" />
                     <div className="space-y-1">
-                      <h4 className="text-xs font-bold uppercase tracking-wide">Domínio Não Autorizado no Firebase Auth</h4>
+                      <h4 className="text-xs font-bold uppercase tracking-wide">{t("Domínio Não Autorizado no Firebase Auth")}</h4>
                       <p className="text-[11px] text-slate-300 leading-normal">
-                        O Firebase bloqueou o login social porque o domínio atual não está registrado como domínio autorizado nas configurações do seu projeto Firebase.
+                        {t("O Firebase bloqueou o login social porque o domínio atual não está registrado como domínio autorizado nas configurações do seu projeto Firebase.")}
                       </p>
                     </div>
                   </div>
                   <div className="bg-slate-950/60 p-3 rounded-xl border border-rose-955/20 text-[10.5px] space-y-1.5 leading-snug">
                     <p className="text-slate-400 font-mono text-[9px] break-all select-all">
-                      Domínio atual: <strong className="text-amber-400 text-[10px]">{typeof window !== 'undefined' ? window.location.hostname : 'localhost'}</strong>
+                      {t("Domínio atual:")} <strong className="text-amber-400 text-[10px]">{typeof window !== 'undefined' ? window.location.hostname : 'localhost'}</strong>
                     </p>
                     <p className="text-slate-400 font-mono text-[9px]">
-                      👉 Para corrigir isso, acesse o Console do Firebase, vá em <strong>Build &gt; Authentication &gt; Settings &gt; Authorized domains</strong> e adicione o domínio exibido acima.
+                      👉 {t("Para corrigir isso, acesse o Console do Firebase, vá em Build > Authentication > Settings > Authorized domains e adicione o domínio exibido acima.")}
                     </p>
                   </div>
                   <div className="flex gap-2.5 pt-1">
@@ -3635,7 +4716,7 @@ export default function App() {
                       onClick={() => setUnauthorizedDomainError(false)}
                       className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-750 text-[10px] font-bold text-slate-100 rounded-lg cursor-pointer transition"
                     >
-                      Dispensar
+                      {t("Dispensar")}
                     </button>
                     <button 
                       type="button" 
@@ -3645,7 +4726,7 @@ export default function App() {
                       }}
                       className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-955 text-[10px] font-black uppercase tracking-wider rounded-lg cursor-pointer transition"
                     >
-                      Criar via E-mail
+                      {t("Criar via E-mail")}
                     </button>
                   </div>
                 </div>
@@ -3657,15 +4738,15 @@ export default function App() {
                   <div className="flex items-start gap-2 text-amber-300">
                     <AlertCircle className="w-5 h-5 shrink-0 text-amber-400 mt-0.5" />
                     <div className="space-y-1">
-                      <h4 className="text-xs font-bold uppercase tracking-wide">Login Social Bloqueado/Cancelado</h4>
+                      <h4 className="text-xs font-bold uppercase tracking-wide">{t("Login Social Bloqueado/Cancelado")}</h4>
                       <p className="text-[11px] text-slate-300 leading-normal">
-                        Você está no ambiente de visualização do AI Studio. Navegadores costumam bloquear ou fechar popups de login de terceiros (Google/Facebook) automaticamente dentro de iframes por segurança.
+                        {t("Você está no ambiente de visualização do AI Studio. Navegadores costumam bloquear ou fechar popups de login de terceiros (Google/Facebook) automaticamente dentro de iframes por segurança.")}
                       </p>
                     </div>
                   </div>
                   <div className="bg-slate-950/60 p-3 rounded-xl border border-amber-900/20 text-[10.5px] space-y-1.5 leading-snug">
                     <p className="text-slate-400 font-mono text-[9px]">
-                      💡 <strong>Solução ideal:</strong> Clique no botão abaixo para abrir o aplicativo diretamente em uma aba cheia fora do iframe, onde o login do Google funcionará perfeitamente e sem restrições.
+                      💡 <strong>{t("Solução ideal:")}</strong> {t("Clique no botão abaixo para abrir o aplicativo diretamente em uma aba cheia fora do iframe, onde o login do Google funcionará perfeitamente e sem restrições.")}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2.5 pt-1">
@@ -3676,7 +4757,7 @@ export default function App() {
                       className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-955 text-[10px] font-black uppercase tracking-wider rounded-lg hover:from-amber-400 hover:to-amber-500 transition cursor-pointer"
                     >
                       <ExternalLink className="w-3" />
-                      Abrir em Nova Aba
+                      {t("Abrir em Nova Aba")}
                     </a>
                     <button 
                       type="button" 
@@ -3686,14 +4767,14 @@ export default function App() {
                       }}
                       className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-755 text-[10px] font-bold text-slate-100 rounded-lg cursor-pointer transition"
                     >
-                      Usar E-mail e Senha
+                      {t("Usar E-mail e Senha")}
                     </button>
                     <button 
                       type="button"
                       onClick={() => setPopupClosedError(false)}
                       className="px-3 py-1.5 bg-transparent hover:bg-slate-900 text-[10px] text-slate-400 hover:text-slate-200 transition cursor-pointer"
                     >
-                      Dispensar
+                      {t("Dispensar")}
                     </button>
                   </div>
                 </div>
@@ -3705,22 +4786,22 @@ export default function App() {
                   <div className="flex items-start gap-2 text-amber-300">
                     <AlertCircle className="w-5 h-5 shrink-0 text-amber-450 mt-0.5" />
                     <div className="space-y-1">
-                      <h4 className="text-xs font-bold uppercase tracking-wide">Método de E-mail/Senha desativado</h4>
+                      <h4 className="text-xs font-bold uppercase tracking-wide">{t("Método de E-mail/Senha desativado")}</h4>
                       <p className="text-[11px] text-slate-300 leading-normal">
-                        O Firebase retornou o erro <strong className="font-mono text-[9px] text-rose-300">auth/operation-not-allowed</strong>. O provedor de login com Email e Senha não foi habilitado nas configurações de autenticação do seu projeto.
+                        {t("O Firebase retornou o erro")} <strong className="font-mono text-[9px] text-rose-300">auth/operation-not-allowed</strong>. {t("O provedor de login com Email e Senha não foi habilitado nas configurações de autenticação do seu projeto.")}
                       </p>
                     </div>
                   </div>
                   <div className="bg-slate-950/60 p-3 rounded-xl border border-amber-900/20 text-[10.5px] space-y-2 leading-snug text-slate-300 font-sans">
-                    <p className="text-xs font-bold text-slate-200">🛠️ Como ativar e corrigir:</p>
+                    <p className="text-xs font-bold text-slate-200">🛠️ {t("Como ativar e corrigir:")}</p>
                     <ol className="list-decimal list-inside space-y-1 text-[10.5px] text-slate-400 font-mono">
-                      <li>Acesse o <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="text-amber-400 underline hover:text-amber-300">Console do Firebase</a></li>
-                      <li>Vá em <strong>Build &gt; Authentication &gt; Sign-in method</strong></li>
-                      <li>Clique em <strong>Add new provider (Adicionar novo provedor)</strong></li>
-                      <li>Selecione <strong>Email/Password (E-mail/Senha)</strong>, ative-o e salve.</li>
+                      <li>{t("Acesse o")} <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="text-amber-400 underline hover:text-amber-300">{t("Console do Firebase")}</a></li>
+                      <li>{t("Vá em")} <strong>{t("Build > Authentication > Sign-in method")}</strong></li>
+                      <li>{t("Clique em")} <strong>{t("Add new provider (Adicionar novo provedor)")}</strong></li>
+                      <li>{t("Selecione")} <strong>{t("Email/Password (E-mail/Senha)")}</strong>{t(", ative-o e salve.")}</li>
                     </ol>
                     <p className="text-[10px] text-amber-500/90 font-mono mt-1">
-                      💡 <strong>Nota:</strong> Seus dados salvos localmente continuam gravados offline perfeitamente até ativar o provedor em nuvem!
+                      💡 <strong>{t("Nota:")}</strong> {t("Seus dados salvos localmente continuam gravados offline perfeitamente até ativar o provedor em nuvem!")}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2 pt-1">
@@ -3729,7 +4810,7 @@ export default function App() {
                       onClick={() => setOperationNotAllowedError(false)}
                       className="px-3.5 py-1.5 bg-amber-500 text-slate-950 hover:bg-amber-400 text-[10px] font-black uppercase tracking-wider rounded-lg cursor-pointer transition"
                     >
-                      Entendido / Dispensar
+                      {t("Entendido / Dispensar")}
                     </button>
                   </div>
                 </div>
@@ -3740,9 +4821,9 @@ export default function App() {
                 <>
                   <div className="space-y-1">
                     <h2 className="text-lg font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-250 font-sans uppercase">
-                      Faça seu mapa astral gratuito
+                      {t("Faça seu mapa astral gratuito")}
                     </h2>
-                    <p className="text-xs text-slate-400">Preencha seus dados natais terrestres e crie sua conta de acesso para sintonizar os astros de forma imediata.</p>
+                    <p className="text-xs text-slate-400">{t("Preencha seus dados natais terrestres e crie sua conta de acesso para sintonizar os astros de forma imediata.")}</p>
                   </div>
 
                   {/* Help Modal Popup for Birth Time */}
@@ -3756,7 +4837,7 @@ export default function App() {
                         ✕
                       </button>
                       <p className="pr-4">
-                        O horário do seu nascimento é o que permite o cálculo do seu ascendente e tudo o que é relativo a ele. É uma informação muito importante para que possamos criar o seu mapa astral completo! Você pode obter essa informação em sua certidão de nascimento.
+                        {t("O horário do seu nascimento é o que permite o cálculo do seu ascendente e tudo o que é relativo a ele. É uma informação muito importante para que possamos criar o seu mapa astral completo! Você pode obter essa informação em sua certidão de nascimento.")}
                       </p>
                     </div>
                   )}
@@ -3765,23 +4846,23 @@ export default function App() {
                     onSubmit={async (e) => {
                       e.preventDefault();
                       if (!termsConsent) {
-                        triggerGlobalNotification("Ativação Obrigatória", "Você precisa concordar em conformidade com os Termos e a Política de privacidade para continuar.", "alert");
+                        triggerGlobalNotification(t("Ativação Obrigatória"), t("Você precisa concordar em conformidade com os Termos e a Política de privacidade para continuar."), "alert");
                         return;
                       }
                       if (!createMainName.trim()) {
-                        triggerGlobalNotification("Dados Incompletos", "Por favor, digite o seu nome completo.", "alert");
+                        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, digite o seu nome completo."), "alert");
                         return;
                       }
                       if (!createMainCity) {
-                        triggerGlobalNotification("Dados Incompletos", "Por favor, digite em qual cidade você nasceu.", "alert");
+                        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, digite em qual cidade você nasceu."), "alert");
                         return;
                       }
                       if (!createMainDate) {
-                        triggerGlobalNotification("Dados Incompletos", "Por favor, selecione sua data de nascimento.", "alert");
+                        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, selecione sua data de nascimento."), "alert");
                         return;
                       }
                       if (!timeIsUnknown && !createMainTime) {
-                        triggerGlobalNotification("Dados Incompletos", "Por favor, preencha o seu horário de nascimento ou marque que não sabe o horário.", "alert");
+                        triggerGlobalNotification(t("Dados Incompletos"), t("Por favor, preencha o seu horário de nascimento ou marque que não sabe o horário."), "alert");
                         return;
                       }
                       await handleRegisterAccountSubmit(e);
@@ -3789,11 +4870,11 @@ export default function App() {
                     className="space-y-4"
                   >
                     <div>
-                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">(Qual seu Nome Completo?)</label>
+                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("(Qual seu Nome Completo?)")}</label>
                       <input 
                         type="text" 
                         required
-                        placeholder="Ex: Carlos Santos"
+                        placeholder={t("Ex: Carlos Santos")}
                         value={createMainName}
                         onChange={(e) => setCreateMainName(e.target.value)}
                         className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-850 font-sans text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50"
@@ -3801,7 +4882,7 @@ export default function App() {
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">(Em qual cidade você nasceu?)</label>
+                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("(Em qual cidade você nasceu?)")}</label>
                       <CityAutocomplete
                         value={createMainCity}
                         onChange={(val) => setCreateMainCity(val)}
@@ -3814,7 +4895,7 @@ export default function App() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">(Qual sua data de nascimento?)</label>
+                        <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("(Qual sua data de nascimento?)")}</label>
                         <input 
                           type="date" 
                           required
@@ -3824,12 +4905,12 @@ export default function App() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">(Qual seu horário de nascimento?)</label>
+                        <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("(Qual seu horário de nascimento?)")}</label>
                         <input 
                           type="text" 
                           disabled={timeIsUnknown}
                           required={!timeIsUnknown}
-                          placeholder={timeIsUnknown ? "Informar depois..." : "Ex: 15:30"}
+                          placeholder={timeIsUnknown ? t("Informar depois...") : t("Ex: 15:30")}
                           value={timeIsUnknown ? "" : createMainTime}
                           onChange={(e) => setCreateMainTime(e.target.value)}
                           className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-850 font-sans text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50 disabled:opacity-40"
@@ -3852,13 +4933,13 @@ export default function App() {
                         className="w-4 h-4 rounded border-slate-700 bg-slate-950 accent-amber-500 cursor-pointer"
                       />
                       <label htmlFor="unknown-time-checkbox" className="text-[11px] text-slate-350 cursor-pointer flex items-center gap-1.5 font-sans leading-none">
-                        Não sei meu horário de nascimento / Informar depois
+                        {t("Não sei meu horário de nascimento / Informar depois")}
                       </label>
                       <button 
                         type="button"
                         onClick={() => setShowAscExplain(true)}
                         className="p-1 text-xs text-amber-400 font-bold hover:text-amber-300 transition-all font-sans cursor-pointer shrink-0"
-                        title="Saiba mais"
+                        title={t("ui.common.learnMore", "Saiba mais")}
                       >
                         [?]
                       </button>
@@ -3866,22 +4947,22 @@ export default function App() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                       <div>
-                        <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-1.5">(E-mail para acesso)</label>
+                        <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-1.5">{t("(E-mail para acesso)")}</label>
                         <input 
                           type="email" 
                           required 
-                          placeholder="Ex: maria@provedor.com"
+                          placeholder={t("Ex: maria@provedor.com")}
                           value={authEmail}
                           onChange={(e) => setAuthEmail(e.target.value)}
                           className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-850 font-sans text-xs text-slate-205 focus:outline-hidden focus:border-amber-500/50"
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-1.5">(Crie sua Senha)</label>
+                        <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-1.5">{t("(Crie sua Senha)")}</label>
                         <input 
                           type="password" 
                           required 
-                          placeholder="Mínimo 6 caracteres"
+                          placeholder={t("Mínimo 6 caracteres")}
                           value={authPassword}
                           onChange={(e) => setAuthPassword(e.target.value)}
                           className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-850 font-sans text-xs text-slate-205 focus:outline-hidden focus:border-amber-500/50"
@@ -3900,7 +4981,7 @@ export default function App() {
                           className="w-4 h-4 rounded border-slate-700 bg-slate-950 accent-amber-500 cursor-pointer mt-0.5"
                         />
                         <label htmlFor="marketing-opt" className="text-[11px] text-slate-350 font-sans leading-snug cursor-pointer">
-                          Desejo receber e-mail sobre horóscopo, promoções e novos conteúdos. (Opcional)
+                          {t("Desejo receber e-mail sobre horóscopo, promoções e novos conteúdos. (Opcional)")}
                         </label>
                       </div>
 
@@ -3913,7 +4994,7 @@ export default function App() {
                           className="w-4 h-4 rounded border-slate-700 bg-slate-950 accent-amber-500 cursor-pointer mt-0.5"
                         />
                         <label htmlFor="mandatory-terms" className="text-[11px] text-slate-355 font-sans leading-snug cursor-pointer">
-                          Concordo com os Termos e a Política de privacidade. <span className="text-amber-500 font-black">*</span>
+                          {t("Concordo com os Termos e a Política de privacidade.")} <span className="text-amber-500 font-black">*</span>
                         </label>
                       </div>
                     </div>
@@ -3924,11 +5005,11 @@ export default function App() {
                         className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-black uppercase tracking-wider transition-all duration-300 active:scale-98 shadow-xl shadow-amber-500/10 cursor-pointer flex items-center justify-center gap-2"
                       >
                         <Star className="w-4 h-4 text-slate-950 fill-current animate-spin" style={{ animationDuration: '6s' }} />
-                        CADASTRAR E GERAR MEU MAPA
+                        {t("CADASTRAR E GERAR MEU MAPA")}
                       </button>
                       
                       <div className="text-center text-[10px] font-mono text-slate-500 uppercase tracking-widest leading-none py-1">
-                        ou login com
+                        {t("ou login com")}
                       </div>
 
                       <button
@@ -3954,12 +5035,12 @@ export default function App() {
                             d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.6-2.8c-1.1 1.74-2.5 1.83-4.36 1.83-3.71 0-6.05-1.76-6.9-4.26L1.03 18.1C2.9 21.95 6.85 24 12 24z"
                           />
                         </svg>
-                        Google
+                        {t("Google")}
                       </button>
                     </div>
 
                     <div className="pt-2 border-t border-slate-850 flex items-center justify-center gap-1.5 text-xs">
-                      <span className="text-slate-400 font-sans">Já tem um cadastro?</span>
+                      <span className="text-slate-400 font-sans">{t("Já tem um cadastro?")}</span>
                       <button 
                         type="button" 
                         onClick={() => {
@@ -3969,7 +5050,7 @@ export default function App() {
                         }}
                         className="text-amber-400 hover:text-amber-300 font-black font-sans uppercase tracking-wider underline cursor-pointer transition"
                       >
-                        Faça login
+                        {t("Faça login")}
                       </button>
                     </div>
                   </form>
@@ -3982,18 +5063,18 @@ export default function App() {
                   <div className="space-y-1">
                     <h3 className="text-base font-extrabold text-slate-100 flex items-center gap-2">
                       <Star className="w-5 h-5 text-amber-500 animate-pulse fill-amber-500/20" />
-                      Já tem um cadastro?
+                      {t("Já tem um cadastro?")}
                     </h3>
-                    <p className="text-xs text-slate-400 font-sans">Acesse o seu portal com e-mail e senha correspondentes.</p>
+                    <p className="text-xs text-slate-400 font-sans">{t("Acesse o seu portal com e-mail e senha correspondentes.")}</p>
                   </div>
 
                   <form onSubmit={handleLoginAccountSubmit} className="space-y-4">
                     <div>
-                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">(E-mail)</label>
+                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("(E-mail)")}</label>
                       <input 
                         type="email" 
                         required 
-                        placeholder="Ex: maria@provedor.com"
+                        placeholder={t("Ex: maria@provedor.com")}
                         value={authEmail}
                         onChange={(e) => setAuthEmail(e.target.value)}
                         className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-850 font-sans text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50"
@@ -4001,11 +5082,11 @@ export default function App() {
                     </div>
                     
                     <div>
-                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">(Senha)</label>
+                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("(Senha)")}</label>
                       <input 
                         type="password" 
                         required 
-                        placeholder="Digite sua senha cadastrada"
+                        placeholder={t("Digite sua senha cadastrada")}
                         value={authPassword}
                         onChange={(e) => setAuthPassword(e.target.value)}
                         className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-850 font-sans text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50"
@@ -4017,7 +5098,7 @@ export default function App() {
                         type="submit"
                         className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-black uppercase tracking-wider transition-all duration-300 active:scale-98 shadow-xl shadow-amber-500/10 cursor-pointer"
                       >
-                        Fazer login
+                        {t("Fazer login")}
                       </button>
 
                       <button
@@ -4056,22 +5137,28 @@ export default function App() {
                         }}
                         className="text-xs text-amber-500 hover:text-amber-400 font-bold font-sans transition cursor-pointer underline"
                       >
-                        Esqueci minha senha
+                        {t("Esqueci minha senha")}
                       </button>
                     </div>
 
                     <div className="pt-3 text-center text-[10px] font-sans text-slate-400 leading-normal">
-                      Ao criar uma conta, você concorda com os <span className="text-amber-500 underline cursor-pointer">Termos de uso</span> e a <span className="text-amber-500 underline cursor-pointer">Política de privacidade</span>.
+                      <button 
+                        type="button" 
+                        onClick={() => setLandingFooterModal('terms')}
+                        className="hover:text-amber-400 transition cursor-pointer font-sans"
+                      >
+                        {t("Ao criar uma conta, você concorda com os Termos de uso e a Política de privacidade.")}
+                      </button>
                     </div>
 
                     <div className="pt-4 border-t border-slate-850 flex items-center justify-center gap-1.5 text-xs">
-                      <span className="text-slate-400 font-sans">Não tem conta ainda?</span>
+                      <span className="text-slate-400 font-sans">{t("Não tem conta ainda?")}</span>
                       <button 
                         type="button" 
                         onClick={() => setAuthTab('birth_info')}
                         className="text-amber-400 hover:text-amber-300 font-black font-sans uppercase tracking-wider underline cursor-pointer transition"
                       >
-                        Criar Mapa Inteligente
+                        {t("Criar Mapa Inteligente")}
                       </button>
                     </div>
                   </form>
@@ -4084,18 +5171,18 @@ export default function App() {
                   <div className="space-y-1">
                     <h3 className="text-base font-extrabold text-slate-100 flex items-center gap-2">
                       <Star className="w-5 h-5 text-amber-500 animate-pulse fill-amber-500/20" />
-                      Esqueci minha senha
+                      {t("Esqueci minha senha")}
                     </h3>
-                    <p className="text-xs text-slate-400 font-sans">Enviaremos as orientações de recuperação de senha por e-mail para que possa criar uma nova senha.</p>
+                    <p className="text-xs text-slate-400 font-sans">{t("Enviaremos as orientações de recuperação de senha por e-mail para que possa criar uma nova senha.")}</p>
                   </div>
 
                   <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
                     <div>
-                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">E-mail Cadastrado</label>
+                      <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("E-mail Cadastrado")}</label>
                       <input 
                         type="email" 
                         required 
-                        placeholder="Ex: maria@provedor.com"
+                        placeholder={t("Ex: maria@provedor.com")}
                         value={forgotEmail}
                         onChange={(e) => setForgotEmail(e.target.value)}
                         className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-850 font-sans text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50"
@@ -4108,19 +5195,25 @@ export default function App() {
                         onClick={() => setAuthTab('login')}
                         className="flex-1 py-3 text-xs bg-slate-950 hover:bg-slate-900 border border-slate-850 hover:border-slate-800 rounded-2xl text-slate-450 uppercase tracking-wider font-mono cursor-pointer transition text-center"
                       >
-                        Voltar
+                        {t("Voltar")}
                       </button>
                       <button 
                         type="submit"
                         disabled={isSendingReset}
                         className="flex-2 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-black uppercase tracking-wider rounded-2xl transition active:scale-98 shadow-xl shadow-amber-500/10 cursor-pointer disabled:opacity-50"
                       >
-                        {isSendingReset ? 'Enviando...' : 'Recuperar Senha'}
+                        {isSendingReset ? t("Enviando...") : t("Recuperar Senha")}
                       </button>
                     </div>
 
                     <div className="pt-3 text-center text-[10px] font-sans text-slate-400 leading-normal">
-                      Ao criar uma conta, você concorda com os <span className="text-amber-500 underline cursor-pointer">Termos de uso</span> e a <span className="text-amber-500 underline cursor-pointer">Política de privacidade</span>.
+                      <button 
+                        type="button" 
+                        onClick={() => setLandingFooterModal('terms')}
+                        className="hover:text-amber-400 transition cursor-pointer font-sans"
+                      >
+                        {t("Ao criar uma conta, você concorda com os Termos de uso e a Política de privacidade.")}
+                      </button>
                     </div>
                   </form>
                 </>
@@ -4129,7 +5222,7 @@ export default function App() {
               {/* Secure encrypted credentials badge */}
               <div className="space-y-3 pt-3 border-t border-slate-850">
                 <div className="text-center text-[9px] font-mono text-slate-500 uppercase tracking-widest leading-normal">
-                  🔒 Autenticação do Portal Criptografada localmente no seu dispositivo.
+                  {t("🔒 Autenticação do Portal Criptografada localmente no seu dispositivo.")}
                 </div>
               </div>
             </div>
@@ -4139,13 +5232,13 @@ export default function App() {
           <div id="advantages-section" className="w-full max-w-7xl mx-auto px-4 py-8 space-y-8 scroll-mt-20">
             <div className="text-center space-y-2">
               <span className="px-3 py-1 rounded-full text-[9px] uppercase font-mono font-bold tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/20">
-                Comparativo de Engenharia Celeste
+                {t("Comparativo de Engenharia Celeste")}
               </span>
               <h2 className="text-2xl md:text-4xl font-sans font-black tracking-tight text-slate-100 uppercase">
-                Por que o Portal Órbita é Diferente de Tudo?
+                {t("Por que o Portal Órbita é Diferente de Tudo?")}
               </h2>
               <p className="text-xs text-slate-400 max-w-2xl mx-auto">
-                Compare a arquitetura matemática de precisão militar do nosso motor contra ferramentas amadoras que você encontra na internet.
+                {t("Compare a arquitetura matemática de precisão militar do nosso motor contra ferramentas amadoras que você encontra na internet.")}
               </p>
             </div>
 
@@ -4164,13 +5257,13 @@ export default function App() {
                   <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
                     <Orbit className="w-5 h-5" />
                   </div>
-                  <h3 className="text-base font-bold text-slate-200">Motor de Efemérides de Alta Resolução</h3>
+                  <h3 className="text-base font-bold text-slate-200">{t("Motor de Efemérides de Alta Resolução")}</h3>
                   <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                    Nossos servidores calculam a declinação e a ascensão reta geocêntrica verdadeira de cada planeta no instante preciso do seu nascimento. Corrigimos discrepâncias históricas de horário de verão e fusos horários locais de mais de 12.000 cidades mundiais. Isso garante que o seu signo Ascendente e Cúspide das Casas estejam 100% corretos.
+                    {t("Nossos servidores calculam a declinação e a ascensão reta geocêntrica verdadeira de cada planeta no instante preciso do seu nascimento. Corrigimos discrepâncias históricas de horário de verão e fusos horários locais de mais de 12.000 cidades mundiais. Isso garante que o seu signo Ascendente e Cúspide das Casas estejam 100% corretos.")}
                   </p>
                 </div>
                 <div className="text-[10px] font-mono text-amber-500/80 bg-amber-500/5 px-3 py-1.5 rounded-xl border border-amber-500/10 self-start">
-                  ⚡ Precisão de até 1/1000 de segundo de arco.
+                  {t("⚡ Precisão de até 1/1000 de segundo de arco.")}
                 </div>
               </motion.div>
 
@@ -4187,13 +5280,13 @@ export default function App() {
                   <div className="w-10 h-10 rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
                     <Activity className="w-5 h-5" />
                   </div>
-                  <h3 className="text-base font-bold text-slate-200">Suíte de Sintonização de Alma</h3>
+                  <h3 className="text-base font-bold text-slate-200">{t("Suíte de Sintonização de Alma")}</h3>
                   <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                    Não somos apenas um mapa natal estático. Sincronizamos sua energia com as correntes de subconsciência integral: rastreadores de Nodos Lunares (Cabeça e Cauda do Dragão), análise de Biorritmo Dinâmico (ciclos emocionais, físicos e intelectuais), tiragem de Tarot de autoconhecimento e decifrador de sementes oníricas.
+                    {t("Não somos apenas um mapa natal estático. Sincronizamos sua energia com as correntes de subconsciência integral: rastreadores de Nodos Lunares (Cabeça e Cauda do Dragão), análise de Biorritmo Dinâmico (ciclos emocionais, físicos e intelectuais), tiragem de Tarot de autoconhecimento e decifrador de sementes oníricas.")}
                   </p>
                 </div>
                 <div className="text-[10px] font-mono text-sky-400 bg-sky-500/5 px-3 py-1.5 rounded-xl border border-sky-500/10 self-start">
-                  🔮 Integração completa de 5 dimensões psíquicas.
+                  {t("🔮 Integração completa de 5 dimensões psíquicas.")}
                 </div>
               </motion.div>
 
@@ -4210,13 +5303,13 @@ export default function App() {
                   <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
                     <ShieldCheck className="w-5 h-5" />
                   </div>
-                  <h3 className="text-base font-bold text-slate-200">Segurança de Dados & Criptografia</h3>
+                  <h3 className="text-base font-bold text-slate-200">{t("Segurança de Dados & Criptografia")}</h3>
                   <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                    Sua data de nascimento, nome e local de origem não são mercadorias. O Portal Órbita é orgulhosamente livre de anúncios intrusivos de terceiros. Todos os seus dados são criptografados e salvos localmente utilizando tecnologia Sandbox de navegador isolada ou armazenados em bancos de dados de nuvem de alta segurança.
+                    {t("Sua data de nascimento, nome e local de origem não são mercadorias. O Portal Órbita é orgulhosamente livre de anúncios intrusivos de terceiros. Todos os seus dados são criptografados e salvos localmente utilizando tecnologia Sandbox de navegador isolada ou armazenados em bancos de dados de nuvem de alta segurança.")}
                   </p>
                 </div>
                 <div className="text-[10px] font-mono text-emerald-400 bg-emerald-500/5 px-3 py-1.5 rounded-xl border border-emerald-500/10 self-start">
-                  🔒 Selo de Blindagem GDPR/LGPD Ativo.
+                  {t("🔒 Selo de Blindagem GDPR/LGPD Ativo.")}
                 </div>
               </motion.div>
 
@@ -4232,34 +5325,34 @@ export default function App() {
                 <div className="absolute inset-0 bg-radial from-amber-500/5 to-transparent pointer-events-none" />
                 <div className="space-y-3 relative z-10">
                   <h4 className="text-xs font-mono font-bold text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" /> Tabela Comparativa de Autoridade
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" /> {t("Tabela Comparativa de Autoridade")}
                   </h4>
                   
                   <div className="space-y-2 pt-2 text-[11px] font-sans">
                     <div className="grid grid-cols-3 border-b border-slate-900 pb-1.5 font-bold text-slate-300">
-                      <span>Recurso</span>
-                      <span className="text-slate-500 text-center">Sites Comuns</span>
-                      <span className="text-amber-400 text-right">Portal Órbita</span>
+                      <span>{t("Recurso")}</span>
+                      <span className="text-slate-500 text-center">{t("Sites Comuns")}</span>
+                      <span className="text-amber-400 text-right">{t("Portal Órbita")}</span>
                     </div>
                     <div className="grid grid-cols-3 border-b border-slate-900 pb-1.5">
-                      <span className="text-slate-300">Efemérides Reais</span>
-                      <span className="text-slate-500 text-center">Aproximadas</span>
-                      <span className="text-emerald-400 text-right font-bold">Sim (NASA-std)</span>
+                      <span className="text-slate-300">{t("Efemérides Reais")}</span>
+                      <span className="text-slate-500 text-center">{t("Aproximadas")}</span>
+                      <span className="text-emerald-400 text-right font-bold">{t("Sim (NASA-std)")}</span>
                     </div>
                     <div className="grid grid-cols-3 border-b border-slate-900 pb-1.5">
-                      <span className="text-slate-300">Ajuste de Luz Solar</span>
-                      <span className="text-slate-500 text-center">Não Possuem</span>
-                      <span className="text-emerald-400 text-right font-bold">Automático</span>
+                      <span className="text-slate-300">{t("Ajuste de Luz Solar")}</span>
+                      <span className="text-slate-500 text-center">{t("Não Possuem")}</span>
+                      <span className="text-emerald-400 text-right font-bold">{t("Automático")}</span>
                     </div>
                     <div className="grid grid-cols-3 border-b border-slate-900 pb-1.5">
-                      <span className="text-slate-300">Painel com Tarot e Biorritmo</span>
-                      <span className="text-slate-500 text-center">Inexistente</span>
-                      <span className="text-emerald-400 text-right font-bold">Completo</span>
+                      <span className="text-slate-300">{t("Painel com Tarot e Biorritmo")}</span>
+                      <span className="text-slate-500 text-center">{t("Inexistente")}</span>
+                      <span className="text-emerald-400 text-right font-bold">{t("Completo")}</span>
                     </div>
                     <div className="grid grid-cols-3">
-                      <span className="text-slate-300">Uso de Anúncios</span>
-                      <span className="text-rose-450 text-center">Excessivo</span>
-                      <span className="text-emerald-400 text-right font-bold">Zero Anúncios</span>
+                      <span className="text-slate-300">{t("Uso de Anúncios")}</span>
+                      <span className="text-rose-450 text-center">{t("Excessivo")}</span>
+                      <span className="text-emerald-400 text-right font-bold">{t("Zero Anúncios")}</span>
                     </div>
                   </div>
                 </div>
@@ -4269,7 +5362,7 @@ export default function App() {
                   }}
                   className="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[10px] uppercase tracking-wider rounded-xl transition duration-300 shadow-md cursor-pointer mt-3 relative z-10"
                 >
-                  Sintonizar Meu Mapa Grátis Agora
+                  {t("Sintonizar Meu Mapa Grátis Agora")}
                 </button>
               </motion.div>
 
@@ -4279,31 +5372,31 @@ export default function App() {
           {/* Interactive Signs carousel / selector list */}
           <div id="signs-selection" className="w-full max-w-7xl mx-auto px-4 space-y-6 pt-8 scroll-mt-20">
             <div className="text-center space-y-1.5">
-              <span className="text-[10px] uppercase font-mono tracking-widest text-amber-500 font-bold">12 Constelações Zodiacais</span>
-              <h2 className="text-xl md:text-2xl font-sans font-extrabold text-slate-100">Visualize as Vibrações de Cada Signo</h2>
-              <p className="text-xs text-slate-405 max-w-xl mx-auto">Explore as características essenciais, astros regentes e receba previsões gratuitas diárias.</p>
+              <span className="text-[10px] uppercase font-mono tracking-widest text-amber-500 font-bold">{t("12 Constelações Zodiacais")}</span>
+              <h2 className="text-xl md:text-2xl font-sans font-extrabold text-slate-100">{t("Visualize as Vibrações de Cada Signo")}</h2>
+              <p className="text-xs text-slate-405 max-w-xl mx-auto">{t("Explore as características essenciais, astros regentes e receba previsões gratuitas diárias.")}</p>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-12 gap-3 max-w-6xl mx-auto">
               {signsZodiacList.map((sz, szIdx) => {
-                const isActive = selectedZodiacSign === sz.name;
+                const isActive = selectedZodiacSign === sz.rawName || selectedZodiacSign === sz.name;
                 let glowColor = 'from-amber-500/10 to-transparent';
                 let borderColor = isActive ? 'border-amber-500/50' : 'border-slate-800/80';
                 let textColor = isActive ? 'text-amber-300 font-bold' : 'text-slate-400';
 
-                if (sz.element === "Fogo") {
+                if (sz.rawElement === "Fogo") {
                   glowColor = isActive ? 'from-rose-500/25 to-rose-950/10' : 'from-rose-500/5 to-transparent';
                   borderColor = isActive ? 'border-rose-500/60 shadow-lg shadow-rose-500/15' : 'border-slate-800/80 hover:border-rose-500/20';
                   textColor = isActive ? 'text-rose-300 font-semibold' : 'text-slate-400 hover:text-rose-100';
-                } else if (sz.element === "Terra") {
+                } else if (sz.rawElement === "Terra") {
                   glowColor = isActive ? 'from-emerald-500/25 to-emerald-950/10' : 'from-emerald-500/5 to-transparent';
                   borderColor = isActive ? 'border-emerald-500/60 shadow-lg shadow-emerald-500/15' : 'border-slate-800/80 hover:border-emerald-500/20';
                   textColor = isActive ? 'text-emerald-300 font-semibold' : 'text-slate-400 hover:text-emerald-100';
-                } else if (sz.element === "Ar") {
+                } else if (sz.rawElement === "Ar") {
                   glowColor = isActive ? 'from-sky-500/25 to-sky-950/10' : 'from-sky-500/5 to-transparent';
                   borderColor = isActive ? 'border-sky-500/60 shadow-lg shadow-sky-500/15' : 'border-slate-800/80 hover:border-sky-500/20';
                   textColor = isActive ? 'text-sky-300 font-semibold' : 'text-slate-400 hover:text-sky-100';
-                } else if (sz.element === "Água") {
+                } else if (sz.rawElement === "Água") {
                   glowColor = isActive ? 'from-indigo-500/25 to-indigo-950/10' : 'from-indigo-500/5 to-transparent';
                   borderColor = isActive ? 'border-indigo-500/60 shadow-lg shadow-indigo-500/15' : 'border-slate-800/80 hover:border-indigo-500/20';
                   textColor = isActive ? 'text-indigo-300 font-semibold' : 'text-slate-400 hover:text-indigo-100';
@@ -4311,9 +5404,9 @@ export default function App() {
 
                 return (
                   <motion.button
-                    key={sz.name}
-                    id={`zodiac-btn-${sz.name.toLowerCase()}`}
-                    onClick={() => setSelectedZodiacSign(sz.name)}
+                    key={sz.rawName}
+                    id={`zodiac-btn-${sz.rawName.toLowerCase()}`}
+                    onClick={() => setSelectedZodiacSign(sz.rawName)}
                     initial={{ opacity: 0, scale: 0.9 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
@@ -4355,7 +5448,7 @@ export default function App() {
 
             {/* Selected Sign Details Card */}
             {(() => {
-              const currentSign = signsZodiacList.find(s => s.name === selectedZodiacSign);
+              const currentSign = signsZodiacList.find(s => s.rawName === selectedZodiacSign || s.name === selectedZodiacSign) || signsZodiacList[0];
               if (!currentSign) return null;
               return (
                 <motion.div 
@@ -4386,20 +5479,20 @@ export default function App() {
                             </span>
                           </h4>
                           <span className="text-[10px] uppercase tracking-widest font-mono text-slate-400">
-                            Regente Planetário: <strong className="text-amber-400">{currentSign.regente}</strong>
+                            {t("Regente Planetário")}: <strong className="text-amber-400">{currentSign.regente}</strong>
                           </span>
                         </div>
                       </div>
 
                       <div className="mt-5 space-y-1 bg-slate-950/40 p-4 rounded-2xl border border-slate-850">
-                        <strong className="text-[10px] font-mono text-amber-500/80 uppercase tracking-widest block mb-1">Assinatura Energética & Atributos</strong>
+                        <strong className="text-[10px] font-mono text-amber-500/80 uppercase tracking-widest block mb-1">{t("Assinatura Energética & Atributos")}</strong>
                         <p className="text-xs text-slate-300 leading-relaxed font-sans">{currentSign.traits}</p>
                       </div>
                     </div>
 
                     <div className="pt-2">
                       <span className="px-3.5 py-1.5 bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/20 text-[10px] font-mono uppercase tracking-wider rounded-xl text-amber-400 transition cursor-pointer inline-flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Sincronizar Mapa Natal Completo
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> {t("Sincronizar Mapa Natal Completo")}
                       </span>
                     </div>
                   </div>
@@ -4408,9 +5501,9 @@ export default function App() {
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] uppercase font-mono font-black text-amber-400 tracking-widest flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" /> Previsão Astrológica Diária
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" /> {t("Previsão Astrológica Diária")}
                         </span>
-                        <span className="text-[8px] uppercase tracking-widest font-mono text-slate-500">Gravitado pelo Sol</span>
+                        <span className="text-[8px] uppercase tracking-widest font-mono text-slate-500">{t("Gravitado pelo Sol")}</span>
                       </div>
                       <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-serif italic pt-1">
                         "{currentSign.horoscopo}"
@@ -4418,8 +5511,8 @@ export default function App() {
                     </div>
 
                     <div className="text-[9px] text-slate-500 font-mono mt-6 border-t border-slate-850 pt-3 flex justify-between items-center">
-                      <span>Atualizado às 00:00 UTC</span>
-                      <span>Sincronizado: 2026-06-12T07:45:00Z</span>
+                      <span>{t("Atualizado às 00:00 UTC")}</span>
+                      <span>{t("Sincronizado")}: 2026-06-12T07:45:00Z</span>
                     </div>
                   </div>
                 </motion.div>
@@ -4431,19 +5524,19 @@ export default function App() {
           <div className="w-full max-w-4xl mx-auto px-4 py-8 bg-slate-900/20 rounded-3xl border border-slate-850 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <div className="p-6 text-center bg-gradient-to-tr from-slate-950/60 to-slate-900/60 rounded-3xl border border-amber-500/10 flex flex-col items-center justify-center min-h-[170px]">
               <OrbitaLogo className="w-12 h-12" />
-              <div className="text-sm font-bold text-amber-500 font-mono mt-4">PROJETO COSMIC PLACIDUS</div>
-              <p className="text-[10px] text-slate-400 mt-1.5 max-w-xs mx-auto leading-relaxed">Coordenadas celestes, horas e latitudes precisas de nascimento determinam ressonâncias autênticas.</p>
+              <div className="text-sm font-bold text-amber-500 font-mono mt-4">{t("PROJETO COSMIC PLACIDUS")}</div>
+              <p className="text-[10px] text-slate-400 mt-1.5 max-w-xs mx-auto leading-relaxed">{t("Coordenadas celestes, horas e latitudes precisas de nascimento determinam ressonâncias autênticas.")}</p>
             </div>
 
             <div className="space-y-4">
-              <h3 className="text-lg font-extrabold text-slate-100">O que é um Mapa Astral?</h3>
+              <h3 className="text-lg font-extrabold text-slate-100">{t("O que é um Mapa Astral?")}</h3>
               <p className="text-xs text-slate-400 leading-relaxed leading-[1.7]">
-                Seu Mapa Astral funciona como uma representação estática exata do firmamento planetário vistos na terra no instante de seu primeiro fôlego de ar terrestre. Ele aponta como Sol, Lua e os outros planetas se espelham em signos e determinam os eixos de vivências das suas doze casas terrenas fundamentais.
+                {t("Seu Mapa Astral funciona como uma representação estática exata do firmamento planetário vistos na terra no instante de seu primeiro fôlego de ar terrestre. Ele aponta como Sol, Lua e os outros planetas se espelham em signos e determinam os eixos de vivências das suas doze casas terrenas fundamentais.")}
               </p>
               <ul className="text-xs text-slate-400 space-y-1">
-                <li>· Sol denota seu ego básico e energia central vibrante.</li>
-                <li>· Lua dita o subconsciente íntimo e a assimilativa reativa.</li>
-                <li>· Ascendente expõe a casca física social de entrada no mundo.</li>
+                <li>{t("· Sol denota seu ego básico e energia central vibrante.")}</li>
+                <li>{t("· Lua dita o subconsciente íntimo e a assimilativa reativa.")}</li>
+                <li>{t("· Ascendente expõe a casca física social de entrada no mundo.")}</li>
               </ul>
             </div>
           </div>
@@ -4451,9 +5544,9 @@ export default function App() {
           {/* Blog posts articles carousel */}
           <div id="blog-section" className="w-full max-w-7xl mx-auto px-4 space-y-6 pt-4 scroll-mt-20">
             <div className="text-center space-y-1.5">
-              <span className="text-[10px] uppercase font-mono tracking-widest text-amber-400 font-bold">Conteúdos Notáveis</span>
-              <h2 className="text-xl md:text-2xl font-sans font-extrabold text-slate-100">Biblioteca da Consciência Completa</h2>
-              <p className="text-xs text-slate-400 max-w-xl mx-auto">Leia guias produzidos por astrólogos licenciados abordando transições de energia.</p>
+              <span className="text-[10px] uppercase font-mono tracking-widest text-amber-400 font-bold">{t("Conteúdos Notáveis")}</span>
+              <h2 className="text-xl md:text-2xl font-sans font-extrabold text-slate-100">{t("Biblioteca da Consciência Completa")}</h2>
+              <p className="text-xs text-slate-400 max-w-xl mx-auto">{t("Leia guias produzidos por astrólogos licenciados abordando transições de energia.")}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
@@ -4462,14 +5555,14 @@ export default function App() {
                   <div className="space-y-2">
                     <span className="text-[9px] font-mono text-slate-505 block uppercase">{art.author} · {art.date}</span>
                     <h4 className="text-sm font-bold text-slate-200">{art.title}</h4>
-                    <p className="text-xs text-slate-450 leading-relaxed line-clamp-3">{art.summary}</p>
+                    <p className="text-xs text-slate-455 leading-relaxed line-clamp-3">{art.summary}</p>
                   </div>
 
                   <button
                     onClick={() => setReadingBlogPost(art.id)}
                     className="text-xs text-amber-500 hover:text-amber-400 font-bold flex items-center gap-1 cursor-pointer"
                   >
-                    Ler Artigo Completo <ArrowRight className="w-3.5 h-3.5" />
+                    {t("Ler Artigo Completo")} <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
               ))}
@@ -4501,7 +5594,7 @@ export default function App() {
                       onClick={() => setReadingBlogPost(null)}
                       className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 rounded-xl"
                     >
-                      Fechar Leitor
+                      {t("Fechar Leitor")}
                     </button>
                   </div>
                 </div>
@@ -4511,7 +5604,7 @@ export default function App() {
 
           {/* Interactive FAQs Accordion */}
           <div id="faq-section" className="w-full max-w-3xl mx-auto px-4 space-y-6 pt-4 scroll-mt-20">
-            <h3 className="text-center text-sm font-bold font-mono uppercase text-slate-500 tracking-widest">Perguntas Frequentes</h3>
+            <h3 className="text-center text-sm font-bold font-mono uppercase text-slate-500 tracking-widest">{t("Perguntas Frequentes")}</h3>
             
             <div className="space-y-4">
               {faqList.map((faq, index) => (
@@ -4536,14 +5629,14 @@ export default function App() {
               <div className="space-y-3 md:col-span-2">
                 <div className="flex items-center gap-2.5">
                   <OrbitaLogo className="w-8 h-8" />
-                  <span className="text-sm font-black tracking-widest text-[#F59E0B] uppercase">PORTAL ÓRBITA</span>
+                  <span className="text-sm font-black tracking-widest text-[#F59E0B] uppercase">{t("PORTAL ÓRBITA")}</span>
                 </div>
                 <p className="text-[10px] text-slate-500 leading-relaxed font-sans max-w-sm">
                   {t("© 2011-2026 Portal Órbita S.A. Todos os direitos reservados. Projeto computado usando algoritmos de Plácidus de alta integridade geocêntrica física. Criptografia ativa de ponta a ponta.")}
                 </p>
                 <div className="text-[9px] font-mono text-slate-600">
-                  IP SEC INTERCEPT MODE: ACTIVE <br />
-                  SECURE DOMAIN: SSL SECURED BY FIREBASE AUTH
+                  {t("IP SEC INTERCEPT MODE: ACTIVE")} <br />
+                  {t("SECURE DOMAIN: SSL SECURED BY FIREBASE AUTH")}
                 </div>
               </div>
 
@@ -4552,31 +5645,34 @@ export default function App() {
                 <h4 className="text-[10px] font-mono uppercase text-amber-500 tracking-widest mb-3 font-bold">{t("Diretrizes Legais")}</h4>
                 <ul className="text-[11px] text-slate-400 space-y-2 font-sans">
                   <li>
-                    <button 
-                      type="button" 
-                      onClick={() => setLandingFooterModal('terms')} 
-                      className="hover:text-amber-400 cursor-pointer transition text-left"
+                    <a 
+                      href="https://portal-orbita.blogspot.com/2026/08/portal-terms-of-use.html"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-amber-400 cursor-pointer transition text-left block"
                     >
                       {t("Termos de Uso do Portal")}
-                    </button>
+                    </a>
                   </li>
                   <li>
-                    <button 
-                      type="button" 
-                      onClick={() => setLandingFooterModal('privacy')} 
-                      className="hover:text-amber-400 cursor-pointer transition text-left"
+                    <a 
+                      href="https://portal-orbita.blogspot.com/2026/08/privacy-policy.html"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-amber-400 cursor-pointer transition text-left block"
                     >
                       {t("Políticas de Privacidade")}
-                    </button>
+                    </a>
                   </li>
                   <li>
-                    <button 
-                      type="button" 
-                      onClick={() => setLandingFooterModal('security')} 
-                      className="hover:text-amber-400 cursor-pointer transition text-left"
+                    <a 
+                      href="https://portal-orbita.blogspot.com/2026/08/security-guidelines.html"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-amber-400 cursor-pointer transition text-left block"
                     >
                       {t("Diretrizes de Segurança")}
-                    </button>
+                    </a>
                   </li>
                 </ul>
               </div>
@@ -4622,7 +5718,10 @@ export default function App() {
                       type="button" 
                       onClick={() => {
                         setSupportSuccessMessage('');
-                        setSupportMessage('');
+                        setSupportError('');
+                        setSupportName(user?.name || user?.displayName || '');
+                        setSupportEmail(user?.email || loggedEmail || '');
+                        setSupportReason('');
                         setLandingFooterModal('support');
                       }} 
                       className="hover:text-amber-400 cursor-pointer transition text-left font-semibold text-amber-500"
@@ -4631,16 +5730,26 @@ export default function App() {
                     </button>
                   </li>
                   <li>
+                    <a 
+                      href="https://portal-orbita-delete-account.vercel.app/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-red-400 cursor-pointer transition text-left block text-slate-400 hover:underline"
+                    >
+                      {t("Excluir conta")}
+                    </a>
+                  </li>
+                  <li>
                     <select 
                       value={lang} 
                       onChange={(e) => setLang(e.target.value as any)}
                       className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-900 text-[10px] text-slate-400 focus:outline-hidden cursor-pointer w-full mt-2"
                     >
-                      <option value="pt">Português (Brasil)</option>
-                      <option value="en">English (United States)</option>
-                      <option value="es">Español (Castellano)</option>
-                      <option value="de">Deutsch (DE)</option>
-                      <option value="fr">Français (France)</option>
+                      <option value="pt">{t('lang_pt_name', 'Português (Brasil)')}</option>
+                      <option value="en">{t('lang_en_name', 'English (United States)')}</option>
+                      <option value="es">{t('lang_es_name', 'Español (Castellano)')}</option>
+                      <option value="de">{t('lang_de_name', 'Deutsch (DE)')}</option>
+                      <option value="fr">{t('lang_fr_name', 'Français (France)')}</option>
                     </select>
                   </li>
                 </ul>
@@ -4665,21 +5774,21 @@ export default function App() {
 
                 {landingFooterModal === 'terms' && (
                   <div className="space-y-4">
-                    <span className="text-[9px] font-mono text-amber-400 uppercase tracking-widest font-bold">Estatuto Geral</span>
-                    <h3 className="text-xl font-sans font-black text-slate-100 uppercase">Termos de Uso do Portal Órbita</h3>
+                    <span className="text-[9px] font-mono text-amber-400 uppercase tracking-widest font-bold">{t("Estatuto Geral")}</span>
+                    <h3 className="text-xl font-sans font-black text-slate-100 uppercase">{t("Termos de Uso do Portal Órbita")}</h3>
                     
                     <div className="text-xs text-slate-300 space-y-3 leading-relaxed max-h-[50vh] overflow-y-auto pr-2">
-                      <p className="font-bold text-amber-300">1. PRECISÃO DOS CÁLCULOS ASTRONÔMICOS</p>
+                      <p className="font-bold text-amber-300">{t("1. PRECISÃO DOS CÁLCULOS ASTRONÔMICOS")}</p>
                       <p>
-                        O Portal Órbita utiliza o algoritmo "Placidus Solar Coordinates v2.4". Embora estejamos comprometidos com uma exatidão de até 1/1000 de grau, pequenas nuances locais ou flutuações de banco de dados geográficos podem ocorrer. As interpretações astrológicas geradas são direcionamentos de autoconhecimento e estimulação intelectual, não substituindo consultas médicas, financeiras ou jurídicas.
+                        {t("O Portal Órbita utiliza o algoritmo \"Placidus Solar Coordinates v2.4\". Embora estejamos comprometidos com uma exatidão de até 1/1000 de grau, pequenas nuances locais ou flutuações de banco de dados geográficos podem ocorrer. As interpretações astrológicas geradas são direcionamentos de autoconhecimento e estimulação intelectual, não substituindo consultas médicas, financeiras ou jurídicas.")}
                       </p>
-                      <p className="font-bold text-amber-300">2. EXCLUSIVIDADE DA CONTA DE USUÁRIO</p>
+                      <p className="font-bold text-amber-300">{t("2. EXCLUSIVIDADE DA CONTA DE USUÁRIO")}</p>
                       <p>
-                        Cada cadastro de mapa é intransferível. O usuário concorda em preencher informações verdadeiras de data, horário exato de parto e localidade física para garantir a correta renderização do firmamento planetário.
+                        {t("Cada cadastro de mapa é intransferível. O usuário concorda em preencher informações verdadeiras de data, horário exato de parto e localidade física para garantir a correta renderização do firmamento planetário.")}
                       </p>
-                      <p className="font-bold text-amber-300">3. PROPRIEDADE INTELECTUAL</p>
+                      <p className="font-bold text-amber-300">{t("3. PROPRIEDADE INTELECTUAL")}</p>
                       <p>
-                        Todo o conteúdo de interpretações inteligentes, descrições dos signos, layouts, e efemérides são pertencentes exclusivamente ao Portal Órbita S.A., sendo proibida a reprodução para fins comerciais sem outorga prévia escrita por nossa junta de advogados.
+                        {t("Todo o conteúdo de interpretações inteligentes, descrições dos signos, layouts, e efemérides são pertencentes exclusivamente ao Portal Órbita S.A., sendo proibida a reprodução para fins comerciais sem outorga prévia escrita por nossa junta de advogados.")}
                       </p>
                     </div>
                   </div>
@@ -4687,21 +5796,21 @@ export default function App() {
 
                 {landingFooterModal === 'privacy' && (
                   <div className="space-y-4">
-                    <span className="text-[9px] font-mono text-emerald-400 uppercase tracking-widest font-bold">Respeito e Integridade</span>
-                    <h3 className="text-xl font-sans font-black text-slate-100 uppercase">Diretrizes de Privacidade Cósmica</h3>
+                    <span className="text-[9px] font-mono text-emerald-400 uppercase tracking-widest font-bold">{t("Respeito e Integridade")}</span>
+                    <h3 className="text-xl font-sans font-black text-slate-100 uppercase">{t("Diretrizes de Privacidade Cósmica")}</h3>
                     
                     <div className="text-xs text-slate-300 space-y-3 leading-relaxed max-h-[50vh] overflow-y-auto pr-2">
-                      <p className="font-bold text-emerald-300">1. COMPROMISSO DE ZERO ADWARE</p>
+                      <p className="font-bold text-emerald-300">{t("1. COMPROMISSO DE ZERO ADWARE")}</p>
                       <p>
-                        Nós detestamos publicidade intrusiva tanto quanto você. O Portal Órbita se compromete a nunca veicular anúncios de terceiros em sua plataforma pública ou logada. Seus dados de navegação são sagrados.
+                        {t("Nós detestamos publicidade intrusiva tanto quanto você. O Portal Órbita se compromete a nunca veicular anúncios de terceiros em sua plataforma pública ou logada. Seus dados de navegação são sagrados.")}
                       </p>
-                      <p className="font-bold text-emerald-300">2. CRIPTOGRAFIA DE INFORMAÇÕES PESSOAIS</p>
+                      <p className="font-bold text-emerald-300">{t("2. CRIPTOGRAFIA DE INFORMAÇÕES PESSOAIS")}</p>
                       <p>
-                        Seu e-mail, nome, data e cidade de nascimento são protegidos por criptografia de banco de dados nativa. Caso faça login por vias sociais (como Google), aplicamos tokens seguros (OAuth 2.0) onde sua senha original jamais toca nossos servidores.
+                        {t("Seu e-mail, nome, data e cidade de nascimento são protegidos por criptografia de banco de dados nativa. Caso faça login por vias sociais (como Google), aplicamos tokens seguros (OAuth 2.0) onde sua senha original jamais toca nossos servidores.")}
                       </p>
-                      <p className="font-bold text-emerald-300">3. DESCARTE DE REGISTROS (LGPD)</p>
+                      <p className="font-bold text-emerald-300">{t("3. DESCARTE DE REGISTROS (LGPD)")}</p>
                       <p>
-                        Você possui plena autoridade sob suas sintonias. A qualquer momento, na tela de Configurações do seu Portal Ativo do Usuário, você poderá acionar o botão de "Exclusão Definitiva de Conta", apagando instantaneamente todo o seu histórico do nosso Firestore de maneira irreversível e transparente.
+                        {t("Você possui plena autoridade sob suas sintonias. A qualquer momento, na tela de Configurações do seu Portal Ativo do Usuário, você poderá acionar o botão de \"Exclusão Definitiva de Conta\", apagando instantaneamente todo o seu histórico do nosso Firestore de maneira irreversível e transparente.")}
                       </p>
                     </div>
                   </div>
@@ -4709,17 +5818,17 @@ export default function App() {
 
                 {landingFooterModal === 'security' && (
                   <div className="space-y-4">
-                    <span className="text-[9px] font-mono text-amber-400 uppercase tracking-widest font-bold">Blindagem Digital</span>
-                    <h3 className="text-xl font-sans font-black text-slate-100 uppercase">Segurança Operacional</h3>
+                    <span className="text-[9px] font-mono text-amber-400 uppercase tracking-widest font-bold">{t("Blindagem Digital")}</span>
+                    <h3 className="text-xl font-sans font-black text-slate-100 uppercase">{t("Segurança Operacional")}</h3>
                     
                     <div className="text-xs text-slate-300 space-y-3 leading-relaxed max-h-[50vh] overflow-y-auto pr-2">
-                      <p className="font-bold text-amber-400">1. CERTIFICAÇÕES SSL DE ALTO NÍVEL</p>
+                      <p className="font-bold text-amber-400">{t("1. CERTIFICAÇÕES SSL DE ALTO NÍVEL")}</p>
                       <p>
-                        Toda troca de pacotes entre o aplicativo e os servidores da Google Firebase é canalizada de forma autenticada usando HTTPS protegidos por chaves criptográficas SSL de 256 bits.
+                        {t("Toda troca de pacotes entre o aplicativo e os servidores da Google Firebase é canalizada de forma autenticada usando HTTPS protegidos por chaves criptográficas SSL de 256 bits.")}
                       </p>
-                      <p className="font-bold text-amber-400">2. FIREWALL CONTRA INTRUSÕES</p>
+                      <p className="font-bold text-amber-400">{t("2. FIREWALL CONTRA INTRUSÕES")}</p>
                       <p>
-                        Implementamos limites estritos de requisição por segundo (Rate Limiters) para repelir robôs mineradores de dados ou tentativas de vazamento artificial (DDoS), assegurando estabilidade ininterrupta para todos os astrólogos sintonizados.
+                        {t("Implementamos limites estritos de requisição por segundo (Rate Limiters) para repelir robôs mineradores de dados ou tentativas de vazamento artificial (DDoS), assegurando estabilidade ininterrupta para todos os astrólogos sintonizados.")}
                       </p>
                     </div>
                   </div>
@@ -4727,15 +5836,15 @@ export default function App() {
 
                 {landingFooterModal === 'about' && (
                   <div className="space-y-4">
-                    <span className="text-[9px] font-mono text-amber-400 uppercase tracking-widest font-bold">Nossa Origem</span>
-                    <h3 className="text-xl font-sans font-black text-slate-100 uppercase">Quem Somos & Nossa Missão</h3>
+                    <span className="text-[9px] font-mono text-amber-400 uppercase tracking-widest font-bold">{t("Nossa Origem")}</span>
+                    <h3 className="text-xl font-sans font-black text-slate-100 uppercase">{t("Quem Somos & Nossa Missão")}</h3>
                     
                     <div className="text-xs text-slate-300 space-y-3 leading-relaxed max-h-[50vh] overflow-y-auto pr-2">
                       <p>
-                        O <strong className="text-amber-400">Portal Órbita</strong> foi fundado em 2026 por uma aliança internacional de engenheiros aeroespaciais, psicanalistas arquetípicos junguianos e astrólogos especializados no sistema matemático de Plácidus.
+                        {t("O Portal Órbita foi fundado em 2026 por uma aliança internacional de engenheiros aeroespaciais, psicanalistas arquetípicos junguianos e astrólogos especializados no sistema matemático de Plácidus.")}
                       </p>
                       <p>
-                        Nossa missão é resgatar o valor científico e intelectual do posicionamento estelar, tirando o autoconhecimento do campo do misticismo vago e colocando-o sob a precisão geométrica e astronômica da computação de alta performance. Dedicamos nossa energia para trazer a você um espelho exato do Universo no segundo da sua primeira respiração.
+                        {t("Nossa missão é resgatar o valor científico e intelectual do posicionamento estelar, tirando o autoconhecimento do campo do misticismo vago e colocando-o sob a precisão geométrica e astronômica da computação de alta performance. Dedicamos nossa energia para trazer a você um espelho exato do Universo no segundo da sua primeira respiração.")}
                       </p>
                     </div>
                   </div>
@@ -4743,67 +5852,109 @@ export default function App() {
 
                 {landingFooterModal === 'support' && (
                   <div className="space-y-4">
-                    <span className="text-[9px] font-mono text-amber-400 uppercase tracking-widest font-bold">Central de Incidentes</span>
-                    <h3 className="text-xl font-sans font-black text-slate-100 uppercase">Canal de Atendimento Órbita</h3>
+                    <span className="text-[9px] font-mono text-amber-400 uppercase tracking-widest font-bold">{t("Contato & Ajuda")}</span>
+                    <h3 className="text-xl font-sans font-black text-slate-100 uppercase">{t("Canal de Atendimento Órbita")}</h3>
                     
                     {supportSuccessMessage ? (
                       <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-3 animate-in zoom-in-95">
                         <div className="flex items-center gap-2.5">
                           <span className="p-1 rounded-full bg-emerald-500/20 text-emerald-400">✓</span>
-                          <span className="text-sm font-bold text-emerald-300">Mensagem Recebida com Sucesso!</span>
+                          <span className="text-sm font-bold text-emerald-300">{t("Mensagem Enviada com Sucesso!")}</span>
                         </div>
                         <p className="text-xs text-slate-300 leading-normal">
                           {supportSuccessMessage}
                         </p>
-                        <p className="text-[10px] font-mono text-slate-500">
-                          ID de Rastreamento: <strong className="text-amber-400 font-bold">ORB-TKT-{(Math.random()*100000).toFixed(0)}-2026</strong>
-                        </p>
+                        {supportTicketId && (
+                          <p className="text-[10px] font-mono text-slate-400">
+                            {t("ID do Atendimento:")} <strong className="text-amber-400 font-bold">{supportTicketId}</strong>
+                          </p>
+                        )}
                         <button 
                           type="button"
                           onClick={() => setLandingFooterModal(null)}
                           className="px-4 py-2 bg-emerald-500 text-slate-950 font-bold rounded-xl text-xs uppercase tracking-wider hover:bg-emerald-400 transition cursor-pointer"
                         >
-                          Entendido, Fechar Canal
+                          {t("Entendido, Fechar")}
                         </button>
                       </div>
                     ) : (
                       <form 
-                        onSubmit={(e) => {
+                        onSubmit={async (e) => {
                           e.preventDefault();
-                          if (!supportMessage.trim()) return;
+                          if (!supportName.trim() || !supportEmail.trim() || !supportReason.trim()) return;
                           setSupportSending(true);
-                          setTimeout(() => {
+                          setSupportError('');
+                          try {
+                            const response = await fetch('/api/enviar', {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                'X-App-Lang': lang
+                              },
+                              body: JSON.stringify({
+                                nome: supportName,
+                                email: supportEmail,
+                                motivo: supportReason,
+                                lang: lang,
+                                confirmed: true
+                              })
+                            });
+                            const data = await response.json();
                             setSupportSending(false);
-                            setSupportSuccessMessage("Seu chamado técnico foi catalogado no Consórcio de Engenheiros Estelares. Uma resposta personalizada contendo a resposta astrológica ou suporte técnico correspondente será enviada ao seu e-mail cadastrado em um prazo máximo de 12 horas úteis.");
-                          }, 1100);
+                            if (data.success) {
+                              setSupportTicketId(data.id || `ORB-TKT-${Math.floor(Math.random() * 100000)}-2026`);
+                              setSupportSuccessMessage(t("Sua mensagem foi entregue com sucesso ao nosso suporte. Em breve você receberá uma resposta diretamente no seu e-mail cadastrado."));
+                            } else {
+                              setSupportError(data.error || t("Erro ao enviar mensagem. Tente novamente mais tarde."));
+                            }
+                          } catch (err: any) {
+                            setSupportSending(false);
+                            setSupportError(t("Erro ao enviar mensagem. Tente novamente mais tarde."));
+                          }
                         }}
                         className="space-y-4"
                       >
-                        <p className="text-xs text-slate-400">
-                          Preencha a categoria correspondente e detalhe sua solicitação técnico-astrológica. Nossa guilda investigará imediatamente.
+                        <p className="text-xs text-slate-400 leading-relaxed">
+                          {t("Preencha seus dados e descreva sua solicitação ou dúvida abaixo. Nossa equipe analisará e responderá diretamente ao seu e-mail.")}
                         </p>
 
+                        {supportError && (
+                          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-semibold">
+                            ⚠️ {supportError}
+                          </div>
+                        )}
+
                         <div>
-                          <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">Categoria do Chamado</label>
-                          <select 
-                            value={supportCategory}
-                            onChange={(e) => setSupportCategory(e.target.value)}
-                            className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 font-sans text-xs text-slate-300 cursor-pointer"
-                          >
-                            <option value="technical">Suporte Técnico de Calculadora</option>
-                            <option value="map_help">Dúvidas sobre Nodos Lunares / Plácidus</option>
-                            <option value="firebase_issue">Problema de Login / Firebase</option>
-                            <option value="collaboration">Parceria de Negócios / Imprensa</option>
-                          </select>
+                          <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("Seu Nome")}</label>
+                          <input 
+                            type="text"
+                            required
+                            placeholder={t("Digite seu nome completo")}
+                            value={supportName}
+                            onChange={(e) => setSupportName(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 font-sans text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50"
+                          />
                         </div>
 
                         <div>
-                          <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">Sua Mensagem / Relatório</label>
+                          <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("Seu E-mail")}</label>
+                          <input 
+                            type="email"
+                            required
+                            placeholder={t("Digite seu e-mail para contato")}
+                            value={supportEmail}
+                            onChange={(e) => setSupportEmail(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 font-sans text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1.5">{t("Motivo do Contato / Mensagem")}</label>
                           <textarea 
                             required
-                            placeholder="Descreva sua questão em detalhes..."
-                            value={supportMessage}
-                            onChange={(e) => setSupportMessage(e.target.value)}
+                            placeholder={t("Descreva em detalhes sua dúvida, problema de login, questão de pagamento ou solicitação...")}
+                            value={supportReason}
+                            onChange={(e) => setSupportReason(e.target.value)}
                             rows={4}
                             className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 font-sans text-xs text-slate-200 focus:outline-hidden focus:border-amber-500/50"
                           />
@@ -4813,21 +5964,23 @@ export default function App() {
                           <button 
                             type="button" 
                             onClick={() => setLandingFooterModal(null)}
-                            className="px-4 py-2.5 bg-slate-800 text-slate-300 hover:bg-slate-705 text-xs font-bold rounded-xl cursor-pointer"
+                            className="px-4 py-2.5 bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-bold rounded-xl cursor-pointer"
                           >
-                            Cancelar
+                            {t("Cancelar")}
                           </button>
                           <button 
                             type="submit" 
                             disabled={supportSending}
-                            className="px-6 py-2.5 bg-amber-500 hover:bg-amber-450 text-slate-950 text-xs font-black uppercase tracking-wider rounded-xl transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
+                            className="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider rounded-xl transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
                           >
                             {supportSending ? (
                               <>
                                 <span className="w-3 h-3 rounded-full border border-slate-950 border-t-transparent animate-spin inline-block" />
-                                Transmitindo...
+                                {t("Enviando...")}
                               </>
-                            ) : 'Enviar Chamado seguro'}
+                            ) : (
+                              t("Enviar Mensagem ao Suporte")
+                            )}
                           </button>
                         </div>
                       </form>
@@ -4837,8 +5990,8 @@ export default function App() {
 
                 {/* Return button */}
                 <div className="border-t border-slate-800 pt-4 flex justify-between items-center text-[9px] font-mono text-slate-500">
-                  <span>SSL SECURE TRACE</span>
-                  <span>© CONSÓRCIO ÓRBITA</span>
+                  <span>{t("SSL SECURE TRACE")}</span>
+                  <span>{t("© CONSÓRCIO ÓRBITA")}</span>
                 </div>
 
               </div>
@@ -4849,7 +6002,7 @@ export default function App() {
           <div className="fixed bottom-6 left-6 z-40 max-w-sm p-4 bg-slate-900 border border-amber-500/20 rounded-2xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-5 duration-300 text-left">
             <span className="p-2 h-9 w-9 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center text-sm">🔔</span>
             <div className="space-y-0.5">
-              <span className="text-[8px] font-mono uppercase text-amber-500 block leading-none">Ressonância Ativa</span>
+              <span className="text-[8px] font-mono uppercase text-amber-500 block leading-none">{t("Ressonância Ativa")}</span>
               <p className="text-[10.5px] text-slate-300 font-sans leading-snug">{bubbleNotification}</p>
             </div>
           </div>
@@ -4874,8 +6027,8 @@ export default function App() {
             </div>
 
             <div className="space-y-2">
-              <span className="text-[10px] uppercase font-mono tracking-widest text-amber-400 font-extrabold block">Ativação de Conta Estelar</span>
-              <h2 className="text-2xl font-sans font-black tracking-tight text-white">Verifique seu E-mail</h2>
+              <span className="text-[10px] uppercase font-mono tracking-widest text-amber-400 font-extrabold block">{t("Ativação de Conta Estelar")}</span>
+              <h2 className="text-2xl font-sans font-black tracking-tight text-white">{t("Verifique seu E-mail")}</h2>
               <p className="text-xs text-slate-400 leading-relaxed font-sans max-w-xs mx-auto">
                 Enviamos um link oficial de confirmação para o endereço <strong className="text-slate-200">{user.email}</strong>. Abra sua caixa de entrada, clique no link e então clique no botão de liberação abaixo para sincronizar seu biocampo.
               </p>
@@ -4917,21 +6070,21 @@ export default function App() {
                           console.warn("[Auth] Failed to sync verified user profile state:", err);
                         }
 
-                        triggerGlobalNotification("Sintonizado!", "E-mail confirmado com sucesso! Bem-vindo ao Portal Órbita.", "success");
+                        triggerGlobalNotification(t("Sintonizado!"), t("E-mail confirmado com sucesso! Bem-vindo ao Portal Órbita."), "success");
                       } else {
-                        triggerGlobalNotification("Ainda não verificado", "Não detectamos seu clique no link de e-mail ainda. Verifique sua caixa de entrada e spam, e tente novamente.", "alert");
+                        triggerGlobalNotification(t("Ainda não verificado"), t("Não detectamos seu clique no link de e-mail ainda. Verifique sua caixa de entrada e spam, e tente novamente."), "alert");
                       }
                     }
                   } catch (err: any) {
                     console.error(err);
-                    triggerGlobalNotification("Erro de Sincronização", err.message || "Tente novamente mais tarde.", "alert");
+                    triggerGlobalNotification(t("Erro de Sincronização"), err.message || t("Tente novamente mais tarde."), "alert");
                   } finally {
                     setIsVerifyingNative(false);
                   }
                 }}
                 className="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-450 hover:to-amber-550 text-slate-950 text-xs font-black uppercase tracking-wider rounded-2xl transition cursor-pointer flex items-center justify-center gap-2 font-sans"
               >
-                {isVerifyingNative ? "Verificando Sincronização..." : "Já cliquei no link / Concluir Verificação 🪐"}
+                {isVerifyingNative ? t("Verificando Sincronização...") : t("Já cliquei no link / Concluir Verificação 🪐")}
               </button>
 
               <button 
@@ -4941,10 +6094,10 @@ export default function App() {
                   setIsResendingNative(true);
                   try {
                     await sendNativeEmailVerification();
-                    triggerGlobalNotification("E-mail Enviado", "Um novo link oficial de ativação foi enviado para seu e-mail.", "success");
+                    triggerGlobalNotification(t("E-mail Enviado"), t("Um novo link oficial de ativação foi enviado para seu e-mail."), "success");
                   } catch (err: any) {
                     console.error(err);
-                    triggerGlobalNotification("Erro ao Enviar", err.message || "Não foi possível enviar.", "alert");
+                    triggerGlobalNotification(t("Erro ao Enviar"), err.message || t("Não foi possível enviar."), "alert");
                   } finally {
                     setIsResendingNative(false);
                   }
@@ -4976,11 +6129,11 @@ export default function App() {
                   } catch (err) {
                     console.warn("[Auth] Failed to sync verified user profile state:", err);
                   }
-                  triggerGlobalNotification("Sintonizado em Modo Demonstração!", "E-mail confirmado via bypass de teste. Bem-vindo ao Portal Órbita.", "success");
+                  triggerGlobalNotification(t("Sintonizado em Modo Demonstração!"), t("E-mail confirmado via bypass de teste. Bem-vindo ao Portal Órbita."), "success");
                 }}
                 className="w-full py-2.5 text-[10px] bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 text-amber-400 font-bold uppercase tracking-wider rounded-2xl transition cursor-pointer flex items-center justify-center gap-2 font-mono"
               >
-                ⚡ Ignorar Confirmação (Apenas para Apresentações/Mock)
+                ⚡ {t("Ignorar Confirmação (Apenas para Apresentações/Mock)")}
               </button>
             </div>
 
@@ -4988,23 +6141,16 @@ export default function App() {
               <button 
                 type="button"
                 onClick={async () => {
-                  manualAuthActionRef.current = true;
-                  // Clean attributes and sign out natively
-                  localStorage.removeItem("orbi_logged_email");
-                  localStorage.removeItem("orbi_user_profile");
-                  setLoggedEmail("");
-                  setIsLoggedIn(false);
-                  setVerificationInputCode("");
-                  setLastSimulatedCode("");
-                  await logoutWithFirebase().catch(console.error);
-                  triggerGlobalNotification("Sessão Encerrada", "Você retornou ao portal.", "success");
-                  setTimeout(() => {
-                    manualAuthActionRef.current = false;
-                  }, 2000);
+                  try {
+                    await logoutWithFirebase();
+                    triggerGlobalNotification(t("Sessão Encerrada"), t("Você retornou ao portal."), "success");
+                  } catch (err) {
+                    console.error(err);
+                  }
                 }}
                 className="text-[11px] font-medium text-slate-500 hover:text-red-400 transition cursor-pointer"
               >
-                Voltar ao Início / Trocar de Conta
+                {t("Voltar ao Início / Trocar de Conta")}
               </button>
             </div>
 
@@ -5029,10 +6175,10 @@ export default function App() {
                 </div>
 
                 <div className="space-y-3">
-                  <span className="text-[10px] uppercase font-mono tracking-widest text-amber-500 font-extrabold block">Coordenadas Primordiais</span>
-                  <h2 className="text-2xl font-sans font-extrabold text-slate-50 tracking-tight">Bem-vindo ao Star Map</h2>
+                  <span className="text-[10px] uppercase font-mono tracking-widest text-amber-500 font-extrabold block">{t("Coordenadas Primordiais")}</span>
+                  <h2 className="text-2xl font-sans font-extrabold text-slate-50 tracking-tight">{t("Bem-vindo ao Star Map")}</h2>
                   <p className="text-xs text-slate-350 leading-relaxed font-sans max-w-sm mx-auto">
-                    Crie seu mapa astral e descubra informações exclusivas sobre sua personalidade, relacionamentos, prosperidade, ciclos e tendências futuras de forma 100% personalizada.
+                    {t("Crie seu mapa astral e descubra informações exclusivas sobre sua personalidade, relacionamentos, prosperidade, ciclos e tendências futuras de forma 100% personalizada.")}
                   </p>
                 </div>
 
@@ -5041,15 +6187,15 @@ export default function App() {
                   <div className="p-2.5 bg-slate-950/60 border border-slate-850 rounded-xl flex items-start gap-2">
                     <span className="text-amber-500 mt-0.5">✨</span>
                     <div>
-                      <span className="font-bold text-slate-205 block font-sans">DNA Cósmico</span>
-                      <span className="text-slate-400 text-[9px] font-sans">Placidus completo</span>
+                      <span className="font-bold text-slate-205 block font-sans">{t("DNA Cósmico")}</span>
+                      <span className="text-slate-400 text-[9px] font-sans">{t("Placidus completo")}</span>
                     </div>
                   </div>
                   <div className="p-2.5 bg-slate-955/60 border border-slate-850 rounded-xl flex items-start gap-2">
                     <span className="text-rose-455 mt-0.5">💖</span>
                     <div>
-                      <span className="font-bold text-slate-205 block font-sans">Sinergia Social</span>
-                      <span className="text-slate-400 text-[9px] font-sans">Compatibilidade real</span>
+                      <span className="font-bold text-slate-205 block font-sans">{t("Sinergia Social")}</span>
+                      <span className="text-slate-400 text-[9px] font-sans">{t("Compatibilidade real")}</span>
                     </div>
                   </div>
                 </div>
@@ -5083,14 +6229,17 @@ export default function App() {
           )}
           
           {/* Floating Moon Tip Dashboard Card */}
-          <MoonTipCard 
-            userName={user?.name} 
-            birthDate={user?.birthDate} 
-            onRewardPoints={(amount) => {
-              setScorePoints(prev => prev + amount);
-              pushRealNotification(`Você reivindicou com sucesso seu bônus diário do Sussurro Lunar (+${amount} pontos)! 💎`);
-            }}
-          />
+          <div key={`moontip_${user?.name}_${currentLang}_${systemDate.toDateString()}`}>
+            <MoonTipCard 
+              userName={user?.name} 
+              birthDate={user?.birthDate} 
+              lang={currentLang}
+              onRewardPoints={(amount) => {
+                setScorePoints(prev => prev + amount);
+                pushRealNotification(`${t("Você reivindicou com sucesso seu bônus diário do Sussurro Lunar")} (+${amount} ${t("pontos")})! 💎`);
+              }}
+            />
+          </div>
           
           {/* Top User Status Header */}
           <header className="w-full bg-slate-900/60 border-b border-slate-850 px-4 py-4 sticky top-0 z-40 backdrop-blur-md">
@@ -5101,7 +6250,7 @@ export default function App() {
                 <div 
                   onClick={() => setIsAvatarModalOpen(true)}
                   className="relative group cursor-pointer shrink-0" 
-                  title="Clique para escolher seu avatar místico"
+                  title={t("ui.profile.chooseAvatarTooltip", "Clique para escolher seu avatar místico")}
                 >
                   <div 
                     className="w-10 h-10 rounded-full overflow-hidden border border-slate-750 bg-linear-to-tr from-amber-500 to-rose-600 text-slate-950 flex items-center justify-center font-bold text-sm relative hover:opacity-90 transition-opacity"
@@ -5120,12 +6269,12 @@ export default function App() {
                       Avatar
                     </span>
                   </div>
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-950" title="Ativo" />
+                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-950" title={t("ui.common.active", "Ativo")} />
                 </div>
 
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 flex-nowrap">
-                    <h3 className="text-xs font-bold text-slate-205 truncate max-w-[100px] sm:max-w-[200px]" title={user.name || "Buscador Estelar"}>{user.name || "Buscador Estelar"}</h3>
+                    <h3 className="text-xs font-bold text-slate-205 truncate max-w-[100px] sm:max-w-[200px]" title={user.name || t("ui.profile.defaultSeeker", "Buscador Estelar")}>{user.name || t("ui.profile.defaultSeeker", "Buscador Estelar")}</h3>
                     {user.isSubscribed || user.isPremium ? (
                       <span className="px-1.5 py-0.5 bg-amber-500/10 border border-amber-500/30 rounded-sm text-[8px] uppercase font-mono tracking-wider text-amber-400 font-black shrink-0">
                         Premium
@@ -5138,7 +6287,7 @@ export default function App() {
                   </div>
                   <p className="text-[9px] font-mono text-slate-500 leading-none mt-1 truncate max-w-[200px] sm:max-w-md">
                     {user.birthDate ? (
-                      `Sol em ${mapData?.astros?.find(a => a.name === "Sol")?.sign || getZodiacSign(user.birthDate)} · Asc ${mapData?.astros?.find(a => a.name === "Ascendente")?.sign || getRisingSign(user.birthDate, user.birthTime)} · ${user.birthCity}`
+                      `Sol em ${mapData?.astros?.find(a => a.name === "Sol")?.sign || getZodiacSign(user.birthDate)} · Asc ${mapData?.astros?.find(a => a.name === "Ascendente")?.sign || getRisingSign(user.birthDate, user.birthTime, user.latitude, user.longitude)} · ${user.birthCity}`
                     ) : (
                       `${getDeviceDescription()} · Fuso Horário: ${getRealTimeZoneLocation()}`
                     )}
@@ -5177,8 +6326,12 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => {
-                      setMapSubTab('area_usuario');
-                      setActiveExtraMapData(null); // clear viewed extra map
+                      if (!isPremiumActive) {
+                        setShowPremiumModal(true);
+                      } else {
+                        setMapSubTab('area_usuario');
+                        setActiveExtraMapData(null); // clear viewed extra map
+                      }
                     }}
                     className={`px-4 py-2 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider transition-all duration-300 flex items-center gap-1.5 cursor-pointer ${
                       mapSubTab === 'area_usuario'
@@ -5221,47 +6374,18 @@ export default function App() {
                     <Plus className="w-3.5 h-3.5" />
                     <span>{tLocal('criar_meu_mapa')}</span>
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setMapSubTab('mapas_extras')}
-                    className={`px-4 py-2 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider transition-all duration-300 flex items-center gap-1.5 cursor-pointer ${
-                      mapSubTab === 'mapas_extras'
-                        ? 'bg-gradient-to-r from-amber-500 to-rose-600 text-slate-950 shadow-md'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
-                    }`}
-                  >
-                    <Orbit className="w-3.5 h-3.5" />
-                    <span>{tLocal('mapas_extras')}</span>
-                  </button>
                 </div>
 
-                {isLoadingMain && mapSubTab !== 'mapas_extras' ? (
+                {isLoadingMain ? (
                   <div className="flex flex-col items-center justify-center py-20 text-slate-500">
                     <RefreshCw className="w-10 h-10 animate-spin text-amber-500 mb-4" />
-                    <p className="text-xs font-mono">Calculando Placidus em tempo real...</p>
+                    <p className="text-xs font-mono">{t("Calculando Placidus em tempo real...")}</p>
                   </div>
                 ) : (
                   <>
                     {/* SUB-SECTION 1: ÁREA DO USUÁRIO */}
                     {mapSubTab === 'area_usuario' && (
-                      isLoggedIn && isPostTrialLocked(user) ? (
-                        <PremiumConversionScreen 
-                          currentLang={currentLang} 
-                          onUpgradeComplete={(isPremium) => {
-                            if (isPremium) {
-                              const nextUser = { ...user, isSubscribed: true, isPremium: true };
-                              setUser(nextUser);
-                            }
-                          }} 
-                          userEmail={loggedEmail} 
-                          updateUserProfileOnDb={async (email, patch) => {
-                            const nextUser = { ...user, ...patch };
-                            setUser(nextUser);
-                            await saveProfileToDatabase(email, nextUser);
-                          }} 
-                        />
-                      ) : !hasUserCreatedMap(user) ? (
+                      !hasUserCreatedMap(user) ? (
                         renderLockedSection(
                           "Área do Usuário Sintonizada",
                           "Seu painel pessoal de previsões diárias, missões, trânsitos em tempo real, caminhos numerológicos, afinidades de amor e relógio cósmico depende da inicialização do seu mapa de nascimento. Sintonize suas estrelas para habilitar."
@@ -5274,7 +6398,11 @@ export default function App() {
                           
                           {/* Profile Photo Icon Layout */}
                           <div className="md:col-span-4 flex flex-col items-center text-center space-y-4 border-r border-slate-850/60 pr-0 md:pr-6 justify-center py-2">
-                            <div className="relative group">
+                            <div 
+                              onClick={() => setIsAvatarModalOpen(true)}
+                              className="relative group cursor-pointer"
+                              title={t("Clique para escolher seu avatar místico")}
+                            >
                               <div className="absolute inset-x-0 -inset-y-0.5 bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-500 rounded-full blur-sm opacity-60 group-hover:opacity-100 transition duration-1000 animate-pulse" />
                               <div className="relative w-28 h-28 rounded-full overflow-hidden border-2 border-amber-400 bg-slate-950 flex items-center justify-center shadow-2xl">
                                 {user.profilePhoto ? (
@@ -5307,7 +6435,7 @@ export default function App() {
                               <button 
                                 onClick={() => setIsAvatarModalOpen(true)}
                                 className="absolute -bottom-1.5 -right-1.5 p-1.5 bg-gradient-to-br from-amber-500 to-rose-500 hover:from-amber-450 hover:to-rose-550 rounded-full border-2 border-slate-950 text-slate-950 cursor-pointer shadow-lg transition active:scale-95 flex items-center justify-center w-8 h-8 group-hover:scale-105 z-20 animate-pulse"
-                                title="Escolher avatar místico"
+                                title={t("ui.profile.chooseAvatarButton", "Escolher avatar místico")}
                               >
                                 <Sparkles className="w-4 h-4 text-slate-950" />
                               </button>
@@ -5316,7 +6444,7 @@ export default function App() {
                             <div className="space-y-1">
                               <h2 className="text-base font-black text-slate-100 tracking-tight">{user.name}</h2>
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-blue-500/15 border border-blue-500/35 rounded-full text-[9.5px] uppercase tracking-wider text-blue-400 font-extrabold shadow-[0_0_10px_rgba(59,130,246,0.1)]">
-                                Usuário Premium
+                                {t("Usuário Premium")}
                                 <CheckCircle className="w-3.5 h-3.5 text-blue-500 fill-white rounded-full shrink-0" />
                               </span>
                             </div>
@@ -5332,14 +6460,14 @@ export default function App() {
                                   <Sun className="w-4.5 h-4.5 animate-pulse" />
                                 </div>
                                 <div className="space-y-0.5 min-w-0 flex-1">
-                                  <span className="text-[8px] font-mono text-slate-500 uppercase block tracking-wider font-bold">Signo Solar</span>
+                                  <span className="text-[8px] font-mono text-slate-500 uppercase block tracking-wider font-bold">{t("Signo Solar")}</span>
                                   {(() => {
                                     const solAst = mapData?.astros?.find(a => a.name === "Sol");
-                                    const label = solAst ? `Sol em ${solAst.sign} ${solAst.degree}` : `Sol em ${getZodiacSign(user.birthDate)}`;
+                                    const label = solAst ? `${t("Sol em")} ${t(solAst.sign)} ${solAst.degree}` : `${t("Sol em")} ${t(getZodiacSign(user.birthDate))}`;
                                     return <span className="font-bold text-xs text-slate-100 block break-words whitespace-normal leading-none">{label}</span>;
                                   })()}
                                   <p className="text-[9px] text-slate-400 leading-tight">
-                                    Essência, ego e sua força expressiva vital.
+                                    {t("Essência, ego e sua força expressiva vital.")}
                                   </p>
                                 </div>
                               </div>
@@ -5350,14 +6478,14 @@ export default function App() {
                                   <Compass className="w-4.5 h-4.5" />
                                 </div>
                                 <div className="space-y-0.5 min-w-0 flex-1">
-                                  <span className="text-[8px] font-mono text-slate-500 uppercase block tracking-wider font-bold">Ascendente</span>
+                                  <span className="text-[8px] font-mono text-slate-500 uppercase block tracking-wider font-bold">{t("Ascendente")}</span>
                                   {(() => {
                                     const ascAst = mapData?.astros?.find(a => a.name === "Ascendente");
-                                    const label = ascAst ? `Ascendente em ${ascAst.sign} ${ascAst.degree}` : `Ascendente em ${getRisingSign(user.birthDate, user.birthTime)}`;
+                                    const label = ascAst ? `${t("Ascendente em")} ${t(ascAst.sign)} ${ascAst.degree}` : `${t("Ascendente em")} ${t(getRisingSign(user.birthDate, user.birthTime, user.latitude, user.longitude))}`;
                                     return <span className="font-bold text-xs text-slate-100 block break-words whitespace-normal leading-none max-w-full">{label}</span>;
                                   })()}
                                   <p className="text-[9px] text-slate-400 leading-tight">
-                                    Casca física, expressão e o foco social de entrada.
+                                    {t("Casca física, expressão e o foco social de entrada.")}
                                   </p>
                                 </div>
                               </div>
@@ -5368,13 +6496,13 @@ export default function App() {
                                   <Hash className="w-4.5 h-4.5 font-bold" />
                                 </div>
                                 <div className="space-y-0.5 min-w-0 flex-1">
-                                  <span className="text-[8px] font-mono text-slate-500 uppercase block tracking-wider font-bold">Caminho Cósmico</span>
+                                  <span className="text-[8px] font-mono text-slate-500 uppercase block tracking-wider font-bold">{t("Caminho Cósmico")}</span>
                                   {(() => {
                                     const lpVal = numerology?.caminhoDeVida || getLifePathNumber(user.birthDate);
-                                    return <span className="font-bold text-xs text-amber-400 font-mono block break-words whitespace-normal leading-none">Caminho {lpVal}</span>;
+                                    return <span className="font-bold text-xs text-amber-400 font-mono block break-words whitespace-normal leading-none">{t("Caminho {count}").replace("{count}", String(lpVal))}</span>;
                                   })()}
                                   <p className="text-[9px] text-slate-400 leading-tight">
-                                    Vibração de destino e força realizadora cósmica.
+                                    {t("Vibração de destino e força realizadora cósmica.")}
                                   </p>
                                 </div>
                               </div>
@@ -5384,7 +6512,7 @@ export default function App() {
                               <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/25 text-slate-200 text-[11px] leading-relaxed flex items-start gap-2.5 shadow-xl animate-in fade-in duration-500">
                                 <span className="text-sm leading-none shrink-0 select-none">🌟</span>
                                 <p id="dst-precision-notice" className="text-slate-300">
-                                  <strong>Nota de Precisão:</strong> Identificamos que no dia, hora e local do seu nascimento estava vigorando o Horário de Verão. Plataformas de astrologia mais simples costumam errar o seu Ascendente porque esquecem de descontar essa 1 hora do relógio. Nosso sistema recalculou o céu com base na Hora Solar Real do seu nascimento, garantindo que o seu Ascendente em <strong>{mapData?.astros?.find(a => a.name === "Ascendente")?.sign || getRisingSign(user.birthDate, user.birthTime)}</strong> esteja 100% correto e astronamicamente preciso!
+                                  <strong>{t("Nota de Precisão:")}</strong> {t("Identificamos que no dia, hora e local do seu nascimento estava vigorando o Horário de Verão. Plataformas de astrologia mais simples costumam errar o seu Ascendente porque esquecem de descontar essa 1 hora do relógio. Nosso sistema recalculou o céu com base na Hora Solar Real do seu nascimento, garantindo que o seu Ascendente em")} <strong>{t(mapData?.astros?.find(a => a.name === "Ascendente")?.sign || getRisingSign(user.birthDate, user.birthTime, user.latitude, user.longitude))}</strong> {t("esteja 100% correto e astronamicamente preciso!")}
                                 </p>
                               </div>
                             )}
@@ -5392,17 +6520,20 @@ export default function App() {
                             {/* Dynamic event footer banner */}
                             <div className="p-2.5 bg-slate-950/60 rounded-xl border border-slate-850 text-[10px] leading-normal text-slate-405 flex items-center gap-2">
                               <Sparkles className="w-3 h-3 text-amber-400 shrink-0 animate-pulse" />
-                              <span className="truncate">
-                                Sincro-mapa com <strong>{user.birthCity}</strong>, nascido em <strong>{user.birthDate}</strong> às <strong>{user.birthTime || "12:00"}</strong>.
-                              </span>
+                              <span className="truncate" dangerouslySetInnerHTML={{
+                                __html: t("Sincro-mapa com <strong>{city}</strong>, nascido em <strong>{date}</strong> às <strong>{time}</strong>.")
+                                  .replace("{city}", user.birthCity)
+                                  .replace("{date}", user.birthDate)
+                                  .replace("{time}", user.birthTime || "12:00")
+                              }} />
                             </div>
                           </div>
                         </div>
 
                         {/* Interactive Área do Usuário Sub Navigation and Dashboard Portal */}
-                        <div key={`user_dashboard_portal_${user.name}_${user.birthDate}_${user.birthTime || ''}`}>
+                        <div key={`user_dashboard_portal_${user.name}_${user.birthDate}_${user.birthTime || ''}_${systemDate.toDateString()}`}>
                           <UserDashboardPortal
-                            user={user}
+                            user={user as any}
                             scorePoints={scorePoints}
                             setScorePoints={setScorePoints}
                             dailyMissions={dailyMissions}
@@ -5412,6 +6543,9 @@ export default function App() {
                             setAreaSubTab={setAreaSubTab}
                             onUpdateCurrentUser={setUser}
                             lang={currentLang}
+                            mapData={mapData}
+                            onInstallPWA={handleInstallPWA}
+                            isInstalled={isInstalled}
                           />
                         </div>
 
@@ -5468,7 +6602,7 @@ export default function App() {
                                   <div className="space-y-4 font-sans">
                                     {/* Energy Description badge */}
                                     <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-850/60">
-                                      <span className="text-[9px] font-mono text-slate-500 block uppercase font-bold">Frequência Dominante Celular</span>
+                                      <span className="text-[9px] font-mono text-slate-500 block uppercase font-bold">{t("Frequência Dominante Celular")}</span>
                                       <span className="text-xs font-black text-rose-450 block tracking-wide mt-1">
                                         {dailyRadar.energyOfDay}
                                       </span>
@@ -5485,13 +6619,13 @@ export default function App() {
                                       ].map((metric, i) => (
                                         <div key={i} className="p-3 bg-slate-950/60 rounded-2xl border border-slate-850 space-y-1.5">
                                           <div className="flex justify-between items-center text-[10px] font-mono text-slate-400 uppercase font-bold">
-                                            <span>{metric.label}</span>
+                                            <span>{t(metric.label)}</span>
                                             <span className="text-slate-200">{metric.val}%</span>
                                           </div>
                                           <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden">
                                             <div className={`h-full bg-gradient-to-r ${metric.grad}`} style={{ width: `${metric.val}%` }} />
                                           </div>
-                                          <p className="text-[9px] text-slate-500 leading-normal italic">{metric.desc}</p>
+                                          <p className="text-[9px] text-slate-500 leading-normal italic">{t(metric.desc)}</p>
                                         </div>
                                       ))}
                                     </div>
@@ -5505,9 +6639,9 @@ export default function App() {
                                     <div className="space-y-0.5 pb-2 border-b border-slate-850 flex justify-between items-center">
                                       <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-widest flex items-center gap-2">
                                         <Calendar className="w-4 h-4 text-amber-500" />
-                                        Próximos eventos
+                                        {t("Próximos eventos")}
                                       </h3>
-                                      <span className="text-[9px] font-mono text-slate-500">Céu Ativo 2026</span>
+                                      <span className="text-[9px] font-mono text-slate-500">{t("Céu Ativo 2026")}</span>
                                     </div>
 
                                     <div className="space-y-3">
@@ -5543,8 +6677,8 @@ export default function App() {
                                             <span className="text-[8px] uppercase block mt-1">{ev.date.split('/')[1]?.trim()}</span>
                                           </div>
                                           <div className="space-y-0.5">
-                                            <h4 className="text-[11px] font-bold text-slate-200">{ev.title}</h4>
-                                            <p className="text-[9.5px] text-slate-400 leading-normal">{ev.desc}</p>
+                                            <h4 className="text-[11px] font-bold text-slate-200">{t(ev.title)}</h4>
+                                            <p className="text-[9.5px] text-slate-400 leading-normal">{t(ev.desc)}</p>
                                           </div>
                                         </div>
                                       ))}
@@ -5555,13 +6689,13 @@ export default function App() {
                                   <div className="p-5 bg-slate-950/80 rounded-3xl border border-slate-850 space-y-3 text-left">
                                     <div className="flex items-center gap-1.5 pb-2 border-b border-slate-900">
                                       <Sparkles className="w-4 h-4 text-amber-400" />
-                                      <h4 className="text-[11px] font-bold uppercase font-mono text-amber-400">Detalhes Leitura do Dia</h4>
+                                      <h4 className="text-[11px] font-bold uppercase font-mono text-amber-400">{t("Detalhes Leitura do Dia")}</h4>
                                     </div>
                                     <p className="text-[11px] text-slate-350 leading-relaxed font-sans">
-                                      Hoje, a harmonia magnética entre o seu Sol em Aquário e a ativação cósmica geral estimula seu mental analítico. Com a <strong>Energia em 92%</strong>, você está em perfeito ponto de ignição para se expressar e criar. 
+                                      {t("Hoje, a harmonia magnética entre o seu Sol em Aquário e a ativação cósmica geral estimula seu mental analítico. Com a")} <strong>{t("Energia em 92%")}</strong>, {t("você está em perfeito ponto de ignição para se expressar e criar.")} 
                                     </p>
                                     <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
-                                      O <strong>Caminho de Vida 8</strong> ancora seu foco prático (<strong>Organização em 81%</strong>). Aproveite as janelas de calmaria mental para purificar seu canal respiratório de meditação e alinhar seu bem-estar profundo.
+                                      {t("O")} <strong>{t("Caminho de Vida 8")}</strong> {t("ancora seu foco prático")} (<strong>{t("Organização em 81%")}</strong>). {t("Aproveite as janelas de calmaria mental para purificar seu canal respiratório de meditação e alinhar seu bem-estar profundo.")}
                                     </p>
                                   </div>
                                 </div>
@@ -5577,9 +6711,9 @@ export default function App() {
                                   <div>
                                     <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
                                       <Award className="w-4 h-4 text-amber-500" />
-                                      Missão do Dia & Evolução Cósmica
+                                      {t("Missão do Dia & Evolução Cósmica")}
                                     </h3>
-                                    <p className="text-[10px] text-slate-500 mt-0.5">Cumpra suas tarefas transcendentais do dia para ganhar pontos de evolução da alma.</p>
+                                    <p className="text-[10px] text-slate-500 mt-0.5">{t("Cumpra suas tarefas transcendentais do dia para ganhar pontos de evolução da alma.")}</p>
                                   </div>
 
                                   <div className="flex items-center gap-2">
@@ -5589,27 +6723,35 @@ export default function App() {
                                   </div>
                                 </div>
 
-                                {/* Custom Level Progress Bar slider */}
-                                <div className="p-4 bg-slate-950/60 rounded-2xl border border-slate-850/65 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                                  <div className="md:col-span-4 flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-linear-to-r from-amber-500 to-rose-600 flex items-center justify-center font-mono font-black text-slate-950 text-sm shadow-md">
-                                      Lvl 4
-                                    </div>
-                                    <div className="space-y-0.5">
-                                      <span className="text-[9px] font-mono text-slate-500 uppercase block font-bold">Nível Cósmico</span>
-                                      <span className="text-xs font-bold text-slate-200 font-sans">Viajante das Estrelas</span>
-                                    </div>
-                                  </div>
-                                  <div className="md:col-span-8 space-y-1">
-                                    <div className="flex justify-between items-center text-[9px] font-mono text-slate-400 font-bold">
-                                      <span>Progresso de Evolução (XP)</span>
-                                      <span>450 / 600 XP</span>
-                                    </div>
-                                    <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-850/50">
-                                      <div className="h-full bg-linear-to-r from-amber-500 via-rose-500 to-indigo-500" style={{ width: '75%' }} />
-                                    </div>
-                                  </div>
-                                </div>
+                                 {/* Custom Level Progress Bar slider */}
+                                 {(() => {
+                                   const currentLvl = Math.floor(scorePoints / 300) + 1;
+                                   const xpInCurrentLvl = scorePoints % 300;
+                                   const xpNeededForNextLvl = 300;
+                                   const progressPercent = Math.round((xpInCurrentLvl / xpNeededForNextLvl) * 100);
+                                   return (
+                                     <div className="p-4 bg-slate-950/60 rounded-2xl border border-slate-850/65 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                                       <div className="md:col-span-4 flex items-center gap-3">
+                                         <div className="w-10 h-10 rounded-full bg-linear-to-r from-amber-500 to-rose-600 flex items-center justify-center font-mono font-black text-slate-950 text-sm shadow-md">
+                                           Lvl {currentLvl}
+                                         </div>
+                                         <div className="space-y-0.5">
+                                           <span className="text-[9px] font-mono text-slate-500 uppercase block font-bold">{t("Nível Cósmico")}</span>
+                                           <span className="text-xs font-bold text-slate-200 font-sans">{t("Viajante das Estrelas")}</span>
+                                         </div>
+                                       </div>
+                                       <div className="md:col-span-8 space-y-1">
+                                         <div className="flex justify-between items-center text-[9px] font-mono text-slate-400 font-bold">
+                                           <span>{t("Progresso de Evolução (XP)")}</span>
+                                           <span>{xpInCurrentLvl} / {xpNeededForNextLvl} XP (Total: {scorePoints} pts)</span>
+                                         </div>
+                                         <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-850/50">
+                                           <div className="h-full bg-linear-to-r from-amber-500 via-rose-500 to-indigo-500" style={{ width: `${progressPercent}%` }} />
+                                         </div>
+                                       </div>
+                                     </div>
+                                   );
+                                 })()}
 
                                 {/* Checklist of Fleshed Out missions */}
                                 <div className="space-y-3">
@@ -5640,10 +6782,10 @@ export default function App() {
 
                                       {/* Detalhes leitura (Mission Astrological Details Explanation) */}
                                       <div className="pl-8 pt-1.5 border-t border-slate-900/60 text-[9.5px] text-slate-500 leading-normal font-sans italic">
-                                        <strong className="text-slate-400 not-italic uppercase text-[8px] font-mono block mb-0.5">Detalhes da leitura:</strong>
-                                        {task.id === 'm1' && "A ressonância de Vênus em Aquário clareia a visão de fraternidade. Meditar ativa os canais sutis de sua receptividade intelectual."}
-                                        {task.id === 'm2' && "Registrando seus sonhos você cria pontes de cinza prateada rumo aos arquivos ocultos de Netuno em Peixes na sua casa astral."}
-                                        {task.id === 'm3' && "O Sol e Aquário demandam conexões sinceras e libertadoras. Uma palavra amiga nutre o coração solar."}
+                                        <strong className="text-slate-400 not-italic uppercase text-[8px] font-mono block mb-0.5">{t("Detalhes da leitura:")}</strong>
+                                        {task.id === 'm1' && t("A ressonância de Vênus em Aquário clareia a visão de fraternidade. Meditar ativa os canais sutis de sua receptividade intelectual.")}
+                                        {task.id === 'm2' && t("Registrando seus sonhos você cria pontes de cinza prateada rumo aos arquivos ocultos de Netuno em Peixes na sua casa astral.")}
+                                        {task.id === 'm3' && t("O Sol e Aquário demandam conexões sinceras e libertadoras. Uma palavra amiga nutre o coração solar.")}
                                       </div>
                                     </div>
                                   ))}
@@ -5652,16 +6794,16 @@ export default function App() {
                                 {/* Reivindicar Recompensa Button */}
                                 <div className="pt-3 flex justify-between items-center bg-slate-950/40 p-4 rounded-2xl border border-slate-850">
                                   <span className="text-[9.5px] font-mono text-slate-400 max-w-[250px] leading-relaxed">
-                                    Complete todas as missões para harmonização áurica integral.
+                                    {t("Complete todas as missões para harmonização áurica integral.")}
                                   </span>
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      alert("Suas recompensas cósmicas espirituais foram integradas e aplicadas ao seu campo magnético pessoal!");
+                                      alert(t("Suas recompensas cósmicas espirituais foram integradas e aplicadas ao seu campo magnético pessoal!"));
                                     }}
                                     className="px-4 py-2 bg-gradient-to-r from-amber-500 to-rose-600 text-slate-950 text-[10px] font-bold uppercase rounded-lg tracking-wider transition hover:shadow-lg active:scale-95 cursor-pointer shrink-0"
                                   >
-                                    Reivindicar Recompensa
+                                    {t("Reivindicar Recompensa")}
                                   </button>
                                 </div>
                               </div>
@@ -5676,12 +6818,12 @@ export default function App() {
                                   <div>
                                     <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
                                       <Calendar className="w-4 h-4 text-sky-400" />
-                                      Calendário de Tendências (30 Dias)
+                                      {t("Calendário de Tendências (30 Dias)")}
                                     </h3>
-                                    <p className="text-[10px] text-slate-500 mt-0.5">Clique nas datas de Junho de 2026 para obter análises astrológicas inteligentes e tendências cósmicas.</p>
+                                    <p className="text-[10px] text-slate-500 mt-0.5">{t("Clique nas datas de Junho de 2026 para obter análises astrológicas inteligentes e tendências cósmicas.")}</p>
                                   </div>
                                   <span className="px-2 py-0.5 bg-sky-500/10 border border-sky-500/20 text-[9px] font-mono font-bold text-sky-455 rounded-lg shrink-0">
-                                    Próximos 30 Dias
+                                    {t("Próximos 30 Dias")}
                                   </span>
                                 </div>
 
@@ -5729,37 +6871,37 @@ export default function App() {
                                     <div className="flex items-center gap-1.5">
                                       <span className="w-2 h-2 rounded-full bg-sky-400" />
                                       <span className="text-[11px] font-bold uppercase font-mono text-slate-205">
-                                        Análise Estelar: {selectedCalendarDay.toString().padStart(2, '0')} de Junho, 2026
+                                        {t("Análise Estelar:")} {selectedCalendarDay.toString().padStart(2, '0')} {t("de Junho, 2026")}
                                       </span>
                                     </div>
                                     <span className="text-[9px] text-slate-500 uppercase font-mono">
-                                      {selectedCalendarDay % 6 === 0 && "Frequência: Recolhimento"}
-                                      {selectedCalendarDay % 6 === 1 && "Frequência: Foco Ativo"}
-                                      {selectedCalendarDay % 6 === 2 && "Frequência: União Afetiva"}
-                                      {selectedCalendarDay % 6 === 3 && "Frequência: Cuidado Celestial"}
-                                      {selectedCalendarDay % 6 === 4 && "Frequência: Expansão Material"}
-                                      {selectedCalendarDay % 6 === 5 && "Frequência: Diálogo & Ideias"}
+                                      {selectedCalendarDay % 6 === 0 && t("Frequência: Recolhimento")}
+                                      {selectedCalendarDay % 6 === 1 && t("Frequência: Foco Ativo")}
+                                      {selectedCalendarDay % 6 === 2 && t("Frequência: União Afetiva")}
+                                      {selectedCalendarDay % 6 === 3 && t("Frequência: Cuidado Celestial")}
+                                      {selectedCalendarDay % 6 === 4 && t("Frequência: Expansão Material")}
+                                      {selectedCalendarDay % 6 === 5 && t("Frequência: Diálogo & Ideias")}
                                     </span>
                                   </div>
 
                                   <div className="text-[11px] text-slate-350 leading-relaxed font-sans space-y-2">
                                     <p>
-                                      {selectedCalendarDay % 6 === 0 && "Seu dia está dominado pelo reflexo lunar profundo de introspecção. Excelente para rever planos, repousar a musculatura de estudos livres e escrever no Cofre dos Sonhos."}
-                                      {selectedCalendarDay % 6 === 1 && "Foco afunilado pela quadratura de Marte ativo. Ótimo momento para iniciar novos rascunhos, limpar gavetas e focar em prazos complexos."}
-                                      {selectedCalendarDay % 6 === 2 && "Vênus faz trígono harmonioso com sua lenda astrológica de nascimento. Dia excelente para socializar, conversar intimamente, escutar amigos ou resolver disputas com leveza."}
-                                      {selectedCalendarDay % 6 === 3 && "Mercúrio em conjunção crítica. Alerta estelar para impulsividade verbal, falhas de sistema ou assinaturas rápidas. Aguarde o entardecer antes de formalizar transações de vulto."}
-                                      {selectedCalendarDay % 6 === 4 && "Abundância sob auspício do Caminho de Vida 8 em ritmo de expansão solar. Favorável para o seu bolso, investimentos cuidadosos de longo prazo e decisões corporativas estruturadas."}
-                                      {selectedCalendarDay % 6 === 5 && "Voz de Aquário energizada em alta inteligência coletiva. Excelente para palestras, reuniões de brainstorming de equipe, propostas de engajamento urbano ou estudos conceituais."}
+                                      {selectedCalendarDay % 6 === 0 && t("Seu dia está dominado pelo reflexo lunar profundo de introspecção. Excelente para rever planos, repousar a musculatura de estudos livres e escrever no Cofre dos Sonhos.")}
+                                      {selectedCalendarDay % 6 === 1 && t("Foco afunilado pela quadratura de Marte ativo. Ótimo momento para iniciar novos rascunhos, limpar gavetas e focar em prazos complexos.")}
+                                      {selectedCalendarDay % 6 === 2 && t("Vênus faz trígono harmonioso com sua lenda astrológica de nascimento. Dia excelente para socializar, conversar intimamente, escutar amigos ou resolver disputas com leveza.")}
+                                      {selectedCalendarDay % 6 === 3 && t("Mercúrio em conjunção crítica. Alerta estelar para impulsividade verbal, falhas de sistema ou assinaturas rápidas. Aguarde o entardecer antes de formalizar transações de vulto.")}
+                                      {selectedCalendarDay % 6 === 4 && t("Abundância sob auspício do Caminho de Vida 8 em ritmo de expansão solar. Favorável para o seu bolso, investimentos cuidadosos de longo prazo e decisões corporativas estruturadas.")}
+                                      {selectedCalendarDay % 6 === 5 && t("Voz de Aquário energizada em alta inteligência coletiva. Excelente para palestras, reuniões de brainstorming de equipe, propostas de engajamento urbano ou estudos conceituais.")}
                                     </p>
 
                                     <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850 text-[10px] text-slate-400 italic">
-                                      <strong className="not-italic text-slate-300 font-mono text-[9px] block mb-1">Dica prática do dia:</strong>
-                                      {selectedCalendarDay % 6 === 0 && "Durma meia hora mais cedo hoje. Use pedra de Selenita ao lado do travesseiro."}
-                                      {selectedCalendarDay % 6 === 1 && "Evite multitarefas. Foque em uma única atividade prioritária até sua plena conclusão."}
-                                      {selectedCalendarDay % 6 === 2 && "Experimente usar roupas com tons de Quartzo Rosa ou Carmim para sintonizar a diplomacia."}
-                                      {selectedCalendarDay % 6 === 3 && "Escreva no papel antes de enviar mensagens difíceis. Respire e releia 3 vezes."}
-                                      {selectedCalendarDay % 6 === 4 && "Organize suas finanças mensais em planilha hoje. A abundância floresce de solo ordenado."}
-                                      {selectedCalendarDay % 6 === 5 && "Escreva um e-mail de agradecimento a um mentor ou colega intelectual."}
+                                      <strong className="not-italic text-slate-300 font-mono text-[9px] block mb-1">{t("Dica prática do dia:")}</strong>
+                                      {selectedCalendarDay % 6 === 0 && t("Durma meia hora mais cedo hoje. Use pedra de Selenita ao lado do travesseiro.")}
+                                      {selectedCalendarDay % 6 === 1 && t("Evite multitarefas. Foque em uma única atividade prioritária até sua plena conclusão.")}
+                                      {selectedCalendarDay % 6 === 2 && t("Experimente usar roupas com tons de Quartzo Rosa ou Carmim para sintonizar a diplomacia.")}
+                                      {selectedCalendarDay % 6 === 3 && t("Escreva no papel antes de enviar mensagens difíceis. Respire e releia 3 vezes.")}
+                                      {selectedCalendarDay % 6 === 4 && t("Organize suas finanças mensais em planilha hoje. A abundância floresce de solo ordenado.")}
+                                      {selectedCalendarDay % 6 === 5 && t("Escreva um e-mail de agradecimento a um mentor ou colega intelectual.")}
                                     </div>
                                   </div>
                                 </div>
@@ -5775,25 +6917,25 @@ export default function App() {
                                   <div>
                                     <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
                                       <Sparkles className="w-4 h-4 text-purple-400" />
-                                      Cores Favoráveis para o Mês de Junho
+                                      {t("Cores Favoráveis para o Mês de Junho")}
                                     </h3>
-                                    <p className="text-[10px] text-slate-500 mt-0.5">As frequências cromáticas sintonizadas às emanações vigentes no seu mapa astrológico principal de 2026.</p>
+                                    <p className="text-[10px] text-slate-500 mt-0.5">{t("As frequências cromáticas sintonizadas às emanações vigentes no seu mapa astrológico principal de 2026.")}</p>
                                   </div>
                                   <span className="px-2 py-0.5 bg-purple-500/10 border border-purple-500/20 text-[9px] font-mono font-bold text-purple-450 rounded-lg shrink-0">
-                                    Atualização Mensal
+                                    {t("Atualização Mensal")}
                                   </span>
                                 </div>
 
                                 {/* Custom Color Swatches Bento Grid */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-1 font-sans">
                                   {[
-                                    { title: 'Cor Principal', name: 'Azul Cobalto', hex: '#1e3a8a', bgClass: 'bg-[#1e3a8a]', text: 'Ativa sua mente fria e original de Aquário, eliminando cansaços e sobrecargas mentais do cotidiano.' },
-                                    { title: 'Cor Secundária', name: 'Violeta Estelar', hex: '#6366f1', bgClass: 'bg-[#6366f1]', text: 'Fortalece seu chakra coronário e abre antenização intuitiva para os aconselhamentos do Tarot.' },
-                                    { title: 'Cor para Prosperidade', name: 'Dourado Solar', hex: '#eab308', bgClass: 'bg-[#eab308]', text: 'Amplifica o magnetismo material do seu Caminho de Vida 8. Use na carteira ou papéis financeiros.' },
-                                    { title: 'Cor para Relacionamentos', name: 'Rosa Quartzo', hex: '#f43f5e', bgClass: 'bg-[#f43f5e]', text: 'Suaviza as defesas estressadas de sua mente analítica, permitindo afetos doces e empatia sutil.' },
-                                    { title: 'Cor para Trabalho', name: 'Cinza Slate Profundo', hex: '#334155', bgClass: 'bg-[#334155]', text: 'Garante o rigor estrutural de Saturno, a disciplina laboriosa e o foco em prazos cruciais.' },
-                                    { title: 'Cor para Encontros', name: 'Carmim Magnético', hex: '#be123c', bgClass: 'bg-[#be123c]', text: 'Traz confiança cênica, impulsiona o brilho pessoal misterioso e sedutor de Marte.' },
-                                    { title: 'Uso no Dia a Dia', name: 'Off-White Pérola', hex: '#f8fafc', bgClass: 'bg-[#f8fafc]', text: 'Frequência de purificação ideal para neutralizar ruídos eletromagnéticos e limpar meridianos sutilmente.' }
+                                    { title: t('Cor Principal'), name: t('Azul Cobalto'), hex: '#1e3a8a', bgClass: 'bg-[#1e3a8a]', text: t('Ativa sua mente fria e original de Aquário, eliminando cansaços e sobrecargas mentais do cotidiano.') },
+                                    { title: t('Cor Secundária'), name: t('Violeta Estelar'), hex: '#6366f1', bgClass: 'bg-[#6366f1]', text: t('Fortalece seu chakra coronário e abre antenização intuitiva para os aconselhamentos do Tarot.') },
+                                    { title: t('Cor para Prosperidade'), name: t('Dourado Solar'), hex: '#eab308', bgClass: 'bg-[#eab308]', text: t('Amplifica o magnetismo material do seu Caminho de Vida 8. Use na carteira ou papéis financeiros.') },
+                                    { title: t('Cor para Relacionamentos'), name: t('Rosa Quartzo'), hex: '#f43f5e', bgClass: 'bg-[#f43f5e]', text: t('Suaviza as defesas estressadas de sua mente analítica, permitindo afetos doces e empatia sutil.') },
+                                    { title: t('Cor para Trabalho'), name: t('Cinza Slate Profundo'), hex: '#334155', bgClass: 'bg-[#334155]', text: t('Garante o rigor estrutural de Saturno, a disciplina laboriosa e o foco em prazos cruciais.') },
+                                    { title: t('Cor para Encontros'), name: t('Carmim Magnético'), hex: '#be123c', bgClass: 'bg-[#be123c]', text: t('Traz confiança cênica, impulsiona o brilho pessoal misterioso e sedutor de Marte.') },
+                                    { title: t('Uso no Dia a Dia'), name: t('Off-White Pérola'), hex: '#f8fafc', bgClass: 'bg-[#f8fafc]', text: t('Frequência de purificação ideal para neutralizar ruídos eletromagnéticos e limpar meridianos sutilmente.') }
                                   ].map((c, i) => (
                                     <div key={i} className="p-3.5 bg-slate-950/80 rounded-2xl border border-slate-850/70 space-y-3 hover:border-slate-800 transition">
                                       <div className="flex items-center gap-3">
@@ -5820,12 +6962,12 @@ export default function App() {
                                   <div>
                                     <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
                                       <ShieldCheck className="w-4 h-4 text-emerald-450" />
-                                      Amuletos & Símbolos de Poder Pessoais
+                                      {t("Amuletos & Símbolos de Poder Pessoais")}
                                     </h3>
-                                    <p className="text-[10px] text-slate-500 mt-0.5">Escudos energéticos e frequências físicas para purificar, ancorar e focar sua aura este mês.</p>
+                                    <p className="text-[10px] text-slate-500 mt-0.5">{t("Escudos energéticos e frequências físicas para purificar, ancorar e focar sua aura este mês.")}</p>
                                   </div>
                                   <span className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-mono font-bold text-emerald-450 rounded-lg shrink-0">
-                                    Baseado no Mapa Estelar
+                                    {t("Baseado no Mapa Estelar")}
                                   </span>
                                 </div>
 
@@ -5836,10 +6978,10 @@ export default function App() {
                                   <div className="p-4 bg-slate-950/80 rounded-2xl border border-slate-850 space-y-2">
                                     <div className="flex items-center gap-2 text-sky-400">
                                       <Globe className="w-4 h-4 shrink-0" />
-                                      <h4 className="text-xs font-bold uppercase font-mono tracking-wide">Seu Elemento Ativo: Ar</h4>
+                                      <h4 className="text-xs font-bold uppercase font-mono tracking-wide">{t("Seu Elemento Ativo: Ar")}</h4>
                                     </div>
                                     <p className="text-[10px] text-slate-350 leading-relaxed">
-                                      O Ar reina na sua matriz essencial de <strong>Aquário</strong>. Confere rapidez de raciocínio, ideais humanitários amplos e facilidade comunicativa. Alinhe-se ao elemento acendendo incensos puros de lavanda e inspirando fundo de manhã ao ar livre.
+                                      {t("O Ar reina na sua matriz essencial de")} <strong>{t("Aquário")}</strong>. {t("Confere rapidez de raciocínio, ideais humanitários amplos e facilidade comunicativa. Alinhe-se ao elemento acendendo incensos puros de lavanda e inspirando fundo de manhã ao ar livre.")}
                                     </p>
                                   </div>
 
@@ -5847,11 +6989,11 @@ export default function App() {
                                   <div className="p-4 bg-slate-950/80 rounded-2xl border border-slate-850 space-y-2">
                                     <div className="flex items-center gap-2 text-rose-400">
                                       <Sparkles className="w-4 h-4 shrink-0" />
-                                      <h4 className="text-xs font-bold uppercase font-mono tracking-wide">Pedras e Cristais de Filtro</h4>
+                                      <h4 className="text-xs font-bold uppercase font-mono tracking-wide">{t("Pedras e Cristais de Filtro")}</h4>
                                     </div>
                                     <div className="text-[10px] text-slate-350 leading-relaxed space-y-1">
-                                      <p><strong>Lápis-Lazúli:</strong> Estimula a visão transcendental, abre a clareza intelectual e protege seu canal respiratório superior.</p>
-                                      <p><strong>Sodalita e Selenita:</strong> Conectam o raciocínio lógico às vibrações sutis da intuição celestial pura.</p>
+                                      <p><strong>{t("Lápis-Lazúli:")}</strong> {t("Estimula a visão transcendental, abre a clareza intelectual e protege seu canal respiratório superior.")}</p>
+                                      <p><strong>{t("Sodalita e Selenita:")}</strong> {t("Conectam o raciocínio lógico às vibrações sutis da intuição celestial pura.")}</p>
                                     </div>
                                   </div>
 
@@ -5859,11 +7001,11 @@ export default function App() {
                                   <div className="p-4 bg-slate-950/80 rounded-2xl border border-slate-850 space-y-2">
                                     <div className="flex items-center gap-2 text-amber-500">
                                       <Orbit className="w-4 h-4 shrink-0" />
-                                      <h4 className="text-xs font-bold uppercase font-mono tracking-wide">Símbolos Celestiais Sagrados</h4>
+                                      <h4 className="text-xs font-bold uppercase font-mono tracking-wide">{t("Símbolos Celestiais Sagrados")}</h4>
                                     </div>
                                     <p className="text-[10px] text-slate-350 leading-relaxed">
-                                      O <strong>Portador de Água (Aquário)</strong> sintoniza sua missão solar coletiva. 
-                                      A <strong>Estrela de Sete Pontas (Heptagrama)</strong> sela seu campo áurico de proteção contra interferências energéticas externas e equilibra seu Caminho de Vida 8.
+                                      {t("O")} <strong>{t("Portador de Água (Aquário)")}</strong> {t("sintoniza sua missão solar coletiva.")} 
+                                      {t("A")} <strong>{t("Estrela de Sete Pontas (Heptagrama)")}</strong> {t("sela seu campo áurico de proteção contra interferências energéticas externas e equilibra seu Caminho de Vida 8.")}
                                     </p>
                                   </div>
 
@@ -5871,11 +7013,10 @@ export default function App() {
                                   <div className="p-4 bg-slate-950/80 rounded-2xl border border-slate-850 space-y-2">
                                     <div className="flex items-center gap-2 text-purple-400">
                                       <Award className="w-4 h-4 shrink-0" />
-                                      <h4 className="text-xs font-bold uppercase font-mono tracking-wide">Amuletos Ativos Recomendados</h4>
+                                      <h4 className="text-xs font-bold uppercase font-mono tracking-wide">{t("ui.amulets.title", "Amuletos Ativos Recomendados")}</h4>
                                     </div>
                                     <p className="text-[10px] text-slate-350 leading-relaxed">
-                                      Use o <strong>Escaravelho Azul de Proteção</strong> para promover renovações físicas e materiais favoráveis. 
-                                      Sincronize com o <strong>Olho de Hórus</strong> em liga de prata para barrar a fadiga mental provocada pelo excesso de telas ou conversas mundanas.
+                                      {t("ui.amulets.description", "Use o Escaravelho Azul de Proteção para promover renovações físicas e materiais favoráveis. Sincronize com o Olho de Hórus em liga de prata para barrar a fadiga mental provocada pelo excesso de telas ou conversas mundanas.")}
                                     </p>
                                   </div>
 
@@ -5885,18 +7026,18 @@ export default function App() {
                                 <div className="p-4 bg-slate-950 rounded-2xl border border-slate-850/85 text-left space-y-2.5 font-sans">
                                   <div className="flex items-center gap-1.5 pb-1 border-b border-slate-900">
                                     <Star className="w-4 h-4 text-amber-400" />
-                                    <h4 className="text-[11px] font-bold uppercase font-mono text-amber-400">Recomendação Estelar de Joia de Poder</h4>
+                                    <h4 className="text-[11px] font-bold uppercase font-mono text-amber-400">{t("ui.jewelry.title", "Recomendação Estelar de Joia de Poder")}</h4>
                                   </div>
                                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
                                     <div className="sm:col-span-3 text-center p-2 bg-slate-900/60 rounded-xl border border-slate-800 text-[10px] font-mono text-slate-300 font-bold shrink-0">
-                                      Colar ou Anel
+                                      {t("ui.jewelry.type", "Colar ou Anel")}
                                     </div>
                                     <div className="sm:col-span-9">
                                       <p className="text-[11px] text-slate-350 leading-relaxed">
-                                        Recomendamos o uso de um <strong>Colar de Lápis-Lazúli montado em Prata Pura</strong> posicionado na altura do chakra laríngeo, ou alternativamente um <strong>Anel de Prata com Pirita</strong> usado no dedo indicador correspondente ao seu poder criador e materializador. 
+                                        {t("ui.jewelry.recommendation", "Recomendamos o uso de um Colar de Lápis-Lazúli montado em Prata Pura posicionado na altura do chakra laríngeo, ou alternativamente um Anel de Prata com Pirita usado no dedo indicador correspondente ao seu poder criador e materializador.")}
                                       </p>
                                       <p className="text-[10px] text-slate-500 italic mt-1 leading-normal leading-relaxed text-left">
-                                        <strong>Conselho de ativação:</strong> Na noite do quarto crescente lunar, deixe a joia imersa em copo de água mineral por duas horas exposta ao luar e use-a após secar purificada.
+                                        <strong>{t("ui.jewelry.activationAdvice", "Conselho de ativação:")}</strong> {t("ui.jewelry.activationSteps", "Na noite do quarto crescente lunar, deixe a joia imersa em copo de água mineral por duas horas exposta ao luar e use-a após secar purificada.")}
                                       </p>
                                     </div>
                                   </div>
@@ -5913,12 +7054,12 @@ export default function App() {
                                   <div>
                                     <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
                                       <BookOpen className="w-4 h-4 text-pink-400" />
-                                      Mensagem Inspiradora da Semana
+                                      {t("Mensagem Inspiradora da Semana")}
                                     </h3>
-                                    <p className="text-[10px] text-slate-500 mt-0.5">Canalizações semanais personalizadas guiadas pelo trânsito ativo do Solstício de Junho de 2026.</p>
+                                    <p className="text-[10px] text-slate-500 mt-0.5">{t("Canalizações semanais personalizadas guiadas pelo trânsito ativo do Solstício de Junho de 2026.")}</p>
                                   </div>
                                   <span className="px-2 py-0.5 bg-pink-500/10 border border-pink-500/20 text-[9px] font-mono font-bold text-pink-450 rounded-lg shrink-0">
-                                    Atualização Semanal
+                                    {t("Atualização Semanal")}
                                   </span>
                                 </div>
 
@@ -5927,10 +7068,10 @@ export default function App() {
                                   <div className="absolute top-0 right-0 w-28 h-28 bg-pink-500/[0.02] rounded-full blur-2xl pointer-events-none" />
                                   <div className="absolute bottom-0 left-0 w-28 h-28 bg-amber-500/[0.02] rounded-full blur-2xl pointer-events-none" />
                                   
-                                  <span className="text-[9px] font-mono text-amber-500/70 block uppercase tracking-widest">Semana de 08/06 a 14/06 de 2026</span>
+                                  <span className="text-[9px] font-mono text-amber-500/70 block uppercase tracking-widest">{t("Semana de 08/06 a 14/06 de 2026")}</span>
                                   
                                   <p className="font-serif italic text-sm text-amber-100/90 leading-relaxed max-w-xl mx-auto">
-                                    "{user.name.split(' ')[0]}, o céu desta semana convida você a encontrar o silêncio lúcido em meio ao turbilhão de ideias brilhantes que seu Sol em {mapData?.astros?.find(a => a.name === "Sol")?.sign || getZodiacSign(user.birthDate)} tanto gera. A força construtora do seu Caminho de Vida {numerology?.lifePathNumber || getLifePathNumber(user.birthDate)} exige que você não apenas idealize soluções, mas permita-se o cansaço terapêutico de assentar as ideias no solo firme da realidade."
+                                    "{user.name.split(' ')[0]}, o céu desta semana convida você a encontrar o silêncio lúcido em meio ao turbilhão de ideias brilhantes que seu Sol em {mapData?.astros?.find(a => a.name === "Sol")?.sign || getZodiacSign(user.birthDate || "")} tanto gera. A força construtora do seu Caminho de Vida {(numerology as any)?.lifePathNumber || numerology?.caminhoDeVida || getLifePathNumber(user.birthDate || "")} exige que você não apenas idealize soluções, mas permita-se o cansaço terapêutico de assentar as ideias no solo firme da realidade."
                                   </p>
 
                                   <p className="font-serif italic text-sm text-amber-200/90 leading-relaxed max-w-xl mx-auto pt-1">
@@ -5939,7 +7080,7 @@ export default function App() {
 
                                   <div className="pt-3 border-t border-slate-900 max-w-xs mx-auto">
                                     <Sparkles className="w-4 h-4 text-amber-450 mx-auto animate-pulse" />
-                                    <span className="text-[8px] font-mono uppercase text-slate-500 tracking-wider block mt-1">Conselheira Espiritual Orbia</span>
+                                    <span className="text-[8px] font-mono uppercase text-slate-500 tracking-wider block mt-1">{t("ui.orbia.advisorTitle", "Conselheira Espiritual Orbia")}</span>
                                   </div>
                                 </div>
                               </div>
@@ -5949,8 +7090,7 @@ export default function App() {
                         </div>
                         </>}
                       </div>
-                    )
-                  )}
+                    ))}
 
                     {/* SUB-SECTION 2: MEU MAPA */}
                     {mapSubTab === 'meu_mapa' && (
@@ -5971,21 +7111,21 @@ export default function App() {
                                 {isMapJustSaved || (user.hasCreatedMap && isLoggedIn) ? (
                                   <>
                                     <h4 className="text-xs font-bold font-mono text-emerald-400 uppercase tracking-wider">
-                                      MAPA SINCRONIZADO
+                                      {t("MAPA SINCRONIZADO")}
                                     </h4>
                                     <p className="text-[11px] text-emerald-300/90 mt-1 max-w-lg leading-relaxed">
-                                      Seu mapa astral principal foi protegido e sincronizado com sua conta.
+                                      {t("Seu mapa astral principal foi protegido e sincronizado com sua conta.")}
                                       <br />
-                                      A partir de agora você receberá atualizações contínuas sobre trânsitos, ciclos, frequências energéticas e movimentações celestes relacionadas ao seu mapa.
+                                      {t("A partir de agora você receberá atualizações contínuas sobre trânsitos, ciclos, frequências energéticas e movimentações celestes relacionadas ao seu mapa.")}
                                     </p>
                                   </>
                                 ) : (
                                   <>
                                     <h4 className="text-xs font-bold font-mono text-amber-500 uppercase tracking-wider">
-                                      SINCRONIZAÇÃO ATIVA
+                                      {t("SINCRONIZAÇÃO ATIVA")}
                                     </h4>
                                     <p className="text-[11px] text-slate-350 mt-1 max-w-lg leading-relaxed">
-                                      Salve seu mapa para receber atualizações personalizadas de trânsitos, energias, previsões e movimentos astrológicos em tempo real.
+                                      {t("Salve seu mapa para receber atualizações personalizadas de trânsitos, energias, previsões e movimentos astrológicos em tempo real.")}
                                     </p>
                                   </>
                                 )}
@@ -6000,14 +7140,14 @@ export default function App() {
                                     setAuthTab('register_credentials');
                                     setActiveTab('configuracoes');
                                     triggerGlobalNotification(
-                                      "Registre-se",
-                                      "Crie sua conta para sincronizar e salvar este mapa para sempre na nuvem!",
+                                      t("Registre-se"),
+                                      t("Crie sua conta para sincronizar e salvar este mapa para sempre na nuvem!"),
                                       "info"
                                     );
                                   }}
                                   className="w-full md:w-auto px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold text-xs font-mono transition-all duration-300 cursor-pointer"
                                 >
-                                  Criar Conta e Salvar
+                                  {t("Criar Conta e Salvar")}
                                 </button>
                               )}
                               
@@ -6017,7 +7157,7 @@ export default function App() {
                                 className="w-full md:w-auto px-4 py-2 rounded-xl border border-slate-700 hover:border-amber-500/50 bg-slate-950 hover:bg-slate-900 text-slate-350 hover:text-amber-500 text-xs font-mono transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer font-bold"
                               >
                                 <span>💾</span>
-                                <span>SALVAR MAPA</span>
+                                <span>{t("SALVAR MAPA")}</span>
                               </button>
                             </div>
                           </div>
@@ -6027,10 +7167,15 @@ export default function App() {
                           <React.Suspense fallback={
                             <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 space-y-3 animate-pulse">
                               <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mx-auto" />
-                              <p className="text-xs text-slate-400 font-mono">Descriptografando efemérides e traçando alinhamento de casas...</p>
+                              <p className="text-xs text-slate-400 font-mono">{t("ui.loading.ephemerides", "Descriptografando efemérides e traçando alinhamento de casas...")}</p>
                             </div>
                           }>
-                            {mapData && (
+                            {!mapData ? (
+                              <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 space-y-3 animate-pulse">
+                                <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mx-auto" />
+                                <p className="text-xs text-slate-400 font-mono">{t("ui.loading.ephemerides", "Descriptografando efemérides e traçando alinhamento de casas...")}</p>
+                              </div>
+                            ) : (
                               <div key={`astrology_view_${user.name}_${user.birthDate}_${user.birthTime || ''}`}>
                                 <AstrologyView 
                                   mapData={mapData} 
@@ -6041,18 +7186,31 @@ export default function App() {
                               </div>
                             )}
 
-                            {numerology && (
+                            {!numerology ? (
+                              <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 space-y-3 animate-pulse">
+                                <div className="w-8 h-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin mx-auto" />
+                                <p className="text-xs text-slate-400 font-mono">{t("ui.loading.numerology", "Calculando ciclos numerológicos e frequências vitais...")}</p>
+                              </div>
+                            ) : (
                               <div key={`numerology_view_${user.name}_${user.birthDate}`}>
                                 <NumerologyView 
                                   numerology={numerology} 
-                                  user={user} 
+                                  user={user as any} 
                                   lang={currentLang}
                                 />
                               </div>
                             )}
                           </React.Suspense>
 
-                          <CompatibilityView user={user} lang={currentLang} />
+                          {!isPostTrialLocked(user) && (
+                            <React.Suspense fallback={
+                              <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 animate-pulse">
+                                <p className="text-xs text-slate-405 font-mono">{t("ui.loading.compatibility", "Sintonizando afinidades e afinadores de energia...")}</p>
+                              </div>
+                            }>
+                              <CompatibilityView user={user} lang={currentLang} />
+                            </React.Suspense>
+                          )}
 
 
                         </div>
@@ -6061,31 +7219,14 @@ export default function App() {
 
                     {/* SUB-SECTION 3: CRIAR MEU MAPA */}
                     {mapSubTab === 'criar_meu_mapa' && (
-                      isLoggedIn && isPostTrialLocked(user) ? (
-                        <PremiumConversionScreen 
-                          currentLang={currentLang} 
-                          onUpgradeComplete={(isPremium) => {
-                            if (isPremium) {
-                              const nextUser = { ...user, isSubscribed: true, isPremium: true };
-                              setUser(nextUser);
-                            }
-                          }} 
-                          userEmail={loggedEmail} 
-                          updateUserProfileOnDb={async (email, patch) => {
-                            const nextUser = { ...user, ...patch };
-                            setUser(nextUser);
-                            await saveProfileToDatabase(email, nextUser);
-                          }} 
-                        />
-                      ) : (
-                        <div className="max-w-2xl mx-auto bg-slate-900/40 p-6 md:p-8 rounded-3xl border border-slate-800 space-y-6 text-left animate-in fade-in duration-300">
+                      <div className="max-w-2xl mx-auto bg-slate-900/40 p-6 md:p-8 rounded-3xl border border-slate-800 space-y-6 text-left animate-in fade-in duration-300">
                           <div className="border-b border-slate-850 pb-4">
                             <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
                               <Plus className="w-5 h-5 text-amber-500" />
-                              Calcular Novo Mapa Astral Principal
+                              {t("Calcular Novo Mapa Astral Principal")}
                             </h2>
                             <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                              Insira os dados corretos de nascimento para recalcular as posições planetárias, casas astrológicas e os trânsitos sob o sistema Placidus.
+                              {t("Insira os dados corretos de nascimento para recalcular as posições planetárias, casas astrológicas e os trânsitos sob o sistema Placidus.")}
                             </p>
                           </div>
 
@@ -6095,15 +7236,9 @@ export default function App() {
                             <div className="flex items-start gap-3">
                               <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                               <div>
-                                <h4 className="font-bold text-amber-400 text-xs">Você já possui um mapa principal ativo.</h4>
-                                <p className="mt-1">Ao gerar um novo mapa, todas as informações antigas, caches, numerologia, tarot e oráculos serão completamente resetados e gerados novos do zero.</p>
-                                <p className="mt-1">Se deseja criar mapas de outras pessoas utilize a opção <span className="font-semibold text-rose-400 hover:underline cursor-pointer" onClick={() => setMapSubTab('mapas_extras')}>MAPAS EXTRAS</span>.</p>
+                                <h4 className="font-bold text-amber-400 text-xs">{tLocal('warn_active_map_title')}</h4>
+                                <p className="mt-1">{tLocal('warn_active_map_body')}</p>
                               </div>
-                            </div>
-
-                            <div className="pt-2 border-t border-slate-800/80 flex justify-between items-center text-xs">
-                              <span>Alterações do Mapa Principal:</span>
-                              <span className="font-mono font-bold text-amber-500">Ilimitadas (Premium Grátis)</span>
                             </div>
                           </div>
                         )}
@@ -6123,20 +7258,20 @@ export default function App() {
                         }} className="space-y-4 pt-2">
                           <fieldset className="space-y-4">
                             <div>
-                              <label className="block text-[10px] font-mono text-slate-400 mb-1 uppercase font-bold">Nome completo</label>
+                              <label className="block text-[10px] font-mono text-slate-400 mb-1 uppercase font-bold">{t("Nome completo")}</label>
                               <input
                                 type="text"
                                 required
                                 value={createMainName}
                                 onChange={(e) => setCreateMainName(e.target.value)}
                                 className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-205 focus:outline-hidden"
-                                placeholder="e.g. Fabricio Souza Santos"
+                                placeholder={t("ui.placeholder.fullName", "e.g. Fabricio Souza Santos")}
                               />
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                               <div>
-                                <label className="block text-[10px] font-mono text-slate-400 mb-1 uppercase font-bold">Data de nascimento</label>
+                                <label className="block text-[10px] font-mono text-slate-400 mb-1 uppercase font-bold">{t("Data de nascimento")}</label>
                                 <input
                                   type="date"
                                   required
@@ -6147,18 +7282,18 @@ export default function App() {
                               </div>
 
                               <div>
-                                <label className="block text-[10px] font-mono text-slate-400 mb-1 uppercase font-bold">Hora (HH:MM)</label>
+                                <label className="block text-[10px] font-mono text-slate-400 mb-1 uppercase font-bold">{t("Hora (HH:MM)")}</label>
                                 <input
                                   type="text"
                                   value={createMainTime}
                                   onChange={(e) => setCreateMainTime(e.target.value)}
                                   className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-205 focus:outline-hidden font-mono"
-                                  placeholder="e.g. 15:30"
+                                  placeholder={t("ui.placeholder.time", "e.g. 15:30")}
                                 />
                               </div>
 
                               <div>
-                                <label className="block text-[10px] font-mono text-slate-400 mb-1 uppercase font-bold">Cidade / Estado</label>
+                                <label className="block text-[10px] font-mono text-slate-400 mb-1 uppercase font-bold">{t("Cidade / Estado")}</label>
                                 <CityAutocomplete
                                   value={createMainCity}
                                   onChange={(val) => setCreateMainCity(val)}
@@ -6176,338 +7311,13 @@ export default function App() {
                                 className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-rose-600 rounded-xl text-xs font-bold font-sans uppercase text-slate-950 transition-all cursor-pointer hover:shadow-lg opacity-90 hover:opacity-100 disabled:opacity-40 disabled:cursor-not-allowed"
                                 disabled={(user.mainMapChangesCount ?? 0) >= 2 && user.hasCreatedMap}
                               >
-                                {user.hasCreatedMap ? "Substituir e Gerar Novo Mapa Principal" : "Gerar e Salvar Meu Mapa Principal"}
+                                {user.hasCreatedMap ? t("Substituir e Gerar Novo Mapa Principal") : t("Gerar e Salvar Meu Mapa Principal")}
                               </button>
                             </div>
                           </fieldset>
                         </form>
                       </div>
-                      )
                     )}
-
-                    {/* SUB-SECTION 4: MAPAS EXTRAS */}
-                    {mapSubTab === 'mapas_extras' && (
-                      isLoggedIn && isPostTrialLocked(user) ? (
-                        <PremiumConversionScreen 
-                          currentLang={currentLang} 
-                          onUpgradeComplete={(isPremium) => {
-                            if (isPremium) {
-                              const nextUser = { ...user, isSubscribed: true, isPremium: true };
-                              setUser(nextUser);
-                            }
-                          }} 
-                          userEmail={loggedEmail} 
-                          updateUserProfileOnDb={async (email, patch) => {
-                            const nextUser = { ...user, ...patch };
-                            setUser(nextUser);
-                            await saveProfileToDatabase(email, nextUser);
-                          }} 
-                        />
-                      ) : !hasUserCreatedMap(user) ? (
-                        renderLockedSection(
-                          "Portal de Relacionamentos e Mapas Extras",
-                          "A comparação de sinastria social, relatórios de afinidade e registros paralelos para mapas de familiares e amigos necessitam que você primeiro crie seu próprio mapa de nascimento. Sintonize suas estrelas para habilitar."
-                        )
-                      ) : (
-                        <div className="max-w-4xl mx-auto space-y-6 text-left animate-in fade-in duration-300">
-                          
-                          {/* Header back button */}
-                          <div className="flex justify-between items-center flex-wrap gap-2">
-                          <div>
-                            <h2 className="text-lg font-bold text-slate-100 uppercase tracking-tight flex items-center gap-2">
-                              <Orbit className="w-5 h-5 text-rose-400" />
-                              Mapas Extras
-                            </h2>
-                            <p className="text-[11px] text-slate-400 mt-1">
-                              Gerencie mapas extras de familiares, contatos profissionais ou parceiros. Limite de <strong>até 2 mapas</strong> adicionais.
-                            </p>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setActiveExtraMapData(null);
-                              setMapSubTab('meu_mapa');
-                            }}
-                            className="px-4 py-2 bg-slate-950 hover:bg-slate-900 border border-slate-850 rounded-full text-xs font-bold text-amber-500 hover:text-amber-400 flex items-center gap-1.5 transition duration-300 cursor-pointer"
-                          >
-                            <span>Voltar para Meu Mapa</span>
-                          </button>
-                        </div>
-
-                        {/* Rendering single extra map report when active */}
-                        {activeExtraMapData ? (
-                          <div className="space-y-8 p-6 bg-slate-950/20 rounded-3xl border border-slate-850/60 animate-in fade-in duration-300">
-                            <div className="pb-3 border-b border-slate-850 flex items-center justify-between flex-wrap gap-2 bg-slate-950/80 p-4 rounded-2xl">
-                              <div>
-                                <span className="text-[9px] font-mono text-rose-400 uppercase tracking-widest font-bold">Visualização Ativa</span>
-                                <h3 className="text-base font-black text-slate-100">Mapa Astral Extra: {activeExtraMapName}</h3>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setActiveExtraMapData(null);
-                                  setActiveExtraMapNumerology(null);
-                                  setActiveExtraMapName('');
-                                }}
-                                className="px-3.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-bold uppercase transition duration-200 cursor-pointer"
-                              >
-                                Voltar para Lista de Mapas Extras
-                              </button>
-                            </div>
-
-                            <React.Suspense fallback={
-                              <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 space-y-3 animate-pulse text-xs text-slate-400">
-                                <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mx-auto" />
-                                <span>Renderizando coordenadas do mapa secundário...</span>
-                              </div>
-                            }>
-                              <AstrologyView 
-                                mapData={activeExtraMapData} 
-                                user={{
-                                  name: activeExtraMapName,
-                                  birthDate: "1990-01-01", 
-                                  birthTime: "12:00",
-                                  birthCity: "Desconhecida",
-                                  isUnknownTime: false,
-                                  isPremium: true
-                                }} 
-                                onUpdateMainMap={() => {}} 
-                                readOnly={true}
-                              />
-
-                              {activeExtraMapNumerology && (
-                                <NumerologyView 
-                                  numerology={activeExtraMapNumerology} 
-                                  user={{
-                                    name: activeExtraMapName,
-                                    birthDate: "1990-01-01",
-                                  }} 
-                                  lang={currentLang}
-                                />
-                              )}
-                            </React.Suspense>
-
-                            <div className="pt-2 text-center">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setActiveExtraMapData(null);
-                                  setMapSubTab('meu_mapa');
-                                }}
-                                className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-rose-600 rounded-xl text-xs font-bold uppercase text-slate-950 hover:shadow-lg transition cursor-pointer"
-                              >
-                                Voltar para Meu Mapa
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                            
-                            {/* Left: Extra Map Form and Permanent Rules */}
-                            <div className="md:col-span-5 bg-slate-900/40 p-5 rounded-3xl border border-slate-850 space-y-4 font-sans">
-                              <div>
-                                <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-wider">Novo Mapa de Terceiro</h3>
-                                <p className="text-[10px] text-slate-500 mt-0.5">Cadastre pessoas importantes para sinastria secundária.</p>
-                              </div>
-
-                               {/* Explicação transparente das regras de limitação permanente */}
-                               <div className="p-3.5 bg-slate-950 rounded-2xl border border-slate-850 text-[10.5px] text-slate-400 space-y-1.5 leading-relaxed">
-                                 <span className="font-bold text-amber-500 text-[11px] block">✨ Mapas Extras Liberados:</span>
-                                 <ul className="list-disc pl-3.5 space-y-1 text-slate-450">
-                                   <li><strong>Criação Ilimitada:</strong> Cadastre quantos mapas de amigos e familiares desejar, sem custos.</li>
-                                   <li><strong>Sincronização Cósmica:</strong> Os dados de novos mapas extras são salvos de forma segura em tempo real na nuvem do usuário.</li>
-                                 </ul>
-                               </div>
-                               
-                               <form onSubmit={(e) => {
-                                 e.preventDefault();
-                                 if (!extraName || !extraDate) return;
-                                 
-                                 const newExtraObj = {
-                                   id: `extra_${Date.now()}`,
-                                   name: extraName,
-                                   birthDate: extraDate,
-                                   birthTime: extraTime || "12:00",
-                                   birthCity: extraCity,
-                                   latitude: extraCityCoords?.latitude,
-                                   longitude: extraCityCoords?.longitude
-                                 };
-                                 
-                                 const nextExtraArr = [...extraMaps, newExtraObj];
-                                 setExtraMaps(nextExtraArr);
-                                 
-                                 // Incrementa e salva de forma persistente o contador vitalício de mapas gerados
-                                 const nextLifecycleCount = (user.extraMapsCreatedCount ?? 0) + 1;
-                                 const nextUserObj = {
-                                   ...user,
-                                   extraMapsCreatedCount: nextLifecycleCount
-                                 };
-                                 setUser(nextUserObj);
-                                 
-                                 if (isLoggedIn && loggedEmail) {
-                                   saveProfileToDatabase(loggedEmail, nextUserObj).catch(console.error);
-                                   saveExtraMapToDatabase(loggedEmail, {
-                                     id: newExtraObj.id,
-                                     userId: loggedEmail,
-                                     label: newExtraObj.name,
-                                     birthDate: newExtraObj.birthDate,
-                                     birthTime: newExtraObj.birthTime,
-                                     birthCity: newExtraObj.birthCity,
-                                     createdAt: new Date().toISOString(),
-                                     latitude: newExtraObj.latitude,
-                                     longitude: newExtraObj.longitude
-                                   }).catch(console.warn);
-                                 }
-
-                                 triggerGlobalNotification(
-                                    "Mapa Extra Cadastrado",
-                                    `O Mapa Astral de ${extraName} foi calculado e adicionado com sucesso!`,
-                                    "success"
-                                  );
-
-                                  // Reset inputs
-                                  setExtraName('');
-                                  setExtraDate('');
-                                  setExtraTime('');
-                                  setExtraCity('');
-                                }} className="space-y-3 font-sans">
-                                  <div>
-                                    <label className="block text-[9px] font-mono text-slate-450 uppercase mb-1">Nome completo</label>
-                                    <input
-                                      type="text"
-                                      required
-                                      value={extraName}
-                                      onChange={(e) => setExtraName(e.target.value)}
-                                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-202 focus:outline-hidden"
-                                      placeholder="e.g. Lucas Oliveira"
-                                    />
-                                  </div>
-
-                                  <div>
-                                    <label className="block text-[9px] font-mono text-slate-455 uppercase mb-1">Data Nascimento</label>
-                                    <input
-                                      type="date"
-                                      required
-                                      value={extraDate}
-                                      onChange={(e) => setExtraDate(e.target.value)}
-                                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-401 focus:outline-hidden font-mono"
-                                    />
-                                  </div>
-
-                                  <div>
-                                    <label className="block text-[9px] font-mono text-slate-455 uppercase mb-1">Hora (HH:MM)</label>
-                                    <input
-                                      type="text"
-                                      value={extraTime}
-                                      onChange={(e) => setExtraTime(e.target.value)}
-                                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-202 focus:outline-hidden"
-                                      placeholder="e.g. 08:45"
-                                    />
-                                  </div>
-
-                                  <div>
-                                    <label className="block text-[9px] font-mono text-slate-455 uppercase mb-1">Cidade</label>
-                                    <CityAutocomplete
-                                      value={extraCity}
-                                      placeholder="e.g. Rio de Janeiro"
-                                      onChange={(val) => setExtraCity(val)}
-                                      onSelectCity={(city) => {
-                                        setExtraCity(city.label);
-                                        setExtraCityCoords({ latitude: city.latitude, longitude: city.longitude });
-                                      }}
-                                      inputClassName="px-3 py-2 rounded-xl"
-                                    />
-                                  </div>
-
-                                  <button
-                                    type="submit"
-                                    className="w-full py-2 bg-indigo-650 hover:bg-indigo-600 border border-indigo-500/20 text-slate-100 rounded-xl text-xs font-bold font-sans uppercase tracking-wide transition duration-300 cursor-pointer"
-                                  >
-                                    Cadastrar Mapa Extra
-                                  </button>
-                                </form>
-                              </div>
-
-                            {/* Right: Extra Maps List */}
-                            <div className="md:col-span-7 bg-slate-900/20 p-5 rounded-3xl border border-slate-850 space-y-4">
-                              <h3 className="text-xs font-bold font-mono text-slate-200 uppercase tracking-divider">Lista de Mapas Extras Cadastrados ({extraMaps.length}/2)</h3>
-                              
-                              {isLoadingExtraMap && (
-                                <div className="space-y-3 py-10 flex flex-col items-center text-slate-500 bg-slate-950/60 rounded-2xl border border-slate-800">
-                                  <RefreshCw className="w-8 h-8 animate-spin text-indigo-400" />
-                                  <p className="text-[10px] font-mono">Processando alinhamento estelar secundário...</p>
-                                </div>
-                              )}
-
-                              {!isLoadingExtraMap && extraMaps.length === 0 && (
-                                <div className="p-8 text-center text-slate-600 bg-slate-950/30 rounded-2xl border border-dashed border-slate-850">
-                                  <Orbit className="w-10 h-10 text-slate-800 mx-auto opacity-40 mb-2" />
-                                  <p className="text-xs font-mono">Nenhum mapa extra cadastrado.</p>
-                                  <p className="text-[10px] text-slate-505 max-w-xs mx-auto mt-1 leading-relaxed">
-                                    Adicione até 2 perfis de amigos ou familiares para comparar as cartas astrológicas e sinastrias.
-                                  </p>
-                                </div>
-                              )}
-
-                              {!isLoadingExtraMap && extraMaps.length > 0 && (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                  {extraMaps.map((m) => (
-                                    <div key={m.id} className="p-4 bg-slate-950/60 rounded-2xl border border-slate-850 flex flex-col justify-between space-y-3 relative overflow-hidden transition-all duration-300 hover:border-slate-700">
-                                      <div className="space-y-1">
-                                        <h4 className="text-sm font-bold text-slate-200">{m.name}</h4>
-                                        <p className="text-[10px] font-mono text-indigo-400 leading-none">
-                                          Nascimento: {m.birthDate} {m.birthTime ? `às ${m.birthTime}` : ''}
-                                        </p>
-                                        <p className="text-[10px] text-slate-450 font-mono">
-                                          Cidade: {m.birthCity || "Não informada"}
-                                        </p>
-                                      </div>
-
-                                      <div className="flex items-center gap-2 pt-2 border-t border-slate-850/60">
-                                        <button
-                                          type="button"
-                                          onClick={() => triggerGenerateExtraMap(m)}
-                                          className="flex-1 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 rounded-lg text-[10px] font-bold text-indigo-455 hover:text-indigo-400 text-center uppercase tracking-wide transition duration-200 cursor-pointer"
-                                        >
-                                          Visualizar Mapa
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setExtraMaps(extraMaps.filter(ex => ex.id !== m.id));
-                                            if (isLoggedIn && loggedEmail) {
-                                              deleteExtraMapFromDatabase(loggedEmail, m.id).catch(console.warn);
-                                            }
-                                          }}
-                                          className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-405 border border-rose-500/25 rounded-lg hover:text-rose-400 transition"
-                                          title="Deletar Mapa Extra"
-                                        >
-                                          <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-
-                              <div className="pt-2 text-right">
-                                <button
-                                  type="button"
-                                  onClick={() => setMapSubTab('meu_mapa')}
-                                  className="px-4 py-2 bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold text-amber-500 hover:text-amber-400 transition cursor-pointer"
-                                >
-                                  Voltar para Meu Mapa
-                                </button>
-                              </div>
-                            </div>
-
-                          </div>
-                        )}
-
-                      </div>
-                    )
-                  )}
                   </>
                 )}
               </div>
@@ -6515,23 +7325,7 @@ export default function App() {
 
             {/* TAB 2: CONSTCOES (Radar, Biorhythms, Lunar Cycles, Prosperity Maps) */}
             {activeTab === 'constelacoes' && (
-              isLoggedIn && isPostTrialLocked(user) ? (
-                <PremiumConversionScreen 
-                  currentLang={currentLang} 
-                  onUpgradeComplete={(isPremium) => {
-                    if (isPremium) {
-                      const nextUser = { ...user, isSubscribed: true, isPremium: true };
-                      setUser(nextUser);
-                    }
-                  }} 
-                  userEmail={loggedEmail} 
-                  updateUserProfileOnDb={async (email, patch) => {
-                    const nextUser = { ...user, ...patch };
-                    setUser(nextUser);
-                    await saveProfileToDatabase(email, nextUser);
-                  }} 
-                />
-              ) : !hasUserCreatedMap(user) ? (
+              !hasUserCreatedMap(user) ? (
                 renderLockedSection(
                   "Portal de Constelações",
                   "O alinhamento estelar das constelações e a inclinação sideral dependem das coordenadas geográficas e data exata do seu nascimento. Sincronize seu mapa astral para desbloquear as posições estelares em tempo real."
@@ -6612,8 +7406,8 @@ export default function App() {
                     <div className="flex gap-2 items-center text-[11px] font-mono text-indigo-305">
                       <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping" />
                       <span>
-                        {lang === 'de' ? 'Integration mit Geburt:' : lang === 'en' ? 'Integration with Birth:' : lang === 'es' ? 'Integración con Nacimiento:' : lang === 'fr' ? 'Intégration avec Naissance:' : 'Integração com Nascimento:'}{" "}
-                        {user?.birthDate ? user.birthDate : (lang === 'de' ? 'Ihre astrologischen Daten' : lang === 'en' ? 'your astrological dates' : lang === 'es' ? 'sus fechas astrológicas' : lang === 'fr' ? 'vos dates astrologiques' : 'suas datas astrológicas')}
+                        {idioma === 'de' ? 'Integration mit Geburt:' : idioma === 'en' ? 'Integration with Birth:' : idioma === 'es' ? 'Integración con Nacimiento:' : idioma === 'fr' ? 'Intégration avec Naissance:' : 'Integração com Nascimento:'}{" "}
+                        {user?.birthDate ? user.birthDate : (idioma === 'de' ? 'Ihre astrologischen Daten' : idioma === 'en' ? 'your astrological dates' : idioma === 'es' ? 'sus fechas astrológicas' : idioma === 'fr' ? 'vos dates astrologiques' : 'suas datas astrológicas')}
                       </span>
                     </div>
                   </div>
@@ -6621,22 +7415,34 @@ export default function App() {
                 </div>
 
                 {/* THE NEW ADVANCED BIORHYTHM SYSTEM FOR FABRICIO */}
-                <div key={`biorhythm_${user?.name}_${user?.birthDate}`}>
-                  <BiorhythmView 
-                    userName={user?.name} 
-                    birthDate={user?.birthDate} 
-                    lang={currentLang}
-                  />
+                <div key={`biorhythm_${user?.name}_${user?.birthDate}_${systemDate.toDateString()}`}>
+                  <React.Suspense fallback={
+                    <div className="h-64 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
+                      <span className="text-xs text-slate-400 font-mono">{t("ui.loading.biorhythm", "Desenhando curvas biológicas vitais...")}</span>
+                    </div>
+                  }>
+                    <BiorhythmView 
+                      userName={user?.name} 
+                      birthDate={user?.birthDate} 
+                      lang={currentLang}
+                    />
+                  </React.Suspense>
                 </div>
 
                 {/* NEW COMPREHENSIVE LUNAR CYCLE MODULE */}
-                <div key={`lunar_cycle_${user?.name}_${user?.birthDate}_${user?.birthTime || ''}`}>
-                  <LunarCycle 
-                    userName={user?.name} 
-                    userSunSign={mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Aquário")} 
-                    userAscendant={mapData?.astros?.find(a => a.name === "Ascendente")?.sign || (user?.birthDate && user?.birthTime ? getRisingSign(user.birthDate, user.birthTime) : "Sagitário")}
-                    lang={currentLang}
-                  />
+                <div key={`lunar_cycle_${user?.name}_${user?.birthDate}_${user?.birthTime || ''}_${systemDate.toDateString()}`}>
+                  <React.Suspense fallback={
+                    <div className="h-64 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
+                      <span className="text-xs text-slate-405 font-mono">{t("ui.loading.lunarCycle", "Calculando fases de lunação astrológica...")}</span>
+                    </div>
+                  }>
+                    <LunarCycle 
+                      userName={user?.name} 
+                      userSunSign={mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "")} 
+                      userAscendant={mapData?.astros?.find(a => a.name === "Ascendente")?.sign || (user?.birthDate && user?.birthTime ? getRisingSign(user.birthDate, user.birthTime, user.latitude, user.longitude) : "")}
+                      lang={currentLang}
+                    />
+                  </React.Suspense>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -6644,22 +7450,22 @@ export default function App() {
                   {/* Mapa da Prosperidade Subcomponent */}
                   <div className="bg-slate-900/40 p-6 rounded-3xl border border-slate-800 space-y-4">
                     <div className="pb-2 border-b border-slate-850">
-                      <h4 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest">Mapa de Prosperidade Mensal</h4>
-                      <p className="text-[10px] text-slate-500 mt-0.5 font-sans">Sua vibração abundante orientada para {personalProsperity.monthName} {personalProsperity.year}.</p>
+                      <h4 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest">{t("Mapa de Prosperidade Mensal")}</h4>
+                      <p className="text-[10px] text-slate-500 mt-0.5 font-sans">{t("Sua vibração abundante orientada para")} {personalProsperity.monthName} {personalProsperity.year}.</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       {/* Prosperity fields */}
                       <div className="p-3 bg-slate-950 rounded-xl border border-slate-850">
-                        <span className="text-[8px] font-mono text-slate-500 uppercase block">Número do Mês</span>
+                        <span className="text-[8px] font-mono text-slate-500 uppercase block">{t("Número do Mês")}</span>
                         <span className="text-xl font-bold font-mono text-amber-500 block mt-1">{personalProsperity.monthNumber}</span>
-                        <p className="text-[9px] text-slate-500 leading-none mt-1">Amuleto: {personalProsperity.amulet}</p>
+                        <p className="text-[9px] text-slate-500 leading-none mt-1">{t("Amuleto:")} {personalProsperity.amulet}</p>
                       </div>
 
                       <div className="p-3 bg-slate-950 rounded-xl border border-slate-850 flex items-center gap-3">
                         <div className="w-8 h-8 rounded border border-white/10 shrink-0 shadow-sm" style={{ backgroundColor: personalProsperity.favorableColor.hex }} />
                         <div>
-                          <span className="text-[8px] font-mono text-slate-500 uppercase block">Cor Favorecida</span>
+                          <span className="text-[8px] font-mono text-slate-500 uppercase block">{t("Cor Favorecida")}</span>
                           <span className="text-[11px] text-slate-300 font-bold font-mono block mt-0.5">{personalProsperity.favorableColor.name}</span>
                           <span className="text-[8px] text-slate-500 font-mono">{personalProsperity.favorableColor.hex.toUpperCase()}</span>
                         </div>
@@ -6667,325 +7473,166 @@ export default function App() {
 
                       {/* Palabra chave */}
                       <div className="col-span-2 p-3 bg-slate-950 rounded-xl border border-slate-850">
-                        <span className="text-[8px] font-mono text-slate-500 uppercase block">Palavra-Chave Ativa</span>
+                        <span className="text-[8px] font-mono text-slate-500 uppercase block">{t("Palavra-Chave Ativa")}</span>
                         <span className="text-xs font-bold text-slate-200 mt-1 block">"{personalProsperity.keyword}"</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Calendário dos Próximos 30 dias */}
-                  <div className="bg-slate-900/30 p-6 rounded-3xl border border-slate-800 space-y-4 col-span-1 lg:col-span-2">
-                    <div className="pb-2 border-b border-slate-800 flex justify-between items-center sm:flex-nowrap flex-wrap gap-2">
-                      <div>
-                        <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest">Mapa dos Próximos 30 Dias (Calendário de Trânsitos)</h3>
-                        <p className="text-[10px] text-slate-500 mt-0.5">Clique nos dias sinalizados para abrir e analisar os detalhes e trânsitos reais.</p>
-                      </div>
-                      {selectedProsperityDay !== null && (
-                        <button 
-                          onClick={() => setSelectedProsperityDay(null)}
-                          className="px-2 py-1 text-[9px] font-mono uppercase bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-md border border-red-500/20 transition cursor-pointer"
-                        >
-                          Fechar Detalhes
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-5 sm:grid-cols-7 lg:grid-cols-10 gap-2 max-w-2xl mx-auto">
-                      {Array.from({ length: 30 }).map((_, idx) => {
-                        const dayNum = idx + 1;
-                        const isSelected = selectedProsperityDay === dayNum;
-                        
-                        // Assign color tags to certain days
-                        let dayColor = "bg-slate-900/40 border-slate-850 text-slate-500 hover:border-slate-700";
-                        let tagText = "Tranquilo";
-                        
-                        if ([2, 9, 16, 23, 30].includes(dayNum)) {
-                          dayColor = "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 font-bold hover:border-emerald-500/40";
-                          tagText = "Favorável";
-                        } else if ([5, 12, 19, 26].includes(dayNum)) {
-                          dayColor = "bg-rose-500/10 border-rose-500/20 text-rose-400 font-bold hover:border-rose-500/40";
-                          tagText = "Atenção";
-                        } else if ([7, 14, 21, 28].includes(dayNum)) {
-                          dayColor = "bg-amber-500/10 border-amber-500/20 text-amber-500 font-bold hover:border-amber-500/40";
-                          tagText = "Produtivo";
-                        } else if ([4, 11, 18, 25].includes(dayNum)) {
-                          dayColor = "bg-sky-500/10 border-sky-500/20 text-sky-400 font-bold hover:border-sky-500/40";
-                          tagText = "Descanso";
-                        }
-
-                        if (isSelected) {
-                          dayColor = "bg-sky-500/20 border-sky-400 text-sky-200 ring-1 ring-sky-550 font-black shadow-md";
-                        }
-
-                        return (
-                          <button 
-                            key={idx} 
-                            type="button"
-                            onClick={() => setSelectedProsperityDay(isSelected ? null : dayNum)}
-                            title={`Dia ${dayNum}: energia de foco ${tagText}`}
-                            className={`p-2 rounded-xl border text-center transition cursor-pointer flex flex-col justify-between items-center h-12 ${dayColor}`}
-                          >
-                            <span className="block font-mono text-xs font-bold leading-none">{dayNum.toString().padStart(2, '0')}</span>
-                            <span className="text-[7.5px] font-mono block leading-none uppercase tracking-tight">{tagText.slice(0, 3)}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Expandable Details Panel for Selected Day */}
-                    {selectedProsperityDay !== null && (() => {
-                      const prediction = generateDailyPrediction(
-                        user?.birthDate || "1997-02-11",
-                        mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Touro"),
-                        user?.name || "Viajante",
-                        selectedProsperityDay - 1,
-                        new Date()
-                      );
-                      
-                      return (
-                        <div className="p-5 bg-slate-950/95 rounded-2xl border border-sky-500/20 text-left space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
-                          <div className="flex justify-between items-center pb-2 border-b border-slate-850 flex-wrap gap-2 leading-none">
-                            <div className="flex items-center gap-1.5">
-                              <span className="w-2.5 h-2.5 rounded-full bg-sky-400 animate-pulse" />
-                              <span className="text-sm font-bold uppercase font-mono text-slate-100">
-                                {prediction.dateFormatted} (Dia {selectedProsperityDay})
-                              </span>
-                            </div>
-                            <span className={`px-2.5 py-0.5 rounded-md text-[9px] font-mono border ${prediction.tagColorClass}`}>
-                              Vibração: {prediction.tagText}
-                            </span>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-sans">
-                            {/* Column 1 - Astrological details and energies */}
-                            <div className="space-y-3">
-                              <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">Influência Astrológica:</span>
-                                <p className="text-slate-205 mt-1 leading-normal font-sans font-medium">{prediction.astroInfluence}</p>
-                              </div>
-
-                              <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">Aspectos Planetários do Dia:</span>
-                                <p className="text-slate-200 mt-1 leading-normal font-sans">{prediction.aspects}</p>
-                              </div>
-
-                              <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">Trânsito Lunar & Setores:</span>
-                                <p className="text-slate-300 mt-1 leading-normal font-sans italic">{prediction.transit}</p>
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                  <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">Energia Predominante:</span>
-                                  <span className="text-[11px] font-bold text-sky-400 block mt-1">{prediction.predominantEnergy}</span>
-                                </div>
-                                <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                  <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">Nível Energético:</span>
-                                  <div className="flex items-center gap-1.5 mt-1">
-                                    <div className="flex-1 h-1.5 rounded-full bg-slate-800 overflow-hidden">
-                                      <div className="h-full bg-emerald-500" style={{ width: `${prediction.energyLevel}%` }} />
-                                    </div>
-                                    <span className="font-mono text-[10px] text-emerald-400 font-bold">{prediction.energyLevel}%</span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                  <span className="text-[8px] font-mono text-emerald-500 uppercase tracking-wider block font-bold">Áreas Favorecidas:</span>
-                                  <p className="text-emerald-400 mt-1 font-bold truncate">{prediction.favoredAreas.join(', ')}</p>
-                                </div>
-                                <div className="p-2.5 bg-slate-900/40 rounded-xl border border-rose-500/60">
-                                  <span className="text-[8px] font-mono text-rose-500 uppercase tracking-wider block font-bold">Áreas de Atenção:</span>
-                                  <p className="text-rose-400 mt-1 font-bold truncate">{prediction.attentionAreas.join(', ')}</p>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Column 2 - Personal action, opportunities, challenges & advice */}
-                            <div className="space-y-3">
-                              <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">Mensagem Personalizada do Usuário:</span>
-                                <p className="text-slate-200 mt-1 leading-normal italic">"{prediction.personalizedMessage}"</p>
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="p-2.5 bg-slate-900/40 rounded-xl border border-emerald-500/15">
-                                  <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold text-emerald-400">Oportunidades:</span>
-                                  <p className="text-slate-300 mt-1 leading-normal font-sans">{prediction.opportunities}</p>
-                                </div>
-                                <div className="p-2.5 bg-slate-900/40 rounded-xl border border-rose-500/15">
-                                  <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold text-rose-400">Desafios:</span>
-                                  <p className="text-slate-300 mt-1 leading-normal font-sans">{prediction.challenges}</p>
-                                </div>
-                              </div>
-
-                              <div className="p-2.5 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block font-bold">Conselho Personalizado:</span>
-                                <p className="text-slate-200 mt-1 leading-normal font-medium">"{prediction.personalizedAdvice}"</p>
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="p-2 bg-slate-900/40 rounded-xl border border-slate-850/60 flex items-center gap-2">
-                                  <span className="w-4 h-4 rounded-full border border-white/10 shrink-0 shadow-xs" style={{ backgroundColor: prediction.favorableColor === "Verde Esmeralda" ? "#16a34a" : prediction.favorableColor === "Azul Celeste" ? "#38bdf8" : prediction.favorableColor === "Violeta Púrpura" ? "#a855f7" : prediction.favorableColor === "Dourado Sol" ? "#eab308" : prediction.favorableColor === "Turquesa Fluido" ? "#06b6d4" : prediction.favorableColor === "Vermelho Rubi" ? "#dc2626" : "#f472b6" }} />
-                                  <div>
-                                    <span className="text-[7.5px] font-mono text-slate-500 uppercase block leading-none">Cor Favorável</span>
-                                    <span className="text-[10px] text-slate-300 font-bold font-sans mt-0.5 block">{prediction.favorableColor}</span>
-                                  </div>
-                                </div>
-                                <div className="p-2 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                  <span className="text-[7.5px] font-mono text-slate-500 uppercase block leading-none">Número da Sorte</span>
-                                  <span className="text-sm font-black text-amber-400 block font-mono text-left">{prediction.favorableNumber}</span>
-                                </div>
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="p-2 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                  <span className="text-[7.5px] font-mono text-slate-500 block uppercase">Melhor Período</span>
-                                  <span className="text-[10px] text-emerald-400 font-bold block font-mono mt-0.5">{prediction.bestPeriod}</span>
-                                </div>
-                                <div className="p-2 bg-slate-900/40 rounded-xl border border-slate-850/60">
-                                  <span className="text-[7.5px] font-mono text-slate-100 block uppercase text-rose-500">Período de Atenção</span>
-                                  <span className="text-[10px] text-rose-400 font-bold block font-mono mt-0.5">{prediction.attentionPeriod}</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
+                  <div className="col-span-1 lg:col-span-2">
+                    <AstrologyCalendarModule
+                      userBirthDate={user?.hasCreatedMap ? user.birthDate : "1997-02-11"}
+                      userSign={mapData?.astros?.find(a => a.name === "Sol")?.sign || (user?.birthDate ? getZodiacSign(user.birthDate) : "Touro")}
+                      userName={user?.hasCreatedMap ? user.name : "Viajante"}
+                      currentDate={systemDate}
+                      mapData={mapData}
+                      lang={currentLang as any}
+                    />
                   </div>
 
                 </div>
 
                 {/* NODOS LUNARES - SUA EVOLUÇÃO PESSOAL */}
-                <div key={`lunar_nodes_planetas_${user?.name}_${user?.birthDate}`}>
-                  <LunarNodes userName={user?.name} mapData={mapData} lang={currentLang} />
+                <div key={`lunar_nodes_planetas_${user?.name}_${user?.birthDate}_${systemDate.toDateString()}`}>
+                  <React.Suspense fallback={
+                    <div className="h-64 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
+                      <span className="text-xs text-slate-405 font-mono">{t("ui.loading.lunarNodes", "Calculando nodos lunares de evolução cármica...")}</span>
+                    </div>
+                  }>
+                    <LunarNodes userName={user?.name} mapData={mapData} lang={currentLang} />
+                  </React.Suspense>
                 </div>
 
               </div>
-              )
-            )}
+            ))}
 
             {/* TAB 3: PLANETAS (AI Conselheira Orbia, Dreams Interpretation, Tarot, Daily Oracle) */}
             {activeTab === 'planetas' && (
-              isLoggedIn && isPostTrialLocked(user) ? (
-                <PremiumConversionScreen 
-                  currentLang={currentLang} 
-                  onUpgradeComplete={(isPremium) => {
-                    if (isPremium) {
-                      const nextUser = { ...user, isSubscribed: true, isPremium: true };
-                      setUser(nextUser);
-                    }
-                  }} 
-                  userEmail={loggedEmail} 
-                  updateUserProfileOnDb={async (email, patch) => {
-                    const nextUser = { ...user, ...patch };
-                    setUser(nextUser);
-                    await saveProfileToDatabase(email, nextUser);
-                  }} 
-                />
-              ) : !hasUserCreatedMap(user) ? (
-                renderLockedSection(
-                  "Portal de Planetas e Assistência Orbia",
-                  "Seu horóscopo celestial detalhado, a interpretação de sonhos complexos e o acesso à conselheira de inteligência artificial Orbia dependem das coordenadas geométricas do seu nascimento. Sincronize seu mapa para desbloquear."
-                )
-              ) : (
-                <div className="space-y-8 animate-in fade-in duration-300">
+              <div className="space-y-8 animate-in fade-in duration-300">
 
                 {/* Header Banner */}
                 <div className="p-6 rounded-3xl bg-linear-to-r from-rose-950/40 via-slate-950 to-slate-900 border border-rose-500/10 shadow-2xl relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-80 h-80 bg-rose-500/5 rounded-full blur-3xl" />
                   <div className="relative">
                     <span className="px-3 py-1 rounded-full text-[10px] uppercase font-mono font-semibold tracking-wider text-rose-400 bg-rose-500/10 border border-rose-500/20">
-                      Módulo Sistemas Ativos e Consultas
+                      {t("Módulo Sistemas Ativos e Consultas")}
                     </span>
                     <h1 className="text-2xl md:text-3xl font-sans font-bold tracking-tight text-slate-100 mt-2">
-                      Sistemas Astros Ativos
+                      {t("Sistemas Astros Ativos")}
                     </h1>
                     <p className="text-xs text-slate-400 max-w-xl mt-1">
-                      Comunique-se com a Conselheira Orbia, interprete sonhos com Gemini no Cofre dos Sonhos e consulte o Oráculo diário.
+                      {t("Comunique-se com a Conselheira Orbia, interprete sonhos com Gemini no Cofre dos Sonhos e consulte o Oráculo diário.")}
                     </p>
                   </div>
                 </div>
 
-                {/* D3 Real-time Transit Map Alignment */}
-                {mapData ? (
-                  <React.Suspense fallback={
-                    <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 text-xs text-slate-500 animate-pulse space-y-3">
-                      <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mx-auto" />
-                      <div>Injetando efemérides astronômicas em tempo real...</div>
+                {!hasUserCreatedMap(user) && (
+                  <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-amber-200">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">🪐</span>
+                      <span>{t("Exibindo alinhamentos celestes e trânsitos em tempo real. Crie seu mapa natal no menu 'Meu Mapa' para personalizar seus aspectos exatos.")}</span>
                     </div>
-                  }>
-                    <TransitMap mapData={mapData} />
-                  </React.Suspense>
-                ) : (
-                  <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 text-xs text-slate-500 animate-pulse">
-                    Calculando trânsitos em tempo real e aspectos com seu mapa...
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleUserSelectTab('mapa');
+                        setMapSubTab('criar_meu_mapa');
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-bold hover:bg-amber-400 transition-colors whitespace-nowrap cursor-pointer text-xs"
+                    >
+                      {t("Sincronizar Meu Mapa")}
+                    </button>
                   </div>
                 )}
 
+                {/* D3 Real-time Transit Map Alignment */}
+                <ErrorBoundary>
+                  <React.Suspense fallback={
+                    <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800 text-xs text-slate-500 animate-pulse space-y-3">
+                      <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mx-auto" />
+                      <div>{t("Injetando efemérides astronômicas em tempo real...")}</div>
+                    </div>
+                  }>
+                    <TransitMap mapData={effectiveMapData} />
+                  </React.Suspense>
+                </ErrorBoundary>
+
                 {/* Monthly Celestial Transits History Panel */}
-                <div key={`transit_history_planetas_${user?.name}_${user?.birthDate}`}>
-                  <TransitHistory userName={user?.name} birthDate={user?.birthDate} lang={currentLang} />
+                <div key={`transit_history_planetas_${user?.name}_${user?.birthDate}_${systemDate.toDateString()}`}>
+                  <ErrorBoundary>
+                    <React.Suspense fallback={
+                      <div className="h-64 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
+                        <span className="text-xs text-slate-405 font-mono">{t("ui.loading.transits", "Calculando trânsitos astrológicos mensais...")}</span>
+                      </div>
+                    }>
+                      <TransitHistory
+                        userName={user?.name}
+                        birthDate={user?.birthDate}
+                        birthTime={user?.birthTime}
+                        latitude={user?.latitude}
+                        longitude={user?.longitude}
+                        lang={currentLang}
+                      />
+                    </React.Suspense>
+                  </ErrorBoundary>
                 </div>
 
                 {/* Orbia AI Chat and Oracle Component */}
-                <div key={`orbia_oracle_chat_${user?.name}_${user?.birthDate}_${user?.birthTime || ''}`}>
-                  <OrbiaAIAndOracle
-                    chatMessages={chatMessages}
-                    currentChatInput={currentChatInput}
-                    setCurrentChatInput={setCurrentChatInput}
-                    isSendingChat={isSendingChat}
-                    handleSendChatMessage={handleSendChatMessage}
-                    hasQueriedOracleToday={hasQueriedOracleToday}
-                    oracleQuestion={oracleQuestion}
-                    setOracleQuestion={setOracleQuestion}
-                    oracleResponse={oracleResponse}
-                    setOracleResponse={setOracleResponse}
-                    isQueryingOracle={isQueryingOracle}
-                    handleAskOracle={handleAskOracle}
-                    lang={currentLang}
-                  />
+                <div key={`orbia_oracle_chat_${user?.name}_${user?.birthDate}_${user?.birthTime || ''}_${systemDate.toDateString()}`}>
+                  <ErrorBoundary>
+                    <React.Suspense fallback={
+                      <div className="h-96 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
+                        <span className="text-xs text-slate-405 font-mono">{t("ui.loading.orbia", "Iniciando inteligência conselheira Orbia...")}</span>
+                      </div>
+                    }>
+                      <OrbiaAIAndOracle
+                        chatMessages={chatMessages}
+                        currentChatInput={currentChatInput}
+                        setCurrentChatInput={setCurrentChatInput}
+                        isSendingChat={isSendingChat}
+                        handleSendChatMessage={handleSendChatMessage}
+                        hasQueriedOracleToday={hasQueriedOracleToday}
+                        oracleQuestion={oracleQuestion}
+                        setOracleQuestion={setOracleQuestion}
+                        oracleResponse={oracleResponse}
+                        setOracleResponse={setOracleResponse}
+                        isQueryingOracle={isQueryingOracle}
+                        handleAskOracle={handleAskOracle}
+                        lang={currentLang}
+                      />
+                    </React.Suspense>
+                  </ErrorBoundary>
                 </div>
 
                 {/* Oráculo dos Sonhos Component */}
                 <div key={`oraculo_sonhos_card_${user?.name}_${user?.birthDate}`}>
-                  <OraculoDosSonhosCard
-                    newDreamDesc={newDreamDesc}
-                    setNewDreamDesc={setNewDreamDesc}
-                    isInterpretingDream={isInterpretingDream}
-                    handleRecordAndInterpretDream={handleRecordAndInterpretDream}
-                    dreamsHistory={dreamsHistory}
-                    selectedDreamDisplay={selectedDreamDisplay}
-                    setSelectedDreamDisplay={setSelectedDreamDisplay}
-                    preferredLanguage={currentLang}
-                  />
+                  <ErrorBoundary>
+                    <React.Suspense fallback={
+                      <div className="h-64 animate-pulse bg-slate-900/40 rounded-3xl border border-slate-800 flex items-center justify-center">
+                        <span className="text-xs text-slate-405 font-mono">{t("ui.loading.dreams", "Abrindo Cofre Celestial dos Sonhos...")}</span>
+                      </div>
+                    }>
+                      <OraculoDosSonhosCard
+                        newDreamDesc={newDreamDesc}
+                        setNewDreamDesc={setNewDreamDesc}
+                        isInterpretingDream={isInterpretingDream}
+                        handleRecordAndInterpretDream={handleRecordAndInterpretDream}
+                        dreamsHistory={dreamsHistory}
+                        selectedDreamDisplay={selectedDreamDisplay}
+                        setSelectedDreamDisplay={setSelectedDreamDisplay}
+                        preferredLanguage={currentLang}
+                      />
+                    </React.Suspense>
+                  </ErrorBoundary>
                 </div>
 
               </div>
-              )
             )}
 
             {/* TAB: TAROT COSIMCO */}
             {activeTab === 'tarot' && (
-              isLoggedIn && isPostTrialLocked(user) ? (
-                <PremiumConversionScreen 
-                  currentLang={currentLang} 
-                  onUpgradeComplete={(isPremium) => {
-                    if (isPremium) {
-                      const nextUser = { ...user, isSubscribed: true, isPremium: true };
-                      setUser(nextUser);
-                    }
-                  }} 
-                  userEmail={loggedEmail} 
-                  updateUserProfileOnDb={async (email, patch) => {
-                    const nextUser = { ...user, ...patch };
-                    setUser(nextUser);
-                    await saveProfileToDatabase(email, nextUser);
-                  }} 
-                />
-              ) : !hasUserCreatedMap(user) ? (
+              !hasUserCreatedMap(user) ? (
                 renderLockedSection(
                   "Portal de Tarô Cósmico",
                   "A interpretação profunda e a leitura semanal personalizada dos arcanos maiores dependem do alinhamento geométrico cósmico de nascimento. Sincronize seu mapa astral para desbloquear as consultas oraculares gratuitas."
@@ -6993,11 +7640,20 @@ export default function App() {
               ) : (
                 <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-350">
                   <div key={`tarot_system_${user.name}_${user.birthDate}`}>
-                    <TarotSystem userName={user.name} lang={currentLang} />
+                    <TarotSystem
+                      userName={user.name}
+                      birthDate={user.birthDate}
+                      birthTime={user.birthTime}
+                      birthCity={user.birthCity}
+                      latitude={user.latitude}
+                      longitude={user.longitude}
+                      lang={currentLang}
+                      currentChartId={user.currentChartId}
+                      userEmail={user.email}
+                    />
                   </div>
                 </div>
-              )
-            )}
+              ))}
 
             {/* TAB 4: CONFIGURACOES (Profile custom edit, sms alerts & languages) */}
             {activeTab === 'configuracoes' && (
@@ -7006,7 +7662,7 @@ export default function App() {
                 {/* Header Banner */}
                 <div className="p-6 rounded-3xl bg-linear-to-r from-slate-950 via-slate-905 to-slate-900 border border-slate-850 shadow-2xl relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-80 h-80 bg-slate-500/5 rounded-full blur-3xl pointer-events-none" />
-                  <div className="relative flex justify-between items-center">
+                  <div className="relative flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                     <div>
                       <span className="px-3 py-1 rounded-full text-[10px] uppercase font-mono font-semibold tracking-wider text-slate-500 bg-slate-800/20 border border-slate-800">
                         {tLocal('control_panel')}
@@ -7014,11 +7670,20 @@ export default function App() {
                       <h1 className="text-2xl font-sans font-bold tracking-tight text-slate-100 mt-2">
                         {tLocal('general_settings')}
                       </h1>
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-xs text-slate-500 mt-1 mb-4">
                         {tLocal('settings_desc')}
                       </p>
+                      
+                      <button
+                        id="manage-subscription-btn"
+                        onClick={handleManageSubscription}
+                        className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl bg-gradient-to-r from-amber-500 to-[#E5C158] text-slate-950 hover:brightness-110 active:scale-95 transition shadow-lg shadow-amber-500/10 cursor-pointer"
+                      >
+                        <span>✨</span>
+                        {tLocal('manage_subscription_btn')}
+                      </button>
                     </div>
-                    <span className="text-3xl text-[#E5C158] shrink-0">⚙️</span>
+                    <span className="text-3xl text-[#E5C158] shrink-0 self-end sm:self-center">⚙️</span>
                   </div>
                 </div>
 
@@ -7047,9 +7712,9 @@ export default function App() {
                         <label className="block text-[10px] font-mono text-slate-505 mb-1">{tLocal('birth_date')}</label>
                         <input 
                           type="date" 
-                          value={user.birthDate} 
+                          value={settingsBirthDate} 
                           disabled={(user.mainMapChangesCount ?? 0) >= 2}
-                          onChange={(e) => handleUpdateUserProfile({ birthDate: e.target.value })} 
+                          onChange={(e) => setSettingsBirthDate(e.target.value)} 
                           className="w-full px-3 py-2 rounded-xl bg-slate-955 border border-slate-850 text-xs text-slate-200 focus:outline-hidden disabled:opacity-50"
                         />
                       </div>
@@ -7058,30 +7723,57 @@ export default function App() {
                         <label className="block text-[10px] font-mono text-slate-505 mb-1">{tLocal('birth_time')}</label>
                         <input 
                           type="text" 
-                          value={user.birthTime} 
+                          value={settingsBirthTime} 
                           disabled={(user.mainMapChangesCount ?? 0) >= 2}
-                          onChange={(e) => handleUpdateUserProfile({ birthTime: e.target.value })} 
+                          onChange={(e) => setSettingsBirthTime(e.target.value)} 
                           className="w-full px-3 py-2 rounded-xl bg-slate-955 border border-slate-850 text-xs text-slate-200 focus:outline-hidden disabled:opacity-50"
-                          placeholder="e.g. 15:30"
+                          placeholder={t("ui.placeholder.time", "e.g. 15:30")}
                         />
                       </div>
 
                       <div className="sm:col-span-2">
                         <label className="block text-[10px] font-mono text-slate-505 mb-1">{tLocal('birth_city')}</label>
                         <CityAutocomplete
-                          value={user.birthCity}
-                          placeholder="e.g. São Paulo, SP"
-                          onChange={(val) => handleUpdateUserProfile({ birthCity: val })}
+                          value={settingsBirthCity}
+                          placeholder={t("ui.placeholder.city", "e.g. São Paulo, SP")}
+                          onChange={(val) => setSettingsBirthCity(val)}
                           onSelectCity={(city) => {
-                            handleUpdateUserProfile({
-                              birthCity: city.label,
-                              latitude: city.latitude,
-                              longitude: city.longitude
-                            });
+                            setSettingsBirthCity(city.label);
+                            setSettingsLatitude(city.latitude);
+                            setSettingsLongitude(city.longitude);
                           }}
                           inputClassName="px-3 py-2 rounded-xl"
                         />
                       </div>
+
+                      {((user.mainMapChangesCount ?? 0) < 2) && (
+                        <div className="sm:col-span-2 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!settingsBirthCity || !settingsBirthCity.includes(',')) {
+                                alert(t("Por favor, digite e selecione uma cidade válida da lista de sugestões (contendo Cidade e Estado/País) para obter coordenadas precisas."));
+                                return;
+                              }
+                              if (!settingsBirthDate || !settingsBirthTime) {
+                                alert(t("Por favor, preencha a data e a hora de nascimento corretamente."));
+                                return;
+                              }
+                              handleUpdateUserProfile({
+                                birthDate: settingsBirthDate,
+                                birthTime: settingsBirthTime,
+                                birthCity: settingsBirthCity,
+                                latitude: settingsLatitude,
+                                longitude: settingsLongitude
+                              });
+                              alert(t("Seu mapa astral e dados de nascimento foram recalculados com sucesso com coordenadas e fuso horário de alta precisão!"));
+                            }}
+                            className="w-full py-2.5 rounded-xl bg-linear-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-slate-950 font-sans font-bold text-xs uppercase tracking-wider transition-all duration-300 shadow-md shadow-amber-950/20 active:scale-98 cursor-pointer"
+                          >
+                            Salvar e Recalcular Meu Mapa
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -7118,66 +7810,27 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Language selection interactive buttons & dropdown config */}
+                  {/* Language selection dropdown config */}
                   <div className="bg-slate-900/40 p-6 rounded-3xl border border-slate-800 space-y-4 font-sans">
-                    <div className="flex items-center justify-between pb-2 border-b border-slate-850">
-                      <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest">{tLocal('lang_sovereignty')}</h3>
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                        {lang.toUpperCase()}
-                      </span>
-                    </div>
+                    <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest pb-2 border-b border-slate-850">{tLocal('lang_sovereignty')}</h3>
                     
-                    <div className="space-y-3">
+                    <div className="flex justify-between items-center text-xs">
                       <div>
-                        <strong className="text-xs text-slate-200">{tLocal('preferred_lang')}</strong>
-                        <p className="text-[10px] text-slate-500 mt-0.5">{tLocal('lang_desc')}</p>
+                        <strong>{tLocal('preferred_lang')}</strong>
+                        <p className="text-[10px] text-slate-500">{tLocal('lang_desc')}</p>
                       </div>
 
-                      {/* Clickable Language Selector Buttons */}
-                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
-                        {[
-                          { id: 'pt', label: 'Português', flag: '🇧🇷', sub: 'BR' },
-                          { id: 'en', label: 'English', flag: '🇺🇸', sub: 'US' },
-                          { id: 'es', label: 'Español', flag: '🇪🇸', sub: 'ES' },
-                          { id: 'de', label: 'Deutsch', flag: '🇩🇪', sub: 'DE' },
-                          { id: 'fr', label: 'Français', flag: '🇫🇷', sub: 'FR' },
-                        ].map((item) => {
-                          const isSelected = lang === item.id;
-                          return (
-                            <button
-                              key={item.id}
-                              type="button"
-                              onClick={() => setLang(item.id as Language)}
-                              className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all cursor-pointer select-none text-center ${
-                                isSelected
-                                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-lg shadow-amber-500/10 ring-1 ring-amber-400 font-bold scale-[1.02]'
-                                  : 'bg-slate-950/80 text-slate-400 border-slate-850 hover:border-slate-700 hover:text-slate-200 hover:bg-slate-900'
-                              }`}
-                            >
-                              <span className="text-lg leading-none mb-1">{item.flag}</span>
-                              <span className="text-xs font-semibold">{item.label}</span>
-                              <span className={`text-[9px] font-mono uppercase tracking-wider ${isSelected ? 'text-amber-400/80' : 'text-slate-600'}`}>
-                                {item.sub}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      {/* Fallback standard select dropdown for direct quick switching */}
-                      <div className="pt-2 flex justify-end">
-                        <select 
-                          value={lang} 
-                          onChange={(e) => setLang(e.target.value as any)}
-                          className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-200 focus:outline-hidden cursor-pointer w-full sm:w-auto"
-                        >
-                          <option value="pt">🇧🇷 Português (BR)</option>
-                          <option value="en">🇺🇸 English (US)</option>
-                          <option value="es">🇪🇸 Español (ES)</option>
-                          <option value="de">🇩🇪 Deutsch (DE)</option>
-                          <option value="fr">🇫🇷 Français (FR)</option>
-                        </select>
-                      </div>
+                      <select 
+                        value={lang} 
+                        onChange={(e) => setLang(e.target.value as any)}
+                        className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-200 focus:outline-hidden"
+                      >
+                        <option value="pt">{tLocal('lang_pt_name')}</option>
+                        <option value="en">{tLocal('lang_en_name')}</option>
+                        <option value="es">{tLocal('lang_es_name')}</option>
+                        <option value="de">{tLocal('lang_de_name')}</option>
+                        <option value="fr">{tLocal('lang_fr_name')}</option>
+                      </select>
                     </div>
                   </div>
 
@@ -7197,7 +7850,7 @@ export default function App() {
                         className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
                           highContrast ? 'bg-amber-500' : 'bg-slate-800'
                         }`}
-                        aria-label="Alternar Alto Contraste"
+                        aria-label={t("ui.accessibility.toggleHighContrast", "Alternar Alto Contraste")}
                       >
                         <span
                           className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-slate-950 shadow-lg ring-0 transition duration-200 ease-in-out ${
@@ -7234,34 +7887,13 @@ export default function App() {
                   {/* Settings Actions */}
                   <div className="pt-2 space-y-3">
                     <button 
-                      onClick={() => {
-                        manualAuthActionRef.current = true;
-                        logoutWithFirebase().catch(console.warn);
-                        localStorage.removeItem("orbi_logged_email");
-                        localStorage.removeItem("orbi_user_profile");
-                        localStorage.removeItem("orbi_map_data");
-                        localStorage.removeItem("orbi_numerology_data");
-                        profileLoadedRef.current = false;
-                        lastGeneratedParamsRef.current = "";
-                        setLoggedEmail("");
-                        setUser({
-                          name: "",
-                          email: "",
-                          birthDate: "",
-                          birthTime: "",
-                          birthCity: "",
-                          isUnknownTime: false,
-                          isPremium: true,
-                          hasCreatedMap: false
-                        });
-                        setMapData(null);
-                        setNumerology(null);
-                        setExtraMaps([]);
-                        setIsLoggedIn(false);
-                        triggerGlobalNotification("Portal Sair", "Sessão encerrada com sucesso.", "alert");
-                        setTimeout(() => {
-                          manualAuthActionRef.current = false;
-                        }, 2000);
+                      onClick={async () => {
+                        try {
+                          await logoutWithFirebase();
+                          triggerGlobalNotification(t("Portal Sair"), t("Sessão encerrada com sucesso."), "alert");
+                        } catch (err) {
+                          console.warn(err);
+                        }
                       }}
                       type="button"
                       className="w-full py-3 bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded-2xl text-xs font-bold text-slate-350 hover:text-white font-sans uppercase tracking-wider transition active:scale-98 cursor-pointer flex items-center justify-center gap-2"
@@ -7270,15 +7902,178 @@ export default function App() {
                       {tLocal('logout_app_btn')}
                     </button>
 
-                    <button 
-                      onClick={() => setShowDeleteConfirm(true)}
-                      type="button"
-                      className="w-full py-3 bg-rose-950/35 hover:bg-rose-950/50 border border-rose-500/20 hover:border-rose-500/30 rounded-2xl text-xs font-bold text-rose-400 font-sans uppercase tracking-wider transition active:scale-98 cursor-pointer"
+                    <a 
+                      href="https://portal-orbita-delete-account.vercel.app/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-3 bg-rose-950/35 hover:bg-rose-950/50 border border-rose-500/20 hover:border-rose-500/30 rounded-2xl text-xs font-bold text-rose-400 font-sans uppercase tracking-wider transition active:scale-98 cursor-pointer block text-center"
                     >
                       {tLocal('delete_acc_btn')}
-                    </button>
+                    </a>
                   </div>
                 </div>
+
+                {/* Premium Subscription Conversion Screen overlay/modal */}
+                {showPremiumModal && (
+                  <React.Suspense fallback={
+                    <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+                      <div className="text-center space-y-3 animate-pulse">
+                        <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mx-auto" />
+                        <p className="text-xs text-slate-400 font-mono">{t("Iniciando Portal de Assinaturas Estelares...")}</p>
+                      </div>
+                    </div>
+                  }>
+                    <PremiumConversionScreen 
+                      userEmail={user?.email || loggedEmail}
+                      userUid={firebaseUid}
+                      currentLang={currentLang}
+                      onClose={() => setShowPremiumModal(false)}
+                      triggerGlobalNotification={(title, msg, type) => triggerGlobalNotification(title, msg, type as any)}
+                    />
+                  </React.Suspense>
+                )}
+
+                {/* Stripe Subscription Portal Modal */}
+                {showSubPortalModal && (
+                  <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl max-w-md w-full relative space-y-6 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] animate-in fade-in zoom-in-95 duration-200">
+                      
+                      {/* Close top right button */}
+                      <button 
+                        onClick={() => setShowSubPortalModal(false)}
+                        className="absolute top-4 right-4 text-slate-500 hover:text-slate-350 transition cursor-pointer"
+                        aria-label={t("Fechar")}
+                      >
+                        ✕
+                      </button>
+
+                      {/* Header */}
+                      <div className="text-center space-y-1">
+                        <div className="w-12 h-12 bg-linear-to-b from-amber-400 to-amber-600 text-slate-950 rounded-full flex items-center justify-center mx-auto text-xl font-bold shadow-lg shadow-amber-500/10">
+                          ✨
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-100 font-sans mt-3">
+                          {tLocal('subscription_details')}
+                        </h3>
+                      </div>
+
+                      {/* Content */}
+                      {isFetchingSubData ? (
+                        <div className="py-12 flex flex-col items-center justify-center space-y-3">
+                          <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin" />
+                          <p className="text-xs text-slate-400 font-mono">{tLocal('loading')}</p>
+                        </div>
+                      ) : subPortalError ? (
+                        <div className="space-y-4 text-center py-4">
+                          <div className="p-3.5 rounded-2xl bg-rose-950/20 border border-rose-500/20 text-xs text-rose-400 font-sans">
+                            {tLocal('error_loading')}: {subPortalError}
+                          </div>
+                          <button
+                            onClick={handleManageSubscription}
+                            className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 transition cursor-pointer"
+                          >
+                            Tentar Novamente
+                          </button>
+                        </div>
+                      ) : !portalSubscriptionData ? (
+                        /* UNSUBSCRIBED VIEW */
+                        <div className="space-y-5 text-center">
+                          <p className="text-xs text-slate-400 leading-relaxed font-sans px-2">
+                            {tLocal('no_subscription_desc')}
+                          </p>
+                          <div className="flex flex-col gap-2.5 pt-2">
+                            <button
+                              onClick={() => {
+                                setShowSubPortalModal(false);
+                                setShowPremiumModal(true);
+                              }}
+                              className="w-full py-3 bg-gradient-to-r from-amber-500 to-[#E5C158] text-slate-950 font-bold rounded-2xl text-xs uppercase tracking-wider hover:brightness-110 active:scale-98 transition shadow-lg shadow-amber-500/10 cursor-pointer"
+                            >
+                              {currentLang === 'pt' ? 'Assinar Portal Premium' : 'Subscribe to Premium'}
+                            </button>
+                            <button
+                              onClick={() => setShowSubPortalModal(false)}
+                              className="w-full py-3 bg-slate-800/50 hover:bg-slate-800 border border-slate-750 text-slate-300 font-bold rounded-2xl text-xs uppercase tracking-wider transition active:scale-98 cursor-pointer"
+                            >
+                              {tLocal('close_btn')}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* SUBSCRIBED VIEW */
+                        <div className="space-y-5">
+                          <div className="bg-slate-950/50 rounded-2xl p-4 border border-slate-850/50 space-y-3">
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-slate-400 font-sans">{tLocal('sub_plan')}</span>
+                              <span className="font-semibold text-slate-200 font-sans">
+                                Portal Premium ({portalSubscriptionData.planType === 'annual' ? 'Anual' : 'Mensal'})
+                              </span>
+                            </div>
+
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-slate-400 font-sans">{tLocal('sub_status')}</span>
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-semibold font-mono tracking-wider text-emerald-400 bg-emerald-950/30 border border-emerald-500/20">
+                                {portalSubscriptionData.status === 'active' ? 'Ativa' : portalSubscriptionData.status}
+                              </span>
+                            </div>
+
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-slate-400 font-sans">{tLocal('sub_price')}</span>
+                              <span className="font-semibold text-slate-200 font-mono">
+                                {portalSubscriptionData.currency === 'brl' ? 'R$' : portalSubscriptionData.currency === 'eur' ? '€' : '$'} {(portalSubscriptionData.amount).toFixed(2)} / {portalSubscriptionData.planType === 'annual' ? 'ano' : 'mês'}
+                              </span>
+                            </div>
+
+                            {portalSubscriptionData.currentPeriodEnd && (
+                              <div className="flex justify-between items-center text-xs">
+                                <span className="text-slate-400 font-sans">{tLocal('sub_next_billing')}</span>
+                                <span className="font-semibold text-slate-200 font-sans">
+                                  {new Date(portalSubscriptionData.currentPeriodEnd).toLocaleDateString(
+                                    currentLang === 'pt' ? 'pt-BR' : currentLang === 'es' ? 'es-ES' : 'en-US',
+                                    { day: '2-digit', month: 'long', year: 'numeric' }
+                                  )}
+                                </span>
+                              </div>
+                            )}
+
+                            {portalSubscriptionData.lastPaymentDate && (
+                              <div className="flex justify-between items-center text-xs">
+                                <span className="text-slate-400 font-sans">{tLocal('sub_last_payment')}</span>
+                                <span className="font-semibold text-slate-200 font-sans text-right">
+                                  {new Date(portalSubscriptionData.lastPaymentDate).toLocaleDateString(
+                                    currentLang === 'pt' ? 'pt-BR' : currentLang === 'es' ? 'es-ES' : 'en-US',
+                                    { day: '2-digit', month: 'long', year: 'numeric' }
+                                  )}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex flex-col gap-2 pt-2">
+                            <button
+                              onClick={triggerOpenStripePortal}
+                              disabled={isFetchingPortal}
+                              className="w-full py-3 bg-gradient-to-r from-amber-500 to-[#E5C158] text-slate-950 font-bold rounded-2xl text-xs uppercase tracking-wider hover:brightness-110 disabled:opacity-50 disabled:pointer-events-none active:scale-98 transition shadow-lg shadow-amber-500/10 flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                              {isFetchingPortal ? (
+                                <div className="w-4 h-4 rounded-full border-2 border-slate-950 border-t-transparent animate-spin" />
+                              ) : (
+                                <span>💳</span>
+                              )}
+                              <span>{tLocal('open_stripe_portal')}</span>
+                            </button>
+                            <button
+                              onClick={() => setShowSubPortalModal(false)}
+                              className="w-full py-3 bg-slate-800/50 hover:bg-slate-800 border border-slate-750 text-slate-300 font-bold rounded-2xl text-xs uppercase tracking-wider transition active:scale-98 cursor-pointer"
+                            >
+                              {tLocal('close_btn')}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Substantially realistic Account Deletion confirmation prompt */}
                 {showDeleteConfirm && (
@@ -7320,7 +8115,7 @@ export default function App() {
                       <button 
                         onClick={() => setIsAvatarModalOpen(false)}
                         className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 transition p-1.5 rounded-full hover:bg-slate-800 cursor-pointer z-50"
-                        title="Fechar"
+                        title={t("Fechar")}
                       >
                         <X className="w-5 h-5" />
                       </button>
@@ -7328,16 +8123,16 @@ export default function App() {
                       {/* Left Block: Celestial Carousel Grid */}
                       <div className="flex-1 space-y-4">
                         <div>
-                          <span className="text-[9px] uppercase font-mono tracking-widest text-[#E5C158] font-bold">Consagração</span>
-                          <h3 className="text-base font-black text-slate-100 font-sans mt-0.5">Selecione seu Avatar Místico</h3>
+                          <span className="text-[9px] uppercase font-mono tracking-widest text-[#E5C158] font-bold">{t("Consagração")}</span>
+                          <h3 className="text-base font-black text-slate-100 font-sans mt-0.5">{t("Selecione seu Avatar Místico")}</h3>
                           <p className="text-[11px] text-slate-400 mt-1">
-                            Sintonize sua identidade estelar escolhendo um dos símbolos celestiais consagrados abaixo.
+                            {t("Sintonize sua identidade estelar escolhendo um dos símbolos celestiais consagrados abaixo.")}
                           </p>
                         </div>
 
                         {/* Avatar Category groups */}
                         <div className="space-y-4">
-                          {["Astrologia", "Cosmos", "Misticismo"].map(cat => {
+                          {[t("Astrologia"), t("Cosmos"), t("Misticismo")].map(cat => {
                             const avatars = getAvatarsList().filter(a => a.category === cat);
                             return (
                               <div key={cat} className="space-y-2">
@@ -7350,17 +8145,17 @@ export default function App() {
                                         key={av.id}
                                         type="button"
                                         onClick={async () => {
-                                          const nextUser = { ...user, profilePhoto: av.id };
+                                          const nextUser = { ...user, profilePhoto: av.id, avatarId: av.id };
                                           setUser(nextUser);
                                           if (isLoggedIn && loggedEmail) {
                                             try {
                                               await saveProfileToDatabase(loggedEmail, nextUser);
-                                              triggerGlobalNotification("Avatar Celestial", `Sua essência foi sintonizada com o arquétipo do ${av.name}!`, "success");
+                                              triggerGlobalNotification(t("Avatar Celestial"), `${t("Sua essência foi sintonizada com o arquétipo do")} ${t(av.name)}!`, "success");
                                             } catch (err) {
                                               console.error("Erro ao salvar avatar no Firestore:", err);
                                             }
                                           } else {
-                                            triggerGlobalNotification("Avatar Sintonizado", `Arquétipo ${av.name} ativado temporariamente no seu navegador!`, "info");
+                                            triggerGlobalNotification(t("Avatar Sintonizado"), `${t("Arquétipo")} ${t(av.name)} ${t("ativado temporariamente no seu navegador!")}`, "info");
                                           }
                                         }}
                                         className={`relative aspect-square rounded-2xl overflow-hidden border transition-all cursor-pointer group flex items-center justify-center p-2 ${
@@ -7436,7 +8231,13 @@ export default function App() {
             
             {/* Mapa Estelar Tab activator */}
             <button
-              onClick={() => setActiveTab('mapa')}
+              type="button"
+              onClick={() => {
+                handleUserSelectTab('mapa');
+                if (!isPremiumActive && mapSubTab !== 'meu_mapa' && mapSubTab !== 'criar_meu_mapa') {
+                  setMapSubTab('meu_mapa');
+                }
+              }}
               className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
                 activeTab === 'mapa' 
                   ? 'text-amber-500 bg-amber-500/10' 
@@ -7444,12 +8245,13 @@ export default function App() {
               }`}
             >
               <Orbit className="w-5 h-5" />
-              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{getTranslation(lang, 'menu_map', 'Mapa Estelar')}</span>
+              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{t('menu_map')}</span>
             </button>
 
             {/* Constelações Tab activator */}
             <button
-              onClick={() => setActiveTab('constelacoes')}
+              type="button"
+              onClick={() => handleUserSelectTab('constelacoes')}
               className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
                 activeTab === 'constelacoes' 
                   ? 'text-emerald-400 bg-emerald-500/10' 
@@ -7457,12 +8259,13 @@ export default function App() {
               }`}
             >
               <Compass className="w-5 h-5" />
-              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{getTranslation(lang, 'menu_stars', 'Constelações')}</span>
+              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{t('menu_stars')}</span>
             </button>
 
             {/* Planetas Tab activator */}
             <button
-              onClick={() => setActiveTab('planetas')}
+              type="button"
+              onClick={() => handleUserSelectTab('planetas')}
               className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
                 activeTab === 'planetas' 
                   ? 'text-rose-450 bg-rose-500/10' 
@@ -7470,12 +8273,13 @@ export default function App() {
               }`}
             >
               <Globe className="w-5 h-5" />
-              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{getTranslation(lang, 'menu_planets', 'Planetas')}</span>
+              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{t('menu_planets')}</span>
             </button>
 
             {/* Tarot Tab activator */}
             <button
-              onClick={() => setActiveTab('tarot')}
+              type="button"
+              onClick={() => handleUserSelectTab('tarot')}
               className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
                 activeTab === 'tarot' 
                   ? 'text-amber-500 bg-amber-500/10' 
@@ -7483,12 +8287,13 @@ export default function App() {
               }`}
             >
               <Sparkles className="w-5 h-5" />
-              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{getTranslation(lang, 'menu_tarot', 'Tarot')}</span>
+              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{t('menu_tarot')}</span>
             </button>
 
             {/* Configurações Tab activator */}
             <button
-              onClick={() => setActiveTab('configuracoes')}
+              type="button"
+              onClick={() => handleUserSelectTab('configuracoes')}
               className={`flex-1 flex flex-col items-center py-2 rounded-full transition-all cursor-pointer ${
                 activeTab === 'configuracoes' 
                   ? 'text-[#F59E0B] bg-[#F59E0B]/10' 
@@ -7496,13 +8301,186 @@ export default function App() {
               }`}
             >
               <Settings className="w-5 h-5" />
-              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{getTranslation(lang, 'menu_settings', 'Ajustes')}</span>
+              <span className="text-[8px] font-mono uppercase tracking-wide mt-1 font-bold">{t('menu_settings')}</span>
             </button>
 
           </nav>
 
         </div>
       )}
+
+      {showPWAInstallGuide && (() => {
+        const guide = pwaGuideTranslations[idioma] || pwaGuideTranslations.pt;
+        const ua = typeof navigator !== 'undefined' && navigator.userAgent ? navigator.userAgent.toLowerCase() : "";
+        const isIos = /iphone|ipad|ipod/.test(ua);
+        const isAndroid = /android/.test(ua);
+        const isInAppBrowser = /tiktok|musically|bytedance|instagram|fbav|fban|fb_iab|messenger|line\/|twitter|snapchat|pinterest|gsa\/|wv|webview/i.test(ua);
+        const isDesktop = !isIos && !isAndroid;
+
+        const handleCopyAppLink = () => {
+          const appUrl = typeof window !== 'undefined' ? window.location.origin : "https://portalorbit.vercel.app";
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(appUrl).then(() => {
+              triggerGlobalNotification(
+                t("Link Copiado"),
+                guide.copyLinkSuccess,
+                "success"
+              );
+            }).catch(() => {
+              triggerGlobalNotification(t("Link do App"), appUrl, "info");
+            });
+          } else {
+            triggerGlobalNotification(t("Link do App"), appUrl, "info");
+          }
+        };
+
+        const handleOpenExternalBrowser = () => {
+          const appUrl = typeof window !== 'undefined' ? window.location.href : "https://portalorbit.vercel.app";
+          if (isAndroid) {
+            // Chrome Intent URL for Android to force Chrome to open out of TikTok Webview
+            const cleanHost = appUrl.replace(/^https?:\/\//, '');
+            const intentUrl = `intent://${cleanHost}#Intent;scheme=https;package=com.android.chrome;end;`;
+            window.location.href = intentUrl;
+            setTimeout(() => {
+              window.open(appUrl, '_system');
+            }, 500);
+          } else {
+            window.open(appUrl, '_system');
+          }
+        };
+
+        return (
+          <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[500] flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-300">
+            <div className="bg-slate-900/95 border border-amber-500/30 p-6 rounded-3xl max-w-lg w-full shadow-[0_20px_50px_rgba(245,158,11,0.15)] relative space-y-6 text-slate-100 max-h-[90vh] overflow-y-auto text-left font-sans">
+              <button 
+                onClick={() => setShowPWAInstallGuide(false)}
+                className="absolute top-4 right-4 p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 rounded-full transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="space-y-2">
+                <div className="w-12 h-12 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-center text-amber-400">
+                  <Smartphone className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold tracking-tight text-slate-100">{guide.title}</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">{guide.subtitle}</p>
+              </div>
+
+              {/* Detected Device Banner */}
+              <div className="px-3 py-1.5 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-between text-[11px]">
+                <span className="text-slate-400 font-medium">{guide.detectedDevice}:</span>
+                <span className="font-mono font-bold text-amber-400 uppercase">
+                  {isInAppBrowser 
+                    ? "TikTok / Rede Social (Navegador Interno)" 
+                    : isIos 
+                    ? "iOS / iPhone" 
+                    : isAndroid 
+                    ? "Android" 
+                    : "Desktop / Computer"}
+                </span>
+              </div>
+
+              {/* In-App Browser / TikTok Warning Card */}
+              {(isInAppBrowser || true) && (
+                <div className={`p-4 rounded-2xl border ${isInAppBrowser ? 'bg-gradient-to-br from-rose-500/15 via-amber-500/10 to-slate-950 border-rose-500/40 shadow-lg' : 'bg-slate-950/40 border-slate-850 opacity-90'}`}>
+                  <h4 className="text-xs font-black text-rose-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    {guide.tiktokTitle}
+                    {isInAppBrowser && <span className="text-[10px] bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-full font-mono font-bold animate-pulse">{t("DETECTADO")}</span>}
+                  </h4>
+                  <p className="text-xs text-slate-200 mb-3 leading-relaxed font-sans">
+                    {guide.tiktokDesc}
+                  </p>
+                  <ul className="text-xs text-slate-300 space-y-1.5 font-sans leading-relaxed mb-4">
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-amber-400 font-bold shrink-0">1.</span>
+                      <span>{guide.tiktokStep1}</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-amber-400 font-bold shrink-0">2.</span>
+                      <span>{guide.tiktokStep2}</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-amber-400 font-bold shrink-0">3.</span>
+                      <span>{guide.tiktokStep3}</span>
+                    </li>
+                  </ul>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={handleCopyAppLink}
+                      className="px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-amber-400" />
+                      <span>{guide.copyLinkBtn}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleOpenExternalBrowser}
+                      className="px-3 py-2 bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 text-xs font-black uppercase rounded-xl transition cursor-pointer shadow-md flex items-center justify-center gap-1.5"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>{guide.androidTitle.includes('Android') ? t('Abrir no Chrome') : t('Abrir no Safari/Chrome')}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Guide Accordions or Blocks */}
+              <div className="space-y-4">
+                {/* iOS section */}
+                <div className={`p-4 rounded-2xl border ${isIos && !isInAppBrowser ? 'bg-amber-500/5 border-amber-500/30' : 'bg-slate-950/40 border-slate-850 opacity-60'}`}>
+                  <h4 className="text-xs font-black text-slate-100 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                    {guide.iosTitle}
+                    {isIos && !isInAppBrowser && <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full font-mono font-bold">{t("RECOMENDADO")}</span>}
+                  </h4>
+                  <ul className="text-xs text-slate-300 space-y-2 font-sans leading-relaxed">
+                    <li>{guide.iosStep1}</li>
+                    <li>{guide.iosStep2}</li>
+                    <li>{guide.iosStep3}</li>
+                  </ul>
+                </div>
+
+                {/* Android section */}
+                <div className={`p-4 rounded-2xl border ${isAndroid && !isInAppBrowser ? 'bg-amber-500/5 border-amber-500/30' : 'bg-slate-950/40 border-slate-850 opacity-60'}`}>
+                  <h4 className="text-xs font-black text-slate-100 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                    {guide.androidTitle}
+                    {isAndroid && !isInAppBrowser && <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full font-mono font-bold">{t("RECOMENDADO")}</span>}
+                  </h4>
+                  <ul className="text-xs text-slate-300 space-y-2 font-sans leading-relaxed">
+                    <li>{guide.androidStep1}</li>
+                    <li>{guide.androidStep2}</li>
+                  </ul>
+                </div>
+
+                {/* Desktop section */}
+                <div className={`p-4 rounded-2xl border ${isDesktop ? 'bg-amber-500/5 border-amber-500/30' : 'bg-slate-950/40 border-slate-850 opacity-60'}`}>
+                  <h4 className="text-xs font-black text-slate-100 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                    {guide.desktopTitle}
+                    {isDesktop && <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full font-mono font-bold">{t("RECOMENDADO")}</span>}
+                  </h4>
+                  <ul className="text-xs text-slate-300 space-y-2 font-sans leading-relaxed">
+                    <li>{guide.desktopStep1}</li>
+                    <li>{guide.desktopStep2}</li>
+                  </ul>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-slate-500 leading-relaxed italic border-t border-slate-850 pt-3">
+                {guide.generalNote}
+              </p>
+
+              <button 
+                onClick={() => setShowPWAInstallGuide(false)}
+                className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold uppercase rounded-xl transition cursor-pointer"
+              >
+                {guide.closeBtn}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {showAdminPanel && (
         <div className="fixed inset-0 bg-[#02050b] z-50 overflow-y-auto p-4 md:p-8 animate-in fade-in zoom-in-95 duration-200">
@@ -7516,15 +8494,22 @@ export default function App() {
                 {t("Voltar ao Portal")}
               </button>
             </div>
-            <AdminPanel 
-              userName={user.name}
-              userBirthDate={user.birthDate}
-              userBirthSign={selectedZodiacSign}
-              triggerGlobalNotification={triggerGlobalNotification}
-              firebaseErrors={firebaseErrors}
-              onClearErrors={() => setFirebaseErrors([])}
-              lang={currentLang}
-            />
+            <React.Suspense fallback={
+              <div className="p-8 text-center bg-[#070c17] rounded-3xl border border-slate-800 space-y-3 animate-pulse">
+                <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin mx-auto" />
+                <p className="text-xs text-slate-400 font-mono">{t("Sincronizando registros de depuração e auditoria de tráfego...")}</p>
+              </div>
+            }>
+              <AdminPanel 
+                userName={user.name}
+                userBirthDate={user.birthDate}
+                userBirthSign={selectedZodiacSign}
+                triggerGlobalNotification={triggerGlobalNotification}
+                firebaseErrors={firebaseErrors}
+                onClearErrors={() => setFirebaseErrors([])}
+                lang={currentLang}
+              />
+            </React.Suspense>
           </div>
         </div>
       )}
