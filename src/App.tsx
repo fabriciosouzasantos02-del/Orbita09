@@ -7118,27 +7118,66 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Language selection dropdown config */}
+                  {/* Language selection interactive buttons & dropdown config */}
                   <div className="bg-slate-900/40 p-6 rounded-3xl border border-slate-800 space-y-4 font-sans">
-                    <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest pb-2 border-b border-slate-850">{tLocal('lang_sovereignty')}</h3>
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-850">
+                      <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest">{tLocal('lang_sovereignty')}</h3>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                        {lang.toUpperCase()}
+                      </span>
+                    </div>
                     
-                    <div className="flex justify-between items-center text-xs">
+                    <div className="space-y-3">
                       <div>
-                        <strong>{tLocal('preferred_lang')}</strong>
-                        <p className="text-[10px] text-slate-500">{tLocal('lang_desc')}</p>
+                        <strong className="text-xs text-slate-200">{tLocal('preferred_lang')}</strong>
+                        <p className="text-[10px] text-slate-500 mt-0.5">{tLocal('lang_desc')}</p>
                       </div>
 
-                      <select 
-                        value={lang} 
-                        onChange={(e) => setLang(e.target.value as any)}
-                        className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-200 focus:outline-hidden"
-                      >
-                        <option value="pt">Português (BR)</option>
-                        <option value="en">English (US)</option>
-                        <option value="es">Español (ES)</option>
-                        <option value="de">Deutsch (DE)</option>
-                        <option value="fr">Français (FR)</option>
-                      </select>
+                      {/* Clickable Language Selector Buttons */}
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
+                        {[
+                          { id: 'pt', label: 'Português', flag: '🇧🇷', sub: 'BR' },
+                          { id: 'en', label: 'English', flag: '🇺🇸', sub: 'US' },
+                          { id: 'es', label: 'Español', flag: '🇪🇸', sub: 'ES' },
+                          { id: 'de', label: 'Deutsch', flag: '🇩🇪', sub: 'DE' },
+                          { id: 'fr', label: 'Français', flag: '🇫🇷', sub: 'FR' },
+                        ].map((item) => {
+                          const isSelected = lang === item.id;
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => setLang(item.id as Language)}
+                              className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all cursor-pointer select-none text-center ${
+                                isSelected
+                                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-lg shadow-amber-500/10 ring-1 ring-amber-400 font-bold scale-[1.02]'
+                                  : 'bg-slate-950/80 text-slate-400 border-slate-850 hover:border-slate-700 hover:text-slate-200 hover:bg-slate-900'
+                              }`}
+                            >
+                              <span className="text-lg leading-none mb-1">{item.flag}</span>
+                              <span className="text-xs font-semibold">{item.label}</span>
+                              <span className={`text-[9px] font-mono uppercase tracking-wider ${isSelected ? 'text-amber-400/80' : 'text-slate-600'}`}>
+                                {item.sub}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Fallback standard select dropdown for direct quick switching */}
+                      <div className="pt-2 flex justify-end">
+                        <select 
+                          value={lang} 
+                          onChange={(e) => setLang(e.target.value as any)}
+                          className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-850 text-xs text-slate-200 focus:outline-hidden cursor-pointer w-full sm:w-auto"
+                        >
+                          <option value="pt">🇧🇷 Português (BR)</option>
+                          <option value="en">🇺🇸 English (US)</option>
+                          <option value="es">🇪🇸 Español (ES)</option>
+                          <option value="de">🇩🇪 Deutsch (DE)</option>
+                          <option value="fr">🇫🇷 Français (FR)</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
 

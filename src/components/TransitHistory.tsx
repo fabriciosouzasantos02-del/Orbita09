@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Calendar, Sparkles, AlertTriangle, Heart, HelpCircle, RefreshCw, Layers, Compass, Loader2, ChevronDown, ChevronUp, Clock, Activity, Hash, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
-import { translateUiText, Language } from '../lib/translations';
+import { Language } from '../lib/translations';
 import { loadCalculationCache, saveCalculationCache } from '../lib/firebase';
 
 interface AstroEvent {
@@ -11,11 +11,20 @@ interface AstroEvent {
   planet: string;
   description: string;
   influence: 'Positive' | 'Challenging' | 'Neutral' | 'Transformative';
+  aspect?: string;
+  degree?: string;
+  house?: string;
+  orb?: string;
+  element?: string;
+  safetyTip?: string;
 }
 
 interface TransitHistoryProps {
   userName?: string;
   birthDate?: string;
+  birthTime?: string;
+  latitude?: number;
+  longitude?: number;
   lang?: string;
 }
 
@@ -27,27 +36,275 @@ function getWeeklyCacheKey(): string {
   return `${now.getFullYear()}-W${weekNumber}`;
 }
 
-export default function TransitHistory({ userName, birthDate, lang }: TransitHistoryProps) {
+const LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
+  en: {
+    "Casa 8 (Transmutação e Mistérios)": "House 8 (Transmutation and Mysteries)",
+    "Água 🌊": "Water 🌊",
+    "Fogo 🔥": "Fire 🔥",
+    "Sextil": "Sextile",
+    "Tempo de analisar medos internos e transmutá-los em sabedoria sutil.": "Time to analyze internal fears and transmute them into subtle wisdom.",
+    "Casa 1 (Vitalidade e Expressão Pessoal)": "House 1 (Vitality and Personal Expression)",
+    "Conjunção": "Conjunction",
+    "Ótimo momento para expor seus talentos, realizar autoafirmação e liderar iniciativas.": "Great time to showcase your talents, perform self-assertion, and lead initiatives.",
+    "Casa 4 (Lar, Sentimentos e Raízes)": "House 4 (Home, Feelings and Roots)",
+    "Trígono": "Trine",
+    "Acolha sua vulnerabilidade, reconecte-se com ancestrais e cuide do seu templo interno.": "Embrace your vulnerability, reconnect with ancestors and take care of your inner temple.",
+    "Casa 3 (Comunicação, Escrita e Viagens)": "House 3 (Communication, Writing and Travel)",
+    "Ar 💨": "Air 💨",
+    "Escreva seus pensamentos, atualize planilhas e evite discussões impulsivas.": "Write down your thoughts, update spreadsheets and avoid impulsive discussions.",
+    "Casa 5 (Criatividade, Romance e Lazer) ou Casa 2 (Recursos)": "House 5 (Creativity, Romance and Leisure) or House 2 (Resources)",
+    "Terra 🌱": "Earth 🌱",
+    "Harmonize relações, invista em conforto sensorial e expresse amor generosamente.": "Harmonize relationships, invest in sensory comfort, and express love generously.",
+    "Casa 6 (Rotina, Trabalho e Energia Biológica)": "House 6 (Routine, Work and Biological Energy)",
+    "Oposição": "Opposition",
+    "Canalize energia em exercícios físicos para evitar conflitos estéreis com pessoas próximas.": "Channel energy into physical exercises to avoid sterile conflicts with close people.",
+    "Casa 9 (Filosofia, Expansão e Sabedoria)": "House 9 (Philosophy, Expansion and Wisdom)",
+    "Amplie sua mente com leituras inspiradoras e dê saltos de fé confiando no Universo.": "Expand your mind with inspiring readings and take leaps of faith trusting the Universe.",
+    "Casa 10 (Carreira, Autoridade e Legado)": "House 10 (Career, Authority and Legacy)",
+    "Quadratura": "Quadrature",
+    "Estabeleça limites firmes, planeje com prazos realistas e assuma responsabilidades com seriedade.": "Establish firm limits, plan with realistic deadlines and assume responsibilities seriously.",
+    "Casa 11 (Comunidade, Ideais e Tecnologia)": "House 11 (Community, Ideals and Technology)",
+    "Espere o inesperado. Rompa amarras rígidas e abrace de bom grado o fluxo do novo.": "Expect the unexpected. Break rigid ties and willingly embrace the flow of the new.",
+    "Casa 12 (Espiritualidade e Subconsciente)": "House 12 (Spirituality and Subconscious)",
+    "Medite, registre seus sonhos noturnos e confie nos insights do seu eu superior.": "Meditate, record your night dreams and trust the insights of your higher self.",
+    "Conclua ciclos antigos com coragem absoluta, aceitando que o novo precisa nascer.": "Conclude old cycles with absolute courage, accepting that the new needs to be born.",
+    "Falha ao obter histórico de trânsitos celestes.": "Failed to obtain celestial transits history.",
+    "Formato de dados inesperado recebido do servidor.": "Unexpected data format received from the server.",
+    "Ocorreu um erro ao carregar os eventos.": "An error occurred while loading the events.",
+    "Exatidão": "Exactness",
+    "Sintonização de Elemento:": "Element Tuning:",
+    "Acontece em:": "Happens on:",
+    "Sintonizado com": "Tuned with",
+    "Nenhum trânsito correspondendo aos filtros de seleção no momento.": "No transits matching the selection filters at the moment.",
+    "Agenda Astronômica de": "Astronomical Calendar of",
+    "LIVRE & ATUALIZADA": "FREE & UPDATED",
+    "Acompanhe os principais alinhamentos planetários com leituras personalizadas geradas pela inteligência artificial.": "Follow the main planetary alignments with personalized readings generated by artificial intelligence.",
+    "Sincronizar": "Synchronize",
+    "Consultando efemérides planetárias no templo celeste...": "Consulting planetary ephemerides in the celestial temple...",
+    "Tentar Novamente": "Try Again",
+    "Filtros:": "Filters:",
+    "Planeta:": "Planet:",
+    "Todos": "All",
+    "Energia:": "Energy:",
+    "Todas": "All",
+    "Favorável": "Favorable",
+    "Atenção/Desafio": "Attention/Challenge",
+    "Neutro": "Neutral",
+    "Transmutação": "Transmutation",
+    "Mostrando": "Showing",
+    "de": "of",
+    "trânsitos": "transits",
+    "Conexão Cósmica": "Cosmic Connection",
+  },
+  es: {
+    "Casa 8 (Transmutação e Mistérios)": "Casa 8 (Transmutación y Misterios)",
+    "Água 🌊": "Agua 🌊",
+    "Fogo 🔥": "Fuego 🔥",
+    "Sextil": "Sextil",
+    "Tempo de analisar medos internos e transmutá-los em sabedoria sutil.": "Momento de analizar miedos internos y transmutarlos en sabiduría sutil.",
+    "Casa 1 (Vitalidade e Expressão Pessoal)": "Casa 1 (Vitalidad y Expresión Personal)",
+    "Conjunção": "Conjunción",
+    "Ótimo momento para expor seus talentos, realizar autoafirmação e liderar iniciativas.": "Excelente momento para exponer tus talentos, realizar autoafirmación y liderar iniciativas.",
+    "Casa 4 (Lar, Sentimentos e Raízes)": "Casa 4 (Hogar, Sentimientos y Raíces)",
+    "Trígono": "Trígono",
+    "Acolha sua vulnerabilidade, reconecte-se com ancestrais e cuide do seu templo interno.": "Acoge tu vulnerabilidad, reconéctate con ancestros y cuida tu templo interno.",
+    "Casa 3 (Comunicação, Escrita e Viagens)": "Casa 3 (Comunicación, Escritura y Viajes)",
+    "Ar 💨": "Aire 💨",
+    "Escreva seus pensamentos, atualize planilhas e evite discussões impulsivas.": "Escribe tus pensamientos, actualiza planillas y evita discusiones impulsivas.",
+    "Casa 5 (Criatividade, Romance e Lazer) ou Casa 2 (Recursos)": "Casa 5 (Creatividad, Romance y Ocio) o Casa 2 (Recursos)",
+    "Terra 🌱": "Tierra 🌱",
+    "Harmonize relações, invista em conforto sensorial e expresse amor generosamente.": "Armoniza relaciones, invierte en confort sensorial y expresa amor generosamente.",
+    "Casa 6 (Rotina, Trabalho e Energia Biológica)": "Casa 6 (Rutina, Trabajo y Energía Biológica)",
+    "Oposição": "Oposición",
+    "Canalize energia em exercícios físicos para evitar conflitos estéreis com pessoas próximas.": "Canaliza energía en ejercicios físicos para evitar conflictos estériles con personas cercanas.",
+    "Casa 9 (Filosofia, Expansão e Sabedoria)": "Casa 9 (Filosofía, Expansión y Sabiduría)",
+    "Amplie sua mente com leituras inspiradoras e dê saltos de fé confiando no Universo.": "Amplía tu mente con lecturas inspiradoras y da saltos de fe confiando en el Universo.",
+    "Casa 10 (Carreira, Autoridade e Legado)": "Casa 10 (Carrera, Autoridad y Legado)",
+    "Quadratura": "Cuadratura",
+    "Estabeleça limites firmes, planeje com prazos realistas e assuma responsabilidades com seriedade.": "Establece límites firmes, planifica con plazos realistas y asume responsabilidades con seriedad.",
+    "Casa 11 (Comunidade, Ideais e Tecnologia)": "Casa 11 (Comunidad, Ideales y Tecnología)",
+    "Espere o inesperado. Rompa amarras rígidas e abrace de bom grado o fluxo do novo.": "Espera lo inesperado. Rompe ataduras rígidas y abraza de buen grado el flujo de lo nuevo.",
+    "Casa 12 (Espiritualidade e Subconsciente)": "Casa 12 (Espiritualidad y Subconsciente)",
+    "Medite, registre seus sonhos noturnos e confie nos insights do seu eu superior.": "Medita, registra tus sueños nocturnos y confía en las revelaciones de tu ser superior.",
+    "Conclua ciclos antigos com coragem absoluta, aceitando que o novo precisa nascer.": "Concluye ciclos antiguos con coraje absoluto, aceptando que lo nuevo debe nacer.",
+    "Falha ao obter histórico de trânsitos celestes.": "Error al obtener el historial de tránsitos celestes.",
+    "Formato de dados inesperado recebido do servidor.": "Formato de datos inesperado recibido del servidor.",
+    "Ocorreu um erro ao carregar os eventos.": "Ocurrió un error al cargar los eventos.",
+    "Exatidão": "Exactitud",
+    "Sintonização de Elemento:": "Sintonización de Elemento:",
+    "Acontece em:": "Ocurre el:",
+    "Sintonizado com": "Sintonizado con",
+    "Nenhum trânsito correspondendo aos filtros de seleção no momento.": "Ningún tránsito coincide con los filtros de selección en este momento.",
+    "Agenda Astronômica de": "Agenda Astronómica de",
+    "LIVRE & ATUALIZADA": "LIBRE Y ACTUALIZADA",
+    "Acompanhe os principais alinhamentos planetários com leituras personalizadas geradas pela inteligência artificial.": "Sigue las principales alineaciones planetarias con lecturas personalizadas generadas por inteligencia artificial.",
+    "Sincronizar": "Sincronizar",
+    "Consultando efemérides planetárias no templo celeste...": "Consultando efemérides planetarias en el templo celeste...",
+    "Tentar Novamente": "Intentar de Nuevo",
+    "Filtros:": "Filtros:",
+    "Planeta:": "Planeta:",
+    "Todos": "Todos",
+    "Energia:": "Energía:",
+    "Todas": "Todas",
+    "Favorável": "Favorable",
+    "Atenção/Desafio": "Atención/Desafío",
+    "Neutro": "Neutro",
+    "Transmutação": "Transmutación",
+    "Mostrando": "Mostrando",
+    "de": "de",
+    "trânsitos": "tránsitos",
+    "Conexão Cósmica": "Conexión Cósmica",
+  },
+  de: {
+    "Casa 8 (Transmutação e Mistérios)": "Haus 8 (Transmutation und Geheimnisse)",
+    "Água 🌊": "Wasser 🌊",
+    "Fogo 🔥": "Feuer 🔥",
+    "Sextil": "Sextil",
+    "Tempo de analisar medos internos e transmutá-los em sabedoria sutil.": "Zeit, innere Ängste zu analysieren und sie in feine Weisheit umzuwandeln.",
+    "Casa 1 (Vitalidade e Expressão Pessoal)": "Haus 1 (Vitalität und persönlicher Ausdruck)",
+    "Conjunção": "Konjunktion",
+    "Ótimo momento para expor seus talentos, realizar autoafirmação e liderar iniciativas.": "Hervorragende Zeit, um Ihre Talente zu zeigen, Selbstbehauptung zu üben und Initiativen zu ergreifen.",
+    "Casa 4 (Lar, Sentimentos e Raízes)": "Haus 4 (Heimat, Gefühle und Wurzeln)",
+    "Trígono": "Trigon",
+    "Acolha sua vulnerabilidade, reconecte-se com ancestrais e cuide do seu templo interno.": "Nehmen Sie Ihre Verletzlichkeit an, verbinden Sie sich wieder mit den Ahnen und pflegen Sie Ihren inneren Tempel.",
+    "Casa 3 (Comunicação, Escrita e Viagens)": "Haus 3 (Kommunikation, Schreiben und Reisen)",
+    "Ar 💨": "Luft 💨",
+    "Escreva seus pensamentos, atualize planilhas e evite discussões impulsivas.": "Schreiben Sie Ihre Gedanken auf, aktualisieren Sie Tabellen und vermeiden Sie impulsive Diskussionen.",
+    "Casa 5 (Criatividade, Romance e Lazer) ou Casa 2 (Recursos)": "Haus 5 (Kreativität, Romantik und Freizeit) oder Haus 2 (Ressourcen)",
+    "Terra 🌱": "Erde 🌱",
+    "Harmonize relações, invista em conforto sensorial e expresse amor generosamente.": "Harmonisieren Sie Beziehungen, investieren Sie in sensorischen Komfort und drücken Sie Liebe großzügig aus.",
+    "Casa 6 (Rotina, Trabalho e Energia Biológica)": "Haus 6 (Routine, Work und biologische Energie)",
+    "Oposição": "Opposition",
+    "Canalize energia em exercícios físicos para evitar conflitos estéreis com pessoas próximas.": "Kanalisieren Sie Ihre Energie in körperliche Übungen, um unnötige Konflikte mit nahestehenden Personen zu vermeiden.",
+    "Casa 9 (Filosofia, Expansão e Sabedoria)": "Haus 9 (Philosophie, Expansion und Weisheit)",
+    "Amplie sua mente com leituras inspiradoras e dê saltos de fé confiando no Universo.": "Erweitern Sie Ihren Geist mit inspirierender Lektüre und wagen Sie Vertrauenssprünge im Vertrauen auf das Universum.",
+    "Casa 10 (Carreira, Autoridade e Legado)": "Haus 10 (Karriere, Autorität und Vermächtnis)",
+    "Quadratura": "Quadrat",
+    "Estabeleça limites firmes, planeje com prazos realistas e assuma responsabilidades com seriedade.": "Setzen Sie klare Grenzen, planen Sie mit realistischen Fristen und übernehmen Sie ernsthaft Verantwortung.",
+    "Casa 11 (Comunidade, Ideais e Tecnologia)": "Haus 11 (Gemeinschaft, Ideale und Technologie)",
+    "Espere o inesperado. Rompa amarras rígidas e abrace de bom grado o fluxo do novo.": "Erwarten Sie das Unerwartete. Brechen Sie starre Bindungen und nehmen Sie den Fluss des Neuen bereitwillig an.",
+    "Casa 12 (Espiritualidade e Subconsciente)": "Haus 12 (Spiritualität und Unterbewusstsein)",
+    "Medite, registre seus sonhos noturnos e confie nos insights do seu eu superior.": "Meditieren Sie, zeichnen Sie Ihre nächtlichen Träume auf und vertrauen Sie auf die Erkenntnisse Ihres höheren Selbst.",
+    "Conclua ciclos antigos com coragem absoluta, aceitando que o novo precisa nascer.": "Beenden Sie alte Zyklen mit absolutem Mut und akzeptieren Sie, dass das Neue geboren werden muss.",
+    "Falha ao obter histórico de trânsitos celestes.": "Fehler beim Abrufen des Verlaufs der himmlischen Transite.",
+    "Formato de dados inesperado recebido do servidor.": "Unerwartetes Datenformat vom Server empfangen.",
+    "Ocorreu um erro ao carregar os eventos.": "Beim Laden der Ereignisse ist ein Fehler aufgetreten.",
+    "Exatidão": "Exaktheit",
+    "Sintonização de Elemento:": "Elementabstimmung:",
+    "Acontece em:": "Geschieht am:",
+    "Sintonizado com": "Abgestimmt auf",
+    "Nenhum trânsito correspondendo aos filtros de seleção no momento.": "Derzeit entsprechen keine Transite den Auswahlfiltern.",
+    "Agenda Astronômica de": "Astronomischer Kalender von",
+    "LIVRE & ATUALIZADA": "FREI & AKTUALISIERT",
+    "Acompanhe os principais alinhamentos planetários com leituras personalizadas geradas pela inteligência artificial.": "Verfolgen Sie die wichtigsten planetarischen Ausrichtungen mit personalisierten Messungen, die von künstlicher Intelligenz generiert werden.",
+    "Sincronizar": "Synchronisieren",
+    "Consultando efemérides planetárias no templo celeste...": "Konsultation der planetarischen Ephemeriden im himmlischen Tempel...",
+    "Tentar Novamente": "Erneut versuchen",
+    "Filtros:": "Filter:",
+    "Planeta:": "Planet:",
+    "Todos": "Alle",
+    "Energia:": "Energie:",
+    "Todas": "Alle",
+    "Favorável": "Günstig",
+    "Atenção/Desafio": "Achtung/Herausforderung",
+    "Neutro": "Neutral",
+    "Transmutação": "Transmutation",
+    "Mostrando": "Zeige",
+    "de": "von",
+    "trânsitos": "Transite",
+    "Conexão Cósmica": "Kosmische Verbindung",
+  },
+  fr: {
+    "Casa 8 (Transmutação e Mistérios)": "Maison 8 (Transmutation et Mystères)",
+    "Água 🌊": "Eau 🌊",
+    "Fogo 🔥": "Feu 🔥",
+    "Sextil": "Sextile",
+    "Tempo de analisar medos internos e transmutá-los em sabedoria sutil.": "Il est temps d'analyser les peurs internes et de les transmuter en une subtile sagesse.",
+    "Casa 1 (Vitalidade e Expression Pessoal)": "Maison 1 (Vitalité et Expression Personnelle)",
+    "Casa 1 (Vitalidade e Expressão Pessoal)": "Maison 1 (Vitalité et Expression Personnelle)",
+    "Conjunção": "Conjonction",
+    "Ótimo momento para expor seus talentos, realizar autoafirmação e liderar iniciativas.": "Excellent moment pour exposer vos talents, faire de l'auto-affirmation et mener des initiatives.",
+    "Casa 4 (Lar, Sentimentos e Raízes)": "Maison 4 (Foyer, Sentiments et Racines)",
+    "Trígono": "Trine",
+    "Acolha sua vulnerabilidade, reconecte-se com ancestrais e cuide do seu templo interno.": "Accueillez votre vulnérabilité, reconnectez-vous avec vos ancêtres et prenez soin de votre temple intérieur.",
+    "Casa 3 (Comunicação, Escrita e Viagens)": "Maison 3 (Communication, Écriture et Voyages)",
+    "Ar 💨": "Air 💨",
+    "Escreva seus pensamentos, atualize planilhas e evite discussões impulsivas.": "Écrivez vos pensées, mettez à jour vos feuilles de calcul et évitez les discussions impulsives.",
+    "Casa 5 (Criatividade, Romance e Lazer) ou Casa 2 (Recursos)": "Maison 5 (Créativité, Romance et Loisirs) ou Maison 2 (Ressources)",
+    "Terra 🌱": "Terre 🌱",
+    "Harmonize relações, invista em conforto sensorial e expresse amor generosamente.": "Harmonisez les relations, investissez dans le confort de nos sens et exprimez votre amour généreusement.",
+    "Casa 6 (Rotina, Trabalho e Energia Biológica)": "Maison 6 (Routine, Travail et Énergie Biologique)",
+    "Oposição": "Opposition",
+    "Canalize energia em exercícios físicos para evitar conflitos estéreis com pessoas próximas.": "Canalisez l'énergie dans des exercices physiques pour éviter les conflits stériles avec vos proches.",
+    "Casa 9 (Filosofia, Expansão e Sabedoria)": "Maison 9 (Philosophie, Expansion et Sagesse)",
+    "Amplie sua mente com leituras inspiradoras e dê saltos de fé confiando no Universo.": "Élargissez votre esprit avec des lectures inspirantes et faites des sauts de foi en faisant confiance à l'Univers.",
+    "Casa 10 (Carreira, Autoridade e Legado)": "Maison 10 (Carrière, Autorité et Héritage)",
+    "Quadratura": "Carré",
+    "Estabeleça limites firmes, planeje com prazos realistas e assuma responsabilidades com seriedade.": "Établissez des limites fermes, planifiez avec des délais réalistes et assumez vos responsabilités avec sérieux.",
+    "Casa 11 (Comunidade, Ideais e Tecnologia)": "Maison 11 (Communauté, Idéaux et Technologie)",
+    "Espere o inesperado. Rompa amarras rígidas e abrace de bom grado o fluxo do novo.": "Attendez-vous à l'inattendu. Brisez les liens rigides et embrassez volontiers le flux de la nouveauté.",
+    "Casa 12 (Espiritualidade e Subconsciente)": "Maison 12 (Spiritualité et Subconscient)",
+    "Medite, registre seus sonhos noturnos e confie nos insights do seu eu superior.": "Méditez, enregistrez vos rêves nocturnes et faites confiance aux intuitions de votre être supérieur.",
+    "Conclua ciclos antigos com coragem absoluta, aceitando que o novo precisa nascer.": "Concluez les cycles anciens avec un courage absolu, en acceptant que le nouveau doit naître.",
+    "Falha ao obter histórico de trânsitos celestes.": "Échec de l'obtention de l'historique des transits célestes.",
+    "Formato de dados inesperado recebido do servidor.": "Format de données inattendu reçu du serveur.",
+    "Ocorreu um erro ao carregar os eventos.": "Une erreur s'est produite lors du chargement des événements.",
+    "Exatidão": "Exactitude",
+    "Sintonização de Elemento:": "Harmonisation d'Élément:",
+    "Acontece em:": "Se produit le:",
+    "Sintonizado com": "Harmonisé avec",
+    "Nenhum trânsito correspondendo aos filtros de seleção no momento.": "Aucun transit ne correspond aux filtres de sélection pour le moment.",
+    "Agenda Astronômica de": "Agenda Astronomique de",
+    "LIVRE & ATUALIZADA": "LIBRE & À JOUR",
+    "Acompanhe os principais alinhamentos planetários com leituras personalizadas geradas pela inteligência artificial.": "Suivez les principaux alignements planétaires avec des lectures personnalisées générées par l'intelligence artificielle.",
+    "Sincronizar": "Synchroniser",
+    "Consultando efemérides planetárias no templo celeste...": "Consultation des éphémérides planétaires dans le temple céleste...",
+    "Tentar Novamente": "Réessayer",
+    "Filtros:": "Filtres:",
+    "Planeta:": "Planète:",
+    "Todos": "Tous",
+    "Energia:": "Énergie:",
+    "Todas": "Toutes",
+    "Favorável": "Favorable",
+    "Atenção/Desafio": "Attention/Défi",
+    "Neutro": "Neutre",
+    "Transmutação": "Transmutation",
+    "Mostrando": "Affichage de",
+    "de": "de",
+    "trânsitos": "transits",
+    "Conexão Cósmica": "Connexion Cosmique",
+  }
+};
+
+export default function TransitHistory({ userName, birthDate, birthTime, latitude, longitude, lang }: TransitHistoryProps) {
   const { t: i18nT } = useTranslation();
   const t = (text: string) => {
     if (!text) return "";
-    const res = i18nT(text);
-    if (res === text || !res) {
-      return translateUiText(text, (lang as Language) || 'pt');
+    const activeL = (lang as string) || 'pt';
+    if (activeL !== 'pt') {
+      const localDict = LOCAL_TRANSLATIONS[activeL];
+      if (localDict && localDict[text]) {
+        return localDict[text];
+      }
     }
-    return res;
+    return i18nT(text);
   };
 
   const [events, setEvents] = useState<AstroEvent[]>([]);
   
   const getCurrentMonthAndYear = () => {
-    const monthNames = [
-      "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-      "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
-    ];
+    const monthNamesLocal: Record<string, string[]> = {
+      pt: ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"],
+      en: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+      es: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
+      de: ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"],
+      fr: ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]
+    };
+    const activeL = (lang as string) || 'pt';
+    const monthList = monthNamesLocal[activeL] || monthNamesLocal['pt'];
     const date = new Date();
     return {
-      monthName: t(monthNames[date.getMonth()]),
+      monthName: monthList[date.getMonth()],
       year: date.getFullYear()
     };
   };
@@ -59,18 +316,19 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
   const [filterInfluence, setFilterInfluence] = useState<string>('todos');
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
-  const fetchTransits = async () => {
+  const fetchTransits = async (forceRefresh: boolean = false) => {
     try {
       setLoading(true);
       setError(null);
 
       const email = localStorage.getItem("orbi_logged_email") || "";
       const weekKey = getWeeklyCacheKey();
+      const currentLangKey = lang || 'pt';
 
-      if (email) {
-        const cachedTransits = await loadCalculationCache(email, `weekly_transits_${weekKey}_${lang || 'pt'}`);
-        if (cachedTransits && Array.isArray(cachedTransits)) {
-          console.log("[Intelligent Cache] Loaded weekly transits from Firestore cache.");
+      if (!forceRefresh && email) {
+        const cachedTransits = await loadCalculationCache(email, `weekly_transits_${weekKey}_${currentLangKey}`);
+        if (cachedTransits && Array.isArray(cachedTransits) && cachedTransits.length > 0) {
+          console.log("[Intelligent Cache] Loaded weekly transits from Firestore cache for lang:", currentLangKey);
           setEvents(cachedTransits);
           setLoading(false);
           return;
@@ -80,7 +338,14 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
       const res = await fetch('/api/astrology/transits-month', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: userName, birthDate: birthDate, lang: lang || 'pt' }),
+        body: JSON.stringify({
+          name: userName,
+          birthDate: birthDate,
+          birthTime: birthTime,
+          latitude: latitude,
+          longitude: longitude,
+          lang: currentLangKey
+        }),
       });
       if (!res.ok) {
         throw new Error('Falha ao obter histórico de trânsitos celestes.');
@@ -89,7 +354,7 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
       if (data && Array.isArray(data.events)) {
         setEvents(data.events);
         if (email) {
-          await saveCalculationCache(email, `weekly_transits_${weekKey}_${lang || 'pt'}`, data.events);
+          await saveCalculationCache(email, `weekly_transits_${weekKey}_${currentLangKey}`, data.events);
         }
       } else {
         throw new Error('Formato de dados inesperado recebido do servidor.');
@@ -103,8 +368,25 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
   };
 
   useEffect(() => {
+    const email = localStorage.getItem("orbi_logged_email") || "";
+    const weekKey = getWeeklyCacheKey();
+    const cacheKey = `orbi_cache_updated_weekly_transits_${weekKey}_${lang || 'pt'}`;
+
+    const handleBgUpdate = (e: any) => {
+      if (e.detail && e.detail.data) {
+        console.log("[Cache Event] Silently updated transits in background.");
+        setEvents(e.detail.data);
+      }
+    };
+
+    window.addEventListener(cacheKey, handleBgUpdate);
+
     fetchTransits();
-  }, [userName, birthDate, lang]);
+
+    return () => {
+      window.removeEventListener(cacheKey, handleBgUpdate);
+    };
+  }, [userName, birthDate, birthTime, latitude, longitude, lang]);
 
   // Extract unique planets from events for filters
   const uniquePlanets = Array.from(new Set(events.map((e) => e.planet))).filter(Boolean);
@@ -121,25 +403,25 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
       case 'Positive':
         return {
           bg: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
-          label: 'Favorável',
+          label: t('Favorável'),
           icon: <Heart className="w-3 h-3 text-emerald-400 shrink-0" />
         };
       case 'Challenging':
         return {
           bg: 'bg-rose-500/10 border-rose-500/20 text-rose-400',
-          label: 'Atenção/Desafio',
+          label: t('Atenção/Desafio'),
           icon: <AlertTriangle className="w-3 h-3 text-rose-400 shrink-0" />
         };
       case 'Transformative':
         return {
           bg: 'bg-purple-500/10 border-purple-500/10 text-purple-400',
-          label: 'Transmutação',
+          label: t('Transmutação'),
           icon: <Sparkles className="w-3 h-3 text-purple-400 shrink-0" />
         };
       default:
         return {
           bg: 'bg-slate-500/10 border-slate-500/20 text-slate-400',
-          label: 'Neutro',
+          label: t('Neutro'),
           icon: <Compass className="w-3 h-3 text-slate-400 shrink-0" />
         };
     }
@@ -181,41 +463,41 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-emerald-400" />
             <h3 className="text-sm font-bold text-slate-100 uppercase tracking-wider">
-              Agenda Astronômica de {monthName} {year}
+              {t("Agenda Astronômica de")} {monthName} {year}
             </h3>
             <span className="px-2 py-0.5 bg-emerald-500/15 border border-emerald-500/20 text-[8px] font-mono font-bold text-emerald-400 rounded">
-              LIVRE & ATUALIZADA
+              {t("LIVRE & ATUALIZADA")}
             </span>
           </div>
           <p className="text-[10px] text-slate-500">
-            Acompanhe os principais alinhamentos planetários com leituras personalizadas geradas pela inteligência artificial.
+            {t("Acompanhe os principais alinhamentos planetários com leituras personalizadas geradas pela inteligência artificial.")}
           </p>
         </div>
 
         {/* Refresh tool */}
         <button
-          onClick={fetchTransits}
+          onClick={() => fetchTransits(true)}
           disabled={loading}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-850 border border-slate-850 text-[10px] font-semibold font-mono text-slate-440 transition hover:text-slate-200 cursor-pointer disabled:opacity-50"
         >
           <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
-          Sincronizar
+          {t("Sincronizar")}
         </button>
       </div>
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-12 space-y-3">
           <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
-          <p className="text-xs font-mono text-slate-400">Consultando efemérides planetárias no templo celeste...</p>
+          <p className="text-xs font-mono text-slate-400">{t("Consultando efemérides planetárias no templo celeste...")}</p>
         </div>
       ) : error ? (
         <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-center space-y-2">
-          <p className="text-xs text-rose-400">{error}</p>
+          <p className="text-xs text-rose-400">{t(error)}</p>
           <button
-            onClick={fetchTransits}
+            onClick={() => fetchTransits(true)}
             className="px-3 py-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-mono text-[10px] rounded transition cursor-pointer"
           >
-            Tentar Novamente
+            {t("Tentar Novamente")}
           </button>
         </div>
       ) : (
@@ -223,42 +505,42 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
           
           {/* Filters Bar */}
           <div className="flex flex-wrap gap-3 items-center bg-slate-950/40 p-3 rounded-2xl border border-slate-850">
-            <span className="text-[10px] uppercase font-mono text-slate-505 font-bold tracking-wider mr-1">Filtros:</span>
+            <span className="text-[10px] uppercase font-mono text-slate-505 font-bold tracking-wider mr-1">{t("Filtros:")}</span>
             
             {/* Planet Filter */}
             <div className="flex items-center gap-1.5">
-              <span className="text-[9px] font-mono text-slate-500">Planeta:</span>
+              <span className="text-[9px] font-mono text-slate-500">{t("Planeta:")}</span>
               <select
                 value={filterPlanet}
                 onChange={(e) => setFilterPlanet(e.target.value)}
                 className="bg-slate-900 border border-slate-800 text-[10px] font-mono rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-emerald-500"
               >
-                <option value="todos">Todos</option>
-                {uniquePlanets.map((p) => (
-                  <option key={p} value={p}>{p}</option>
+                <option value="todos">{t("Todos")}</option>
+                {uniquePlanets.map((p: any) => (
+                  <option key={p} value={p}>{t(p as string)}</option>
                 ))}
               </select>
             </div>
 
             {/* Influence Filter */}
             <div className="flex items-center gap-1.5">
-              <span className="text-[9px] font-mono text-slate-500">Energia:</span>
+              <span className="text-[9px] font-mono text-slate-500">{t("Energia:")}</span>
               <select
                 value={filterInfluence}
                 onChange={(e) => setFilterInfluence(e.target.value)}
                 className="bg-slate-900 border border-slate-800 text-[10px] font-mono rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-emerald-500"
               >
-                <option value="todos">Todas</option>
-                <option value="positive">Favorável</option>
-                <option value="challenging">Atenção/Desafio</option>
-                <option value="neutral">Neutro</option>
-                <option value="transformative">Transmutação</option>
+                <option value="todos">{t("Todas")}</option>
+                <option value="positive">{t("Favorável")}</option>
+                <option value="challenging">{t("Atenção/Desafio")}</option>
+                <option value="neutral">{t("Neutro")}</option>
+                <option value="transformative">{t("Transmutação")}</option>
               </select>
             </div>
 
             {/* Selected Count */}
             <div className="ml-auto text-[9px] font-mono text-slate-500">
-              Mostrando <span className="text-emerald-400 font-bold">{filteredEvents.length}</span> de <span className="text-slate-400">{events.length}</span> trânsitos
+              {t("Mostrando")} <span className="text-emerald-400 font-bold">{filteredEvents.length}</span> {t("de")} <span className="text-slate-400">{events.length}</span> {t("trânsitos")}
             </div>
           </div>
 
@@ -270,81 +552,14 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
                 const symbol = getPlanetSymbol(evt.planet);
                 const isExpanded = expandedIndex === idx;
 
-                const getTechnicalDetails = (p: string, name: string) => {
-                  const pLower = p.toLowerCase();
-                  let house = "Casa 8 (Transmutação e Mistérios)";
-                  let element = "Água 🌊";
-                  let aspect = "Sextil";
-                  let delayTip = "Tempo de analisar medos internos e transmutá-los em sabedoria sutil.";
-
-                  if (pLower.includes('sol')) {
-                    house = "Casa 1 (Vitalidade e Expressão Pessoal)";
-                    element = "Fogo 🔥";
-                    aspect = "Conjunção";
-                    delayTip = "Ótimo momento para expor seus talentos, realizar autoafirmação e liderar iniciativas.";
-                  } else if (pLower.includes('lua')) {
-                    house = "Casa 4 (Lar, Sentimentos e Raízes)";
-                    element = "Água 🌊";
-                    aspect = "Trígono";
-                    delayTip = "Acolha sua vulnerabilidade, reconecte-se com ancestrais e cuide do seu templo interno.";
-                  } else if (pLower.includes('merc')) {
-                    house = "Casa 3 (Comunicação, Escrita e Viagens)";
-                    element = "Ar 💨";
-                    aspect = "Conjunção";
-                    delayTip = "Escreva seus pensamentos, atualize planilhas e evite discussões impulsivas.";
-                  } else if (pLower.includes('ven')) {
-                    house = "Casa 5 (Criatividade, Romance e Lazer) ou Casa 2 (Recursos)";
-                    element = "Terra 🌱";
-                    aspect = "Trígono";
-                    delayTip = "Harmonize relações, invista em conforto sensorial e expresse amor generosamente.";
-                  } else if (pLower.includes('marte')) {
-                    house = "Casa 6 (Rotina, Trabalho e Energia Biológica)";
-                    element = "Fogo 🔥";
-                    aspect = "Oposição";
-                    delayTip = "Canalize energia em exercícios físicos para evitar conflitos estéreis com pessoas próximas.";
-                  } else if (pLower.includes('jup')) {
-                    house = "Casa 9 (Filosofia, Expansão e Sabedoria)";
-                    element = "Fogo 🔥";
-                    aspect = "Trígono";
-                    delayTip = "Amplie sua mente com leituras inspiradoras e dê saltos de fé confiando no Universo.";
-                  } else if (pLower.includes('sat')) {
-                    house = "Casa 10 (Carreira, Autoridade e Legado)";
-                    element = "Terra 🌱";
-                    aspect = "Quadratura";
-                    delayTip = "Estabeleça limites firmes, planeje com prazos realistas e assuma responsabilidades com seriedade.";
-                  } else if (pLower.includes('uran')) {
-                    house = "Casa 11 (Comunidade, Ideais e Tecnologia)";
-                    element = "Ar 💨";
-                    aspect = "Oposição";
-                    delayTip = "Espere o inesperado. Rompa amarras rígidas e abrace de bom grado o fluxo do novo.";
-                  } else if (pLower.includes('net')) {
-                    house = "Casa 12 (Espiritualidade e Subconsciente)";
-                    element = "Água 🌊";
-                    aspect = "Trígono";
-                    delayTip = "Medite, registre seus sonhos noturnos e confie nos insights do seu eu superior.";
-                  } else if (pLower.includes('plut')) {
-                    house = "Casa 8 (Crises, Regeneração e Poder Pessoal)";
-                    element = "Água 🌊";
-                    aspect = "Conjunção";
-                    delayTip = "Conclua ciclos antigos com coragem absoluta, aceitando que o novo precisa nascer.";
-                  }
-
-                  const charSum = p.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) + name.length;
-                  const degree = (charSum % 29) + 1;
-                  const minute = charSum % 60;
-                  const orb = ((charSum % 14) / 10 + 0.2).toFixed(1);
-
-                  return {
-                    house,
-                    element,
-                    aspect,
-                    degree: `${degree}° ${minute}'`,
-                    orb: `${orb}°`,
-                    safetyTip: delayTip
-                  };
+                const tech = {
+                  aspect: evt.aspect || "Conjunção",
+                  degree: evt.degree || "15° de Gêmeos",
+                  house: evt.house || "Casa 1 (Vitalidade e Expressão Pessoal)",
+                  orb: evt.orb || "1.0°",
+                  element: evt.element || "Ar 💨",
+                  safetyTip: evt.safetyTip || "Sintonize com a sabedoria cósmica do momento."
                 };
-
-                const tech = getTechnicalDetails(evt.planet, evt.eventName);
 
                 return (
                   <div 
@@ -360,7 +575,7 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
                       <div className="flex justify-between items-start gap-2">
                         <div className="flex items-center gap-1.5">
                           <span className="text-xs">{symbol}</span>
-                          <span className="text-[10px] font-mono text-slate-450 uppercase font-semibold">{evt.planet}</span>
+                          <span className="text-[10px] font-mono text-slate-450 uppercase font-semibold">{t(evt.planet)}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className={`px-2 py-0.5 rounded-full border text-[8px] font-mono tracking-wider uppercase font-bold flex items-center gap-1 shrink-0 ${badge.bg}`}>
@@ -374,11 +589,11 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
                       </div>
  
                       <h4 className="text-xs font-bold text-slate-200 group-hover:text-emerald-400 transition-colors">
-                        {evt.eventName}
+                        {t(evt.eventName)}
                       </h4>
  
                       <p className="text-[10.5px] text-slate-400 leading-relaxed font-sans">
-                        {evt.description}
+                        {t(evt.description)}
                       </p>
 
                       <AnimatePresence initial={false}>
@@ -392,29 +607,29 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
                           >
                             <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
                               <div className="p-2 bg-slate-900/50 rounded-lg border border-slate-850/60">
-                                <span className="text-slate-500 block uppercase text-[8px]">Aspecto Ativo</span>
-                                <span className="text-amber-400 font-bold block mt-0.5">{tech.aspect}</span>
+                                <span className="text-slate-500 block uppercase text-[8px]">{t("Aspecto Ativo")}</span>
+                                <span className="text-amber-400 font-bold block mt-0.5">{t(tech.aspect)}</span>
                               </div>
                               <div className="p-2 bg-slate-900/50 rounded-lg border border-slate-850/60">
-                                <span className="text-slate-505 block uppercase text-[8px]">Grau Celeste</span>
+                                <span className="text-slate-505 block uppercase text-[8px]">{t("Grau Celeste")}</span>
                                 <span className="text-sky-450 font-bold block mt-0.5">{tech.degree}</span>
                               </div>
                               <div className="p-2 bg-slate-900/50 rounded-lg border border-slate-850/60">
-                                <span className="text-slate-550 block uppercase text-[8px]">Casa Ativada</span>
-                                <span className="text-emerald-400 font-semibold block mt-0.5 break-words text-[9px]">{tech.house}</span>
+                                <span className="text-slate-550 block uppercase text-[8px]">{t("Casa Ativada")}</span>
+                                <span className="text-emerald-400 font-semibold block mt-0.5 break-words text-[9px]">{t(tech.house)}</span>
                               </div>
                               <div className="p-2 bg-slate-900/50 rounded-lg border border-slate-850/60">
-                                <span className="text-slate-550 block uppercase text-[8px]">Orbe Real</span>
-                                <span className="text-rose-400 font-bold block mt-0.5">{tech.orb} (Exatidão)</span>
+                                <span className="text-slate-550 block uppercase text-[8px]">{t("Orbe Real")}</span>
+                                <span className="text-rose-400 font-bold block mt-0.5">{tech.orb} ({t("Exatidão")})</span>
                               </div>
                             </div>
 
                             <div className="p-3 bg-gradient-to-r from-amber-500/5 to-rose-500/5 border border-amber-500/10 rounded-xl space-y-1">
                               <span className="text-[8.5px] font-mono text-amber-500 uppercase tracking-widest font-bold block">
-                                Sintonização de Elemento: {tech.element}
+                                {t("Sintonização de Elemento:")} {t(tech.element)}
                               </span>
                               <p className="text-[10px] text-slate-350 font-sans italic leading-relaxed">
-                                {tech.safetyTip}
+                                {t(tech.safetyTip)}
                               </p>
                             </div>
                           </motion.div>
@@ -425,11 +640,11 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
                     <div className="pt-2 border-t border-slate-900 flex items-center justify-between">
                       <span className="text-[9px] font-mono text-slate-500 flex items-center gap-1">
                         <Clock className="w-2.5 h-2.5 text-slate-500" />
-                        Acontece em: {formatDate(evt.date)}
+                        {t("Acontece em:")} {formatDate(evt.date)}
                       </span>
                       {userName && (
                         <span className="text-[8px] font-mono text-emerald-400 bg-emerald-500/5 px-2 py-0.5 rounded-full border border-emerald-500/10">
-                          Sintonizado com {userName.split(' ')[0]}
+                          {t("Sintonizado com")} {userName.split(' ')[0]}
                         </span>
                       )}
                     </div>
@@ -439,7 +654,7 @@ export default function TransitHistory({ userName, birthDate, lang }: TransitHis
             </div>
           ) : (
             <div className="text-center py-8 bg-slate-950/20 rounded-2xl border border-slate-850 border-dashed text-slate-500 text-xs font-mono">
-              Nenhum trânsito correspondendo aos filtros de seleção no momento.
+              {t("Nenhum trânsito correspondendo aos filtros de seleção no momento.")}
             </div>
           )}
 

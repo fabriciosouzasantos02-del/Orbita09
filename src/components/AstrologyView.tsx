@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { translateUiText, Language } from '../lib/translations';
 import { AstrologyMap, AstroAstroPosition, UserProfile } from '../types';
 import CircularChart from './CircularChart';
+import { InteractiveAstroMapEngine } from './InteractiveAstroMapEngine';
 import { 
   Orbit, 
   Compass, 
@@ -113,7 +114,7 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
     }
     return res;
   };
-  const [activeSubTab, setActiveSubTab] = useState<'geral' | 'astros' | 'casas' | 'aspectos' | 'extras'>('geral');
+  const [activeSubTab, setActiveSubTab] = useState<'interativo' | 'geral' | 'astros' | 'casas' | 'aspectos' | 'extras'>('interativo');
   const [selectedAstro, setSelectedAstro] = useState<AstroAstroPosition | null>(() => mapData?.astros?.[0] || null);
   const [selectedHouse, setSelectedHouse] = useState<number>(1);
 
@@ -904,6 +905,15 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
 
       <div className="flex gap-2 overflow-x-auto pb-1 border-b border-slate-800 scrollbar-none">
         <button
+          onClick={() => setActiveSubTab('interativo')}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium transition-all shrink-0 ${
+            activeSubTab === 'interativo' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-md font-bold' : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+          <span>{t("Mapa Interativo de Autoconhecimento")}</span>
+        </button>
+        <button
           onClick={() => setActiveSubTab('geral')}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium transition-all shrink-0 ${
             activeSubTab === 'geral' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/30' : 'text-slate-400 hover:text-slate-200'
@@ -951,6 +961,10 @@ const AstrologyView = memo(function AstrologyView({ mapData, user, onUpdateMainM
       </div>
 
       {/* Main Subtab Contents */}
+      {activeSubTab === 'interativo' && (
+        <InteractiveAstroMapEngine mapData={mapData} user={user} activeLanguage={i18n.language} />
+      )}
+
       {activeSubTab === 'geral' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">

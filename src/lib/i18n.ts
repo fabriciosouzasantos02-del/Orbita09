@@ -1,43 +1,23 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import { translationDict, uiTranslations, getInitialLanguage } from './translations';
+import { mergedTranslations, getInitialLanguage } from '../i18n';
 
-const resources: any = {
+const resources = {
   pt: {
-    translation: {
-      ...translationDict.pt,
-      // uiTranslations usa chaves em PT -> tradução em outro idioma.
-      // Para PT, o valor deve ser a própria chave PT (o texto original),
-      // então populamos corretamente usando as chaves como valores.
-      ...Object.fromEntries(
-        Object.keys(uiTranslations.en).map(ptKey => [ptKey, ptKey])
-      ),
-    }
+    translation: mergedTranslations.pt,
   },
   en: {
-    translation: {
-      ...translationDict.en,
-      ...uiTranslations.en
-    }
+    translation: mergedTranslations.en,
   },
   es: {
-    translation: {
-      ...translationDict.es,
-      ...uiTranslations.es
-    }
+    translation: mergedTranslations.es,
   },
   de: {
-    translation: {
-      ...translationDict.de,
-      ...uiTranslations.de
-    }
+    translation: mergedTranslations.de,
   },
   fr: {
-    translation: {
-      ...translationDict.fr,
-      ...uiTranslations.fr
-    }
-  }
+    translation: mergedTranslations.fr,
+  },
 };
 
 i18n
@@ -45,10 +25,11 @@ i18n
   .init({
     resources,
     lng: getInitialLanguage(),
-    fallbackLng: 'pt',
+    fallbackLng: false,
     interpolation: {
-      escapeValue: false
-    }
+      escapeValue: false,
+    },
   });
 
 export default i18n;
+

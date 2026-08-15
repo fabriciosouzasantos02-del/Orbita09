@@ -14,6 +14,10 @@ export default function ExemploIdioma() {
     mudarIdioma(novoIdioma);
   };
 
+  const tI18n = (text: string) => {
+    return t(text as any);
+  };
+
   return (
     <div className="p-6 bg-slate-900 border border-slate-800 rounded-3xl max-w-md mx-auto space-y-6 text-slate-200 shadow-xl font-sans">
       {/* Título traduzido utilizando chaves fortemente tipadas do dicionário */}
@@ -28,11 +32,11 @@ export default function ExemploIdioma() {
 
       <div className="bg-slate-950 p-4 rounded-2xl border border-slate-850 space-y-2">
         <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-          Informações Ativas do Contexto:
+          {tI18n("Informações Ativas do Contexto:")}
         </p>
         <div className="text-xs space-y-1 font-mono text-amber-400/80">
-          <p>• Idioma Ativo: <span className="text-white font-bold">{idioma.toUpperCase()}</span></p>
-          <p>• Texto Traduzido: <span className="text-white font-bold">{t('welcomeBuscador')}</span></p>
+          <p>{tI18n("• Idioma Ativo:")} <span className="text-white font-bold">{idioma.toUpperCase()}</span></p>
+          <p>{tI18n("• Texto Traduzido:")} <span className="text-white font-bold">{t('welcomeBuscador')}</span></p>
         </div>
       </div>
 

@@ -23,9 +23,11 @@ import {
   getZodiacSignInfo, 
   performAstroCalculation 
 } from './astroMath';
+import ephemeris from 'ephemeris';
 import { useTranslation } from 'react-i18next';
-import { translateUiText, Language } from '../lib/translations';
+import { Language } from '../lib/translations';
 import { LUNAR_PHASES_TRANSLATIONS, SIGN_MEDICAL_TRANSLATED, LOCAL_UI_TRANSLATIONS } from '../lib/lunarTranslations';
+import { useIdioma } from '../context/IdiomaContext';
 
 // Simple analytical Sun longitude
 function calculateSunLongitude(T: number): number {
@@ -36,7 +38,7 @@ function calculateSunLongitude(T: number): number {
   return (lambda + 360) % 360;
 }
 
-// Full astronomical status resolver for a given date-time
+// Full astronomical status resolver for a given date-time using ephemeris and fallbacks
 function computeMoonState(date: Date) {
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
@@ -44,10 +46,34 @@ function computeMoonState(date: Date) {
   const hour = date.getHours();
   const minute = date.getMinutes();
   
+  let moonLong = 0;
+  let sunLong = 0;
+  
+  try {
+    // Standard coordinates (São Paulo) for real astronomical calculations
+    const ephemResult = ephemeris.getAllPlanets(date, -46.6333, -23.5505);
+    if (ephemResult && ephemResult.observed) {
+      if (ephemResult.observed.moon) {
+        moonLong = ephemResult.observed.moon.apparentLongitudeDd;
+      }
+      if (ephemResult.observed.sun) {
+        sunLong = ephemResult.observed.sun.apparentLongitudeDd;
+      }
+    }
+  } catch (e) {
+    console.warn("[LunarEphem] Ephemeris calculation failed, falling back to analytical formulas:", e);
+  }
+
   const JD = getJulianDate(year, month, day, hour, minute);
   const T = (JD - 2451545.0) / 36525.0;
-  const moonLong = calculateMoonLongitude(T);
-  const sunLong = calculateSunLongitude(T);
+  
+  if (moonLong === 0) {
+    moonLong = calculateMoonLongitude(T);
+  }
+  if (sunLong === 0) {
+    sunLong = calculateSunLongitude(T);
+  }
+  
   const elongation = (moonLong - sunLong + 360) % 360;
   
   const moonInfo = getZodiacSignInfo(moonLong);
@@ -262,6 +288,54 @@ function getPhaseLimitsForDate(startDate: Date) {
   return { startD, endD };
 }
 
+const LOCAL_CYCLE_EXTRA_TRANSLATIONS: Record<Language, Record<string, string>> = {
+  pt: {
+    "A Lua está posicionada nos exatos": "A Lua está posicionada nos exatos",
+    "de": "de",
+    "Elemento de": "Elemento de",
+    "Vetores de Impacto Diário: Lua em": "Vetores de Impacto Diário: Lua em",
+    "Painel de Sintonização de Coordenadas": "Painel de Sintonização de Coordenadas",
+    "Hora atual:": "Hora atual:",
+    "Fase Astronomia Real": "Fase Astronomia Real"
+  },
+  en: {
+    "A Lua está posicionada nos exatos": "The Moon is positioned at the exact",
+    "de": "of",
+    "Elemento de": "Element of",
+    "Vetores de Impacto Diário: Lua em": "Daily Impact Vectors: Moon in",
+    "Painel de Sintonização de Coordenadas": "Coordinate Tuning Panel",
+    "Hora atual:": "Current time:",
+    "Fase Astronomia Real": "Real Astronomy Phase"
+  },
+  es: {
+    "A Lua está posicionada nos exatos": "La Luna está posicionada en los exactos",
+    "de": "de",
+    "Elemento de": "Elemento de",
+    "Vetores de Impacto Diário: Lua em": "Vectores de Impacto Diario: Luna en",
+    "Painel de Sintonização de Coordenadas": "Panel de Sintonización de Coordenadas",
+    "Hora atual:": "Hora actual:",
+    "Fase Astronomia Real": "Fase de Astronomía Real"
+  },
+  de: {
+    "A Lua está posicionada nos exatos": "Der Mond befindet sich auf den exakten",
+    "de": "von",
+    "Elemento de": "Element von",
+    "Vetores de Impacto Diário: Lua em": "Tägliche Einflussvektoren: Mond in",
+    "Painel de Sintonização de Coordenadas": "Koordinatenabstimmungspanel",
+    "Hora atual:": "Aktuelle Uhrzeit:",
+    "Fase Astronomia Real": "Reale Astronomische Phase"
+  },
+  fr: {
+    "A Lua está posicionada nos exatos": "La Lune est positionnée aux exacts",
+    "de": "de",
+    "Elemento de": "Élément de",
+    "Vetores de Impacto Diário: Lua em": "Vecteurs d'Impact Quotidien : Lune en",
+    "Painel de Sintonização de Coordenadas": "Panneau de Réglage des Coordonnées",
+    "Hora atual:": "Heure actuelle :",
+    "Fase Astronomia Real": "Phase d'Astronomie Réelle"
+  }
+};
+
 interface LunarCycleProps {
   userName?: string;
   userSunSign?: string;
@@ -271,28 +345,28 @@ interface LunarCycleProps {
 
 export default function LunarCycle({ 
   userName, 
-  userSunSign = 'Aquário',
-  userAscendant = 'Sagitário',
+  userSunSign = '',
+  userAscendant = '',
   lang
 }: LunarCycleProps) {
+  const { idioma } = useIdioma();
   const { t: i18nT } = useTranslation();
-  const activeL = (lang as Language) || 'pt';
-  const t = (text: string) => {
-    if (!text) return "";
-    const res = i18nT(text);
-    if (res === text || !res) {
-      return translateUiText(text, activeL);
-    }
-    return res;
-  };
+  const activeL = (idioma || lang || 'pt') as Language;
 
   const tLocal = (ptText: string) => {
     if (activeL === 'pt') return ptText;
+    const extraItem = LOCAL_CYCLE_EXTRA_TRANSLATIONS[activeL]?.[ptText];
+    if (extraItem) return extraItem;
     const item = LOCAL_UI_TRANSLATIONS[ptText];
     if (item && item[activeL]) {
       return item[activeL];
     }
-    return translateUiText(ptText, activeL);
+    return i18nT(ptText);
+  };
+
+  const t = (text: string) => {
+    if (!text) return "";
+    return tLocal(text);
   };
   
   // Temporal States
@@ -391,7 +465,7 @@ export default function LunarCycle({
     }
     if (transitElem === natalElem) {
       const transitElemName = { pt: transitElem, en: { 'Fogo': 'Fire', 'Terra': 'Earth', 'Ar': 'Air', 'Água': 'Water' }[transitElem] || transitElem, es: { 'Fogo': 'Fuego', 'Terra': 'Tierra', 'Ar': 'Aire', 'Água': 'Agua' }[transitElem] || transitElem, de: { 'Fogo': 'Feuer', 'Terra': 'Erde', 'Ar': 'Luft', 'Água': 'Wasser' }[transitElem] || transitElem, fr: { 'Fogo': 'Feu', 'Terra': 'Terre', 'Ar': 'Air', 'Água': 'Eau' }[transitElem] || transitElem }[activeL] || transitElem;
-      const userSunSignName = translateUiText(userSunSign, activeL);
+      const userSunSignName = t(userSunSign);
       return {
         type: { pt: 'Trígono Elemental', en: 'Elemental Trine', es: 'Trígono Elemental', de: 'Elementares Trigon', fr: 'Trigone Élémentaire' }[activeL] || 'Trígono Elemental',
         badge: { pt: '▲ Harmonia Fluida', en: '▲ Fluid Harmony', es: '▲ Armonía Fluida', de: '▲ Fließende Harmonie', fr: '▲ Harmonie Fluide' }[activeL] || '▲ Harmonia Fluida',
@@ -409,7 +483,7 @@ export default function LunarCycle({
       const tIdx = indices.indexOf(moonState.moonSign);
       const nIdx = indices.indexOf(userSunSign);
       if (Math.abs(tIdx - nIdx) === 6) {
-        const moonSignName = translateUiText(moonState.moonSign, activeL);
+        const moonSignName = t(moonState.moonSign);
         return {
           type: { pt: 'Oposição Celestial', en: 'Celestial Opposition', es: 'Oposición Celestial', de: 'Himmlische Opposition', fr: 'Opposition Céleste' }[activeL] || 'Oposição Celestial',
           badge: { pt: '➔ Polaridade / Espelho', en: '➔ Polarity / Mirror', es: '➔ Polaridad / Espejo', de: '➔ Polarität / Spiegel', fr: '➔ Polarité / Miroir' }[activeL] || '➔ Polaridade / Espelho',
@@ -624,7 +698,7 @@ export default function LunarCycle({
     const pTranslation = LUNAR_PHASES_TRANSLATIONS[dayItem.phase.key]?.[activeL];
     return {
       ...dayItem,
-      sign: translateUiText(dayItem.sign, activeL),
+      sign: t(dayItem.sign),
       phase: {
         ...dayItem.phase,
         name: pTranslation?.name || dayItem.phase.name,
@@ -642,7 +716,7 @@ export default function LunarCycle({
       ...phase,
       phaseName: pTranslation?.name || phase.phaseName,
       desc: pTranslation?.desc || phase.desc,
-      sign: translateUiText(phase.sign, activeL)
+      sign: t(phase.sign)
     };
   });
 
@@ -674,7 +748,7 @@ export default function LunarCycle({
         <p className="text-xs text-slate-350 leading-relaxed font-sans">
           {userName ? (
             <>
-              {t("Olá,")} <strong className="text-indigo-300 font-bold">{userName}</strong> ({t("Sol em")} <strong className="text-amber-400 font-semibold">{t(userSunSign)}</strong>, {t("Ascendente em")} <strong className="text-pink-400 font-semibold">{t(userAscendant)}</strong>). {t("O ritmo gravitacional lunar dita o movimento das marés e rege os biorritmos biológicos de curto curso. Este módulo calcula em tempo real, através de efemérides geocêntricas integradas, a exata posição da Lua no céu para o seu mapa pessoal.")}
+              <strong className="text-indigo-300 font-bold">{userName}</strong>, {t("sinto uma luz muito especial ao ler sua energia.")} {t("O ritmo gravitacional lunar dita o movimento das marés e rege os biorritmos biológicos de curto curso. Este módulo calcula em tempo real, através de efemérides geocêntricas integradas, a exata posição da Lua no céu para o seu mapa pessoal.")}
             </>
           ) : (
             <>
@@ -742,10 +816,10 @@ export default function LunarCycle({
                 {/* Temporal Tuner Forms */}
                 <div className="p-4 bg-slate-950/90 rounded-2xl border border-slate-850 space-y-3.5">
                   <div className="flex justify-between items-center">
-                    <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block font-bold">Painel de Sintonização de Coordenadas</span>
+                    <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block font-bold">{tLocal("Painel de Sintonização de Coordenadas")}</span>
                     {isLiveSync && (
                       <span className="text-[9px] font-mono text-emerald-400 uppercase tracking-wider block">
-                        Hora atual: {currentClockTime.toLocaleTimeString('pt-BR')}
+                        {tLocal("Hora atual:")} {currentClockTime.toLocaleTimeString(activeL === 'en' ? 'en-US' : activeL === 'es' ? 'es-ES' : activeL === 'de' ? 'de-DE' : activeL === 'fr' ? 'fr-FR' : 'pt-BR')}
                       </span>
                     )}
                   </div>
@@ -778,7 +852,7 @@ export default function LunarCycle({
 
                   <div className="flex justify-between items-center pt-1.5 flex-wrap gap-2.5 border-t border-slate-900/80">
                     <span className="text-[10px] font-mono text-indigo-400 font-bold block uppercase tracking-wide">
-                      ⊙ {selectedDate.toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : lang === 'de' ? 'de-DE' : lang === 'fr' ? 'fr-FR' : 'pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })} {t("às")} {selectedDate.toTimeString().split(' ')[0].substring(0, 5)} {isLiveSync && `(${t("Relógio Sincro")})`}
+                      ⊙ {selectedDate.toLocaleDateString(activeL === 'en' ? 'en-US' : activeL === 'es' ? 'es-ES' : activeL === 'de' ? 'de-DE' : activeL === 'fr' ? 'fr-FR' : 'pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })} {t("às")} {selectedDate.toTimeString().split(' ')[0].substring(0, 5)} {isLiveSync && `(${t("Relógio Sincro")})`}
                     </span>
                     
                     {!isLiveSync && (
@@ -804,7 +878,7 @@ export default function LunarCycle({
                       </div>
                       <div className="space-y-0.5">
                         <span className="px-1.5 py-0.5 bg-indigo-500/10 border border-indigo-400/20 text-[9px] font-mono text-indigo-405 rounded block uppercase tracking-widest w-fit">
-                          Fase Astronomia Real
+                          {tLocal("Fase Astronomia Real")}
                         </span>
                         <h3 className="text-base font-black font-sans text-white uppercase mt-1">
                           {t(phaseInfo.name)} ({Math.round(moonState.elongation / 3.6)}% {t("iluminada")})
@@ -815,8 +889,8 @@ export default function LunarCycle({
                     <div className="text-right">
                       <span className="text-[9px] font-mono text-[#E5C158] block uppercase font-bold">{t("Duração Real")}</span>
                       <span className="text-[10px] font-mono text-slate-400">
-                        {limits.startD.toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : lang === 'de' ? 'de-DE' : lang === 'fr' ? 'fr-FR' : 'pt-BR', { day: '2-digit', month: 'numeric' })} a {' '}
-                        {limits.endD.toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : lang === 'de' ? 'de-DE' : lang === 'fr' ? 'fr-FR' : 'pt-BR', { day: '2-digit', month: 'numeric' })}
+                        {limits.startD.toLocaleDateString(activeL === 'en' ? 'en-US' : activeL === 'es' ? 'es-ES' : activeL === 'de' ? 'de-DE' : activeL === 'fr' ? 'fr-FR' : 'pt-BR', { day: '2-digit', month: 'numeric' })} a {' '}
+                        {limits.endD.toLocaleDateString(activeL === 'en' ? 'en-US' : activeL === 'es' ? 'es-ES' : activeL === 'de' ? 'de-DE' : activeL === 'fr' ? 'fr-FR' : 'pt-BR', { day: '2-digit', month: 'numeric' })}
                       </span>
                     </div>
                   </div>
@@ -830,7 +904,7 @@ export default function LunarCycle({
                   <div className="flex gap-2.5 items-start p-3 bg-slate-950/80 rounded-xl border border-slate-900 text-xs text-slate-350 leading-relaxed font-sans">
                     <span className="text-indigo-400 text-sm leading-none mt-0.5">☄</span>
                     <div>
-                      A Lua está posicionada nos exatos <strong className="text-indigo-300 font-mono font-bold">{moonState.moonDegree}º {moonState.moonMinute}'</strong> de <strong className="text-slate-105 font-bold">{moonState.moonSign}</strong> (Elemento de {medicalDetails.element}).
+                      {tLocal("A Lua está posicionada nos exatos")} <strong className="text-indigo-300 font-mono font-bold">{moonState.moonDegree}º {moonState.moonMinute}'</strong> {tLocal("de")} <strong className="text-slate-105 font-bold">{t(moonState.moonSign)}</strong> ({tLocal("Elemento de")} {medicalDetails.element}).
                     </div>
                   </div>
                 </div>
@@ -838,7 +912,7 @@ export default function LunarCycle({
                 {/* Grid of 4 sectors affected */}
                 <div className="space-y-3">
                   <h4 className="text-[10px] font-mono uppercase text-slate-400 tracking-wider font-bold">
-                    Vetores de Impacto Diário: Lua em {moonState.moonSign}
+                    {tLocal("Vetores de Impacto Diário: Lua em")} {t(moonState.moonSign)}
                   </h4>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -849,7 +923,7 @@ export default function LunarCycle({
                         <Coins className="w-4 h-4" />
                       </div>
                       <div className="space-y-1.5 text-xs font-sans">
-                        <h5 className="font-mono font-bold text-slate-205 uppercase">$ Finanças</h5>
+                        <h5 className="font-mono font-bold text-slate-205 uppercase">{t('lunar.finances')}</h5>
                         <p className="text-[10.5px] text-slate-400 leading-relaxed">
                           {medicalDetails.finances}
                         </p>
@@ -862,7 +936,7 @@ export default function LunarCycle({
                         <Heart className="w-4 h-4" />
                       </div>
                       <div className="space-y-1.5 text-xs font-sans">
-                        <h5 className="font-mono font-bold text-slate-205 uppercase">♥ Relacionamentos</h5>
+                        <h5 className="font-mono font-bold text-slate-205 uppercase">{t('lunar.relationships')}</h5>
                         <p className="text-[10.5px] text-slate-400 leading-relaxed">
                           {medicalDetails.relationships}
                         </p>
@@ -875,7 +949,7 @@ export default function LunarCycle({
                         <Activity className="w-4 h-4" />
                       </div>
                       <div className="space-y-1.5 text-xs font-sans">
-                        <h5 className="font-mono font-bold text-slate-205 uppercase">✚ Saúde e Bem-estar</h5>
+                        <h5 className="font-mono font-bold text-slate-205 uppercase">{t('lunar.health')}</h5>
                         <p className="text-[10.5px] text-slate-400 leading-relaxed">
                           {medicalDetails.health}
                         </p>
@@ -888,7 +962,7 @@ export default function LunarCycle({
                         <Scissors className="w-4 h-4" />
                       </div>
                       <div className="space-y-1.5 text-xs font-sans">
-                        <h5 className="font-mono font-bold text-slate-205 uppercase">✦ Beleza e Autocuidado</h5>
+                        <h5 className="font-mono font-bold text-slate-205 uppercase">{t('lunar.beauty')}</h5>
                         <p className="text-[10.5px] text-slate-400 leading-relaxed">
                           {medicalDetails.beauty}
                         </p>
@@ -909,8 +983,8 @@ export default function LunarCycle({
               >
                 {/* Future feed list */}
                 <div className="space-y-2">
-                  <span className="text-[9px] font-mono text-indigo-400 uppercase tracking-widest block font-bold">Calendário de Transições Celestiais Próximas</span>
-                  <h4 className="text-xs font-bold text-slate-300">Próximos cruzamentos astronômicos de fases (com precisão de 15 minutos):</h4>
+                  <span className="text-[9px] font-mono text-indigo-400 uppercase tracking-widest block font-bold">{tLocal("Calendário de Transições Celestiais Próximas")}</span>
+                  <h4 className="text-xs font-bold text-slate-300">{tLocal("Próximos cruzamentos astronômicos de fases (com precisão de 15 minutos):")}</h4>
                 </div>
 
                 <div className="space-y-3 font-sans">
@@ -921,7 +995,7 @@ export default function LunarCycle({
                       className="p-3.5 bg-slate-950 rounded-xl border border-slate-850 hover:border-indigo-500/30 transition flex justify-between items-center cursor-pointer group"
                     >
                       <div className="flex items-center gap-3">
-                        <span className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 flex items-center justify-center font-mono font-bold text-lg select-none shrink-0" title="Ver sintonização desta data">
+                        <span className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 flex items-center justify-center font-mono font-bold text-lg select-none shrink-0" title={t("Ver sintonização desta data")}>
                           {phase.icon}
                         </span>
                         <div className="space-y-0.5">
@@ -955,7 +1029,7 @@ export default function LunarCycle({
               <span className="text-xl">🧘</span>
               <div>
                 <h4 className="text-xs font-bold font-mono text-slate-350 uppercase tracking-widest leading-none">{tLocal('Órgãos Mais Sensíveis Hoje')}</h4>
-                <p className="text-[9.5px] text-slate-505 mt-1 leading-none">{tLocal('Suscetibilidade anatômica regida pela Lua em')} {translateUiText(moonState.moonSign, activeL)}</p>
+                <p className="text-[9.5px] text-slate-505 mt-1 leading-none">{tLocal('Suscetibilidade anatômica regida pela Lua em')} {t(moonState.moonSign)}</p>
               </div>
             </div>
 
@@ -963,7 +1037,7 @@ export default function LunarCycle({
               {medicalDetails.organs.map((org, oIdx) => (
                 <div key={oIdx} className="p-2.5 bg-slate-950/80 rounded-xl border border-slate-900 flex items-center gap-3">
                   <span className="w-2.5 h-2.5 bg-indigo-400 rounded-full shrink-0 flex items-center justify-center animate-pulse" />
-                  <span className="text-slate-300 font-medium">{org} <span className="text-slate-500 font-normal text-[10.5px] font-mono">({translateUiText(moonState.moonSign, activeL)} {tLocal('regência')})</span></span>
+                  <span className="text-slate-300 font-medium">{org} <span className="text-slate-500 font-normal text-[10.5px] font-mono">({t(moonState.moonSign)} {tLocal('regência')})</span></span>
                 </div>
               ))}
             </div>

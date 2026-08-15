@@ -25,7 +25,7 @@ interface NumerologyViewProps {
   numerology: NumerologyCycle;
   user: {
     name: string;
-    birthDate: string;
+    birthDate?: string;
     [key: string]: any;
   };
   lang?: string;

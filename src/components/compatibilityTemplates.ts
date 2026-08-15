@@ -1,4 +1,5 @@
 import { CategoryDetails } from './compatibilityEngine';
+import { getCategoryConfig } from './compatibilityCategoriesData';
 import i18next from 'i18next';
 
 function getActiveLanguage(): 'pt' | 'en' | 'es' | 'de' | 'fr' {
@@ -30,18 +31,22 @@ const TRANSLATED_SIGNS: Record<string, Record<string, string>> = {
   fr: { "Áries": "Bélier", "Touro": "Taureau", "Gêmeos": "Gémeaux", "Câncer": "Cancer", "Leão": "Lion", "Virgem": "Vierge", "Libra": "Balance", "Escorpião": "Scorpion", "Sagitário": "Sagitaire", "Capricórnio": "Capricorne", "Aquário": "Verseau", "Peixes": "Poissons" }
 };
 
-const TRANSLATED_ELEMENTS: Record<string, Record<string, string>> = {
-  pt: { Fogo: "Fogo", Terra: "Terra", Ar: "Ar", Água: "Água" },
-  en: { Fogo: "Fire", Terra: "Earth", Ar: "Air", Água: "Water" },
-  es: { Fogo: "Fuego", Terra: "Tierra", Ar: "Aire", Água: "Agua" },
-  de: { Fogo: "Feuer", Terra: "Erde", Ar: "Luft", Água: "Wasser" },
-  fr: { Fogo: "Feu", Terra: "Terre", Ar: "Air", Água: "Eau" }
-};
+export function getElementInteraction(el1: string, el2: string, lang: 'pt' | 'en' | 'es' | 'de' | 'fr'): string {
+  const tEl1 = {
+    pt: el1,
+    en: { "Fogo": "Fire", "Terra": "Earth", "Ar": "Air", "Água": "Water" }[el1] || el1,
+    es: { "Fogo": "Fuego", "Terra": "Tierra", "Ar": "Aire", "Água": "Agua" }[el1] || el1,
+    de: { "Fogo": "Feuer", "Terra": "Erde", "Ar": "Luft", "Água": "Wasser" }[el1] || el1,
+    fr: { "Fogo": "Feu", "Terra": "Terre", "Ar": "Air", "Água": "Eau" }[el1] || el1
+  }[lang];
 
-export function getElementInteraction(el1: string, el2: string): string {
-  const lang = getActiveLanguage();
-  const tEl1 = TRANSLATED_ELEMENTS[lang]?.[el1] || el1;
-  const tEl2 = TRANSLATED_ELEMENTS[lang]?.[el2] || el2;
+  const tEl2 = {
+    pt: el2,
+    en: { "Fogo": "Fire", "Terra": "Earth", "Ar": "Air", "Água": "Water" }[el2] || el2,
+    es: { "Fogo": "Fuego", "Terra": "Tierra", "Ar": "Aire", "Água": "Agua" }[el2] || el2,
+    de: { "Fogo": "Feuer", "Terra": "Erde", "Ar": "Luft", "Água": "Wasser" }[el2] || el2,
+    fr: { "Fogo": "Feu", "Terra": "Terre", "Ar": "Air", "Água": "Eau" }[el2] || el2
+  }[lang];
 
   if (el1 === el2) {
     return {
@@ -58,7 +63,7 @@ export function getElementInteraction(el1: string, el2: string): string {
       en: `stimulating combination of Fire and Air, where creativity and inspiring ideas ignite mutual practical enthusiasm.`,
       es: `combinación estimulante de Fuego y Aire, donde la creatividad y las ideas inspiradoras encienden el entusiasmo práctico mutuo.`,
       de: `anregende Kombination aus Feuer und Luft, bei der Kreativität und inspirierende Ideen gegenseitigen praktischen Enthusiasmus entfachen.`,
-      fr: `combinaison stimulante de Feu et d'Air, où la créativité et les idées inspiratrices enflamment l'enthousiasme pratique mutuel.`
+      fr: `combinaison stimulante de Feu et d'Air, où la créativité et les inspiratrices enflamment l'enthousiasme pratique mutuel.`
     }[lang];
   }
   if ((el1 === "Terra" && el2 === "Água") || (el1 === "Água" && el2 === "Terra")) {
@@ -83,9 +88,12 @@ export function generateBespokeCategory(
   cat: string,
   name1: string,
   name2: string,
-  signs: Record<string, string>
+  signs: Record<string, string>,
+  langParam?: string
 ): CategoryDetails {
-  const lang = getActiveLanguage();
+  const lang = (langParam && ['pt', 'en', 'es', 'de', 'fr'].includes(langParam.toLowerCase().split('-')[0]))
+    ? (langParam.toLowerCase().split('-')[0] as 'pt' | 'en' | 'es' | 'de' | 'fr')
+    : getActiveLanguage();
   const {
     sun1, sun2, moon1, moon2, mercury1, mercury2,
     venus1, venus2, mars1, mars2, jupiter1, jupiter2,
@@ -259,17 +267,17 @@ export function generateBespokeCategory(
       },
       analiseDetalhada: {
         compatibilidadeMessage: {
-          pt: `Sua atração romântica baseia-se na complementariedade das forças essenciais de Vênus. ${name1} expressa carinho com a sensibilidade de ${tVenus1}, o que ressoa com o afeto idealizado por ${name2} em ${tVenus2}. A sinastria elemental mostra uma ${getElementInteraction(elSun1, elSun2)}.`,
-          en: `Your romantic attraction is based on the complementarity of the essential forces of Venus. ${name1} expresses affection with the sensitivity of ${tVenus1}, which resounds with the idealized affection of ${name2} in ${tVenus2}. The elemental synastry shows a ${getElementInteraction(elSun1, elSun2)}.`,
-          es: `Su atracción romántica se basa en la complementariedad de las fuerzas esenciales de Venus. ${name1} expresa cariño con la sensibilidad de ${tVenus1}, lo que resuena con el afecto idealizado de ${name2} en ${tVenus2}. La sinastría elemental muestra una ${getElementInteraction(elSun1, elSun2)}.`,
-          de: `Ihre romantische Anziehungskraft basiert auf der Komplementarität der wesentlichen Kräfte der Venus. ${name1} drückt Zuneigung mit der Sensibilität von ${tVenus1} aus, was mit der idealisierten Zuneigung von ${name2} in ${tVenus2} übereinstimmt. Die elementare Synastrie zeigt eine ${getElementInteraction(elSun1, elSun2)}.`,
-          fr: `Votre attraction romantique repose sur la complémentarité des forces essentielles de Vénus. ${name1} exprime son affection avec la sensibilité de ${tVenus1}, ce qui résonne avec l'affection idéalisée de ${name2} en ${tVenus2}. La synastrie élémentaire montre une ${getElementInteraction(elSun1, elSun2)}.`
+          pt: `Sua atração romântica baseia-se na complementariedade das forças essenciais de Vênus. ${name1} expressa carinho com a sensibilidade de ${tVenus1}, o que ressoa com o afeto idealizado por ${name2} em ${tVenus2}. A sinastria elemental mostra uma ${getElementInteraction(elSun1, elSun2, lang)}.`,
+          en: `Your romantic attraction is based on the complementarity of the essential forces of Venus. ${name1} expresses affection with the sensitivity of ${tVenus1}, which resounds with the idealized affection of ${name2} in ${tVenus2}. The elemental synastry shows a ${getElementInteraction(elSun1, elSun2, lang)}.`,
+          es: `Su atracción romántica se basa en la complementariedad de las fuerzas esenciales de Venus. ${name1} expresa cariño con la sensibilidad de ${tVenus1}, lo que resuena con el afecto idealizado de ${name2} en ${tVenus2}. La sinastría elemental muestra una ${getElementInteraction(elSun1, elSun2, lang)}.`,
+          de: `Ihre romantische Anziehungskraft basiert auf der Komplementarität der wesentlichen Kräfte der Venus. ${name1} drückt Zuneigung mit der Sensibilität von ${tVenus1} aus, was mit der idealisierten Zuneigung von ${name2} in ${tVenus2} übereinstimmt. Die elementare Synastrie zeigt eine ${getElementInteraction(elSun1, elSun2, lang)}.`,
+          fr: `Votre attraction romantique repose sur la complémentarité des forces essentielles de Vénus. ${name1} exprime son affection avec la sensibilité de ${tVenus1}, ce qui résonne avec l'affection idéalisée de ${name2} en ${tVenus2}. La synastrie élémentaire montre une ${getElementInteraction(elSun1, elSun2, lang)}.`
         }[lang],
         conflitoMessage: {
           pt: `Os atritos menores ocorrem na manifestação diária de frustrações. Com Lua em ${tMoon1}, ${name1} reage acumulando sentimentos, ao passo que ${name2} com Lua em ${tMoon2} reage exigindo silêncio racional. Encontrar o tempo mútuo evita o distanciamento afetivo.`,
           en: `Minor frictions occur in the daily expression of frustrations. With Moon in ${tMoon1}, ${name1} reacts by accumulating feelings, while ${name2} with Moon in ${tMoon2} reacts by demanding rational silence. Finding mutual time prevents emotional distance.`,
           es: `Las fricciones menores ocurren en la manifestación diaria de frustraciones. Con la Luna en ${tMoon1}, ${name1} reacciona acumulando sentimientos, mientras que ${name2} con la Luna en ${tMoon2} reacciona exigiendo silencio racional. Encontrar el tiempo mutuo evita la distancia afectiva.`,
-          de: `Kleinere Reibungen treten im täglichen Ausdruck von Frustrationen auf. Mit dem Mond in ${tMoon1} reagiert ${name1}, indem er Gefühle anstaut, während ${name2} mit dem Mond in ${tMoon2} reagiert, indem er rationales Schweigen fordert. Das Finden gegenseitiger Zeit verhindert emotionale Distanz.`,
+          de: `Kleinere Reibungen auftreten im täglichen Ausdruck von Frustrationen. Mit dem Mond in ${tMoon1} reagiert ${name1}, indem er Gefühle anstaut, während ${name2} mit dem Mond in ${tMoon2} reagiert, indem er rationales Schweigen fordert. Das Finden gegenseitiger Zeit verhindert emotionale Distanz.`,
           fr: `Les frictions mineures se produisent dans l'expression quotidienne des frustrations. Avec la Lune en ${tMoon1}, ${name1} réagit en accumulant ses sentiments, tandis que ${name2} avec la Lune en ${tMoon2} réagit en exigeant un silence rationnel. Trouver un moment mutuel évite la distance affective.`
         }[lang],
         caracteristicasUnem: {
@@ -385,7 +393,7 @@ export function generateBespokeCategory(
       ],
       inteligenciaRelacionamento: {
         oQueFazer: {
-          pt: ["Praticar a escuta compassiva.", "Manter rotinas de café da manhã sem celulares."],
+          pt: ["Praticar a escuta compassiva.", "Mantener rotinas de café da manhã sem celulares."],
           en: ["Practice compassionate listening.", "Keep morning breakfast routines phone-free."],
           es: ["Practicar la escucha compasiva.", "Mantener rutinas de desayuno sin teléfonos."],
           de: ["Mitfühlendes Zuhören üben.", "Frühstücksroutinen handyfrei halten."],
@@ -428,83 +436,45 @@ export function generateBespokeCategory(
   const isFriend = cat === 'friend';
   const isBusiness = cat === 'business';
 
-  const defaultTitle = {
-    pt: isFriend ? "Dinâmica do Convívio" : isBusiness ? "Dinâmica Profissional" : "Construção de Vida Comum",
-    en: isFriend ? "Friendship Connection" : isBusiness ? "Professional Connection" : "Life Build Connection",
-    es: isFriend ? "Dinámica del Convivir" : isBusiness ? "Dinámica Profesional" : "Construcción de Vida Común",
-    de: isFriend ? "Verbindungsdynamik" : isBusiness ? "Berufliche Verbindung" : "Gemeinsame Lebensfestigung",
-    fr: isFriend ? "Dynamique de la Cohabitation" : isBusiness ? "Dynamique Professionnelle" : "Construction d'une Vie Commune"
-  }[lang];
-
-  const defaultStrength = {
-    pt: isFriend ? `Forte conexão intelectual entre Mercúrio em ${tMercury1} e ${tMercury2}.` : `Sinergia de metas materiais coordenada por Mercúrio em ${tMercury1} e Saturno em ${tSaturn2}.`,
-    en: isFriend ? `Strong intellectual connection between Mercury in ${tMercury1} and ${tMercury2}.` : `Material goals synergy coordinated by Mercury in ${tMercury1} and Saturn in ${tSaturn2}.`,
-    es: isFriend ? `Fuerte conexión intelectual entre Mercurio en ${tMercury1} y ${tMercury2}.` : `Sinergia de metas materiales coordinada por Mercurio en ${tMercury1} y Saturno en ${tSaturn2}.`,
-    de: isFriend ? `Starke intellektuelle Verbindung zwischen Merkur in ${tMercury1} und ${tMercury2}.` : `Materielle Zielsynergie, koordiniert durch Merkur in ${tMercury1} und Saturn in ${tSaturn2}.`,
-    fr: isFriend ? `Forte connexion intellectuelle entre Mercure en ${tMercury1} et ${tMercury2}.` : `Synergie des objectifs matériels coordonnée par Mercure en ${tMercury1} et Saturne en ${tSaturn2}.`
-  }[lang];
-
-  const defaultAttention = {
-    pt: `Pequenas diferenças de ritmo sob influência de Sol em ${tSun1} e Sol em ${tSun2}.`,
-    en: `Small differences in pace under the influence of Sun in ${tSun1} and Sun in ${tSun2}.`,
-    es: `Pequeñas diferencias de ritmo bajo la influencia del Sol en ${tSun1} y del Sol en ${tSun2}.`,
-    de: `Kleine Rhythmusunterschiede unter dem Einfluss von Sonne in ${tSun1} und Sonne in ${tSun2}.`,
-    fr: `Petites différences de rythme sous l'influence du Soleil en ${tSun1} et du Soleil en ${tSun2}.`
-  }[lang];
-
-  const defaultConflito = {
-    pt: `Tensão de ritmos operacionais entre Marte em ${tMars1} e Marte em ${tMars2}.`,
-    en: `Operational pace tension between Mars in ${tMars1} and Mars in ${tMars2}.`,
-    es: `Tensión de ritmos operativos entre Marte en ${tMars1} y Marte en ${tMars2}.`,
-    de: `Operative Rhythmusspannung zwischen Mars in ${tMars1} und Mars in ${tMars2}.`,
-    fr: `Tension des rythmes opérationnels entre Mars en ${tMars1} et Mars en ${tMars2}.`
-  }[lang];
-
-  const defaultOppMsg = {
-    pt: `Excelente cooperação sob o alinhamento de ${tSun1} e ${tSun2}.`,
-    en: `Excellent cooperation under the alignment of ${tSun1} and ${tSun2}.`,
-    es: `Excelente cooperación bajo la alineación de ${tSun1} y ${tSun2}.`,
-    de: `Hervorragende Zusammenarbeit unter der Ausrichtung von ${tSun1} und ${tSun2}.`,
-    fr: `Excellente coopération sous l'alignement de ${tSun1} et ${tSun2}.`
-  }[lang];
+  const config = getCategoryConfig(
+    cat,
+    lang,
+    name1,
+    name2,
+    tSun1,
+    tSun2,
+    tMoon1,
+    tMoon2,
+    tMercury1,
+    tMercury2,
+    tVenus1,
+    tVenus2,
+    tMars1,
+    tMars2,
+    tSaturn1,
+    tSaturn2,
+    tAsc1
+  );
 
   return {
     score: scoreBase,
     mapaHarmonia: {
-      pontosFortes: [defaultStrength],
-      pontosAtencao: [defaultAttention],
-      areasConflito: [defaultConflito]
+      pontosFortes: config.strength,
+      pontosAtencao: config.attention,
+      areasConflito: config.conflito
     },
     analiseDetalhada: {
-      compatibilidadeMessage: defaultOppMsg,
-      conflitoMessage: defaultAttention,
-      caracteristicasUnem: {
-        pt: ["Compromisso inabalável de apoio mútuo.", "Clareza de comunicação e objetivos."],
-        en: ["Unshakable commitment to mutual support.", "Clarity of communication and goals."],
-        es: ["Compromiso inquebrantable de apoyo mutuo.", "Claridad de comunicación y objetivos."],
-        de: ["Unerschütterliche gegenseitige Unterstützung.", "Klarheit der Kommunikation und Ziele."],
-        fr: ["Engagement inébranlable de soutien mutuel.", "Clarté de la communication et des objectifs."]
-      }[lang],
-      caracteristicasAfastam: {
-        pt: ["Teimosia em debates burocráticos.", "Excesso de racionalização de sentimentos."],
-        en: ["Stubbornness in bureaucratic debates.", "Excessive rationalization of feelings."],
-        es: ["Obstinación en debates burocráticos.", "Exceso de racionalización de sentimientos."],
-        de: ["Sturheit bei bürokratischen Debatten.", "Übermäßige Rationalisierung von Gefühlen."],
-        fr: ["Obstination dans les débats bureaucratiques.", "Excès de rationalisation des sentiments."]
-      }[lang]
+      compatibilidadeMessage: config.compatibilidadeMessage,
+      conflitoMessage: config.conflitoMessage,
+      caracteristicasUnem: config.caracteristicasUnem,
+      caracteristicasAfastam: config.caracteristicasAfastam
     },
     dinamicaConviver: {
-      title: defaultTitle,
+      title: config.title,
       items: [
         {
-          label: { pt: "Rotina", en: "Routine", es: "Rutina", de: "Routine", fr: "Routine" }[lang],
-          desc: {
-            pt: `Organização minuciosa e divisão equilibrada de metas baseada em Ascendente em ${tAsc1}.`,
-            en: `Meticulous organization and balanced goal division based on Ascendant in ${tAsc1}.`,
-            es: `Organización meticulosa y división equilibrada de metas basada en Ascendente en ${tAsc1}.`,
-            de: `Sorgfältige Organisation und ausgewogene Zielaufteilung basierend auf Aszendent in ${tAsc1}.`,
-            fr: `Organisation méticuleuse et répartition équilibrée des objectifs basées sur l'Ascendant en ${tAsc1}.`
-          }[lang]
+          label: config.routineLabel,
+          desc: config.routineDesc
         }
       ]
     },
@@ -521,99 +491,25 @@ export function generateBespokeCategory(
       hora: dateObj.toLocaleTimeString(currentLocale),
       fuso: fusoText,
       atualizacao: formattedUpdate,
-      influencia: {
-        pt: `Neste momento, trânsitos favoráveis de Saturno em ${tSaturn1} atuam blindando decisões de longo prazo e organizando caminhos prósperos.`,
-        en: `At this moment, favorable transits of Saturn in ${tSaturn1} act to shield long-term decisions and organize prosperous paths.`,
-        es: `En este momento, tránsitos favorables de Saturno en ${tSaturn1} actúan protegiendo decisiones de largo plazo y organizando caminos prósperos.`,
-        de: `In diesem Moment wirken günstige Transite des Saturns in ${tSaturn1}, um langfristige Entscheidungen zu schützen und wohlhabende Wege zu organisieren.`,
-        fr: `En ce moment, des transits favorables de Saturne en ${tSaturn1} agissent pour protéger les décisions à long terme et organiser des voies prospères.`
-      }[lang]
+      influencia: config.influencia
     },
     calendarioIndicadores: {
-      label7Dias: {
-        pt: "Fase de alta produtividade. Excelente clima para colocar pendências em ordem.",
-        en: "High productivity phase. Excellent atmosphere to sort out pending tasks.",
-        es: "Fase de alta productividad. Excelente ambiente para poner al día tareas pendientes.",
-        de: "Hochproduktive Phase. Hervorragende Atmosphäre, um ausstehende Aufgaben zu erledigen.",
-        fr: "Phase de productivité élevée. Excellente ambiance pour régler les tâches en attente."
-      }[lang],
-      label30Dias: {
-        pt: "Excelente período para realizar auditorias ou planejamento estratégico em conjunto.",
-        en: "Excellent period for conducting joint audits or strategic planning.",
-        es: "Excelente período para realizar auditorías o planificación estratégica en conjunto.",
-        de: "Hervorragende Zeit für gemeinsame Prüfungen oder strategische Planungen.",
-        fr: "Excellente période pour mener des audits conjoints ou une planification stratégique."
-      }[lang],
-      label3Meses: {
-        pt: "Maturidade e solidez. O trânsito de Saturno atua promovendo segurança e contratos sérios.",
-        en: "Maturity and solidity. Saturn's transit promotes security and serious contracts.",
-        es: "Madurez y solidez. El tránsito de Saturno promueve seguridad y contratos serios.",
-        de: "Reife und Solidität. Der Transit des Saturns fördert Sicherheit und ernsthafte Verträge.",
-        fr: "Maturité et solidité. Le transit de Saturne favorise la sécurité et les contrats sérieux."
-      }[lang],
-      label6Meses: {
-        pt: "Plena colheita material e consolidação financeira de ações conjuntas.",
-        en: "Full material harvest and financial consolidation of joint actions.",
-        es: "Plena cosecha material y consolidación financiera de acciones conjuntas.",
-        de: "Volle materielle Ernte und finanzielle Konsolidierung gemeinsamer Aktionen.",
-        fr: "Pleine récolte matérielle et consolidation financière des actions conjointes."
-      }[lang],
-      label1Ano: {
-        pt: "Grandes auspícios para consolidar legado e faturamento constante de longo prazo.",
-        en: "Great auspices to consolidate legacy and steady long-term faturamento.",
-        es: "Grandes auspicios para consolidar legado y facturación constante a largo plazo.",
-        de: "Großartige Vorzeichen zur Festigung des Vermächtnisses und stetiger langfristiger Einnahmen.",
-        fr: "Grands auspices pour consolider l'héritage et des revenus constants à long terme."
-      }[lang]
+      label7Dias: config.label7Dias,
+      label30Dias: config.label30Dias,
+      label3Meses: config.label3Meses,
+      label6Meses: config.label6Meses,
+      label1Ano: config.label1Ano
     },
-    diasFavoraveisItems: [
-      { icon: "💼", category: { pt: "Negócios", en: "Business", es: "Negocios", de: "Geschäft", fr: "Affaires" }[lang], description: { pt: "Foco tático e solidez de papéis comerciais.", en: "Tactical focus and stability in commercial papers.", es: "Enfoque táctico y solidez en documentos comerciales.", de: "Taktischer Fokus und Stabilität bei Handelspapieren.", fr: "Focus tactique et solidité des documents commerciaux." }[lang] }
-    ],
-    diasAtencaoItems: [
-      { category: { pt: "Prazos", en: "Deadlines", es: "Plazos", de: "Fristen", fr: "Délais" }[lang], description: { pt: "Revise detalhes finos em relatórios operacionais.", en: "Review fine details in operational reports.", es: "Revise detalles finos en informes operativos.", de: "Überprüfen Sie feine Details in operativen Berichten.", fr: "Examinez les détails précis dans les rapports opérationnels." }[lang] }
-    ],
-    visaoLongoPrazoItems: [
-      { category: { pt: "Estabilidade", en: "Stability", es: "Estabilidad", de: "Stabilität", fr: "Stabilité" }[lang], description: { pt: `Base forte guiada pela maturidade de Saturno em ${tSaturn1}.`, en: `Strong base guided by Saturn's maturity in ${tSaturn1}.`, es: `Base fuerte guiada por la madurez de Saturno en ${tSaturn1}.`, de: `Starkes Fundament, geleitet von Saturns Reife in ${tSaturn1}.`, fr: `Base solide guidée par la maturité de Saturne en ${tSaturn1}.` }[lang] }
-    ],
-    pontosOcultosItems: [
-      { category: { pt: "Transformação", en: "Transformation", es: "Transformación", de: "Transformation", fr: "Transformation" }[lang], description: { pt: "Desenvolver tolerância mútua em rotinas cansativas.", en: "Develop mutual tolerance in tiring routines.", es: "Desarrollar tolerancia mutua en rutinas agotadoras.", de: "Gegenseitige Toleranz in anstrengenden Routinen entwickeln.", fr: "Développer une tolérance mutuelle dans les routines fatigantes." }[lang] }
-    ],
+    diasFavoraveisItems: config.dFavoraveisItems,
+    diasAtencaoItems: config.dAtencaoItems,
+    visaoLongoPrazoItems: config.vLongoPrazoItems,
+    pontosOcultosItems: config.pOcultosItems,
     inteligenciaRelacionamento: {
-      oQueFazer: {
-        pt: ["Definir metas semanais com prazos exatos.", "Manter acordos de forma transparente."],
-        en: ["Define weekly goals with exact deadlines.", "Maintain agreements transparently."],
-        es: ["Definir metas semanales con plazos exactos.", "Mantener acuerdos de forma transparente."],
-        de: ["Wöchentliche Ziele mit genauen Fristen definieren.", "Vereinbarungen transparent einhalten."],
-        fr: ["Définir des objectifs hebdomadaires avec des délais précis.", "Maintenir les accords de manière transparente."]
-      }[lang],
-      oQueEvitar: {
-        pt: ["Decisões baseadas em impulsos emocionais temporários.", "Críticas excessivas de desempenho em público."],
-        en: ["Decisions based on temporary emotional impulses.", "Excessive performance criticism in public."],
-        es: ["Decisiones basadas en impulsos emocionales temporales.", "Críticas excesivas de desempeño en público."],
-        de: ["Entscheidungen basierend auf vorübergehenden emotionalen Impulsen.", "Übermäßige Leistungskritik in der Öffentlichkeit."],
-        fr: ["Décisions basées sur des impulsions émotionnelles temporaires.", "Critiques excessives de performance en public."]
-      }[lang],
-      melhorarComunicacao: {
-        pt: "Apresentar dados de forma clara, didática e serena.",
-        en: "Present data clearly, didactically, and calmly.",
-        es: "Presentar datos de forma clara, didáctica y serena.",
-        de: "Präsentieren Sie Daten klar, didaktisch und ruhig.",
-        fr: "Présenter les données de manière claire, didactique et sereine."
-      }[lang],
-      reduzirConflitos: {
-        pt: "Divisão territorial exata de tarefas para evitar choques.",
-        en: "Exact division of tasks to avoid clashes.",
-        es: "División territorial exacta de tareas para evitar choques.",
-        de: "Genaue Aufgabenaufteilung zur Vermeidung von Konflikten.",
-        fr: "Répartition précise des tâches pour éviter les conflits."
-      }[lang],
-      fortalecerConexao: {
-        pt: "Celebrar metas concluídas com agradecimentos sinceros.",
-        en: "Celebrate completed goals with sincere thanks.",
-        es: "Celebrar metas concluidas con agradecimientos sinceros.",
-        de: "Erreichte Ziele mit aufrichtigem Dank feiern.",
-        fr: "Célébrer les objectifs atteints avec des remerciements sincères."
-      }[lang]
+      oQueFazer: config.oQueFazer,
+      oQueEvitar: config.oQueEvitar,
+      melhorarComunicacao: config.melhorarComunicacao,
+      reduzirConflitos: config.reduzirConflitos,
+      fortalecerConexao: config.fortalecerConexao
     }
   };
 }

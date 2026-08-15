@@ -1,4 +1,4 @@
-import { Language } from './translations';
+import { Language } from '../i18n/types';
 
 export interface LunarPhaseTranslation {
   name: string;

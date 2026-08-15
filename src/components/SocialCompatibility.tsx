@@ -4,7 +4,7 @@ import {
   MapPin, Award, Check, TrendingUp, RefreshCw, MessageSquare
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { translateUiText, Language } from '../lib/translations';
+import { Language } from '../lib/translations';
 
 interface SocialUser {
   id: string;
@@ -31,15 +31,7 @@ export default function SocialCompatibility({
   hasCreatedMap,
   onRefresh
 }: SocialCompatibilityProps) {
-  const { t: i18nT, i18n } = useTranslation();
-  const t = (text: string) => {
-    if (!text) return "";
-    const res = i18nT(text);
-    if (res === text || !res) {
-      return translateUiText(text, (i18n.language as Language) || 'pt');
-    }
-    return res;
-  };
+  const { t } = useTranslation();
 
   // Profiles database (real mock personas in system)
   const candidateUsers: SocialUser[] = [
@@ -379,7 +371,7 @@ export default function SocialCompatibility({
                       
                       <div className="flex items-center gap-1 text-slate-450 text-[10px]">
                         <MapPin className="w-3 h-3 text-slate-500" />
-                        <span>{candidate.city}</span>
+                        <span>{t(candidate.city)}</span>
                       </div>
 
                       <div className="flex items-center gap-2 pt-1">
@@ -394,12 +386,12 @@ export default function SocialCompatibility({
                   </div>
 
                   <p className="text-[11px] text-slate-350 leading-relaxed italic border-l-2 border-slate-800 pl-2.5">
-                    "{candidate.bio}"
+                    "{t(candidate.bio)}"
                   </p>
 
                   <p className="text-[10px] text-slate-400 leading-normal bg-slate-950/40 p-2.5 rounded-xl border border-slate-850/60 font-sans">
                     <span className="font-bold text-amber-500 shrink-0 block text-[9.5px] uppercase font-mono tracking-wide mb-1">{t("Destaque de Sinergia")}</span>
-                    {getCompatibilitySummaryText(userSign, candidate.sign)}
+                    {t(getCompatibilitySummaryText(userSign, candidate.sign))}
                   </p>
                 </div>
 
@@ -508,7 +500,7 @@ export default function SocialCompatibility({
                   <h3 className="font-extrabold text-slate-100 text-lg">{selectedCompanion.name}, {selectedCompanion.age}</h3>
                   <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5 font-sans">
                     <MapPin className="w-3.5 h-3.5 text-slate-500" />
-                    <span>{selectedCompanion.city} • {t("Sol")} em <strong>{t(selectedCompanion.sign)}</strong></span>
+                    <span>{t(selectedCompanion.city)} • {t("Sol")} em <strong>{t(selectedCompanion.sign)}</strong></span>
                   </p>
                 </div>
               </div>

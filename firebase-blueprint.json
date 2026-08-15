@@ -160,6 +160,23 @@
       },
       "required": ["id", "userId", "drawnCards", "interpretationText", "createdAt"]
     },
+    "TarotHistory": {
+      "title": "Humanized Tarot History Record",
+      "description": "Durable record of daily and weekly humanized Tarot interpretations with custom aspects.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique record key" },
+        "userId": { "type": "string", "description": "Associated user UID" },
+        "tipo": { "type": "string", "description": "Type of tarot layout (semanal, inteligente, amor, tradicional)" },
+        "data": { "type": "string", "description": "Date formatted as YYYY-MM-DD" },
+        "horário": { "type": "string", "description": "Time formatted as HH:MM" },
+        "idioma": { "type": "string", "description": "User language code (pt, en, es, etc.)" },
+        "cartas": { "type": "array", "description": "List of selected tarot cards with details" },
+        "interpretação": { "type": "object", "description": "Full text of AI interpretation and advice" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Firestore creation date-time" }
+      },
+      "required": ["id", "userId", "tipo", "data", "horário", "idioma", "cartas", "interpretação", "createdAt"]
+    },
     "NumerologyCycle": {
       "title": "Comprehensive Numerological Matrix",
       "description": "Durable record of personal numerology cycles and daily resonance factors.",
@@ -252,6 +269,50 @@
         "amountPaid": { "type": "integer", "description": "Simulated or actual price paid" }
       },
       "required": ["id", "userId", "planId", "status", "startDate"]
+    },
+    "StripeCustomer": {
+      "title": "Stripe Customer Info",
+      "description": "User linked to Stripe Customer details",
+      "type": "object",
+      "properties": {
+        "stripeId": { "type": "string" }
+      }
+    },
+    "StripeCheckoutSession": {
+      "title": "Stripe Checkout Session",
+      "description": "Information about a checkout session",
+      "type": "object",
+      "properties": {}
+    },
+    "StripeSubscription": {
+      "title": "Stripe Subscription details",
+      "description": "Detailed Stripe subscription data synced by the extension",
+      "type": "object",
+      "properties": {}
+    },
+    "StripePayment": {
+      "title": "Stripe Payment history",
+      "description": "Stripe payment data synced by the extension",
+      "type": "object",
+      "properties": {}
+    },
+    "StripeProduct": {
+      "title": "Stripe Product Info",
+      "description": "Stripe product details synced by the extension",
+      "type": "object",
+      "properties": {}
+    },
+    "StripePrice": {
+      "title": "Stripe Price Details",
+      "description": "Stripe price info synced by the extension",
+      "type": "object",
+      "properties": {}
+    },
+    "StripeTaxRate": {
+      "title": "Stripe Tax Rate",
+      "description": "Stripe tax rate synced by the extension",
+      "type": "object",
+      "properties": {}
     }
   },
   "firestore": {
@@ -291,9 +352,17 @@
       "schema": "Mission",
       "description": "Tracks daily synchronized interactive challenges completed or ongoing."
     },
+    "/users/{userId}/pointsTracker/{trackerId}": {
+      "schema": "User",
+      "description": "Sub-collection of points tracker records to keep user's points persistent and authenticated, preventing regression."
+    },
     "/users/{userId}/tarotReadings/{readingId}": {
       "schema": "TarotReading",
       "description": "History of tarot cards drawn and divine explanations."
+    },
+    "/users/{userId}/tarotHistory/{historyId}": {
+      "schema": "TarotHistory",
+      "description": "Durable daily and weekly humanized Tarot readings history."
     },
     "/users/{userId}/numerology/{numerologyId}": {
       "schema": "NumerologyCycle",
@@ -318,6 +387,34 @@
     "/users/{userId}/subscriptions/{subscriptionId}": {
       "schema": "Subscription",
       "description": "Ledger of plan subscriptions, payments verification, and plans metadata log."
+    },
+    "/customers/{uid}": {
+      "schema": "StripeCustomer",
+      "description": "Stripe Customer documents containing Stripe Customer IDs synced by the extension."
+    },
+    "/customers/{uid}/checkout_sessions/{id}": {
+      "schema": "StripeCheckoutSession",
+      "description": "Checkout sessions linked to a user."
+    },
+    "/customers/{uid}/subscriptions/{id}": {
+      "schema": "StripeSubscription",
+      "description": "Subscriptions details synced from Stripe."
+    },
+    "/customers/{uid}/payments/{id}": {
+      "schema": "StripePayment",
+      "description": "Payments list synced from Stripe."
+    },
+    "/products/{id}": {
+      "schema": "StripeProduct",
+      "description": "Synced products from Stripe Catalog."
+    },
+    "/products/{id}/prices/{id}": {
+      "schema": "StripePrice",
+      "description": "Synced prices for products from Stripe Catalog."
+    },
+    "/products/{id}/tax_rates/{id}": {
+      "schema": "StripeTaxRate",
+      "description": "Synced tax rates from Stripe."
     }
   }
 }

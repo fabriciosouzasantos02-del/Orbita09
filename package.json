@@ -5,11 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "validate-i18n": "tsx src/scripts/validate-translations.ts",
+    "build": "npx tsx src/scripts/generate-icons.ts && npm run validate-i18n && vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit && npm run validate-i18n"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -21,6 +22,7 @@
     "ephemeris": "^2.2.0",
     "express": "^4.21.2",
     "firebase": "^12.14.0",
+    "firebase-admin": "^14.1.0",
     "geo-tz": "^8.1.7",
     "i18next": "^26.3.1",
     "jspdf": "^4.2.1",
@@ -31,6 +33,7 @@
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "react-i18next": "^17.0.8",
+    "resend": "^6.18.1",
     "stripe": "^22.2.1",
     "vite": "^6.2.3"
   },
@@ -39,8 +42,11 @@
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
     "@types/nodemailer": "^8.0.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.21",
     "esbuild": "^0.25.0",
+    "sharp": "^0.35.3",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",

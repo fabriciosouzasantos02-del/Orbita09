@@ -19,7 +19,9 @@ import {
   TrendingDown, 
   AlertCircle 
 } from 'lucide-react';
-import { translateUiText, Language } from '../lib/translations';
+import { Language } from '../lib/translations';
+import { useIdioma } from '../context/IdiomaContext';
+import { calculateAstronomicalBiorhythms } from './astroMath';
 
 interface BiorhythmViewProps {
   userName?: string;
@@ -39,14 +41,48 @@ const CYCLES = {
 };
 
 export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang }: BiorhythmViewProps) {
+  const { idioma } = useIdioma();
+  const activeL = (idioma || lang || 'pt') as Language;
   const { t: i18nT } = useTranslation();
   const t = (text: string) => {
     if (!text) return "";
-    const res = i18nT(text);
-    if (res === text || !res) {
-      return translateUiText(text, (lang as Language) || 'pt');
+    return i18nT(text);
+  };
+
+  const getCycleExplanation = (key: string, value: number) => {
+    if (key === 'emocional') {
+      return value >= 0
+        ? t("Com o ciclo emocional em alta, há um aumento do potencial para se sentir mais de bem com a vida, consigo mesmo e com os outros, algo que afeta positivamente sua sensibilidade, seu lado sentimental, carismático e empático. Por isso, é importante aproveitar para fortalecer seus relacionamentos e demais vínculos sadios de alma.")
+        : t("Com o ciclo emocional em fase de depuração, é recomendável manter a serenidade, evitar impulsividades reativas em diálogos afetivos e praticar o autocuidado e o acolhimento interno.");
     }
-    return res;
+    if (key === 'fisico') {
+      return value >= 0
+        ? t("Seu ciclo físico está com alta energia e vigor vital. Aproveite este momento de grande força muscular e fôlego para realizar tarefas exigentes e atividades físicas.")
+        : t("Seu ciclo físico está em recuperação energética. Evite sobrecargas exaustivas musculares, mas aproveite para caminhadas leves contemplativas e x alongamentos regulares ao alvorecer.");
+    }
+    if (key === 'intelectual') {
+      return value >= 0
+        ? t("O discernimento racional e a agilidade de aprendizados gozam de excelente fertilidade. Dobre o foco nos estudos técnicos, leituras complexas e na organização estratégica financeira.")
+        : t("Seu ciclo intelectual se encontra em fase de assimilação e desaceleração. Evite tomar decisões técnicas impulsivas sob pressão e revise seus cálculos com atenção.");
+    }
+    if (key === 'espiritual') {
+      return value >= 0
+        ? t("Seu ciclo espiritual encontra-se em elevada harmonia transcendental. Sinta a presença sutil da sabedoria cósmica, fortaleça suas intenções de alma e medite sobre seu propósito.")
+        : t("Seu lado espiritual está passando por um momento de transição de frequências, sendo este um período curto, mas propício a choques de realidade, questionamentos existenciais ou testes em sua confiança interna. Mantenha-se alinhada à sua fé e confie na ordem universal, escutando sempre seu coração ao tomar decisões sadios.");
+    }
+    if (key === 'perceptivo') {
+      return value >= 0
+        ? t("Sintonias sensoriais estão calibradas. Excelente momento para contemplar a natureza selvagem, perceber detalhes estéticos ocultos no trabalho ou exercitar o corpo físico de carne.")
+        : t("Sua percepção sensorial externa está em ritmo mais calmo e introspectivo. Evite lugares com excesso de ruído ou estímulos visuais intensos para preservar seu foco mental.");
+    }
+    if (key === 'intuitivo') {
+      return value >= 0
+        ? t("Intuição em altíssima fluência de luz. Confie em seus palpites viscerais repentinos e evite se sobrecarregar de lógicas burocráticas pesadas.")
+        : t("A intuição sutil encontra-se em repouso. Valide percepções com dados práticos e fatos concretos antes de tomar conclusões precipitadas.");
+    }
+    return value >= 0
+      ? t("Estética refinada e criatividade pujante. Ideal para decorar cômodos do lar, desenhar novas frentes, comprar peças de vestuário e apreciar boa música.")
+      : t("Fase de contemplação passiva da beleza. Excelente para descansar os olhos, desfrutar do silêncio e absorver referências visuais sem a pressão de criar algo imediatamente.");
   };
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const d = new Date();
@@ -63,6 +99,21 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
   });
   const [showTheory, setShowTheory] = useState<boolean>(false);
   const [expandedCycle, setExpandedCycle] = useState<string | null>('emocional'); // Default expand Emotional as requested
+
+  const [synthesis, setSynthesis] = useState<string>('');
+  const [loadingSynthesis, setLoadingSynthesis] = useState<boolean>(false);
+
+  const getLifePathNumber = (dateStr: string): number => {
+    if (!dateStr) return 8;
+    const digits = dateStr.replace(/\D/g, '');
+    let sum = digits.split('').reduce((acc, d) => acc + parseInt(d, 10), 0);
+    while (sum > 9 && sum !== 11 && sum !== 22 && sum !== 33) {
+      sum = sum.toString().split('').reduce((acc, d) => acc + parseInt(d, 10), 0);
+    }
+    return sum;
+  };
+
+  const cvNumber = useMemo(() => getLifePathNumber(birthDate), [birthDate]);
 
   // Format first name
   const displayFirstName = userName ? userName.split(' ')[0] : '';
@@ -96,72 +147,110 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
     return days;
   }, [targetDateObj]);
 
-  // Helper to compute specific cycle percentage (-100 to 100) for a given days elapsed
-  const getBiorhythmVal = (days: number, period: number) => {
-    // Formula: sin(2 * pi * t / period) * 100
-    const val = Math.sin((2 * Math.PI * days) / period) * 100;
-    return Math.round(val);
-  };
-
-  // Compute trending (is it going up?)
-  const getIsTrendingUp = (days: number, period: number) => {
-    const valToday = getBiorhythmVal(days, period);
-    const valTomorrow = getBiorhythmVal(days + 1, period);
-    return valTomorrow > valToday;
-  };
-
   // Compile calculations for today (targetDateObj)
-  const todayDaysElapsed = useMemo(() => {
-    return calculateDaysElapsed(birthDateObj, targetDateObj);
-  }, [birthDateObj, targetDateObj]);
-
   const todayMetrics = useMemo(() => {
+    const targetDateStr = targetDateObj.toISOString().split('T')[0];
+    const tomorrowDateObj = new Date(targetDateObj.getTime() + 24 * 60 * 60 * 1000);
+    const tomorrowDateStr = tomorrowDateObj.toISOString().split('T')[0];
+    const bDate = birthDate || "1997-02-11";
+
+    const todayAstro = calculateAstronomicalBiorhythms(bDate, "12:00", targetDateStr);
+    const tomorrowAstro = calculateAstronomicalBiorhythms(bDate, "12:00", tomorrowDateStr);
+
     const res: Record<string, { value: number; isUp: boolean; isCritical: boolean }> = {};
-    Object.entries(CYCLES).forEach(([key, details]) => {
-      const value = getBiorhythmVal(todayDaysElapsed, details.period);
-      const isUp = getIsTrendingUp(todayDaysElapsed, details.period);
-      // Critical state is when cycle crosses zero line (+-10% boundary) or is near extreme peaks
+    Object.keys(CYCLES).forEach((key) => {
+      const value = todayAstro[key] !== undefined ? todayAstro[key] : 0;
+      const tomorrowValue = tomorrowAstro[key] !== undefined ? tomorrowAstro[key] : 0;
+      const isUp = tomorrowValue > value;
       const isCritical = Math.abs(value) <= 12;
       res[key] = { value, isUp, isCritical };
     });
     return res;
-  }, [todayDaysElapsed]);
+  }, [birthDate, targetDateObj]);
+
+
+  React.useEffect(() => {
+    if (!birthDate) return;
+    
+    const fetchSynthesis = async () => {
+      setLoadingSynthesis(true);
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+        const res = await fetch("/api/astrology/vibrational-synthesis", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify({
+            name: userName,
+            birthDate,
+            biorhythm: {
+              physical: todayMetrics.fisico?.value,
+              emotional: todayMetrics.emocional?.value,
+              intellectual: todayMetrics.intelectual?.value
+            },
+            caminhoDeVida: cvNumber,
+            lang: activeL
+          })
+        });
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.synthesis) {
+            setSynthesis(data.synthesis);
+          }
+        }
+      } catch (err) {
+        console.warn("Vibrational synthesis fetch timed out or failed:", err);
+      } finally {
+        setLoadingSynthesis(false);
+      }
+    };
+    
+    fetchSynthesis();
+  }, [birthDate, todayMetrics.fisico?.value, todayMetrics.emocional?.value, todayMetrics.intelectual?.value, userName, activeL, cvNumber]);
 
   // Get weekday name in target language
   const getWeekdayName = (date: Date) => {
     try {
-      return new Intl.DateTimeFormat(lang || 'pt', { weekday: 'long' }).format(date);
+      return new Intl.DateTimeFormat(activeL || 'pt', { weekday: 'long' }).format(date);
     } catch {
       const daysPt = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
-      return daysPt[date.getDay()];
+      return t(daysPt[date.getDay()]);
     }
   };
 
   // Get month name in target language
   const getMonthName = (date: Date) => {
     try {
-      return new Intl.DateTimeFormat(lang || 'pt', { month: 'long' }).format(date);
+      return new Intl.DateTimeFormat(activeL || 'pt', { month: 'long' }).format(date);
     } catch {
       const monthsPt = [
         'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
         'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
       ];
-      return monthsPt[date.getMonth()];
+      return t(monthsPt[date.getMonth()]);
     }
   };
 
   // Format full date line
   const formattedTodayLabel = useMemo(() => {
     try {
-      return new Intl.DateTimeFormat(lang || 'pt', { dateStyle: 'full' }).format(targetDateObj);
+      return new Intl.DateTimeFormat(activeL || 'pt', { dateStyle: 'full' }).format(targetDateObj);
     } catch {
       const wDay = getWeekdayName(targetDateObj);
       const day = targetDateObj.getDate();
       const month = getMonthName(targetDateObj);
       const year = targetDateObj.getFullYear();
+      if (activeL === 'en') return `${wDay}, ${month} ${day}, ${year}`;
+      if (activeL === 'de') return `${wDay}, ${day}. ${month} ${year}`;
+      if (activeL === 'fr') return `${wDay} ${day} ${month} ${year}`;
+      if (activeL === 'es') return `${wDay}, ${day} de ${month} de ${year}`;
       return `${wDay}, ${day} de ${month} de ${year}`;
     }
-  }, [targetDateObj, lang]);
+  }, [targetDateObj, activeL]);
 
   // Chart coordinate calculation for the 15 days window (SVG width 600, height 200)
   // X: 0 to 600 map from index 0 to 14
@@ -179,16 +268,23 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
   // Compile path data for each of the 7 cycles over the 15-day window
   const cyclePaths = useMemo(() => {
     const paths: Record<string, string> = {};
-    Object.entries(CYCLES).forEach(([key, details]) => {
+    const bDate = birthDate || "1997-02-11";
+    
+    // Calculate astronomical biorhythms for each of the 15 days in the range
+    const daysAstro = rawDaysRange.map(d => {
+      const dateStr = d.toISOString().split('T')[0];
+      return calculateAstronomicalBiorhythms(bDate, "12:00", dateStr);
+    });
+
+    Object.keys(CYCLES).forEach((key) => {
       const points = rawDaysRange.map((d, idx) => {
-        const daysElapsed = calculateDaysElapsed(birthDateObj, d);
-        const val = getBiorhythmVal(daysElapsed, details.period);
+        const val = daysAstro[idx][key] !== undefined ? daysAstro[idx][key] : 0;
         return `${mapX(idx)},${mapY(val)}`;
       });
       paths[key] = `M ${points.join(' L ')}`;
     });
     return paths;
-  }, [rawDaysRange, birthDateObj]);
+  }, [rawDaysRange, birthDate]);
 
   // Friendly date list for chart bottom axis
   const chartDates = useMemo(() => {
@@ -205,12 +301,12 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
     const startStr = `${String(start.getDate()).padStart(2, '0')}/${String(start.getMonth() + 1).padStart(2, '0')}`;
     const endStr = `${String(end.getDate()).padStart(2, '0')}/${String(end.getMonth() + 1).padStart(2, '0')}`;
     
-    if (lang === 'de') return `vom ${startStr} bis ${endStr}`;
-    if (lang === 'en') return `from ${startStr} to ${endStr}`;
-    if (lang === 'es') return `del ${startStr} al ${endStr}`;
-    if (lang === 'fr') return `du ${startStr} au ${endStr}`;
+    if (activeL === 'de') return `vom ${startStr} bis ${endStr}`;
+    if (activeL === 'en') return `from ${startStr} to ${endStr}`;
+    if (activeL === 'es') return `del ${startStr} al ${endStr}`;
+    if (activeL === 'fr') return `du ${startStr} au ${endStr}`;
     return `de ${startStr} a ${endStr}`;
-  }, [rawDaysRange, lang]);
+  }, [rawDaysRange, activeL]);
 
   return (
     <div id="biorhythm-root-panel" className="space-y-6 text-left">
@@ -394,15 +490,39 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
 
           </div>
 
-          {/* Sintonização dynamic advice alert */}
-          <div className="p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10 text-xs text-slate-300 leading-relaxed space-y-1.5">
-            <div className="flex gap-2 items-center text-[11px] font-mono font-bold text-indigo-305">
-              <span>★</span>
-              <span>{t("SINTONIA SINDICAL ATIVA AMARA")}</span>
+          {/* Unified Daily Vibrational Synthesis (AI Powered) */}
+          <div className="p-5 bg-gradient-to-r from-slate-950 via-indigo-950/20 to-slate-950 rounded-2xl border border-indigo-500/20 text-xs text-slate-300 leading-relaxed space-y-3 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/[0.03] rounded-full blur-xl pointer-events-none" />
+            <div className="flex justify-between items-center">
+              <div className="flex gap-2 items-center text-[11px] font-mono font-bold text-indigo-350">
+                <Sparkles className="w-4 h-4 text-indigo-400 animate-pulse" />
+                <span>
+                  {activeL === 'de' ? "TÄGLICHE SCHWINGUNGSSYNTHESE" : 
+                   activeL === 'en' ? "DAILY VIBRATIONAL SYNTHESIS" : 
+                   activeL === 'es' ? "SÍNTESIS VIBRACIONAL DIARIA" : 
+                   activeL === 'fr' ? "SYNTHÈSE VIBRATOIRE QUOTIDIENNE" : 
+                   "SÍNTESE VIBRACIONAL DIÁRIA"}
+                </span>
+              </div>
+              <span className="px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 text-[8px] font-mono font-extrabold text-indigo-400 rounded uppercase tracking-wider">
+                AI Oracle
+              </span>
             </div>
-            <p>
-              <strong>{t("Sabedoria e confiança!")}</strong> {t("No momento, hay uma sintonia benéfica entre seu ciclo intelectual e emocional, algo que pode te influenciar a tomar as decisões cruciais de longo prazo com muito mais clareza, harmonia e estabilidade de alma.")}
-            </p>
+            {loadingSynthesis ? (
+              <div className="space-y-2 animate-pulse py-2">
+                <div className="h-3 bg-slate-800 rounded w-full"></div>
+                <div className="h-3 bg-slate-800 rounded w-5/6"></div>
+                <div className="h-3 bg-slate-800 rounded w-4/5"></div>
+              </div>
+            ) : synthesis ? (
+              <p className="font-sans text-[11.5px] leading-relaxed text-slate-200">
+                {synthesis}
+              </p>
+            ) : (
+              <p className="font-sans text-[11.5px] leading-relaxed text-slate-200">
+                <strong>{t("Sabedoria e confiança!")}</strong> {t("No momento, há uma sintonia benéfica entre seu ciclo intelectual e emocional, algo que pode te influenciar a tomar as decisões cruciais de longo prazo com muito mais clareza, harmonia e estabilidade de alma.")}
+              </p>
+            )}
           </div>
 
         </div>
@@ -480,14 +600,12 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
                               {data.value > 80 ? t('✦ Alto Potencial') : data.value < -80 ? t('⚡ Período de Depuração') : t('★ Frequência Intermediária')}
                             </span>
                             
-                            <p className="leading-relaxed font-sans">
-                              {key === 'emocional' ? (
-                                t("Com o ciclo emocional em alta (+100%), há um aumento do potential para se sentir mais de bem com a vida, consigo mesmo e com os outros, algo que afeta positivamente sua sensibilidade, seu lado sentimental, carismático e empático. Por isso, é importante aproveitar para fortalecer seus relacionamentos e demais vínculos sadios de alma.")
-                              ) : key === 'fisico' ? (
-                                t("Seu ciclo físico está em recuperação energética. Evite sobrecargas exaustivas musculares, mas aproveite para caminhadas leves contemplativas e alongamentos regulares ao alvorecer.")
-                              ) : (
-                                t("O discernimento racional e a agilidade de aprendizados gozam de excelente fertilidade. Dobre o foco nos estudos técnicos, leituras complexas e na organização estratégica financeira.")
-                              )}
+                            <p className="text-[10px] text-indigo-300/80 font-mono italic">
+                              {t(details.desc)}
+                            </p>
+
+                            <p className="leading-relaxed font-sans text-slate-200">
+                              {getCycleExplanation(key, data.value)}
                             </p>
                           </motion.div>
                         )}
@@ -561,16 +679,12 @@ export default function BiorhythmView({ userName, birthDate = '1997-02-11', lang
                               {data.isUp ? t('Tendência de alta!') : t('Tendência de baixa')} {data.isCritical && t('• Ponto Crítico')}
                             </span>
                             
-                            <p className="leading-relaxed font-sans">
-                              {key === 'espiritual' ? (
-                                t("Seu lado espiritual está passando por um momento de transição de frequências, sendo este um período curto, mas propício a choques de realidade, questionamentos existenciais ou testes em sua confiança interna. Mantenha-se alinhada à sua fé e confie na ordem universal, escutando sempre seu coração ao tomar decisões sadios.")
-                              ) : key === 'perceptivo' ? (
-                                t("Sintonias sensoriais estão calibradas. Excelente momento para contemplar a natureza selvagem, perceber detalhes estéticos ocultos no trabalho ou exercitar o corpo físico de carne.")
-                              ) : key === 'intuitivo' ? (
-                                t("Intuição em altíssima fluência de luz. Confie em seus palpites viscerais repentinos e evite se sobrecarregar de lógicas burocráticas pesadas.")
-                              ) : (
-                                t("Estética refinada e criatividade pujante. Ideal para decorar cômodos do lar, desenhar novas frentes, comprar peças de vestuário e apreciar boa música.")
-                              )}
+                            <p className="text-[10px] text-indigo-300/80 font-mono italic">
+                              {t(details.desc)}
+                            </p>
+
+                            <p className="leading-relaxed font-sans text-slate-200">
+                              {getCycleExplanation(key, data.value)}
                             </p>
                           </motion.div>
                         )}

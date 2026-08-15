@@ -9,7 +9,7 @@ export interface UserProfile {
   userId?: string;
   uid?: string;
   name: string;
-  email: string;
+  email?: string;
   photoURL?: string;
   provider?: string;
   emailVerified?: boolean;
@@ -48,6 +48,7 @@ export interface UserProfile {
   subscriptionEndDate?: string;
   verificationCode?: string;
   verificationCodeCreatedAt?: string;
+  [key: string]: any;
 }
 
 export interface AstroElementDistribution {
@@ -72,6 +73,7 @@ export interface AstroAstroPosition {
   name: string;      // e.g. "Sol", "Lua"
   sign: string;      // e.g. "Aquário"
   degree: string;    // e.g. "22°"
+  house?: number;    // e.g. 1 to 12
   extraInfo?: string; // e.g. "3º decanato", "exílio", "combustão"
   description: string;
 }
@@ -112,12 +114,19 @@ export interface AstrologyMap {
 }
 
 export interface NumerologyCycle {
-  caminhoDeVida: number;
-  expressao: number;
-  motivacao: number;
-  personalidade: number;
-  ciclos: string[];
-  description: string;
+  caminhoDeVida?: number;
+  expressao?: number;
+  motivacao?: number;
+  personalidade?: number;
+  ciclos?: string[];
+  description?: string;
+  lifePath?: number;
+  expression?: number;
+  soulUrge?: number;
+  personality?: number;
+  destiny?: number;
+  lifePathNumber?: number;
+  [key: string]: any;
 }
 
 export interface DreamInterpretation {

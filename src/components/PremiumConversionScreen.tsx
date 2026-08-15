@@ -1,276 +1,443 @@
 import React, { useState } from 'react';
-import { Sparkles, Lock, ShieldCheck, CheckCircle2, RefreshCw } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { getTranslation, Language } from '../lib/translations';
+import { useTranslation } from 'react-i18next';
+import { motion } from 'motion/react';
+import { getFirestoreDB, getFirebaseAuth } from '../lib/firebase';
+import { collection, addDoc, onSnapshot } from 'firebase/firestore';
+import { 
+  Sparkles, 
+  Compass, 
+  BookOpen, 
+  Heart, 
+  CreditCard, 
+  Lock, 
+  Check, 
+  Loader2, 
+  Orbit, 
+  Globe, 
+  X,
+  ShieldCheck,
+  Zap,
+  Info
+} from 'lucide-react';
 
 interface PremiumConversionScreenProps {
-  currentLang: Language;
-  onUpgradeComplete: (isPremium: boolean) => void;
   userEmail: string;
-  updateUserProfileOnDb: (email: string, payload: any) => Promise<any>;
+  userUid: string;
+  currentLang: string;
+  onClose: () => void;
+  triggerGlobalNotification?: (title: string, message: string, type: 'success' | 'alert' | 'info') => void;
 }
 
 export const PremiumConversionScreen: React.FC<PremiumConversionScreenProps> = ({
-  currentLang,
-  onUpgradeComplete,
   userEmail,
+  userUid,
+  currentLang,
+  onClose,
+  triggerGlobalNotification
 }) => {
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [step, setStep] = useState<'checkout' | 'success'>('checkout');
-  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual'>('monthly');
+  const { t } = useTranslation();
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual'>('annual');
+  const [isRedirecting, setIsRedirecting] = useState<boolean>(false);
 
-  const plansList = [
-    { 
-      id: 'monthly' as const, 
-      name: currentLang === 'pt' ? 'Mensal' : 'Monthly', 
-      price: '9,99 EUR / mês', 
-      stripePrice: '9,99 EUR', 
-      desc: currentLang === 'pt' ? 'Acesso completo e ilimitado a todas as ferramentas astrológicas.' : 'Full and unlimited access to all celestial tools.' 
-    },
-    { 
-      id: 'annual' as const, 
-      name: currentLang === 'pt' ? 'Anual (Economize 33%)' : 'Annual (Save 33%)', 
-      price: '79,99 EUR / ano', 
-      stripePrice: '79,99 EUR', 
-      desc: currentLang === 'pt' ? 'Melhor valor. Acesso ilimitado o ano todo (apenas 6,66 EUR/mês).' : 'Best value. Unlimited access all year (only 6,66 EUR/month).' 
-    }
-  ];
-
-  const handleStripeCheckout = async () => {
-    if (!userEmail) {
-      alert(currentLang === 'pt' ? 'ID do usuário/Email não encontrado.' : 'User identifier not found.');
-      return;
-    }
-    setIsProcessing(true);
+  const handleCheckout = async () => {
+    setIsRedirecting(true);
     try {
-      const activePlan = plansList.find(p => p.id === selectedPlan) || plansList[0];
-      const response = await fetch('/api/stripe/create-checkout-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: userEmail,
-          planId: selectedPlan,
-          planName: activePlan.name
-        })
+      const priceId = selectedPlan === 'monthly' 
+        ? 'price_1TjSCjLy2FLlsgZ1QX39rY8J' 
+        : 'price_1Tu3HmLy2FLlsgZ1jlfKwPQT';
+
+      const activeUid = userUid || getFirebaseAuth()?.currentUser?.uid || localStorage.getItem("orbi_logged_uid") || "";
+      if (!activeUid) {
+        throw new Error(currentLang === 'pt' ? 'Usuário não autenticado. Por favor, faça login para continuar.' : 'User not authenticated. Please log in.');
+      }
+
+      const db = getFirestoreDB();
+      if (!db) {
+        throw new Error('Serviço do Firebase não disponível no momento.');
+      }
+
+      const checkoutSessionData = {
+        price: priceId,
+        success_url: "https://portalorbit.vercel.app/success",
+        cancel_url: "https://portalorbit.vercel.app/failure",
+        clientReferenceId: activeUid,
+        metadata: {
+          uid: activeUid,
+          email: userEmail || localStorage.getItem("orbi_logged_email") || ""
+        }
+      };
+
+      console.log("[Stripe Firebase Extension] Creating checkout session document for UID:", activeUid, checkoutSessionData);
+
+      const docRef = await addDoc(
+        collection(db, "customers", activeUid, "checkout_sessions"), 
+        checkoutSessionData
+      );
+
+      // Listen to the document for updates from the extension
+      let resolved = false;
+      const unsubscribe = onSnapshot(docRef, (snap) => {
+        const data = snap.data();
+        if (data && !resolved) {
+          if (data.error) {
+            resolved = true;
+            unsubscribe();
+            setIsRedirecting(false);
+            console.error("[Stripe Extension Error]", data.error);
+            const errMsg = data.error.message || "Erro retornado pela extensão Stripe.";
+            if (triggerGlobalNotification) {
+              triggerGlobalNotification(t('Erro de Conexão'), errMsg, 'alert');
+            } else {
+              alert(errMsg);
+            }
+          } else if (data.url) {
+            resolved = true;
+            unsubscribe();
+            const stripeUrl = data.url;
+            console.log("[Stripe Firebase Extension] Redirecting to Stripe URL:", stripeUrl);
+            
+            // Safe redirection for iFrames (AI Studio/Sandbox/Vercel)
+            try {
+              if (window.self !== window.top) {
+                const openedWindow = window.open(stripeUrl, '_blank');
+                if (!openedWindow) {
+                  window.top!.location.href = stripeUrl;
+                }
+              } else {
+                window.location.href = stripeUrl;
+              }
+            } catch (iframeErr) {
+              const openedWindow = window.open(stripeUrl, '_blank');
+              if (!openedWindow) {
+                window.location.href = stripeUrl;
+              }
+            }
+          }
+        }
       });
 
-      if (!response.ok) {
-        throw new Error('Network response not ok');
-      }
+      // Timeout safety: if the extension doesn't process the session within 6 seconds, we attempt fallback to the local backend API
+      setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          unsubscribe();
+          console.warn("[Stripe Firebase Extension] Timeout listening for checkout URL. Falling back to secure API endpoint...");
+          
+          // Secure API endpoint fallback
+          const planName = selectedPlan === 'monthly' ? 'Orbita Monthly' : 'Orbita Annual';
+          fetch('/api/stripe/create-checkout-session', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: userEmail || localStorage.getItem("orbi_logged_email") || "",
+              planId: priceId,
+              planName: planName,
+              lang: currentLang || 'pt',
+              uid: activeUid
+            }),
+          })
+          .then(async (response) => {
+            if (!response.ok) throw new Error('Falha no fallback de checkout');
+            const data = await response.json();
+            if (data.url) {
+              try {
+                if (window.self !== window.top) {
+                  const openedWindow = window.open(data.url, '_blank');
+                  if (!openedWindow) window.top!.location.href = data.url;
+                } else {
+                  window.location.href = data.url;
+                }
+              } catch {
+                const openedWindow = window.open(data.url, '_blank');
+                if (!openedWindow) window.location.href = data.url;
+              }
+            } else {
+              throw new Error('Retorno de fallback inválido');
+            }
+          })
+          .catch((err) => {
+            console.error('[Stripe Fallback Error]', err);
+            const displayMsg = t('Não foi possível iniciar o checkout seguro da Stripe. Tente novamente.');
+            if (triggerGlobalNotification) {
+              triggerGlobalNotification(t('Erro de Conexão'), displayMsg, 'alert');
+            } else {
+              alert(displayMsg);
+            }
+            setIsRedirecting(false);
+          });
+        }
+      }, 6000);
 
-      const session = await response.json();
-      if (session.url) {
-        window.location.href = session.url;
-      } else {
-        throw new Error(session.error || 'Invalid session response');
-      }
     } catch (err: any) {
-      console.error("Stripe Checkout error:", err);
-      alert(currentLang === 'pt' 
-        ? 'Erro ao gerar sessão de pagamento com a Stripe.' 
-        : 'Failed to generate session with Stripe.');
-    } finally {
-      setIsProcessing(false);
+      console.error('[Stripe Checkout Error]', err);
+      const displayMsg = err.message ? `${err.message}` : t('Não foi possível iniciar o checkout seguro da Stripe. Tente novamente.');
+      if (triggerGlobalNotification) {
+        triggerGlobalNotification(
+          t('Erro de Conexão'),
+          displayMsg,
+          'alert'
+        );
+      } else {
+        alert(displayMsg);
+      }
+      setIsRedirecting(false);
     }
   };
 
-  const t = (key: string, fallback?: string) => getTranslation(currentLang, key, fallback);
+  const benefits = [
+    {
+      icon: <Sparkles className="w-5 h-5 text-amber-400" />,
+      titleKey: 'premium_benefit_1_title',
+      titleDefault: 'Análise Avançada da IA Orbia',
+      descKey: 'premium_benefit_1_desc',
+      descDefault: 'Conselhos diários e interpretação personalizada em tempo real baseada em seus trânsitos e mapa astral.'
+    },
+    {
+      icon: <Compass className="w-5 h-5 text-emerald-400" />,
+      titleKey: 'premium_benefit_2_title',
+      titleDefault: 'Tarot Cósmico Profissional',
+      descKey: 'premium_benefit_2_desc',
+      descDefault: 'Tiragens ilimitadas com correspondências alquímicas, astrológicas e numéricas exclusivas.'
+    },
+    {
+      icon: <Heart className="w-5 h-5 text-rose-400" />,
+      titleKey: 'premium_benefit_3_title',
+      titleDefault: 'Compatibilidade e Sinastria',
+      descKey: 'premium_benefit_3_desc',
+      descDefault: 'Entenda os fios invisíveis de atração, desafios e afinidades entre sua energia e a de quem você ama.'
+    },
+    {
+      icon: <BookOpen className="w-5 h-5 text-purple-400" />,
+      titleKey: 'premium_benefit_4_title',
+      titleDefault: 'Oráculo dos Sonhos',
+      descKey: 'premium_benefit_4_desc',
+      descDefault: 'Desvende as mensagens ocultas de seu subconsciente com interpretações guiadas e arquivamento seguro.'
+    },
+    {
+      icon: <Orbit className="w-5 h-5 text-amber-500" />,
+      titleKey: 'premium_benefit_5_title',
+      titleDefault: 'Mapas Extras Ilimitados',
+      descKey: 'premium_benefit_5_desc',
+      descDefault: 'Crie, salve e analise as mandalas astrais e relatórios numerológicos de seus amigos e familiares.'
+    }
+  ];
 
   return (
-    <div id="premium-conversion-screen" className="relative z-10 space-y-10 pb-4 max-w-5xl mx-auto px-1">
-      <AnimatePresence mode="wait">
-        {step === 'checkout' ? (
-          <motion.div
-            key="checkout-view"
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.4 }}
-            className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
-          >
-            {/* Left Col: High-converting psychological text */}
-            <div className="lg:col-span-7 space-y-6 text-left">
-              <div className="space-y-4">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] uppercase font-mono font-bold tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/20">
-                  <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+    <div id="premium-conversion-screen" className="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 overflow-y-auto flex items-center justify-center p-4 sm:p-6 md:p-8">
+      
+      {/* Background stars animation visual container */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(245,158,11,0.05),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(99,102,241,0.05),transparent_50%)] pointer-events-none" />
+      
+      <motion.div 
+        initial={{ opacity: 0, y: 30, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: -30, scale: 0.98 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="relative w-full max-w-4xl bg-slate-900/90 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl shadow-amber-500/5 my-auto"
+      >
+        {/* Close Button */}
+        <button 
+          onClick={onClose}
+          disabled={isRedirecting}
+          className="absolute top-4 right-4 p-2 rounded-full bg-slate-950/50 border border-slate-800 hover:border-slate-700 hover:bg-slate-900 transition-all text-slate-400 hover:text-slate-200 z-10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          title={t('Voltar ao Portal')}
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="grid grid-cols-1 md:grid-cols-12">
+          
+          {/* Left Column - Benefits list */}
+          <div className="col-span-1 md:col-span-7 p-6 sm:p-8 border-b md:border-b-0 md:border-r border-slate-800 flex flex-col justify-between">
+            <div className="space-y-6">
+              
+              {/* Badge */}
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs font-mono font-bold tracking-wider text-amber-400 uppercase">
+                <Zap className="w-3.5 h-3.5 fill-amber-400/20" />
+                <span>{t('premium', 'Premium')}</span>
+              </div>
+
+              {/* Title & Headline */}
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold font-sans tracking-tight text-slate-100">
                   {t('conversion_headline', 'ALINHAMENTO CÓSMICO PREMIUM')}
-                </span>
-                <h1 className="text-2xl md:text-4xl font-sans font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-slate-50 via-slate-200 to-slate-400 leading-tight">
-                  {currentLang === 'pt' ? 'Sua Mandala Ancestral está Pronta' : 'Your Ancestral Mandala is Ready'}
-                </h1>
-                <p className="text-xs md:text-sm text-slate-300 leading-relaxed font-sans font-semibold">
-                  {currentLang === 'pt' 
-                    ? 'Durante os últimos dias você teve acesso à nossa tecnologia avançada de interpretação astrológica personalizada em tempo real.'
-                    : 'Over the last few days you have had full access to our advanced custom real-time astro-computational tools.'}
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-400 mt-2">
+                  {t('conversion_sub', 'Sua assinatura sintoniza interpretações exclusivas e tecnologia planetária de alta definição.')}
                 </p>
               </div>
 
-              {/* Core Benefits / Story telling paragraphs */}
-              <div className="space-y-4 text-xs text-slate-400 leading-relaxed border-l-2 border-slate-850 pl-4 font-sans">
-                <p>
-                  {currentLang === 'pt' 
-                    ? 'Por trás de cada análise existe uma avançada tecnologia astrológica e de inteligência artificial que processa continuamente milhares de cálculos personalizados com base no seu mapa astral, trânsitos planetários, posições celestes, casas astrológicas, aspectos ativos, Lua, Sol, ascendente e ciclos cósmicos que influenciam sua jornada neste exato momento.'
-                    : 'Behind each analysis is an advanced artificial intelligence and astrological database computing thousands of calculations based on your natal chart, transit charts, houses alignments, active aspects, Moon, Sun, Ascendant and dynamic cosmic streams impacting your biofield right now.'}
-                </p>
-                <p>
-                  {currentLang === 'pt' 
-                    ? 'Diferente de aplicativos genéricos, o Orbita não entrega interpretações padronizadas. Nossa tecnologia monitora constantemente as movimentações celestes e cruza essas informações com a sua configuração astral exclusiva, gerando orientações altamente personalizadas, alinhadas à sua frequência energética atual.'
-                    : 'Unlike generic horoscopes, Orbita does not output boilerplate explanations. Our technology monitors celestial mechanics in real-time, matching shifts with your specific energetic signature to supply highly tuned planetary remedies and guidance.'}
-                </p>
-                <p>
-                  {currentLang === 'pt' 
-                    ? 'Sua assinatura contribui para manter toda essa estrutura funcionando: servidores de processamento em tempo real, sistemas avançados de inteligência artificial, atualização contínua dos dados astrológicos globais e o desenvolvimento constante de novos recursos exclusivos.'
-                    : 'Our premium subscription powers our continuous calculations, high-performance API processing servers, advanced AI integration, cosmic datasets updates and constant development of exclusive features.'}
-                </p>
-                <p>
-                  {currentLang === 'pt' 
-                    ? 'Ao continuar sua jornada, você mantém acesso ilimitado a uma plataforma criada para oferecer autoconhecimento, clareza, direcionamento e uma leitura cósmica profundamente personalizada, algo que nenhum mapa genérico consegue entregar.'
-                    : 'By continuing your journey, you retain unlimited access to a platform developed to grant direct self-discovery, cosmic alignment, clarity and celestial diagnostics that generic content is unable to duplicate.'}
-                </p>
-                <p className="text-amber-400/90 font-medium">
-                  {currentLang === 'pt'
-                    ? 'Milhares de cálculos astrológicos são processados continuamente para gerar suas previsões, análises e recomendações diárias.'
-                    : 'Thousands of astronomical arrays are calculated non-stop to construct your daily forecasts, analysis and planetary charts.'}
-                </p>
+              {/* Precision JPL NASA Text */}
+              <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-850 text-[11px] leading-relaxed text-slate-400 flex gap-3">
+                <Globe className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                <span>
+                  {t('conversion_nasa_text', 'Tecnologia astrológica avançada de interpretação, com cálculos astronômicos de altíssima precisão conectados ao motor softwares da NASA/JPL, calculando posições planetárias, casas e trânsitos em tempo real.')}
+                </span>
               </div>
 
-              {/* Interactive Plan Selector */}
-              <div id="stripe-plan-selector" className="space-y-3 pt-2">
-                <span className="inline-flex items-center gap-1 text-[9px] uppercase font-mono tracking-widest text-amber-500 font-bold bg-amber-500/10 px-2 py-0.5 rounded-sm">
-                  {currentLang === 'pt' ? 'Escolha sua Conexão Celeste' : 'Choose Your Celestial Connection'}
-                </span>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {plansList.map((plan) => (
-                    <button
-                      key={plan.id}
-                      type="button"
-                      onClick={() => setSelectedPlan(plan.id)}
-                      className={`p-4 rounded-2xl text-left border cursor-pointer transition flex flex-col justify-between ${
-                        selectedPlan === plan.id
-                          ? 'bg-amber-500/10 border-amber-500 text-slate-100 shadow-[0_0_12px_rgba(245,158,11,0.15)]'
-                          : 'bg-slate-900/30 border-slate-850 hover:border-slate-800 text-slate-400'
-                      }`}
-                    >
-                      <div>
-                        <div className="flex justify-between items-center gap-1">
-                          <span className="text-xs font-black tracking-tight leading-none block text-slate-250">{plan.name}</span>
-                          {selectedPlan === plan.id && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-amber-400 to-rose-500" />
-                          )}
-                        </div>
-                        <p className="text-[10px] text-slate-400 mt-2 leading-snug font-sans">{plan.desc}</p>
-                      </div>
-                      <div className="mt-4 pt-2 border-t border-slate-850/50 flex justify-between items-baseline">
-                        <span className="text-[8px] font-mono opacity-50 uppercase">{plan.price}</span>
-                        <span className="text-xs font-mono font-bold text-amber-400">{plan.stripePrice}</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+              {/* Benefits list */}
+              <div className="space-y-4 pt-2">
+                {benefits.map((b, idx) => (
+                  <div key={idx} className="flex gap-3.5 items-start">
+                    <div className="p-1.5 rounded-lg bg-slate-950 border border-slate-800 shrink-0">
+                      {b.icon}
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-200">
+                        {t(b.titleKey, b.titleDefault)}
+                      </h4>
+                      <p className="text-[10px] text-slate-400 leading-normal mt-0.5">
+                        {t(b.descKey, b.descDefault)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
+
             </div>
 
-            {/* Right Col: Minimalist Ultra-Premium Checkout Card */}
-            <div className="lg:col-span-5">
-              <div className="bg-gradient-to-b from-slate-900 to-slate-950 border border-amber-500/15 rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl relative overflow-hidden text-left">
-                {/* Subtle backgrounds glowing */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/[0.03] rounded-full blur-2xl pointer-events-none" />
+            {/* Privacy details */}
+            <div className="flex items-center gap-2 text-[10px] text-slate-500 pt-6 mt-6 border-t border-slate-850">
+              <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+              <span>{t('sub_billing_info', 'Faturamento via Stripe Subscription seguro e criptografado.')}</span>
+            </div>
+          </div>
 
-                <div className="pb-4 border-b border-slate-850 flex justify-between items-center">
-                  <div className="space-y-0.5">
-                    <h3 className="text-xs font-bold text-slate-200 font-sans">{t('sub_billing_info', 'Dados de Pagamento')}</h3>
-                    <p className="text-[9px] font-mono text-slate-500 uppercase">Assinatura Via Stripe Segura</p>
+          {/* Right Column - Plan options & Call to action */}
+          <div className="col-span-1 md:col-span-5 p-6 sm:p-8 bg-slate-950/40 flex flex-col justify-between">
+            <div className="space-y-6">
+              
+              <div>
+                <h3 className="text-sm font-bold text-slate-300 tracking-wider uppercase font-mono">
+                  {t('select_plan_title', 'Escolha seu Alinhamento')}
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  {t('select_plan_desc', 'Selecione o ciclo ideal para continuar sua jornada cósmica:')}
+                </p>
+              </div>
+
+              {/* Plan cards */}
+              <div className="space-y-3">
+                
+                {/* Annual Plan (Best Value) */}
+                <div 
+                  onClick={() => !isRedirecting && setSelectedPlan('annual')}
+                  className={`relative p-4 rounded-2xl border transition-all duration-300 cursor-pointer ${
+                    selectedPlan === 'annual'
+                      ? 'bg-amber-500/10 border-amber-500 shadow-lg shadow-amber-500/5'
+                      : 'bg-slate-900/50 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-bold uppercase font-mono tracking-wider text-emerald-400">
+                    {t('plan_annual_save', 'Economize 33%')}
                   </div>
-                  <Lock className="w-4 h-4 text-slate-500" />
+
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-4.5 h-4.5 rounded-full border flex items-center justify-center transition-all ${
+                      selectedPlan === 'annual' 
+                        ? 'border-amber-500 bg-amber-500 text-slate-950' 
+                        : 'border-slate-700 bg-transparent'
+                    }`}>
+                      {selectedPlan === 'annual' && <Check className="w-3 h-3 stroke-[3]" />}
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black text-slate-100 uppercase tracking-wide font-mono">
+                        {t('plan_annual_title', 'Plano Anual')}
+                      </h4>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        {t('plan_annual_sub', 'Cobrado anualmente')}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex items-baseline gap-1.5 border-t border-slate-850/50 pt-2.5">
+                    <span className="text-lg font-black font-mono text-slate-100">79,99 EUR</span>
+                    <span className="text-[10px] text-slate-500 font-mono">/ {t('year', 'ano')}</span>
+                    <span className="text-[10px] text-emerald-400 font-mono ml-auto font-bold">(~6,66 EUR/{t('month', 'mês')})</span>
+                  </div>
                 </div>
 
-                <div className="space-y-4 pt-1">
-                  <div className="p-4 bg-slate-950 border border-slate-900 rounded-2xl space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[9px] font-mono uppercase text-slate-400">{currentLang === 'pt' ? 'Plano Ativo' : 'Selected Plan'}</span>
-                      <span className="text-xs font-bold text-amber-400">
-                        {plansList.find(p => p.id === selectedPlan)?.name}
-                      </span>
+                {/* Monthly Plan */}
+                <div 
+                  onClick={() => !isRedirecting && setSelectedPlan('monthly')}
+                  className={`p-4 rounded-2xl border transition-all duration-300 cursor-pointer ${
+                    selectedPlan === 'monthly'
+                      ? 'bg-amber-500/10 border-amber-500 shadow-lg shadow-amber-500/5'
+                      : 'bg-slate-900/50 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-4.5 h-4.5 rounded-full border flex items-center justify-center transition-all ${
+                      selectedPlan === 'monthly' 
+                        ? 'border-amber-500 bg-amber-500 text-slate-950' 
+                        : 'border-slate-700 bg-transparent'
+                    }`}>
+                      {selectedPlan === 'monthly' && <Check className="w-3 h-3 stroke-[3]" />}
                     </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-[9px] font-mono uppercase text-slate-400">{currentLang === 'pt' ? 'Custo de Assinatura' : 'Billing Price'}</span>
-                      <span className="font-mono text-[11px] font-bold text-slate-200">
-                        {plansList.find(p => p.id === selectedPlan)?.stripePrice}
-                      </span>
+                    <div>
+                      <h4 className="text-xs font-black text-slate-100 uppercase tracking-wide font-mono">
+                        {t('plan_monthly_title', 'Plano Mensal')}
+                      </h4>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        {t('plan_monthly_sub', 'Cancele quando quiser')}
+                      </p>
                     </div>
-                    <p className="text-[9px] text-slate-500 leading-normal border-t border-slate-900 pt-2 font-mono">
-                      {currentLang === 'pt'
-                        ? 'Ao clicar no botão abaixo, você será redirecionado temporariamente para o ambiente seguro do Stripe para concluir sua assinatura com total segurança.'
-                        : 'Clicking below redirects you safely to native Stripe secure portals to finalize your subscription.'}
-                    </p>
                   </div>
 
-                  <button
-                    type="button"
-                    disabled={isProcessing}
-                    onClick={handleStripeCheckout}
-                    className="w-full py-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-amber-500 hover:from-purple-500 hover:via-indigo-500 hover:to-amber-400 text-slate-100 text-xs font-black uppercase tracking-wider rounded-xl transition duration-300 disabled:opacity-75 shadow-lg shadow-indigo-500/10 flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    {isProcessing ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>Sintonizando Stripe...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>{currentLang === 'pt' ? 'Continuar Minha Jornada' : 'Continue My Journey'}</span>
-                      </>
-                    )}
-                  </button>
+                  <div className="mt-3 flex items-baseline gap-1.5 border-t border-slate-850/50 pt-2.5">
+                    <span className="text-lg font-black font-mono text-slate-100">9,99 EUR</span>
+                    <span className="text-[10px] text-slate-500 font-mono">/ {t('month', 'mês')}</span>
+                  </div>
                 </div>
 
-                {/* Secure Badge */}
-                <div className="pt-2 border-t border-slate-900 flex justify-between items-center text-[9px] font-mono text-slate-500">
-                  <span className="flex items-center gap-1 font-bold">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                    CONEXÃO SSL DIRECT
+              </div>
+
+              {/* Summary description text */}
+              <div className="text-[10px] text-slate-400 leading-relaxed bg-slate-950/60 p-3 rounded-xl border border-slate-900">
+                <div className="flex gap-2 items-start">
+                  <Info className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
+                  <span>
+                    {selectedPlan === 'annual' 
+                      ? t('plan_annual_desc_info', 'O ciclo anual garante 12 meses completos de sintonia astrológica ininterrupta, trânsitos diários e IA por menos do que o preço de um café por semana.')
+                      : t('plan_monthly_desc_info', 'O ciclo mensal é cobrado automaticamente a cada 30 dias. Oferece total flexibilidade de cancelamento a qualquer momento diretamente no painel.')
+                    }
                   </span>
-                  <span>PCI SECURE CERTIFIED</span>
                 </div>
               </div>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="success-view"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-slate-900/60 p-8 md:p-12 rounded-3xl border border-amber-500/25 text-center space-y-6 max-w-xl mx-auto shadow-[0_0_50px_rgba(245,158,11,0.1)] relative overflow-hidden"
-          >
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-amber-500/[0.04] rounded-full blur-3xl pointer-events-none" />
 
-            <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-amber-500 to-rose-600 flex items-center justify-center mx-auto shadow-lg border border-amber-400/20">
-              <CheckCircle2 className="w-8 h-8 text-slate-950 animate-bounce" />
             </div>
 
-            <div className="space-y-3">
-              <span className="text-[10px] uppercase font-mono tracking-widest text-amber-500 font-extrabold block">Alinhamento Concluído</span>
-              <h2 className="text-2xl font-sans font-black text-slate-50 tracking-tight">
-                {currentLang === 'pt' ? 'Bem-vindo ao Elite Celestial!' : 'Welcome to the Star Elite!'}
-              </h2>
-              <p className="text-xs text-slate-350 leading-relaxed font-sans max-w-sm mx-auto">
-                {currentLang === 'pt'
-                  ? 'Sua assinatura premium foi sintonizada com sucesso. Todos os recursos cósmicos e ferramentas astrológicas avançadas foram desbloqueados para você!'
-                  : 'Your premium subscription has been successfully synchronized. All cosmic features and tools have been immediately unlocked for your journey!'}
+            {/* Main Action Button */}
+            <div className="pt-8">
+              <button
+                onClick={handleCheckout}
+                disabled={isRedirecting}
+                className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-slate-950 font-sans font-black text-xs uppercase tracking-widest transition-all duration-300 shadow-lg shadow-amber-500/10 flex items-center justify-center gap-2 cursor-pointer hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                {isRedirecting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                    <span>{t('btn_connecting_stripe', 'CONECTANDO...')}</span>
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="w-4 h-4 text-slate-950" />
+                    <span>{t('btn_upgrade', 'CONTINUAR MINHA JORNADA')}</span>
+                  </>
+                )}
+              </button>
+              <p className="text-[8px] text-center text-slate-500 font-mono uppercase tracking-wider mt-2.5 leading-none">
+                {t('stripe_secure_payment_guaranteed', 'Stripe Secure Checkout • Ativação Imediata')}
               </p>
             </div>
 
-            <div className="pt-2">
-              <button
-                onClick={() => onUpgradeComplete(true)}
-                className="px-8 py-3.5 bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-450 text-slate-950 text-xs font-black uppercase tracking-wider rounded-xl transition shadow-md hover:shadow-lg focus:outline-hidden cursor-pointer"
-              >
-                {currentLang === 'pt' ? 'Iniciar Minhas Leituras' : 'Start My Readings'}
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+
+        </div>
+
+      </motion.div>
     </div>
   );
 };

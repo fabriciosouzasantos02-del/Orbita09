@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import i18n from '../lib/i18n';
 
 // 5. Definir o tipo para os idiomas suportados (pt, en, es, de, fr)
 export type Idioma = 'pt' | 'en' | 'es' | 'de' | 'fr';
@@ -212,6 +213,12 @@ export function IdiomaProvider({ children }: IdiomaProviderProps) {
   const mudarIdioma = (novoIdioma: Idioma) => {
     setIdioma(novoIdioma);
     localStorage.setItem('orbi_preferred_language', novoIdioma);
+    if (i18n && i18n.language !== novoIdioma) {
+      i18n.changeLanguage(novoIdioma).catch(console.warn);
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('orbi_language_changed', { detail: novoIdioma }));
+    }
   };
 
   // Função helper de tradução rápida utilizando o dicionário fortemente tipado
