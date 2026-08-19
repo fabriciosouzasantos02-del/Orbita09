@@ -597,21 +597,26 @@ export default function App() {
   const [showPremiumModal, setShowPremiumModal] = useState<boolean>(false);
   const [trialTimeRemaining, setTrialTimeRemaining] = useState<number>(0);
 
+  // Flag global para ativação do sistema de cobrança/assinaturas (desativado temporariamente para modo de teste gratuito)
+  const SUBSCRIPTION_SYSTEM_ENABLED = false;
+
   const isPremiumActive = 
+    !SUBSCRIPTION_SYSTEM_ENABLED ||
     user?.isPremium === true ||
     user?.isSubscribed === true ||
     user?.subscriptionStatus === 'active' || 
     (!!user?.trialEnds && new Date(user.trialEnds).getTime() > Date.now());
 
-  // Auto-close the premium checkout modal if user is detected as premium
+  // Auto-close the premium checkout modal if user is detected as premium or testing mode
   useEffect(() => {
-    if (isPremiumActive) {
+    if (isPremiumActive || !SUBSCRIPTION_SYSTEM_ENABLED) {
       setShowPremiumModal(false);
+      setShowSubPortalModal(false);
     }
   }, [isPremiumActive]);
 
   useEffect(() => {
-    if (!user?.trialEnds) return;
+    if (!SUBSCRIPTION_SYSTEM_ENABLED || !user?.trialEnds) return;
     const interval = setInterval(() => {
       const remaining = Math.max(0, new Date(user.trialEnds).getTime() - Date.now());
       setTrialTimeRemaining(remaining);
@@ -623,9 +628,8 @@ export default function App() {
   }, [user?.trialEnds]);
 
   useEffect(() => {
-    // Only redirect or trigger premium conversion screens if the user is definitely NOT premium
-    // and we are NOT in the middle of a database synchronization.
-    if (!isPremiumActive && isAuthInitialized && !isSyncingSession) {
+    // Only redirect or trigger premium conversion screens if subscriptions are enabled and user is NOT premium
+    if (SUBSCRIPTION_SYSTEM_ENABLED && !isPremiumActive && isAuthInitialized && !isSyncingSession) {
       const isRestrictedSubTab = activeTab === 'mapa' && (mapSubTab === 'area_usuario');
       
       if (isRestrictedSubTab) {
@@ -6275,14 +6279,16 @@ export default function App() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 flex-nowrap">
                     <h3 className="text-xs font-bold text-slate-205 truncate max-w-[100px] sm:max-w-[200px]" title={user.name || t("ui.profile.defaultSeeker", "Buscador Estelar")}>{user.name || t("ui.profile.defaultSeeker", "Buscador Estelar")}</h3>
-                    {user.isSubscribed || user.isPremium ? (
-                      <span className="px-1.5 py-0.5 bg-amber-500/10 border border-amber-500/30 rounded-sm text-[8px] uppercase font-mono tracking-wider text-amber-400 font-black shrink-0">
-                        Premium
-                      </span>
-                    ) : (
-                      <span className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded-sm text-[8px] uppercase font-mono tracking-wider text-slate-400 font-black shrink-0">
-                        Free
-                      </span>
+                    {SUBSCRIPTION_SYSTEM_ENABLED && (
+                      user.isSubscribed || user.isPremium ? (
+                        <span className="px-1.5 py-0.5 bg-amber-500/10 border border-amber-500/30 rounded-sm text-[8px] uppercase font-mono tracking-wider text-amber-400 font-black shrink-0">
+                          Premium
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded-sm text-[8px] uppercase font-mono tracking-wider text-slate-400 font-black shrink-0">
+                          Free
+                        </span>
+                      )
                     )}
                   </div>
                   <p className="text-[9px] font-mono text-slate-500 leading-none mt-1 truncate max-w-[200px] sm:max-w-md">
@@ -7674,14 +7680,16 @@ export default function App() {
                         {tLocal('settings_desc')}
                       </p>
                       
-                      <button
-                        id="manage-subscription-btn"
-                        onClick={handleManageSubscription}
-                        className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl bg-gradient-to-r from-amber-500 to-[#E5C158] text-slate-950 hover:brightness-110 active:scale-95 transition shadow-lg shadow-amber-500/10 cursor-pointer"
-                      >
-                        <span>✨</span>
-                        {tLocal('manage_subscription_btn')}
-                      </button>
+                      {SUBSCRIPTION_SYSTEM_ENABLED && (
+                        <button
+                          id="manage-subscription-btn"
+                          onClick={handleManageSubscription}
+                          className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl bg-gradient-to-r from-amber-500 to-[#E5C158] text-slate-950 hover:brightness-110 active:scale-95 transition shadow-lg shadow-amber-500/10 cursor-pointer"
+                        >
+                          <span>✨</span>
+                          {tLocal('manage_subscription_btn')}
+                        </button>
+                      )}
                     </div>
                     <span className="text-3xl text-[#E5C158] shrink-0 self-end sm:self-center">⚙️</span>
                   </div>
@@ -7914,7 +7922,7 @@ export default function App() {
                 </div>
 
                 {/* Premium Subscription Conversion Screen overlay/modal */}
-                {showPremiumModal && (
+                {SUBSCRIPTION_SYSTEM_ENABLED && showPremiumModal && (
                   <React.Suspense fallback={
                     <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
                       <div className="text-center space-y-3 animate-pulse">
@@ -7934,7 +7942,7 @@ export default function App() {
                 )}
 
                 {/* Stripe Subscription Portal Modal */}
-                {showSubPortalModal && (
+                {SUBSCRIPTION_SYSTEM_ENABLED && showSubPortalModal && (
                   <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
                     <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl max-w-md w-full relative space-y-6 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] animate-in fade-in zoom-in-95 duration-200">
                       

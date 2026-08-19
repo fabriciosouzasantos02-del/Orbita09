@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import SocialCompatibility from './SocialCompatibility';
 import SocialNetworkView from './SocialNetworkView';
-import { generatePersonalizedProsperityMap } from './prosperityEngine';
+import { generatePersonalizedProsperityMap } from '../prosperityEngine';
 import { generateDailyPrediction } from './dailyPredictionsEngine';
 import { SIGNS_ZODIAC_LIST, BLOG_ARTICLES_LIST } from '../data';
 import { loadCalculationCache, saveCalculationCache } from '../lib/firebase';
@@ -87,6 +87,10 @@ interface UserDashboardPortalProps {
   setAreaSubTab?: any;
   onUpdateCurrentUser?: (updated: any) => void;
   lang?: Language;
+  mapData?: any;
+  isInstalled?: boolean;
+  onInstallPWA?: () => void;
+  [key: string]: any;
 }
 
 export default function UserDashboardPortal({

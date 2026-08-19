@@ -31,36 +31,54 @@ import { safeLocalStorage } from './lib/safeStorage';
 })();
 
 // Global Fetch Interceptor to ensure every API call carries the user's active application language header
-if (typeof window !== 'undefined' && window.fetch) {
-  const originalFetch = window.fetch;
-  window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
-    try {
-      const urlStr = typeof input === 'string' ? input : (input instanceof URL ? input.href : (input && (input as Request).url ? (input as Request).url : ''));
-      if (urlStr && urlStr.includes('/api/')) {
-        let validLang = 'pt';
-        try {
-          const activeLang = safeLocalStorage.getItem('orbi_user_explicit_lang') ||
-                             safeLocalStorage.getItem('orbi_preferred_language') ||
-                             safeLocalStorage.getItem('i18nextLng') || 'pt';
-          const cleanLang = activeLang.toLowerCase().split('-')[0];
-          validLang = ['pt', 'en', 'es', 'de', 'fr'].includes(cleanLang) ? cleanLang : 'pt';
-        } catch (e) {
-          validLang = 'pt';
-        }
+try {
+  if (typeof window !== 'undefined' && typeof window.fetch === 'function') {
+    const originalFetch = window.fetch.bind(window);
+    const customFetch = function (input: RequestInfo | URL, init?: RequestInit) {
+      try {
+        const urlStr = typeof input === 'string' ? input : (input instanceof URL ? input.href : (input && (input as Request).url ? (input as Request).url : ''));
+        if (urlStr && urlStr.includes('/api/')) {
+          let validLang = 'pt';
+          try {
+            const activeLang = safeLocalStorage.getItem('orbi_user_explicit_lang') ||
+                               safeLocalStorage.getItem('orbi_preferred_language') ||
+                               safeLocalStorage.getItem('i18nextLng') || 'pt';
+            const cleanLang = activeLang.toLowerCase().split('-')[0];
+            validLang = ['pt', 'en', 'es', 'de', 'fr'].includes(cleanLang) ? cleanLang : 'pt';
+          } catch (e) {
+            validLang = 'pt';
+          }
 
-        const modifiedInit: RequestInit = init ? { ...init } : {};
-        const headers = new Headers(modifiedInit.headers || {});
-        if (!headers.has('x-app-lang')) {
-          headers.set('x-app-lang', validLang);
+          const modifiedInit: RequestInit = init ? { ...init } : {};
+          const headers = new Headers(modifiedInit.headers || {});
+          if (!headers.has('x-app-lang')) {
+            headers.set('x-app-lang', validLang);
+          }
+          modifiedInit.headers = headers;
+          return originalFetch(input, modifiedInit);
         }
-        modifiedInit.headers = headers;
-        return originalFetch.call(this, input, modifiedInit);
+      } catch (e) {
+        // Fallback cleanly on error
       }
-    } catch (e) {
-      // Fallback cleanly on error
+      return originalFetch(input, init);
+    };
+
+    try {
+      window.fetch = customFetch;
+    } catch (assignErr) {
+      try {
+        Object.defineProperty(window, 'fetch', {
+          value: customFetch,
+          writable: true,
+          configurable: true
+        });
+      } catch (defErr) {
+        // Sandbox environment has restricted window.fetch modification, ignore safely
+      }
     }
-    return originalFetch.call(this, input, init);
-  };
+  }
+} catch (e) {
+  // Safe fallback if environment prohibits fetch interception
 }
 
 import {StrictMode} from 'react';

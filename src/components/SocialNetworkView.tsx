@@ -56,9 +56,9 @@ interface SocialNetworkViewProps {
     updatedAt?: string;
     email?: string;
     name: string;
-    birthDate: string;
+    birthDate?: string;
     birthTime?: string;
-    birthCity: string;
+    birthCity?: string;
     hasCreatedMap?: boolean;
     isPremium?: boolean;
     profilePhoto?: string;
@@ -69,6 +69,7 @@ interface SocialNetworkViewProps {
     followingCount?: number;
     likesCount?: number;
     friendsCount?: number;
+    [key: string]: any;
   };
   onUpdateCurrentUser: (updated: any) => void;
   lang?: Language;

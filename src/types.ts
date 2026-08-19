@@ -99,6 +99,8 @@ export interface AstrologyMap {
   timezone?: string;
   originalTime?: string;
   adjustedTime?: string;
+  chartId?: string;
+  lang?: string;
   distribution: {
     elements: AstroElementDistribution;
     qualities: AstroQualityDistribution;
@@ -111,6 +113,7 @@ export interface AstrologyMap {
   astros: AstroAstroPosition[];
   houses: AstroHouse[];
   aspects: AstroAspect[];
+  [key: string]: any;
 }
 
 export interface NumerologyCycle {
@@ -181,12 +184,14 @@ export interface OracleDreamInterpretation {
 
 export interface OracleDreamEntry {
   id: string;
+  chartId?: string;
   date: string;
   time?: string;
   title?: string;
   language?: string;
   description: string;
   interpretation?: OracleDreamInterpretation | null;
+  [key: string]: any;
 }
 
 export interface CompatibilityResult {
