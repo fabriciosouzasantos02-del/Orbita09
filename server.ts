@@ -419,7 +419,7 @@ if (apiKey && apiKey !== "MY_GEMINI_API_KEY") {
 }
 
 // Global variable models
-const CHAT_MODEL = "gemini-3.5-flash";
+const CHAT_MODEL = "gemini-3.7-flash";
 
 // Track models that are temporarily exhausted (due to 429 rate bounds) so we skip trying them during their cooldown window
 const exhaustedModels = new Map<string, number>();
@@ -4878,8 +4878,8 @@ app.post("/api/astrology/rare-notifications", async (req, res) => {
     const result = fallbackData;
     setCachedResponse(cacheKey, result);
     res.json(result);
-  } catch (err) {
-    console.warn("Astrological rare notification API failed, serving default:", err);
+  } catch (err: any) {
+    console.log("[Astro Notifications] Aplicando motor de sintonização astrológica padrão com segurança:", err?.message || err);
     const result = fallbackData;
     setCachedResponse(cacheKey, result);
     res.json(result);
